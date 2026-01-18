@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Onboarding = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedCurrency, setSelectedCurrency] = useState("");
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
@@ -24,7 +26,29 @@ const Onboarding = () => {
   const handleSkip = () => {
     if (currentStep < 7) {
       setCurrentStep(currentStep + 1);
+    } else {
+      // On Step 7, skip goes to registration/paywall
+      handleFinish();
     }
+  };
+
+  const handleFinish = () => {
+    // Store onboarding data in localStorage for later use in Settings
+    const onboardingData = {
+      currency: selectedCurrency,
+      goals: selectedGoals,
+      trackingMode: selectedTrackingMode,
+      usecases: selectedUsecases,
+      country: selectedCountry,
+      industry: selectedIndustry,
+      completed: true,
+      completedAt: new Date().toISOString()
+    };
+    localStorage.setItem('onboardingData', JSON.stringify(onboardingData));
+    
+    // Navigate to registration/paywall (for now, we'll go to home since those pages aren't created yet)
+    // TODO: Replace with /register or /paywall when those pages are provided
+    navigate('/');
   };
 
   const toggleGoal = (goal: string) => {
@@ -59,12 +83,10 @@ const Onboarding = () => {
         </div>
       </div>
 
-      {/* Step 1: Currency */}
       <div id="onboarding-step-1-currency" className={`pt-10 min-h-screen flex flex-col ${currentStep === 1 ? '' : 'hidden'}`}>
         <div id="onboarding-header" className="px-6 pt-4 pb-2 flex items-center justify-between">
-          <button onClick={handleBack} className="w-9 h-9 rounded-xl bg-white/60 backdrop-blur-sm shadow-md shadow-gray-200/40 border border-gray-100/50 flex items-center justify-center active:scale-95 transition-transform">
-            <i className="fas fa-arrow-left text-gray-700 text-sm"></i>
-          </button>
+          {/* Back button hidden on Step 1 */}
+          <div className="w-9 h-9"></div>
           <button onClick={handleSkip} className="text-sm font-semibold text-gray-600 hover:text-primary transition-colors">Skip</button>
         </div>
 
@@ -846,7 +868,7 @@ const Onboarding = () => {
         </div>
 
         <div id="skip-option-block" className="px-6 pb-6">
-          <button className="w-full h-12 bg-gray-100/60 backdrop-blur-sm rounded-xl text-gray-700 text-sm font-semibold hover:bg-gray-200/60 transition-all active:scale-98 flex items-center justify-center gap-2">
+          <button onClick={handleFinish} className="w-full h-12 bg-gray-100/60 backdrop-blur-sm rounded-xl text-gray-700 text-sm font-semibold hover:bg-gray-200/60 transition-all active:scale-98 flex items-center justify-center gap-2">
             <i className="fas fa-forward text-xs"></i>
             Skip for now, I'll add receipts later
           </button>
@@ -879,7 +901,7 @@ const Onboarding = () => {
         <div className="flex-1"></div>
 
         <div id="action-button-finish" className="px-6 pb-6">
-          <button className="w-full h-14 bg-gradient-to-r from-primary to-teal-600 text-white text-base font-semibold rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2">
+          <button onClick={handleFinish} className="w-full h-14 bg-gradient-to-r from-primary to-teal-600 text-white text-base font-semibold rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2">
             <span>Get Started</span>
             <i className="fas fa-arrow-right"></i>
           </button>

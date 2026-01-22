@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 
-const SignUp = () => {
+const MobileSignUp = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -153,6 +154,116 @@ const SignUp = () => {
       </div>
     </div>
   );
+};
+
+const DesktopSignUp = () => {
+  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+
+  return (
+    <ResponsiveLayout variant="auth" showSidebar={false} mobileContent={<MobileSignUp />}>
+      <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-lg shadow-gray-200/50 p-8 border border-gray-100/50">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-primary to-teal-600 shadow-xl shadow-primary/20 flex items-center justify-center">
+            <i className="fas fa-receipt text-2xl text-white"></i>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1 tracking-tight">Create Account</h1>
+          <p className="text-sm text-gray-600">Start tracking your expenses today</p>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">Full Name</label>
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                <i className="fas fa-user text-sm"></i>
+              </div>
+              <input
+                type="text"
+                placeholder="Enter your full name"
+                className="w-full h-12 pl-11 pr-4 bg-white rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">Email Address</label>
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                <i className="fas fa-envelope text-sm"></i>
+              </div>
+              <input
+                type="email"
+                placeholder="your@email.com"
+                className="w-full h-12 pl-11 pr-4 bg-white rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">Password</label>
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                <i className="fas fa-lock text-sm"></i>
+              </div>
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Create a password"
+                className="w-full h-12 pl-11 pr-12 bg-white rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <i className={`fas ${showPassword ? "fa-eye-slash" : "fa-eye"} text-sm`}></i>
+              </button>
+            </div>
+          </div>
+
+          <label className="flex items-start gap-2">
+            <input type="checkbox" className="mt-0.5 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary/20 focus:ring-2" />
+            <span className="text-xs text-gray-600 font-medium">
+              I agree to the <a href="#" className="text-primary font-semibold hover:underline">Terms of Service</a> and{" "}
+              <a href="#" className="text-primary font-semibold hover:underline">Privacy Policy</a>
+            </span>
+          </label>
+
+          <button className="w-full h-12 bg-gradient-to-r from-primary to-teal-600 text-white text-base font-semibold rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl transition-all duration-300">
+            Create Account
+          </button>
+
+          <div className="text-center text-sm text-gray-600">
+            Already have an account?{" "}
+            <a href="/signin" className="text-primary font-semibold hover:underline">Sign In</a>
+          </div>
+
+          <div className="flex items-center gap-3 pt-2">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+            <span className="text-xs text-gray-500 font-medium">or continue with</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+          </div>
+
+          <button className="w-full h-12 bg-white text-gray-900 text-sm font-semibold rounded-xl shadow-md shadow-gray-200/50 hover:shadow-lg transition-all duration-300 border border-gray-200 flex items-center justify-center gap-2">
+            <i className="fab fa-google text-base text-red-500"></i>
+            Continue with Google
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="w-full h-11 bg-gray-100/70 rounded-xl text-gray-700 text-sm font-semibold hover:bg-gray-200/70 transition-colors"
+          >
+            Back
+          </button>
+        </div>
+      </div>
+    </ResponsiveLayout>
+  );
+};
+
+const SignUp = () => {
+  return <DesktopSignUp />;
 };
 
 export default SignUp;

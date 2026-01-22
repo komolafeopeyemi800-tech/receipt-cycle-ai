@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 
-const Onboarding = () => {
+const OnboardingContent = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedCurrency, setSelectedCurrency] = useState("");
@@ -73,16 +74,6 @@ const Onboarding = () => {
 
   return (
     <div className="font-sans bg-gradient-to-br from-white via-emerald-50/30 to-teal-50/40 overflow-x-hidden min-h-screen">
-      {/* Status Bar */}
-      <div id="status-bar" className="fixed top-0 left-0 right-0 h-10 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-between px-4 shadow-sm">
-        <div className="text-xs font-semibold text-gray-900">9:41</div>
-        <div className="flex items-center gap-1">
-          <i className="fas fa-signal text-xs text-gray-900"></i>
-          <i className="fas fa-wifi text-xs text-gray-900 ml-1"></i>
-          <i className="fas fa-battery-full text-xs text-gray-900 ml-1"></i>
-        </div>
-      </div>
-
       <div id="onboarding-step-1-currency" className={`pt-10 min-h-screen flex flex-col ${currentStep === 1 ? '' : 'hidden'}`}>
         <div id="onboarding-header" className="px-6 pt-4 pb-2 flex items-center justify-between">
           {/* Back button hidden on Step 1 */}
@@ -911,6 +902,39 @@ const Onboarding = () => {
       </div>
     </div>
   );
+};
+
+const MobileOnboarding = () => (
+  <div className="font-sans bg-gradient-to-br from-white via-emerald-50/30 to-teal-50/40 overflow-x-hidden min-h-screen">
+    <div id="status-bar" className="fixed top-0 left-0 right-0 h-10 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-between px-4 shadow-sm">
+      <div className="text-xs font-semibold text-gray-900">9:41</div>
+      <div className="flex items-center gap-1">
+        <i className="fas fa-signal text-xs text-gray-900"></i>
+        <i className="fas fa-wifi text-xs text-gray-900 ml-1"></i>
+        <i className="fas fa-battery-full text-xs text-gray-900 ml-1"></i>
+      </div>
+    </div>
+    <OnboardingContent />
+  </div>
+);
+
+const DesktopOnboarding = () => (
+  <ResponsiveLayout variant="auth" showSidebar={false} mobileContent={<MobileOnboarding />}>
+    <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-lg shadow-gray-200/50 border border-gray-100/50 overflow-hidden">
+      <div className="p-6 border-b border-gray-100/60">
+        <h1 className="text-lg font-bold text-gray-900">Onboarding</h1>
+        <p className="text-sm text-gray-600">Set up Receipt Cycle in under a minute.</p>
+      </div>
+      {/* Render the existing onboarding UI (without the mobile status bar) */}
+      <div className="max-h-[75vh] overflow-auto">
+        <OnboardingContent />
+      </div>
+    </div>
+  </ResponsiveLayout>
+);
+
+const Onboarding = () => {
+  return <DesktopOnboarding />;
 };
 
 export default Onboarding;

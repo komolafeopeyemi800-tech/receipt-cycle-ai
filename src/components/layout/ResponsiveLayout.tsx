@@ -36,6 +36,19 @@ const ResponsiveLayout = ({
     );
   }
 
+  if (variant === 'landing') {
+    return (
+      <div className="font-sans bg-gradient-to-br from-gray-50 to-white min-h-screen">
+        <DesktopNav variant="landing" />
+        <main className="pt-16 min-h-screen">
+          <div className="p-8 max-w-7xl mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="font-sans bg-gradient-to-br from-gray-50 to-white min-h-screen">
       <DesktopNav variant="app" />

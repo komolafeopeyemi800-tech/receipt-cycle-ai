@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 
-const AddTransaction = () => {
+const AddTransactionContent = () => {
   const navigate = useNavigate();
   const [transactionType, setTransactionType] = useState<'expense' | 'income'>('expense');
   const [isRecurring, setIsRecurring] = useState(false);
@@ -11,17 +12,7 @@ const AddTransaction = () => {
   };
 
   return (
-    <div className="font-sans bg-gradient-to-br from-white via-emerald-50/30 to-teal-50/40 overflow-x-hidden">
-      <div id="status-bar" className="fixed top-0 left-0 right-0 h-10 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-between px-4 shadow-sm">
-        <div className="text-xs font-semibold text-gray-900">9:41</div>
-        <div className="flex items-center gap-1">
-          <i className="fas fa-signal text-xs text-gray-900"></i>
-          <i className="fas fa-wifi text-xs text-gray-900 ml-1"></i>
-          <i className="fas fa-battery-full text-xs text-gray-900 ml-1"></i>
-        </div>
-      </div>
-
-      <div id="root-container" className="pt-10 min-h-screen flex flex-col pb-20">
+    <div id="root-container" className="pt-10 min-h-screen flex flex-col pb-20">
         <div id="header" className="sticky top-10 bg-white/80 backdrop-blur-md z-40 px-4 py-4 shadow-sm border-b border-gray-100/50">
           <div className="flex items-center justify-between">
             <button onClick={handleBack} className="w-10 h-10 rounded-xl bg-white shadow-md shadow-gray-200/50 flex items-center justify-center border border-gray-100/50 active:scale-95 transition-transform">
@@ -448,39 +439,68 @@ const AddTransaction = () => {
 
         <div id="bottom-safe-area" className="h-4"></div>
       </div>
+  );
+};
 
-      <div id="bottom-nav" className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 shadow-2xl shadow-gray-900/10 z-50">
-        <div className="flex items-center justify-around px-4 py-3">
-          <button className="flex flex-col items-center gap-1 text-gray-400 active:scale-95 transition-transform">
-            <i className="fas fa-home text-xl"></i>
-            <span className="text-xs font-medium">Home</span>
-          </button>
-          
-          <button className="flex flex-col items-center gap-1 text-gray-400 active:scale-95 transition-transform">
-            <i className="fas fa-list text-xl"></i>
-            <span className="text-xs font-medium">Transactions</span>
-          </button>
-          
-          <button className="relative -mt-6">
-            <div className="w-16 h-16 bg-gradient-to-r from-primary to-teal-600 rounded-full shadow-lg shadow-primary/40 flex items-center justify-center active:scale-95 transition-transform">
-              <i className="fas fa-plus text-white text-2xl"></i>
-            </div>
-          </button>
-          
-          <button className="flex flex-col items-center gap-1 text-gray-400 active:scale-95 transition-transform">
-            <i className="fas fa-chart-pie text-xl"></i>
-            <span className="text-xs font-medium">Insights</span>
-          </button>
-          
-          <button className="flex flex-col items-center gap-1 text-gray-400 active:scale-95 transition-transform">
-            <i className="fas fa-cog text-xl"></i>
-            <span className="text-xs font-medium">Settings</span>
-          </button>
-        </div>
-        <div className="h-6 bg-white"></div>
+const MobileAddTransaction = () => (
+  <div className="font-sans bg-gradient-to-br from-white via-emerald-50/30 to-teal-50/40 overflow-x-hidden">
+    <div id="status-bar" className="fixed top-0 left-0 right-0 h-10 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-between px-4 shadow-sm">
+      <div className="text-xs font-semibold text-gray-900">9:41</div>
+      <div className="flex items-center gap-1">
+        <i className="fas fa-signal text-xs text-gray-900"></i>
+        <i className="fas fa-wifi text-xs text-gray-900 ml-1"></i>
+        <i className="fas fa-battery-full text-xs text-gray-900 ml-1"></i>
       </div>
     </div>
-  );
+    <AddTransactionContent />
+
+    <div id="bottom-nav" className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 shadow-2xl shadow-gray-900/10 z-50">
+      <div className="flex items-center justify-around px-4 py-3">
+        <button className="flex flex-col items-center gap-1 text-gray-400 active:scale-95 transition-transform">
+          <i className="fas fa-home text-xl"></i>
+          <span className="text-xs font-medium">Home</span>
+        </button>
+        <button className="flex flex-col items-center gap-1 text-gray-400 active:scale-95 transition-transform">
+          <i className="fas fa-list text-xl"></i>
+          <span className="text-xs font-medium">Transactions</span>
+        </button>
+        <button className="relative -mt-6">
+          <div className="w-16 h-16 bg-gradient-to-r from-primary to-teal-600 rounded-full shadow-lg shadow-primary/40 flex items-center justify-center active:scale-95 transition-transform">
+            <i className="fas fa-plus text-white text-2xl"></i>
+          </div>
+        </button>
+        <button className="flex flex-col items-center gap-1 text-gray-400 active:scale-95 transition-transform">
+          <i className="fas fa-chart-pie text-xl"></i>
+          <span className="text-xs font-medium">Insights</span>
+        </button>
+        <button className="flex flex-col items-center gap-1 text-gray-400 active:scale-95 transition-transform">
+          <i className="fas fa-cog text-xl"></i>
+          <span className="text-xs font-medium">Settings</span>
+        </button>
+      </div>
+      <div className="h-6 bg-white"></div>
+    </div>
+  </div>
+);
+
+const DesktopAddTransaction = () => (
+  <ResponsiveLayout variant="app" showSidebar={true} mobileContent={<MobileAddTransaction />}>
+    <div className="max-w-4xl">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Add Transaction</h1>
+        <p className="text-gray-600">Capture, categorize, and attach receipts in one place.</p>
+      </div>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden">
+        <div className="p-6">
+          <AddTransactionContent />
+        </div>
+      </div>
+    </div>
+  </ResponsiveLayout>
+);
+
+const AddTransaction = () => {
+  return <DesktopAddTransaction />;
 };
 
 export default AddTransaction;

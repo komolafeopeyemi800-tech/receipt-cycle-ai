@@ -1,13 +1,57 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const MobileSignIn = () => {
   const navigate = useNavigate();
+  const { signIn, signInWithGoogle } = useAuth();
+  const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleBack = () => {
     navigate(-1);
+  };
+
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      toast({
+        title: 'Missing fields',
+        description: 'Please enter email and password',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await signIn(email, password);
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        title: 'Sign in failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({ title: 'Welcome back!' });
+      navigate('/dashboard');
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    const { error } = await signInWithGoogle();
+    if (error) {
+      toast({
+        title: 'Google sign in failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -47,7 +91,9 @@ const MobileSignIn = () => {
                 </div>
                 <input 
                   type="email" 
-                  placeholder="your@email.com" 
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full h-12 pl-11 pr-4 bg-white rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
               </div>
@@ -61,10 +107,13 @@ const MobileSignIn = () => {
                 </div>
                 <input 
                   type={showPassword ? "text" : "password"} 
-                  placeholder="Enter your password" 
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full h-12 pl-11 pr-12 bg-white rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
                 <button 
+                  type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
@@ -81,8 +130,16 @@ const MobileSignIn = () => {
               <a href="#" className="text-xs text-primary font-semibold hover:text-primary-dark transition-colors">Forgot Password?</a>
             </div>
 
-            <button className="w-full h-12 bg-gradient-to-r from-primary to-teal-600 text-white text-base font-semibold rounded-xl shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] mb-4">
-              Sign In
+            <button 
+              onClick={handleSignIn}
+              disabled={isLoading}
+              className="w-full h-12 bg-gradient-to-r from-primary to-teal-600 text-white text-base font-semibold rounded-xl shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] mb-4 disabled:opacity-50"
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <i className="fas fa-spinner fa-spin"></i> Signing in...
+                </span>
+              ) : 'Sign In'}
             </button>
 
             <div className="text-center">
@@ -100,7 +157,10 @@ const MobileSignIn = () => {
         </div>
 
         <div id="social-signin-block" className="px-6 pb-6">
-          <button className="w-full h-12 bg-white text-gray-900 text-sm font-semibold rounded-xl shadow-md shadow-gray-200/50 hover:shadow-lg transition-all duration-300 border border-gray-200 flex items-center justify-center gap-2 mb-3 active:scale-[0.98]">
+          <button 
+            onClick={handleGoogleSignIn}
+            className="w-full h-12 bg-white text-gray-900 text-sm font-semibold rounded-xl shadow-md shadow-gray-200/50 hover:shadow-lg transition-all duration-300 border border-gray-200 flex items-center justify-center gap-2 mb-3 active:scale-[0.98]"
+          >
             <i className="fab fa-google text-base text-red-500"></i>
             Continue with Google
           </button>
@@ -120,25 +180,6 @@ const MobileSignIn = () => {
           </div>
         </div>
 
-        <div id="signin-trust-block" className="px-6 pb-6">
-          <div className="flex items-center justify-center gap-4 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <i className="fas fa-lock text-xs text-primary"></i>
-              <span className="text-xs text-gray-600 font-medium">256-bit Encryption</span>
-            </div>
-            <div className="w-1 h-1 rounded-full bg-gray-300"></div>
-            <div className="flex items-center gap-1.5">
-              <i className="fas fa-user-shield text-xs text-primary"></i>
-              <span className="text-xs text-gray-600 font-medium">GDPR Compliant</span>
-            </div>
-            <div className="w-1 h-1 rounded-full bg-gray-300"></div>
-            <div className="flex items-center gap-1.5">
-              <i className="fas fa-check-circle text-xs text-primary"></i>
-              <span className="text-xs text-gray-600 font-medium">SOC 2 Certified</span>
-            </div>
-          </div>
-        </div>
-
         <div id="bottom-safe-area" className="h-8"></div>
       </div>
     </div>
@@ -147,14 +188,52 @@ const MobileSignIn = () => {
 
 const DesktopSignIn = () => {
   const navigate = useNavigate();
+  const { signIn, signInWithGoogle } = useAuth();
+  const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      toast({
+        title: 'Missing fields',
+        description: 'Please enter email and password',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await signIn(email, password);
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        title: 'Sign in failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({ title: 'Welcome back!' });
+      navigate('/dashboard');
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    const { error } = await signInWithGoogle();
+    if (error) {
+      toast({
+        title: 'Google sign in failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
-    <ResponsiveLayout
-      variant="auth"
-      showSidebar={false}
-      mobileContent={<MobileSignIn />}
-    >
+    <ResponsiveLayout variant="auth" showSidebar={false} mobileContent={<MobileSignIn />}>
       <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-lg shadow-gray-200/50 p-8 border border-gray-100/50">
         <div className="text-center mb-6">
           <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-primary to-teal-600 shadow-xl shadow-primary/20 flex items-center justify-center">
@@ -174,6 +253,8 @@ const DesktopSignIn = () => {
               <input
                 type="email"
                 placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full h-12 pl-11 pr-4 bg-white rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>
@@ -188,6 +269,8 @@ const DesktopSignIn = () => {
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full h-12 pl-11 pr-12 bg-white rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
               <button
@@ -208,8 +291,16 @@ const DesktopSignIn = () => {
             <a href="#" className="text-xs text-primary font-semibold hover:underline">Forgot Password?</a>
           </div>
 
-          <button className="w-full h-12 bg-gradient-to-r from-primary to-teal-600 text-white text-base font-semibold rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl transition-all duration-300">
-            Sign In
+          <button 
+            onClick={handleSignIn}
+            disabled={isLoading}
+            className="w-full h-12 bg-gradient-to-r from-primary to-teal-600 text-white text-base font-semibold rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+          >
+            {isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <i className="fas fa-spinner fa-spin"></i> Signing in...
+              </span>
+            ) : 'Sign In'}
           </button>
 
           <div className="text-center text-sm text-gray-600">
@@ -223,7 +314,10 @@ const DesktopSignIn = () => {
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
           </div>
 
-          <button className="w-full h-12 bg-white text-gray-900 text-sm font-semibold rounded-xl shadow-md shadow-gray-200/50 hover:shadow-lg transition-all duration-300 border border-gray-200 flex items-center justify-center gap-2">
+          <button 
+            onClick={handleGoogleSignIn}
+            className="w-full h-12 bg-white text-gray-900 text-sm font-semibold rounded-xl shadow-md shadow-gray-200/50 hover:shadow-lg transition-all duration-300 border border-gray-200 flex items-center justify-center gap-2"
+          >
             <i className="fab fa-google text-base text-red-500"></i>
             Continue with Google
           </button>
@@ -242,7 +336,6 @@ const DesktopSignIn = () => {
 };
 
 const SignIn = () => {
-  // ResponsiveLayout already handles mobile vs desktop
   return <DesktopSignIn />;
 };
 

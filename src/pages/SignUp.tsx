@@ -1,13 +1,71 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const MobileSignUp = () => {
   const navigate = useNavigate();
+  const { signUp, signInWithGoogle } = useAuth();
+  const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [agreed, setAgreed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleBack = () => {
     navigate(-1);
+  };
+
+  const handleSignUp = async () => {
+    if (!fullName || !email || !password) {
+      toast({
+        title: 'Missing fields',
+        description: 'Please fill in all fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!agreed) {
+      toast({
+        title: 'Terms required',
+        description: 'Please agree to the Terms of Service',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await signUp(email, password, fullName);
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        title: 'Sign up failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Account created!',
+        description: 'Please check your email to verify your account.',
+      });
+      navigate('/onboarding');
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    const { error } = await signInWithGoogle();
+    if (error) {
+      toast({
+        title: 'Google sign in failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -47,7 +105,9 @@ const MobileSignUp = () => {
                 </div>
                 <input 
                   type="text" 
-                  placeholder="Enter your full name" 
+                  placeholder="Enter your full name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
                   className="w-full h-12 pl-11 pr-4 bg-white rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
               </div>
@@ -61,7 +121,9 @@ const MobileSignUp = () => {
                 </div>
                 <input 
                   type="email" 
-                  placeholder="your@email.com" 
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full h-12 pl-11 pr-4 bg-white rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
               </div>
@@ -75,10 +137,13 @@ const MobileSignUp = () => {
                 </div>
                 <input 
                   type={showPassword ? "text" : "password"} 
-                  placeholder="Create a password" 
+                  placeholder="Create a password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full h-12 pl-11 pr-12 bg-white rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
                 <button 
+                  type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
@@ -88,12 +153,25 @@ const MobileSignUp = () => {
             </div>
 
             <div className="flex items-center gap-2 mb-6">
-              <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary/20 focus:ring-2" />
+              <input 
+                type="checkbox" 
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary/20 focus:ring-2" 
+              />
               <span className="text-xs text-gray-600 font-medium">I agree to the <a href="#" className="text-primary font-semibold">Terms of Service</a> and <a href="#" className="text-primary font-semibold">Privacy Policy</a></span>
             </div>
 
-            <button className="w-full h-12 bg-gradient-to-r from-primary to-teal-600 text-white text-base font-semibold rounded-xl shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] mb-4">
-              Create Account
+            <button 
+              onClick={handleSignUp}
+              disabled={isLoading}
+              className="w-full h-12 bg-gradient-to-r from-primary to-teal-600 text-white text-base font-semibold rounded-xl shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] mb-4 disabled:opacity-50"
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <i className="fas fa-spinner fa-spin"></i> Creating account...
+                </span>
+              ) : 'Create Account'}
             </button>
 
             <div className="text-center">
@@ -111,43 +189,13 @@ const MobileSignUp = () => {
         </div>
 
         <div id="social-signup-block" className="px-6 pb-6">
-          <button className="w-full h-12 bg-white text-gray-900 text-sm font-semibold rounded-xl shadow-md shadow-gray-200/50 hover:shadow-lg transition-all duration-300 border border-gray-200 flex items-center justify-center gap-2 mb-3 active:scale-[0.98]">
+          <button 
+            onClick={handleGoogleSignIn}
+            className="w-full h-12 bg-white text-gray-900 text-sm font-semibold rounded-xl shadow-md shadow-gray-200/50 hover:shadow-lg transition-all duration-300 border border-gray-200 flex items-center justify-center gap-2 mb-3 active:scale-[0.98]"
+          >
             <i className="fab fa-google text-base text-red-500"></i>
             Continue with Google
           </button>
-        </div>
-
-        <div id="signup-security-block" className="px-6 pb-6">
-          <div className="bg-gradient-to-br from-primary/5 to-teal-50/50 rounded-2xl p-4 border border-primary/10">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/80 flex items-center justify-center flex-shrink-0 shadow-sm">
-                <i className="fas fa-shield-alt text-lg text-primary"></i>
-              </div>
-              <div className="flex-1 pt-1">
-                <h3 className="text-sm font-semibold text-gray-900 mb-1">Your Data is Secure</h3>
-                <p className="text-xs text-gray-600 leading-relaxed">All credentials are encrypted end-to-end. We never store your password in plain text.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div id="signup-trust-block" className="px-6 pb-6">
-          <div className="flex items-center justify-center gap-4 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <i className="fas fa-lock text-xs text-primary"></i>
-              <span className="text-xs text-gray-600 font-medium">256-bit Encryption</span>
-            </div>
-            <div className="w-1 h-1 rounded-full bg-gray-300"></div>
-            <div className="flex items-center gap-1.5">
-              <i className="fas fa-user-shield text-xs text-primary"></i>
-              <span className="text-xs text-gray-600 font-medium">GDPR Compliant</span>
-            </div>
-            <div className="w-1 h-1 rounded-full bg-gray-300"></div>
-            <div className="flex items-center gap-1.5">
-              <i className="fas fa-check-circle text-xs text-primary"></i>
-              <span className="text-xs text-gray-600 font-medium">SOC 2 Certified</span>
-            </div>
-          </div>
         </div>
 
         <div id="bottom-safe-area" className="h-8"></div>
@@ -158,7 +206,63 @@ const MobileSignUp = () => {
 
 const DesktopSignUp = () => {
   const navigate = useNavigate();
+  const { signUp, signInWithGoogle } = useAuth();
+  const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [agreed, setAgreed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSignUp = async () => {
+    if (!fullName || !email || !password) {
+      toast({
+        title: 'Missing fields',
+        description: 'Please fill in all fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!agreed) {
+      toast({
+        title: 'Terms required',
+        description: 'Please agree to the Terms of Service',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await signUp(email, password, fullName);
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        title: 'Sign up failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Account created!',
+        description: 'Please check your email to verify your account.',
+      });
+      navigate('/onboarding');
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    const { error } = await signInWithGoogle();
+    if (error) {
+      toast({
+        title: 'Google sign in failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <ResponsiveLayout variant="auth" showSidebar={false} mobileContent={<MobileSignUp />}>
@@ -181,6 +285,8 @@ const DesktopSignUp = () => {
               <input
                 type="text"
                 placeholder="Enter your full name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
                 className="w-full h-12 pl-11 pr-4 bg-white rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>
@@ -195,6 +301,8 @@ const DesktopSignUp = () => {
               <input
                 type="email"
                 placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full h-12 pl-11 pr-4 bg-white rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>
@@ -209,6 +317,8 @@ const DesktopSignUp = () => {
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="Create a password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full h-12 pl-11 pr-12 bg-white rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
               <button
@@ -222,15 +332,28 @@ const DesktopSignUp = () => {
           </div>
 
           <label className="flex items-start gap-2">
-            <input type="checkbox" className="mt-0.5 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary/20 focus:ring-2" />
+            <input 
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="mt-0.5 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary/20 focus:ring-2" 
+            />
             <span className="text-xs text-gray-600 font-medium">
               I agree to the <a href="#" className="text-primary font-semibold hover:underline">Terms of Service</a> and{" "}
               <a href="#" className="text-primary font-semibold hover:underline">Privacy Policy</a>
             </span>
           </label>
 
-          <button className="w-full h-12 bg-gradient-to-r from-primary to-teal-600 text-white text-base font-semibold rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl transition-all duration-300">
-            Create Account
+          <button 
+            onClick={handleSignUp}
+            disabled={isLoading}
+            className="w-full h-12 bg-gradient-to-r from-primary to-teal-600 text-white text-base font-semibold rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+          >
+            {isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <i className="fas fa-spinner fa-spin"></i> Creating account...
+              </span>
+            ) : 'Create Account'}
           </button>
 
           <div className="text-center text-sm text-gray-600">
@@ -244,7 +367,10 @@ const DesktopSignUp = () => {
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
           </div>
 
-          <button className="w-full h-12 bg-white text-gray-900 text-sm font-semibold rounded-xl shadow-md shadow-gray-200/50 hover:shadow-lg transition-all duration-300 border border-gray-200 flex items-center justify-center gap-2">
+          <button 
+            onClick={handleGoogleSignIn}
+            className="w-full h-12 bg-white text-gray-900 text-sm font-semibold rounded-xl shadow-md shadow-gray-200/50 hover:shadow-lg transition-all duration-300 border border-gray-200 flex items-center justify-center gap-2"
+          >
             <i className="fab fa-google text-base text-red-500"></i>
             Continue with Google
           </button>

@@ -453,21 +453,57 @@ const MobileAddTransaction = () => {
   );
 };
 
-const DesktopAddTransaction = () => (
-  <ResponsiveLayout variant="app" showSidebar={true} mobileContent={<MobileAddTransaction />}>
-    <div className="max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Add Transaction</h1>
-        <p className="text-gray-600">Capture, categorize, and attach receipts in one place.</p>
-      </div>
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden">
-        <div className="p-6">
-          <AddTransactionContent />
+const DesktopAddTransaction = () => {
+  const navigate = useNavigate();
+  
+  const quickActions = [
+    { icon: 'fa-coffee', label: 'Coffee', amount: '5.00', category: 'Food & Dining', color: 'amber' },
+    { icon: 'fa-gas-pump', label: 'Gas', amount: '45.00', category: 'Transportation', color: 'purple' },
+    { icon: 'fa-shopping-bag', label: 'Groceries', amount: '75.00', category: 'Shopping', color: 'blue' },
+    { icon: 'fa-subway', label: 'Transit', amount: '2.75', category: 'Transportation', color: 'green' },
+    { icon: 'fa-utensils', label: 'Lunch', amount: '15.00', category: 'Food & Dining', color: 'orange' },
+    { icon: 'fa-film', label: 'Movies', amount: '18.00', category: 'Entertainment', color: 'pink' },
+  ];
+
+  return (
+    <ResponsiveLayout variant="app" showSidebar={true} mobileContent={<MobileAddTransaction />}>
+      <div className="max-w-4xl">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Add Transaction</h1>
+          <p className="text-gray-600">Capture, categorize, and attach receipts in one place.</p>
+        </div>
+        
+        {/* Quick Actions Section */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
+            <button className="text-sm text-primary font-medium hover:underline">Customize</button>
+          </div>
+          <div className="grid grid-cols-6 gap-3">
+            {quickActions.map((action, idx) => (
+              <button 
+                key={idx}
+                className="flex flex-col items-center gap-2 p-4 bg-gray-50 hover:bg-primary/5 rounded-xl border border-gray-100 hover:border-primary/30 transition-all group"
+              >
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-${action.color}-50 to-${action.color}-100 flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                  <i className={`fas ${action.icon} text-${action.color}-600`}></i>
+                </div>
+                <span className="text-xs font-medium text-gray-700">{action.label}</span>
+                <span className="text-xs text-gray-500">${action.amount}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden">
+          <div className="p-6">
+            <AddTransactionContent />
+          </div>
         </div>
       </div>
-    </div>
-  </ResponsiveLayout>
-);
+    </ResponsiveLayout>
+  );
+};
 
 const AddTransaction = () => {
   return <DesktopAddTransaction />;

@@ -6,6 +6,21 @@ import DesktopFooter from '@/components/layout/DesktopFooter';
 
 // Mobile version of the home page
 const MobileHome = () => {
+  const navigate = useNavigate();
+  
+  const handleGetStarted = () => {
+    navigate('/onboarding');
+  };
+
+  const handleGoogleSignIn = async () => {
+    // For now, navigate to signup - Google OAuth can be triggered from there
+    navigate('/signup');
+  };
+
+  const handleEmailSignIn = () => {
+    navigate('/signin');
+  };
+
   return (
     <div className="font-sans bg-gradient-to-br from-white via-emerald-50/30 to-teal-50/40 overflow-x-hidden">
       <div
@@ -191,7 +206,10 @@ const MobileHome = () => {
         </div>
         <div id="comparison-block" className="px-6 pb-8"></div>
         <div id="primary-action-block" className="px-6 pb-6">
-          <button className="w-full h-14 bg-gradient-to-r from-primary to-teal-600 text-white text-base font-semibold rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]">
+          <button 
+            onClick={handleGetStarted}
+            className="w-full h-14 bg-gradient-to-r from-primary to-teal-600 text-white text-base font-semibold rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+          >
             Get Started
           </button>
         </div>
@@ -203,11 +221,17 @@ const MobileHome = () => {
             </span>
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
           </div>
-          <button className="w-full h-12 bg-white text-gray-900 text-sm font-semibold rounded-xl shadow-md shadow-gray-200/50 hover:shadow-lg transition-all duration-300 border border-gray-200 flex items-center justify-center gap-2 mb-3 active:scale-[0.98]">
+          <button 
+            onClick={handleGoogleSignIn}
+            className="w-full h-12 bg-white text-gray-900 text-sm font-semibold rounded-xl shadow-md shadow-gray-200/50 hover:shadow-lg transition-all duration-300 border border-gray-200 flex items-center justify-center gap-2 mb-3 active:scale-[0.98]"
+          >
             <i className="fab fa-google text-base"></i>
             Continue with Google
           </button>
-          <button className="w-full h-12 bg-white text-gray-900 text-sm font-semibold rounded-xl shadow-md shadow-gray-200/50 hover:shadow-lg transition-all duration-300 border border-gray-200 flex items-center justify-center gap-2 active:scale-[0.98]">
+          <button 
+            onClick={handleEmailSignIn}
+            className="w-full h-12 bg-white text-gray-900 text-sm font-semibold rounded-xl shadow-md shadow-gray-200/50 hover:shadow-lg transition-all duration-300 border border-gray-200 flex items-center justify-center gap-2 active:scale-[0.98]"
+          >
             <i className="fas fa-envelope text-base"></i>
             Continue with Email
           </button>

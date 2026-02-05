@@ -47,9 +47,8 @@ const OnboardingContent = () => {
     };
     localStorage.setItem('onboardingData', JSON.stringify(onboardingData));
     
-    // Navigate to registration/paywall (for now, we'll go to home since those pages aren't created yet)
-    // TODO: Replace with /register or /paywall when those pages are provided
-    navigate('/');
+    // Navigate to pricing page so users can subscribe or start using the app
+    navigate('/pricing');
   };
 
   const toggleGoal = (goal: string) => {

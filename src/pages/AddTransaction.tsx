@@ -455,18 +455,29 @@ const MobileAddTransaction = () => {
 
 const DesktopAddTransaction = () => {
   const navigate = useNavigate();
-  
-  const quickActions = [
-    { icon: 'fa-coffee', label: 'Coffee', amount: '5.00', category: 'Food & Dining', color: 'amber' },
-    { icon: 'fa-gas-pump', label: 'Gas', amount: '45.00', category: 'Transportation', color: 'purple' },
-    { icon: 'fa-shopping-bag', label: 'Groceries', amount: '75.00', category: 'Shopping', color: 'blue' },
-    { icon: 'fa-subway', label: 'Transit', amount: '2.75', category: 'Transportation', color: 'green' },
-    { icon: 'fa-utensils', label: 'Lunch', amount: '15.00', category: 'Food & Dining', color: 'orange' },
-    { icon: 'fa-film', label: 'Movies', amount: '18.00', category: 'Entertainment', color: 'pink' },
-  ];
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { scan, isScanning } = useReceiptScanner();
+
+  const handleScanReceipt = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await scan(file);
+    }
+  };
 
   return (
     <ResponsiveLayout variant="app" showSidebar={true} mobileContent={<MobileAddTransaction />}>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
       <div className="max-w-4xl">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Add Transaction</h1>
@@ -475,23 +486,63 @@ const DesktopAddTransaction = () => {
         
         {/* Quick Actions Section */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
-            <button className="text-sm text-primary font-medium hover:underline">Customize</button>
-          </div>
-          <div className="grid grid-cols-6 gap-3">
-            {quickActions.map((action, idx) => (
-              <button 
-                key={idx}
-                className="flex flex-col items-center gap-2 p-4 bg-gray-50 hover:bg-primary/5 rounded-xl border border-gray-100 hover:border-primary/30 transition-all group"
-              >
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-${action.color}-50 to-${action.color}-100 flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                  <i className={`fas ${action.icon} text-${action.color}-600`}></i>
-                </div>
-                <span className="text-xs font-medium text-gray-700">{action.label}</span>
-                <span className="text-xs text-gray-500">${action.amount}</span>
-              </button>
-            ))}
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-4 gap-4">
+            <button 
+              onClick={handleScanReceipt}
+              disabled={isScanning}
+              className="flex flex-col items-center gap-3 p-5 bg-gradient-to-br from-primary/5 to-teal-50 hover:from-primary/10 hover:to-teal-100 rounded-xl border border-primary/20 hover:border-primary/40 transition-all group disabled:opacity-50"
+            >
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-teal-600 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                <i className={`fas ${isScanning ? 'fa-spinner fa-spin' : 'fa-camera'} text-white text-xl`}></i>
+              </div>
+              <div className="text-center">
+                <div className="text-sm font-semibold text-gray-900">Scan Receipt</div>
+                <div className="text-xs text-gray-500">AI-powered</div>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => navigate('/add-transaction')}
+              className="flex flex-col items-center gap-3 p-5 bg-white hover:bg-blue-50/50 rounded-xl border border-gray-200 hover:border-blue-200 transition-all group"
+            >
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                <i className="fas fa-file-upload text-blue-600 text-xl"></i>
+              </div>
+              <div className="text-center">
+                <div className="text-sm font-semibold text-gray-900">Upload Statement</div>
+                <div className="text-xs text-gray-500">CSV, PDF, OFX</div>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => {
+                const amountInput = document.querySelector('input[type="number"]') as HTMLInputElement;
+                amountInput?.focus();
+              }}
+              className="flex flex-col items-center gap-3 p-5 bg-white hover:bg-purple-50/50 rounded-xl border border-gray-200 hover:border-purple-200 transition-all group"
+            >
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                <i className="fas fa-plus text-purple-600 text-xl"></i>
+              </div>
+              <div className="text-center">
+                <div className="text-sm font-semibold text-gray-900">Add Manually</div>
+                <div className="text-xs text-gray-500">Quick entry</div>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => navigate('/insight')}
+              className="flex flex-col items-center gap-3 p-5 bg-white hover:bg-amber-50/50 rounded-xl border border-gray-200 hover:border-amber-200 transition-all group"
+            >
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                <i className="fas fa-bullseye text-amber-600 text-xl"></i>
+              </div>
+              <div className="text-center">
+                <div className="text-sm font-semibold text-gray-900">Set Budget</div>
+                <div className="text-xs text-gray-500">New goal</div>
+              </div>
+            </button>
           </div>
         </div>
 

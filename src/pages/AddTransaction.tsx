@@ -1,9 +1,10 @@
-import { useState, useRef, ChangeEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef, ChangeEvent, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import { useReceiptScanner } from "@/hooks/use-receipt-scanner";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import QuickActions from "@/components/transactions/QuickActions";
 
 interface FormData {
   amount: string;
@@ -17,6 +18,7 @@ interface FormData {
 
 const AddTransactionContent = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { scan, isScanning, scanResult } = useReceiptScanner();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -33,6 +35,21 @@ const AddTransactionContent = () => {
     tags: '',
     notes: '',
   });
+
+  // Pre-fill form from scanned data if passed via navigation
+  useEffect(() => {
+    const scannedData = location.state?.scannedData;
+    if (scannedData) {
+      setFormData(prev => ({
+        ...prev,
+        amount: scannedData.total_amount?.toString() || prev.amount,
+        merchant: scannedData.merchant_name || prev.merchant,
+        category: scannedData.category || prev.category,
+        date: scannedData.date || prev.date,
+        paymentMethod: scannedData.payment_method || prev.paymentMethod,
+      }));
+    }
+  }, [location.state]);
 
   const handleBack = () => {
     navigate(-1);
@@ -92,6 +109,8 @@ const AddTransactionContent = () => {
         return;
       }
 
+      const receiptData = scanResult?.extracted_data || location.state?.receiptData?.extracted_data || null;
+
       const { error } = await supabase.from('transactions').insert({
         user_id: user.id,
         amount: parseFloat(formData.amount),
@@ -103,7 +122,7 @@ const AddTransactionContent = () => {
         tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
         description: formData.notes,
         is_recurring: isRecurring,
-        receipt_data: scanResult?.extracted_data || null,
+        receipt_data: receiptData,
       });
 
       if (error) throw error;
@@ -142,7 +161,7 @@ const AddTransactionContent = () => {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.pdf"
         capture="environment"
         className="hidden"
         onChange={handleFileSelect}
@@ -301,7 +320,7 @@ const AddTransactionContent = () => {
             </button>
           </div>
 
-          {scanResult?.success && (
+          {(scanResult?.success || location.state?.scannedData) && (
             <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
               <div className="flex items-center gap-2 text-green-700 text-sm font-medium">
                 <i className="fas fa-check-circle"></i>
@@ -313,7 +332,7 @@ const AddTransactionContent = () => {
           <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 border border-primary/20">
             <div className="flex items-center gap-2 text-xs text-gray-600">
               <i className="fas fa-info-circle text-primary"></i>
-              <span>OCR will auto-extract merchant, amount, date & tax details with visual grounding</span>
+              <span>OCR will auto-extract merchant, amount, date & tax details</span>
             </div>
           </div>
         </div>
@@ -454,30 +473,8 @@ const MobileAddTransaction = () => {
 };
 
 const DesktopAddTransaction = () => {
-  const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { scan, isScanning } = useReceiptScanner();
-
-  const handleScanReceipt = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileSelect = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      await scan(file);
-    }
-  };
-
   return (
     <ResponsiveLayout variant="app" showSidebar={true} mobileContent={<MobileAddTransaction />}>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFileSelect}
-      />
       <div className="max-w-4xl">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Add Transaction</h1>
@@ -487,63 +484,7 @@ const DesktopAddTransaction = () => {
         {/* Quick Actions Section */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-4 gap-4">
-            <button 
-              onClick={handleScanReceipt}
-              disabled={isScanning}
-              className="flex flex-col items-center gap-3 p-5 bg-gradient-to-br from-primary/5 to-teal-50 hover:from-primary/10 hover:to-teal-100 rounded-xl border border-primary/20 hover:border-primary/40 transition-all group disabled:opacity-50"
-            >
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-teal-600 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                <i className={`fas ${isScanning ? 'fa-spinner fa-spin' : 'fa-camera'} text-white text-xl`}></i>
-              </div>
-              <div className="text-center">
-                <div className="text-sm font-semibold text-gray-900">Scan Receipt</div>
-                <div className="text-xs text-gray-500">AI-powered</div>
-              </div>
-            </button>
-
-            <button 
-              onClick={() => navigate('/add-transaction')}
-              className="flex flex-col items-center gap-3 p-5 bg-white hover:bg-blue-50/50 rounded-xl border border-gray-200 hover:border-blue-200 transition-all group"
-            >
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                <i className="fas fa-file-upload text-blue-600 text-xl"></i>
-              </div>
-              <div className="text-center">
-                <div className="text-sm font-semibold text-gray-900">Upload Statement</div>
-                <div className="text-xs text-gray-500">CSV, PDF, OFX</div>
-              </div>
-            </button>
-
-            <button 
-              onClick={() => {
-                const amountInput = document.querySelector('input[type="number"]') as HTMLInputElement;
-                amountInput?.focus();
-              }}
-              className="flex flex-col items-center gap-3 p-5 bg-white hover:bg-purple-50/50 rounded-xl border border-gray-200 hover:border-purple-200 transition-all group"
-            >
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                <i className="fas fa-plus text-purple-600 text-xl"></i>
-              </div>
-              <div className="text-center">
-                <div className="text-sm font-semibold text-gray-900">Add Manually</div>
-                <div className="text-xs text-gray-500">Quick entry</div>
-              </div>
-            </button>
-
-            <button 
-              onClick={() => navigate('/insight')}
-              className="flex flex-col items-center gap-3 p-5 bg-white hover:bg-amber-50/50 rounded-xl border border-gray-200 hover:border-amber-200 transition-all group"
-            >
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                <i className="fas fa-bullseye text-amber-600 text-xl"></i>
-              </div>
-              <div className="text-center">
-                <div className="text-sm font-semibold text-gray-900">Set Budget</div>
-                <div className="text-xs text-gray-500">New goal</div>
-              </div>
-            </button>
-          </div>
+          <QuickActions variant="grid" />
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden">

@@ -1,7 +1,9 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import { useMonthlyTransactions } from "@/hooks/use-transactions";
 
 const DesktopSidebar = () => {
   const navigate = useNavigate();
+  const { summary } = useMonthlyTransactions();
   
   const navItems = [
     { path: '/dashboard', icon: 'fa-home', label: 'Dashboard' },
@@ -12,16 +14,18 @@ const DesktopSidebar = () => {
     { path: '/setting', icon: 'fa-cog', label: 'Settings' },
   ];
 
+  const savingsAmount = summary.netBalance > 0 ? summary.netBalance : 0;
+
   return (
     <aside className="fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-gray-100 z-40 overflow-y-auto">
       <div className="p-4">
-        {/* Quick Stats */}
+        {/* Quick Stats - Real Data */}
         <div className="bg-gradient-to-br from-primary/10 to-teal-50 rounded-xl p-4 mb-6">
-          <div className="text-xs text-gray-600 font-medium mb-1">This Month's Savings</div>
-          <div className="text-2xl font-bold text-gray-900">$1,442</div>
+          <div className="text-xs text-gray-600 font-medium mb-1">This Month's Balance</div>
+          <div className="text-2xl font-bold text-gray-900">${savingsAmount.toFixed(0)}</div>
           <div className="flex items-center gap-1 mt-1">
-            <i className="fas fa-arrow-up text-xs text-primary"></i>
-            <span className="text-xs text-primary font-semibold">12.5% vs last month</span>
+            <i className={`fas ${summary.savingsRate >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'} text-xs text-primary`}></i>
+            <span className="text-xs text-primary font-semibold">{Math.abs(summary.savingsRate).toFixed(1)}% savings rate</span>
           </div>
         </div>
         

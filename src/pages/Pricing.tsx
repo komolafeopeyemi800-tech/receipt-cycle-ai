@@ -8,6 +8,10 @@ const PricingContent = () => {
   const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState('yearly');
 
+  const handleSkip = () => {
+    navigate('/dashboard');
+  };
+
   return (
     <>
       {/* Hero Section */}
@@ -233,12 +237,20 @@ const PricingContent = () => {
       <div className="bg-gradient-to-br from-primary/10 to-teal-50 rounded-3xl p-12 text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">Ready to Take Control of Your Finances?</h2>
         <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">Join thousands of users who are saving money and tracking expenses smarter with Receipt Cycle.</p>
-        <button 
-          onClick={() => navigate('/signup')}
-          className="h-14 px-10 bg-gradient-to-r from-primary to-teal-600 text-white text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
-        >
-          Start Your Free Trial
-        </button>
+        <div className="flex flex-col items-center gap-4">
+          <button 
+            onClick={() => navigate('/signup')}
+            className="h-14 px-10 bg-gradient-to-r from-primary to-teal-600 text-white text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+          >
+            Start Your Free Trial
+          </button>
+          <button 
+            onClick={handleSkip}
+            className="h-12 px-8 bg-white text-gray-700 text-base font-semibold rounded-xl border border-gray-200 hover:bg-gray-50 transition-all"
+          >
+            Skip for now — explore the app
+          </button>
+        </div>
         <p className="text-sm text-gray-500 mt-4">No credit card required • Cancel anytime</p>
       </div>
 
@@ -249,6 +261,11 @@ const PricingContent = () => {
 
 const MobilePricing = () => {
   const navigate = useNavigate();
+  const [selectedPlan, setSelectedPlan] = useState('yearly');
+
+  const handleSkip = () => {
+    navigate('/dashboard');
+  };
 
   useEffect(() => {
     const planCards = document.querySelectorAll('#weekly-plan-card, #monthly-plan-card, #yearly-plan-card');
@@ -393,10 +410,16 @@ const MobilePricing = () => {
           </div>
         </div>
 
-        {/* CTA Button */}
+      {/* CTA Button */}
         <div className="px-6 pb-8">
           <button className="w-full h-14 bg-gradient-to-r from-primary to-teal-600 text-white text-lg font-bold rounded-2xl shadow-xl">
             Continue
+          </button>
+          <button 
+            onClick={handleSkip}
+            className="w-full h-12 mt-3 bg-gray-100 text-gray-700 text-base font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+          >
+            Skip for now
           </button>
           <p className="text-center text-xs text-gray-500 mt-3">Cancel anytime • Secure payment</p>
         </div>

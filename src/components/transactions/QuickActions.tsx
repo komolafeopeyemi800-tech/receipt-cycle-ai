@@ -2,6 +2,7 @@ import { useRef, ChangeEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useReceiptScanner } from '@/hooks/use-receipt-scanner';
 import { useToast } from '@/hooks/use-toast';
+import { useScreenSize } from '@/hooks/use-screen-size';
 import { supabase } from '@/integrations/supabase/client';
 
 interface QuickActionsProps {
@@ -13,12 +14,19 @@ export const QuickActions = ({ variant = 'horizontal', onScanComplete }: QuickAc
   const navigate = useNavigate();
   const { toast } = useToast();
   const { scan, isScanning } = useReceiptScanner();
-  const receiptInputRef = useRef<HTMLInputElement>(null);
+  const { isMobile, isTablet, isDesktop } = useScreenSize();
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const statementInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  // On mobile/tablet, open camera directly. On desktop, open file picker
   const handleScanReceipt = () => {
-    receiptInputRef.current?.click();
+    if (isMobile || isTablet) {
+      cameraInputRef.current?.click();
+    } else {
+      fileInputRef.current?.click();
+    }
   };
 
   const handleUploadStatement = () => {
@@ -175,11 +183,20 @@ export const QuickActions = ({ variant = 'horizontal', onScanComplete }: QuickAc
   if (variant === 'grid') {
     return (
       <>
+        {/* Camera input for mobile/tablet - opens camera directly */}
         <input
-          ref={receiptInputRef}
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={handleReceiptSelect}
+        />
+        {/* File input for desktop - file picker */}
+        <input
+          ref={fileInputRef}
           type="file"
           accept="image/*,.pdf"
-          capture="environment"
           className="hidden"
           onChange={handleReceiptSelect}
         />
@@ -215,11 +232,20 @@ export const QuickActions = ({ variant = 'horizontal', onScanComplete }: QuickAc
   // Horizontal scrollable variant (for mobile)
   return (
     <>
+      {/* Camera input for mobile/tablet - opens camera directly */}
       <input
-        ref={receiptInputRef}
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleReceiptSelect}
+      />
+      {/* File input for desktop - file picker */}
+      <input
+        ref={fileInputRef}
         type="file"
         accept="image/*,.pdf"
-        capture="environment"
         className="hidden"
         onChange={handleReceiptSelect}
       />

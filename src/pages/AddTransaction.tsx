@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import { useReceiptScanner } from "@/hooks/use-receipt-scanner";
 import { useToast } from "@/hooks/use-toast";
+import { useScreenSize } from "@/hooks/use-screen-size";
 import { supabase } from "@/integrations/supabase/client";
 import QuickActions from "@/components/transactions/QuickActions";
 
@@ -21,11 +22,14 @@ const AddTransactionContent = () => {
   const location = useLocation();
   const { toast } = useToast();
   const { scan, isScanning, scanResult } = useReceiptScanner();
+  const { isMobile, isTablet, isDesktop } = useScreenSize();
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [transactionType, setTransactionType] = useState<'expense' | 'income'>('expense');
   const [isRecurring, setIsRecurring] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasScannedData, setHasScannedData] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     amount: '',
     merchant: '',
@@ -48,6 +52,18 @@ const AddTransactionContent = () => {
         date: scannedData.date || prev.date,
         paymentMethod: scannedData.payment_method || prev.paymentMethod,
       }));
+      setHasScannedData(true);
+      
+      // If there are items in the receipt, add them to notes
+      if (scannedData.items && scannedData.items.length > 0) {
+        const itemsList = scannedData.items
+          .map((item: any) => `${item.name}: $${item.price}`)
+          .join('\n');
+        setFormData(prev => ({
+          ...prev,
+          notes: itemsList,
+        }));
+      }
     }
   }, [location.state]);
 
@@ -71,13 +87,41 @@ const AddTransactionContent = () => {
           date: data.date || prev.date,
           paymentMethod: data.payment_method || prev.paymentMethod,
         }));
+        setHasScannedData(true);
+        
+        // If there are items, add to notes
+        if (data.items && data.items.length > 0) {
+          const itemsList = data.items
+            .map((item: any) => `${item.name}: $${item.price}`)
+            .join('\n');
+          setFormData(prev => ({
+            ...prev,
+            notes: itemsList,
+          }));
+        }
+
+        toast({
+          title: 'Receipt scanned!',
+          description: 'Form fields have been auto-filled from your receipt.',
+        });
       }
     } catch (error) {
       console.error('Scan failed:', error);
     }
+    // Reset input
+    if (e.target) e.target.value = '';
   };
 
+  // Mobile/tablet opens camera, desktop opens file picker
   const handleScanReceipt = () => {
+    if (isMobile || isTablet) {
+      cameraInputRef.current?.click();
+    } else {
+      fileInputRef.current?.click();
+    }
+  };
+
+  const handleGalleryUpload = () => {
     fileInputRef.current?.click();
   };
 
@@ -158,11 +202,20 @@ const AddTransactionContent = () => {
 
   return (
     <div id="root-container" className="pt-10 min-h-screen flex flex-col pb-20">
+      {/* Camera input for mobile/tablet - opens camera directly */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+      {/* File input for desktop/gallery - file picker */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*,.pdf"
-        capture="environment"
         className="hidden"
         onChange={handleFileSelect}
       />
@@ -298,7 +351,7 @@ const AddTransactionContent = () => {
             </button>
             
             <button 
-              onClick={handleScanReceipt}
+              onClick={handleGalleryUpload}
               disabled={isScanning}
               className="flex flex-col items-center gap-2 p-4 bg-white rounded-2xl shadow-md shadow-gray-200/40 border border-gray-100 active:scale-95 transition-transform disabled:opacity-50"
             >
@@ -309,7 +362,7 @@ const AddTransactionContent = () => {
             </button>
             
             <button 
-              onClick={handleScanReceipt}
+              onClick={handleGalleryUpload}
               disabled={isScanning}
               className="flex flex-col items-center gap-2 p-4 bg-white rounded-2xl shadow-md shadow-gray-200/40 border border-gray-100 active:scale-95 transition-transform disabled:opacity-50"
             >
@@ -320,11 +373,11 @@ const AddTransactionContent = () => {
             </button>
           </div>
 
-          {(scanResult?.success || location.state?.scannedData) && (
+          {(hasScannedData || scanResult?.success || location.state?.scannedData) && (
             <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
               <div className="flex items-center gap-2 text-green-700 text-sm font-medium">
                 <i className="fas fa-check-circle"></i>
-                <span>Receipt scanned successfully! Data auto-filled.</span>
+                <span>Receipt scanned successfully! Form fields have been auto-filled.</span>
               </div>
             </div>
           )}
@@ -332,7 +385,7 @@ const AddTransactionContent = () => {
           <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 border border-primary/20">
             <div className="flex items-center gap-2 text-xs text-gray-600">
               <i className="fas fa-info-circle text-primary"></i>
-              <span>OCR will auto-extract merchant, amount, date & tax details</span>
+              <span>{isMobile || isTablet ? 'Tap "Scan Receipt" to open camera and auto-extract data' : 'Upload a receipt image or PDF and AI will extract the data automatically'}</span>
             </div>
           </div>
         </div>

@@ -397,17 +397,23 @@ const AddTransactionContent = () => {
               <div className="flex gap-3">
                 {/* Receipt thumbnail */}
                 {receiptPreview && (
-                  <div className="relative w-20 h-28 flex-shrink-0 rounded-xl overflow-hidden border border-border shadow-sm">
+                  <button 
+                    onClick={() => setShowReceiptModal(true)}
+                    className="relative w-20 h-28 flex-shrink-0 rounded-xl overflow-hidden border border-border shadow-sm hover:ring-2 hover:ring-primary/40 transition-all cursor-pointer group"
+                  >
                     <img 
                       src={receiptPreview} 
                       alt="Scanned receipt" 
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent group-hover:from-black/50" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <i className="fas fa-expand text-white text-sm"></i>
+                    </div>
                     <div className="absolute bottom-1 left-1 right-1">
                       <span className="text-[9px] text-white font-medium truncate block">{receiptFileName}</span>
                     </div>
-                  </div>
+                  </button>
                 )}
                 
                 {/* Extracted data summary */}

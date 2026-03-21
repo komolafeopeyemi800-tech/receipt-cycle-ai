@@ -77,6 +77,13 @@ const AddTransactionContent = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Create preview URL for images
+    if (file.type.startsWith('image/')) {
+      const previewUrl = URL.createObjectURL(file);
+      setReceiptPreview(previewUrl);
+    }
+    setReceiptFileName(file.name);
+
     try {
       const result = await scan(file);
       if (result.success && result.extracted_data) {
@@ -91,7 +98,6 @@ const AddTransactionContent = () => {
         }));
         setHasScannedData(true);
         
-        // If there are items, add to notes
         if (data.items && data.items.length > 0) {
           const itemsList = data.items
             .map((item: any) => `${item.name}: $${item.price}`)
@@ -110,7 +116,6 @@ const AddTransactionContent = () => {
     } catch (error) {
       console.error('Scan failed:', error);
     }
-    // Reset input
     if (e.target) e.target.value = '';
   };
 

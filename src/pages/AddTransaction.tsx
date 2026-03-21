@@ -31,6 +31,7 @@ const AddTransactionContent = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [receiptFileName, setReceiptFileName] = useState<string | null>(null);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [hasScannedData, setHasScannedData] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     amount: '',

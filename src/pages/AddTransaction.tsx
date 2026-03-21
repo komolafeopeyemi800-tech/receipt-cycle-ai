@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useScreenSize } from "@/hooks/use-screen-size";
 import { supabase } from "@/integrations/supabase/client";
 import QuickActions from "@/components/transactions/QuickActions";
+import ReceiptModal from "@/components/transactions/ReceiptModal";
 
 interface FormData {
   amount: string;

@@ -31,6 +31,7 @@ const AddTransactionContent = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [receiptFileName, setReceiptFileName] = useState<string | null>(null);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [hasScannedData, setHasScannedData] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     amount: '',
@@ -396,17 +397,23 @@ const AddTransactionContent = () => {
               <div className="flex gap-3">
                 {/* Receipt thumbnail */}
                 {receiptPreview && (
-                  <div className="relative w-20 h-28 flex-shrink-0 rounded-xl overflow-hidden border border-border shadow-sm">
+                  <button 
+                    onClick={() => setShowReceiptModal(true)}
+                    className="relative w-20 h-28 flex-shrink-0 rounded-xl overflow-hidden border border-border shadow-sm hover:ring-2 hover:ring-primary/40 transition-all cursor-pointer group"
+                  >
                     <img 
                       src={receiptPreview} 
                       alt="Scanned receipt" 
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent group-hover:from-black/50" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <i className="fas fa-expand text-white text-sm"></i>
+                    </div>
                     <div className="absolute bottom-1 left-1 right-1">
                       <span className="text-[9px] text-white font-medium truncate block">{receiptFileName}</span>
                     </div>
-                  </div>
+                  </button>
                 )}
                 
                 {/* Extracted data summary */}
@@ -535,6 +542,32 @@ const AddTransactionContent = () => {
       </div>
 
       <div id="bottom-safe-area" className="h-4"></div>
+
+      {/* Full-screen receipt modal */}
+      {showReceiptModal && receiptPreview && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setShowReceiptModal(false)}
+        >
+          <button 
+            onClick={() => setShowReceiptModal(false)}
+            className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors z-10"
+          >
+            <i className="fas fa-times text-lg"></i>
+          </button>
+          <img 
+            src={receiptPreview} 
+            alt="Receipt full view" 
+            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          {receiptFileName && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-sm text-white text-xs font-medium px-4 py-2 rounded-full">
+              {receiptFileName}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

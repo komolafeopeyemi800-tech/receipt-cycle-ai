@@ -381,10 +381,62 @@ const AddTransactionContent = () => {
           </div>
 
           {(hasScannedData || scanResult?.success || location.state?.scannedData) && (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
-              <div className="flex items-center gap-2 text-green-700 text-sm font-medium">
+            <div className="bg-muted/50 border border-primary/20 rounded-2xl p-4 mb-4 space-y-3">
+              <div className="flex items-center gap-2 text-green-700 text-sm font-semibold">
                 <i className="fas fa-check-circle"></i>
-                <span>Receipt scanned successfully! Form fields have been auto-filled.</span>
+                <span>Receipt scanned & auto-filled</span>
+                <button 
+                  onClick={() => { setReceiptPreview(null); setReceiptFileName(null); setHasScannedData(false); }}
+                  className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <i className="fas fa-times text-xs"></i>
+                </button>
+              </div>
+              
+              <div className="flex gap-3">
+                {/* Receipt thumbnail */}
+                {receiptPreview && (
+                  <div className="relative w-20 h-28 flex-shrink-0 rounded-xl overflow-hidden border border-border shadow-sm">
+                    <img 
+                      src={receiptPreview} 
+                      alt="Scanned receipt" 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                    <div className="absolute bottom-1 left-1 right-1">
+                      <span className="text-[9px] text-white font-medium truncate block">{receiptFileName}</span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Extracted data summary */}
+                <div className="flex-1 space-y-1.5 min-w-0">
+                  {(scanResult?.extracted_data?.merchant_name || location.state?.scannedData?.merchant_name) && (
+                    <div className="flex items-center gap-2">
+                      <i className="fas fa-store text-xs text-muted-foreground"></i>
+                      <span className="text-sm font-medium text-foreground truncate">
+                        {scanResult?.extracted_data?.merchant_name || location.state?.scannedData?.merchant_name}
+                      </span>
+                    </div>
+                  )}
+                  {formData.amount && (
+                    <div className="flex items-center gap-2">
+                      <i className="fas fa-dollar-sign text-xs text-muted-foreground"></i>
+                      <span className="text-sm font-bold text-foreground">${formData.amount}</span>
+                    </div>
+                  )}
+                  {formData.date && (
+                    <div className="flex items-center gap-2">
+                      <i className="fas fa-calendar text-xs text-muted-foreground"></i>
+                      <span className="text-xs text-muted-foreground">{formData.date}</span>
+                    </div>
+                  )}
+                  {formData.category && (
+                    <span className="inline-block text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                      {formData.category}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           )}

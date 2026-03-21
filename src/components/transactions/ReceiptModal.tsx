@@ -16,9 +16,9 @@ const ReceiptModal = ({ src, fileName, onClose }: ReceiptModalProps) => {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [translateStart, setTranslateStart] = useState({ x: 0, y: 0 });
 
-  const getDistance = (touches: TouchList) => {
-    const dx = touches[0].clientX - touches[1].clientX;
-    const dy = touches[0].clientY - touches[1].clientY;
+  const getDistance = (t0: React.Touch, t1: React.Touch) => {
+    const dx = t0.clientX - t1.clientX;
+    const dy = t0.clientY - t1.clientY;
     return Math.sqrt(dx * dx + dy * dy);
   };
 

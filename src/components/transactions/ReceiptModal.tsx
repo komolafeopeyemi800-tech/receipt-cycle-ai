@@ -25,7 +25,7 @@ const ReceiptModal = ({ src, fileName, onClose }: ReceiptModalProps) => {
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       e.preventDefault();
-      setInitialDistance(getDistance(e.touches));
+      setInitialDistance(getDistance(e.touches[0], e.touches[1]));
       setInitialScale(scale);
     } else if (e.touches.length === 1 && scale > 1) {
       setIsDragging(true);

@@ -37,7 +37,7 @@ const ReceiptModal = ({ src, fileName, onClose }: ReceiptModalProps) => {
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2 && initialDistance !== null) {
       e.preventDefault();
-      const newDist = getDistance(e.touches);
+      const newDist = getDistance(e.touches[0], e.touches[1]);
       const newScale = Math.min(Math.max(initialScale * (newDist / initialDistance), 1), 5);
       setScale(newScale);
       if (newScale === 1) setTranslate({ x: 0, y: 0 });

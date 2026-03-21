@@ -29,6 +29,8 @@ const AddTransactionContent = () => {
   const [transactionType, setTransactionType] = useState<'expense' | 'income'>('expense');
   const [isRecurring, setIsRecurring] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [receiptFileName, setReceiptFileName] = useState<string | null>(null);
   const [hasScannedData, setHasScannedData] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     amount: '',

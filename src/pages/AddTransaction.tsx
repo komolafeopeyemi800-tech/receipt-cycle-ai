@@ -543,30 +543,12 @@ const AddTransactionContent = () => {
 
       <div id="bottom-safe-area" className="h-4"></div>
 
-      {/* Full-screen receipt modal */}
       {showReceiptModal && receiptPreview && (
-        <div 
-          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
-          onClick={() => setShowReceiptModal(false)}
-        >
-          <button 
-            onClick={() => setShowReceiptModal(false)}
-            className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors z-10"
-          >
-            <i className="fas fa-times text-lg"></i>
-          </button>
-          <img 
-            src={receiptPreview} 
-            alt="Receipt full view" 
-            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          />
-          {receiptFileName && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-sm text-white text-xs font-medium px-4 py-2 rounded-full">
-              {receiptFileName}
-            </div>
-          )}
-        </div>
+        <ReceiptModal 
+          src={receiptPreview} 
+          fileName={receiptFileName} 
+          onClose={() => setShowReceiptModal(false)} 
+        />
       )}
     </div>
   );

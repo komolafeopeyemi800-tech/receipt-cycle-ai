@@ -16,6 +16,9 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Shared Convex backend (lives under apps/mobile per monorepo layout)
+      "@convex": path.resolve(__dirname, "./apps/mobile/convex"),
+      "@mobile-lib": path.resolve(__dirname, "./apps/mobile/src/lib"),
     },
   },
 }));

@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "Receipt Cycle",
+    "slug": "receipt-cycle-mobile",
+    "version": "1.0.0",
+    "scheme": "receiptcycle",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIFileSharingEnabled": true,
+        "LSSupportsOpeningDocumentsInPlace": true
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA"
+      ],
+      "package": "com.anonymous.receiptcyclemobile"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Receipt Cycle to scan receipts with your camera.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      "expo-secure-store",
+      "@react-native-community/datetimepicker",
+      "expo-web-browser",
+      "expo-background-fetch"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "679b7af6-1ce5-4452-9056-6f935e390189"
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+# EAS upload ignore list (uses .gitignore syntax)
+# Keep this minimal and focused on files that break Windows archive uploads.
+
+.agents/
+.agent/
+.agents.disabled/
+.agent.disabled/
+.claude/
+
+# Local dev / editor artifacts
+.expo/
+.expo-web-test/
+node_modules/
+*.log

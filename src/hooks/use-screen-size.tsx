@@ -5,7 +5,8 @@ export const useScreenSize = () => {
 
   useEffect(() => {
     const updateSize = () => {
-      if (window.innerWidth >= 1024) {
+      // Keep SaaS desktop chrome visible on common laptop widths and zoom levels.
+      if (window.innerWidth >= 900) {
         setScreenSize('desktop');
       } else if (window.innerWidth >= 768) {
         setScreenSize('tablet');

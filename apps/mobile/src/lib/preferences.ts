@@ -1,0 +1,98 @@
+/** AsyncStorage keys for regional & lists (also mirrored to Convex when signed in) */
+export const PREF_KEYS = {
+  currency: "pref_currency_iso",
+  dateFormat: "pref_date_format",
+  locationsJson: "pref_locations_json",
+  merchantsJson: "pref_merchants_json",
+} as const;
+
+/** Feature toggles from Settings (mirrored to Convex when signed in) */
+export const SETTINGS_STORAGE_KEYS = {
+  reimbursements: "settings_reimbursements",
+  txnNumber: "settings_txn_number",
+  scanPayment: "settings_scan_payment",
+  requirePay: "settings_require_pay",
+  requireNotes: "settings_require_notes",
+} as const;
+
+export type DateFormatId = "iso" | "us" | "eu";
+
+export const CURRENCY_OPTIONS = [
+  { code: "USD", label: "US Dollar ($)" },
+  { code: "EUR", label: "Euro (€)" },
+  { code: "GBP", label: "British Pound (£)" },
+  { code: "JPY", label: "Japanese Yen (¥)" },
+  { code: "CAD", label: "Canadian Dollar" },
+  { code: "AUD", label: "Australian Dollar" },
+  { code: "INR", label: "Indian Rupee (₹)" },
+  { code: "MXN", label: "Mexican Peso" },
+  { code: "BRL", label: "Brazilian Real" },
+  { code: "CHF", label: "Swiss Franc" },
+] as const;
+
+export const DATE_FORMAT_OPTIONS: { id: DateFormatId; label: string }[] = [
+  { id: "iso", label: "YYYY-MM-DD (ISO)" },
+  { id: "us", label: "MM/DD/YYYY (US)" },
+  { id: "eu", label: "DD/MM/YYYY (EU)" },
+];
+
+export type SavedLocation = { id: string; label: string; address: string };
+
+export function formatMoneyAmount(amount: number, currencyCode: string): string {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: currencyCode.length === 3 ? currencyCode : "USD",
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return `${currencyCode} ${amount.toFixed(2)}`;
+  }
+}
+
+/**
+ * Compact currency for tight headers (large amounts stay on one line).
+ * Uses `notation: "compact"` when supported; otherwise M/K/B style with currency symbol.
+ */
+export function formatMoneyCompact(amount: number, currencyCode: string): string {
+  const code = currencyCode.length === 3 ? currencyCode : "USD";
+  try {
+    const nf = new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: code,
+      notation: "compact",
+      maximumFractionDigits: 2,
+    });
+    return nf.format(amount);
+  } catch {
+    /* Hermes / older engines */
+  }
+  const abs = Math.abs(amount);
+  const sign = amount < 0 ? "-" : "";
+  let core: string;
+  if (abs >= 1e9) core = `${(abs / 1e9).toFixed(2)}B`;
+  else if (abs >= 1e6) core = `${(abs / 1e6).toFixed(2)}M`;
+  else if (abs >= 1e5) core = `${(abs / 1e3).toFixed(1)}K`;
+  else return formatMoneyAmount(amount, code);
+  try {
+    const sym =
+      new Intl.NumberFormat(undefined, { style: "currency", currency: code, currencyDisplay: "narrowSymbol" })
+        .formatToParts(0)
+        .find((p) => p.type === "currency")?.value ?? code;
+    return `${sign}${sym}${core}`;
+  } catch {
+    return `${sign}${code} ${core}`;
+  }
+}
+
+/** Format stored YYYY-MM-DD for display using user date preference */
+export function formatDateYmd(ymd: string, fmt: DateFormatId): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd.trim());
+  if (!m) return ymd;
+  const y = m[1]!;
+  const mo = m[2]!;
+  const d = m[3]!;
+  if (fmt === "iso") return `${y}-${mo}-${d}`;
+  if (fmt === "us") return `${mo}/${d}/${y}`;
+  return `${d}/${mo}/${y}`;
+}

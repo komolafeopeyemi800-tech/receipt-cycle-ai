@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export interface Transaction {
   id: string;
+  workspace?: "personal" | "business";
   amount: number;
   type: string;
   category: string;

@@ -1,4 +1,5 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useWebAuth } from "@/contexts/WebAuthContext";
 
 interface DesktopNavProps {
   variant?: 'landing' | 'app';
@@ -6,6 +7,9 @@ interface DesktopNavProps {
 
 const DesktopNav = ({ variant = 'landing' }: DesktopNavProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const inAdmin = location.pathname.startsWith("/admin");
+  const { user, signOut } = useWebAuth();
   
   if (variant === 'app') {
     return (
@@ -24,7 +28,7 @@ const DesktopNav = ({ variant = 'landing' }: DesktopNavProps) => {
             
             <nav className="flex items-center gap-1">
               <NavLink 
-                to="/dashboard" 
+                to={inAdmin ? "/admin" : "/dashboard"} 
                 className={({ isActive }) => 
                   `px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:bg-gray-50'
@@ -34,7 +38,7 @@ const DesktopNav = ({ variant = 'landing' }: DesktopNavProps) => {
                 <i className="fas fa-home mr-2"></i>Dashboard
               </NavLink>
               <NavLink 
-                to="/transaction" 
+                to={inAdmin ? "/admin" : "/transactions"} 
                 className={({ isActive }) => 
                   `px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:bg-gray-50'
@@ -44,39 +48,58 @@ const DesktopNav = ({ variant = 'landing' }: DesktopNavProps) => {
                 <i className="fas fa-exchange-alt mr-2"></i>Transactions
               </NavLink>
               <NavLink 
-                to="/insight" 
+                to={inAdmin ? "/admin" : "/insights"} 
                 className={({ isActive }) => 
                   `px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:bg-gray-50'
                   }`
                 }
               >
-                <i className="fas fa-chart-line mr-2"></i>Insights
+                <i className="fas fa-chart-line mr-2"></i>Analysis
               </NavLink>
             </nav>
           </div>
           
           <div className="flex items-center gap-3">
             <button 
-              onClick={() => navigate('/add-transaction')}
+              type="button"
+              onClick={() => navigate(inAdmin ? '/admin' : '/transactions#add-transaction')}
               className="h-10 px-4 bg-gradient-to-r from-primary to-teal-600 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2"
             >
               <i className="fas fa-plus"></i>
               <span>Add Transaction</span>
             </button>
             <button 
-              onClick={() => navigate('/notification')}
+              type="button"
+              onClick={() => navigate(inAdmin ? '/admin' : '/settings')}
               className="relative w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              title="Notifications"
+              aria-label="Notifications"
             >
               <i className="fas fa-bell text-gray-600"></i>
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white">3</span>
             </button>
-            <button 
-              onClick={() => navigate('/setting')}
-              className="w-10 h-10 rounded-lg overflow-hidden border-2 border-gray-100 hover:border-primary transition-colors"
+            <button
+              type="button"
+              onClick={() => navigate(inAdmin ? '/admin' : '/settings')}
+              className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-gray-100 bg-gray-50 text-sm font-semibold text-primary hover:border-primary transition-colors"
+              title="Settings"
             >
-              <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg" alt="Profile" className="w-full h-full object-cover" />
+              {user?.name?.trim()?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? (
+                <i className="fas fa-user text-gray-500" />
+              )}
             </button>
+            {user ? (
+              <button
+                type="button"
+                onClick={async () => {
+                  await signOut();
+                  navigate("/signin", { replace: true });
+                }}
+                className="h-10 px-3 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                Sign out
+              </button>
+            ) : null}
           </div>
         </div>
       </header>

@@ -1,0 +1,6 @@
+# Monorepo EAS ignore rules
+apps/mobile/.agents/
+apps/mobile/.agent/
+apps/mobile/.agents.disabled/
+apps/mobile/.agent.disabled/
+apps/mobile/.claude/

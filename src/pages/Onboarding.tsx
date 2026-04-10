@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
+import {
+  SETTINGS_STORAGE_KEYS,
+  VOICE_INPUT_LANGUAGE_OPTIONS,
+  normalizeVoiceInputLanguage,
+} from "@mobile-lib/preferences";
 
 const OnboardingContent = () => {
   const navigate = useNavigate();
@@ -34,6 +39,12 @@ const OnboardingContent = () => {
   };
 
   const handleFinish = () => {
+    const voiceLang = normalizeVoiceInputLanguage(voiceInputLanguage);
+    try {
+      localStorage.setItem(SETTINGS_STORAGE_KEYS.voiceInputLanguage, voiceLang);
+    } catch {
+      /* ignore */
+    }
     // Store onboarding data in localStorage for later use in Settings
     const onboardingData = {
       currency: selectedCurrency,
@@ -42,6 +53,7 @@ const OnboardingContent = () => {
       usecases: selectedUsecases,
       country: selectedCountry,
       industry: selectedIndustry,
+      voiceInputLanguage: voiceLang,
       completed: true,
       completedAt: new Date().toISOString()
     };
@@ -123,6 +135,29 @@ const OnboardingContent = () => {
                 <option value="MXN">🇲🇽 MXN - Mexican Peso</option>
                 <option value="BRL">🇧🇷 BRL - Brazilian Real</option>
                 <option value="ZAR">🇿🇦 ZAR - South African Rand</option>
+              </select>
+              <i className="fas fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+            </div>
+          </div>
+        </div>
+
+        <div id="voice-language-selector-block" className="px-6 pb-4">
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100/50 p-4">
+            <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Voice input language</label>
+            <p className="text-xs text-gray-600 mb-3 leading-relaxed">
+              Used when you speak expenses or use the finance coach. Pick a language or auto-detect.
+            </p>
+            <div className="relative">
+              <select
+                value={voiceInputLanguage}
+                onChange={(e) => setVoiceInputLanguage(e.target.value)}
+                className="w-full h-14 bg-white rounded-xl border-2 border-gray-200 px-4 text-base font-semibold text-gray-900 appearance-none focus:border-primary focus:outline-none transition-colors cursor-pointer"
+              >
+                {VOICE_INPUT_LANGUAGE_OPTIONS.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
               </select>
               <i className="fas fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
             </div>

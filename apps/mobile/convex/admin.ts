@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { action, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { LIFETIME_PRO_EMAILS } from "./_subscriptionLogic";
 
 type AppConfigDoc = {
   _id: string;
@@ -36,7 +37,6 @@ function getAdminSecret() {
 }
 
 function getAllowedAdminEmails() {
-  const fixed = "komolafebamidele@rocketmail.com";
   const fromEnv = process.env.ADMIN_DASHBOARD_ADMIN_EMAILS?.trim() ?? "";
   const list = fromEnv
     ? fromEnv
@@ -44,7 +44,10 @@ function getAllowedAdminEmails() {
         .map((x) => x.trim().toLowerCase())
         .filter(Boolean)
     : [];
-  if (!list.includes(fixed)) list.push(fixed);
+  for (const e of LIFETIME_PRO_EMAILS) {
+    const n = e.trim().toLowerCase();
+    if (!list.includes(n)) list.push(n);
+  }
   return list;
 }
 
@@ -318,6 +321,31 @@ export const updateConfig = mutation({
       createdAt: Date.now(),
     });
 
+    return { ok: true as const };
+  },
+});
+
+/** Grant or revoke Pro (e.g. after Whop webhook, or testing). */
+export const setUserProSubscription = mutation({
+  args: {
+    secret: v.string(),
+    adminEmail: v.string(),
+    userId: v.id("users"),
+    proSubscriptionActive: v.boolean(),
+    actor: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    requireAdmin(args.secret, args.adminEmail);
+    await ctx.db.patch(args.userId, { proSubscriptionActive: args.proSubscriptionActive });
+    await ctx.db.insert("adminAuditLogs", {
+      action: "subscription.set_pro",
+      actor: args.actor ?? args.adminEmail,
+      details: JSON.stringify({
+        userId: args.userId,
+        proSubscriptionActive: args.proSubscriptionActive,
+      }),
+      createdAt: Date.now(),
+    });
     return { ok: true as const };
   },
 });

@@ -9,6 +9,7 @@
  */
 
 import type * as _ocrEnv from "../_ocrEnv.js";
+import type * as _subscriptionLogic from "../_subscriptionLogic.js";
 import type * as accounts from "../accounts.js";
 import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
@@ -19,8 +20,10 @@ import type * as moneyLeak from "../moneyLeak.js";
 import type * as ocrHealth from "../ocrHealth.js";
 import type * as pdfExtract from "../pdfExtract.js";
 import type * as scanReceipt from "../scanReceipt.js";
+import type * as subscription from "../subscription.js";
 import type * as transactions from "../transactions.js";
 import type * as userPreferences from "../userPreferences.js";
+import type * as voiceFinance from "../voiceFinance.js";
 import type * as workspaces from "../workspaces.js";
 
 import type {
@@ -31,6 +34,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   _ocrEnv: typeof _ocrEnv;
+  _subscriptionLogic: typeof _subscriptionLogic;
   accounts: typeof accounts;
   admin: typeof admin;
   auth: typeof auth;
@@ -41,8 +45,10 @@ declare const fullApi: ApiFromModules<{
   ocrHealth: typeof ocrHealth;
   pdfExtract: typeof pdfExtract;
   scanReceipt: typeof scanReceipt;
+  subscription: typeof subscription;
   transactions: typeof transactions;
   userPreferences: typeof userPreferences;
+  voiceFinance: typeof voiceFinance;
   workspaces: typeof workspaces;
 }>;
 

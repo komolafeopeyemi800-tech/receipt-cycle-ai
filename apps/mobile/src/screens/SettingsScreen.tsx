@@ -11,12 +11,15 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useAuth } from "../contexts/AuthContext";
 import { usePreferences } from "../contexts/PreferencesContext";
+import { useSubscriptionState } from "../hooks/useSubscriptionState";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
+import { userFacingErrorFromUnknown } from "../lib/userFacingErrors";
 
 export function SettingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user, signOut } = useAuth();
+  const sub = useSubscriptionState();
   const {
     reimbursements: reimb,
     setReimbursements: setReimb,
@@ -29,7 +32,10 @@ export function SettingsScreen() {
     requireNotes: reqNotes,
     setRequireNotes: setReqNotes,
   } = usePreferences();
-  const backupRows = useQuery(api.transactions.exportForBackup, user?.id ? { userId: user.id } : "skip");
+  const backupRows = useQuery(
+    api.transactions.exportForBackup,
+    user?.id && sub?.canExportCsv ? { userId: user.id } : "skip",
+  );
   const runtime = useQuery(api.admin.publicConfig, {});
 
   function csvValue(v: unknown): string {
@@ -72,6 +78,17 @@ export function SettingsScreen() {
   async function exportCsvDownload() {
     if (runtime?.exportEnabled === false) {
       Alert.alert("Export disabled", "Export is currently disabled by admin.");
+      return;
+    }
+    if (sub && !sub.canExportCsv) {
+      Alert.alert(
+        "Pro feature",
+        "CSV export is included with Pro. Upgrade to download all your transactions.",
+        [
+          { text: "Not now", style: "cancel" },
+          { text: "View plans", onPress: () => navigation.navigate("Pricing") },
+        ],
+      );
       return;
     }
     if (!user?.id) {
@@ -131,7 +148,7 @@ export function SettingsScreen() {
         ],
       );
     } catch (e) {
-      Alert.alert("Export failed", e instanceof Error ? e.message : "Could not write the CSV file.");
+      Alert.alert("Export failed", userFacingErrorFromUnknown(e));
     }
   }
 
@@ -275,7 +292,13 @@ export function SettingsScreen() {
           <RowNav
             icon="download-outline"
             title="Export records"
-            sub={runtime?.exportEnabled === false ? "Disabled by admin" : "Download spreadsheet with all your transactions"}
+            sub={
+              runtime?.exportEnabled === false
+                ? "Disabled by admin"
+                : sub && !sub.canExportCsv
+                  ? "Pro only — upgrade to export CSV"
+                  : "Download spreadsheet with all your transactions"
+            }
             onPress={() => void exportCsvDownload()}
           />
         </View>

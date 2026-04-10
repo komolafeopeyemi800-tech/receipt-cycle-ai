@@ -36,7 +36,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({ workspace: "personal" as const, setWorkspace, ready }),
-    [setWorkspace],
+    [setWorkspace, ready],
   );
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;

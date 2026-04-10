@@ -20,7 +20,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "../../convex/_generated/api";
 import { colors, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
+import { useAuth } from "../contexts/AuthContext";
+import { useSubscriptionState } from "../hooks/useSubscriptionState";
 import type { ScannedExtracted } from "../types/transaction";
+import { userFacingError, userFacingErrorFromUnknown } from "../lib/userFacingErrors";
 
 const bannerBlue = "rgba(37, 99, 235, 0.88)";
 const DIM = "rgba(0,0,0,0.58)";
@@ -46,6 +49,9 @@ export function ScanReceiptScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const scan = useAction(api.scanReceipt.scanFromBase64);
   const runtime = useQuery(api.admin.publicConfig, {});
+  const { token } = useAuth();
+  const subscriptionState = useSubscriptionState();
+  const scanBlocked = !token || Boolean(subscriptionState && !subscriptionState.canUseAiFeatures);
   const [torch, setTorch] = useState(false);
   const [autoCapture, setAutoCapture] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -86,7 +92,11 @@ export function ScanReceiptScreen() {
   const processBase64 = useCallback(
     async (base64: string, mime: string) => {
       try {
-        const result = await scan({ imageBase64: base64, mimeType: mime });
+        if (!token) {
+          Alert.alert("Sign in", "Sign in to scan receipts.");
+          return;
+        }
+        const result = await scan({ imageBase64: base64, mimeType: mime, sessionToken: token });
         const r = result as {
           success?: boolean;
           extracted_data?: Record<string, unknown> | null;
@@ -99,21 +109,30 @@ export function ScanReceiptScreen() {
         if (r.error || extracted == null || (typeof extracted === "object" && Object.keys(extracted).length === 0)) {
           Alert.alert(
             "Couldn't read document",
-            r.error ??
-              "No data returned. Check Convex OPENAI_API_KEY (or OpenRouter/Gemini) and EXPO_PUBLIC_CONVEX_URL. Stay on Wi‑Fi and try again.",
+            userFacingError(
+              r.error ??
+                "No data returned. Check Convex OPENAI_API_KEY (or OpenRouter/Gemini) and EXPO_PUBLIC_CONVEX_URL. Stay on Wi‑Fi and try again.",
+            ),
           );
           return;
         }
         navigation.navigate("ScanReview", { scannedData: extracted as ScannedExtracted, source: "camera" });
       } catch (e) {
-        Alert.alert("Scan failed", e instanceof Error ? e.message : "Unknown error");
+        Alert.alert("Scan failed", userFacingErrorFromUnknown(e));
       }
     },
-    [navigation, scan],
+    [navigation, scan, token],
   );
 
   const captureFromCamera = useCallback(async () => {
     if (!cameraRef.current || busyRef.current) return;
+    if (!token || (subscriptionState && !subscriptionState.canUseAiFeatures)) {
+      Alert.alert(
+        "Scanner unavailable",
+        !token ? "Sign in to scan receipts." : subscriptionState?.blockReason ?? "Upgrade to use Pro or an active trial slot.",
+      );
+      return;
+    }
     busyRef.current = true;
     setBusy(true);
     setGuidePhase("capturing");
@@ -129,14 +148,14 @@ export function ScanReceiptScreen() {
       }
       await processBase64(photo.base64, "image/jpeg");
     } catch (e) {
-      Alert.alert("Camera", e instanceof Error ? e.message : "Capture failed");
+      Alert.alert("Camera", userFacingErrorFromUnknown(e));
     } finally {
       busyRef.current = false;
       setBusy(false);
       setGuidePhase("align");
       steadyMsRef.current = 0;
     }
-  }, [processBase64]);
+  }, [processBase64, token, subscriptionState]);
 
   captureFromCameraRef.current = captureFromCamera;
 
@@ -164,7 +183,7 @@ export function ScanReceiptScreen() {
       frameNudgeSmoothRef.current = frameNudgeSmoothRef.current * 0.82 + target * 0.18;
       setFrameNudgeY(frameNudgeSmoothRef.current);
 
-      if (!autoCapture || busyRef.current) return;
+      if (!autoCapture || busyRef.current || scanBlocked) return;
       if (Date.now() < cooldownUntilRef.current) return;
 
       const p = lastAccelRef.current;
@@ -192,7 +211,7 @@ export function ScanReceiptScreen() {
       alive = false;
       sub.remove();
     };
-  }, [autoCapture, busy, permission?.granted, isFocused]);
+  }, [autoCapture, busy, permission?.granted, isFocused, scanBlocked]);
 
   const takePictureManual = useCallback(async () => {
     cooldownUntilRef.current = Date.now() + AUTO_COOLDOWN_MS;
@@ -200,6 +219,13 @@ export function ScanReceiptScreen() {
   }, [captureFromCamera]);
 
   const openGallery = useCallback(async () => {
+    if (!token || (subscriptionState && !subscriptionState.canUseAiFeatures)) {
+      Alert.alert(
+        "Scanner unavailable",
+        !token ? "Sign in to scan receipts." : subscriptionState?.blockReason ?? "Upgrade to use Pro or an active trial slot.",
+      );
+      return;
+    }
     const lib = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.78,
@@ -228,7 +254,7 @@ export function ScanReceiptScreen() {
       setBusy(false);
       setGuidePhase("align");
     }
-  }, [processBase64]);
+  }, [processBase64, token, subscriptionState]);
 
   if (Platform.OS === "web") {
     return (
@@ -288,6 +314,13 @@ export function ScanReceiptScreen() {
 
   return (
     <View style={styles.root}>
+      {scanBlocked ? (
+        <View style={[styles.blockBanner, { top: topBarH }]}>
+          <Text style={styles.blockBannerTxt}>
+            {!token ? "Sign in to scan receipts." : subscriptionState?.blockReason ?? "Upgrade to use the scanner."}
+          </Text>
+        </View>
+      ) : null}
       {isFocused ? (
         <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" enableTorch={torch} />
       ) : (
@@ -366,13 +399,13 @@ export function ScanReceiptScreen() {
       )}
 
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-        <Pressable style={styles.circleBtn} onPress={openGallery} disabled={busy}>
+        <Pressable style={styles.circleBtn} onPress={openGallery} disabled={busy || scanBlocked}>
           <Ionicons name="images-outline" size={20} color="#111" />
         </Pressable>
-        <Pressable style={styles.shutterOuter} onPress={takePictureManual} disabled={busy}>
+        <Pressable style={styles.shutterOuter} onPress={takePictureManual} disabled={busy || scanBlocked}>
           <View style={styles.shutterInner} />
         </Pressable>
-        <Pressable style={styles.circleBtn} onPress={() => setTorch((t) => !t)} disabled={busy}>
+        <Pressable style={styles.circleBtn} onPress={() => setTorch((t) => !t)} disabled={busy || scanBlocked}>
           <Ionicons name="flashlight-outline" size={20} color="#111" />
         </Pressable>
       </View>
@@ -382,6 +415,18 @@ export function ScanReceiptScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
+  blockBanner: {
+    position: "absolute",
+    left: 12,
+    right: 12,
+    zIndex: 50,
+    backgroundColor: "rgba(254, 243, 199, 0.95)",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#fcd34d",
+    padding: 10,
+  },
+  blockBannerTxt: { fontSize: 12, fontWeight: "600", color: "#78350f", textAlign: "center" },
   dimFull: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.48)",

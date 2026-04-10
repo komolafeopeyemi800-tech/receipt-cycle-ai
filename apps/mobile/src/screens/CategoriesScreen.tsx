@@ -18,6 +18,7 @@ import { api } from "../../convex/_generated/api";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import { ScreenHeader } from "../components/ScreenHeader";
+import { userFacingErrorFromUnknown } from "../lib/userFacingErrors";
 
 const COLORS = ["#ef4444", "#2563eb", "#7c3aed", "#16a34a", "#f97316", "#db2777", "#0ea5e9", "#0f766e", "#64748b"];
 
@@ -67,7 +68,7 @@ export function CategoriesScreen() {
       setNewName("");
       setAddOpen(false);
     } catch (e) {
-      Alert.alert("Category", e instanceof Error ? e.message : "Could not create");
+      Alert.alert("Category", userFacingErrorFromUnknown(e));
     }
   }
 
@@ -90,7 +91,7 @@ export function CategoriesScreen() {
       setEditOpen(false);
       setEditing(null);
     } catch (e) {
-      Alert.alert("Category", e instanceof Error ? e.message : "Could not update");
+      Alert.alert("Category", userFacingErrorFromUnknown(e));
     }
   }
 
@@ -105,7 +106,7 @@ export function CategoriesScreen() {
             try {
               await removeCat({ id: c.id });
             } catch (e) {
-              Alert.alert("Error", e instanceof Error ? e.message : "Could not delete");
+              Alert.alert("Error", userFacingErrorFromUnknown(e));
             }
           })();
         },

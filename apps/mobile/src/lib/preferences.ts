@@ -13,7 +13,50 @@ export const SETTINGS_STORAGE_KEYS = {
   scanPayment: "settings_scan_payment",
   requirePay: "settings_require_pay",
   requireNotes: "settings_require_notes",
+  voiceInputLanguage: "settings_voice_input_language",
 } as const;
+
+/**
+ * Whisper / voice transcription language (ISO-639-1 where applicable).
+ * `auto` lets the model detect the spoken language.
+ */
+export const VOICE_INPUT_LANGUAGE_OPTIONS: { id: string; label: string }[] = [
+  { id: "auto", label: "Auto-detect" },
+  { id: "en", label: "English" },
+  { id: "es", label: "Spanish" },
+  { id: "fr", label: "French" },
+  { id: "de", label: "German" },
+  { id: "it", label: "Italian" },
+  { id: "pt", label: "Portuguese" },
+  { id: "nl", label: "Dutch" },
+  { id: "pl", label: "Polish" },
+  { id: "ru", label: "Russian" },
+  { id: "ja", label: "Japanese" },
+  { id: "ko", label: "Korean" },
+  { id: "zh", label: "Chinese" },
+  { id: "ar", label: "Arabic" },
+  { id: "hi", label: "Hindi" },
+  { id: "tr", label: "Turkish" },
+  { id: "sv", label: "Swedish" },
+  { id: "da", label: "Danish" },
+  { id: "fi", label: "Finnish" },
+  { id: "no", label: "Norwegian" },
+  { id: "vi", label: "Vietnamese" },
+  { id: "th", label: "Thai" },
+  { id: "id", label: "Indonesian" },
+  { id: "sw", label: "Swahili" },
+  { id: "yo", label: "Yoruba" },
+  { id: "ig", label: "Igbo" },
+  { id: "ha", label: "Hausa" },
+];
+
+const VOICE_LANG_IDS = new Set(VOICE_INPUT_LANGUAGE_OPTIONS.map((o) => o.id));
+
+export function normalizeVoiceInputLanguage(raw: string | undefined | null): string {
+  const s = (raw ?? "auto").trim().toLowerCase();
+  if (s === "" || s === "auto") return "auto";
+  return VOICE_LANG_IDS.has(s) ? s : "auto";
+}
 
 export type DateFormatId = "iso" | "us" | "eu";
 

@@ -17,6 +17,7 @@ export const insertUser = internalMutation({
     passwordHash: v.string(),
     name: v.optional(v.string()),
     googleSub: v.optional(v.string()),
+    whopSub: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("users", {
@@ -24,6 +25,7 @@ export const insertUser = internalMutation({
       passwordHash: args.passwordHash,
       name: args.name,
       googleSub: args.googleSub,
+      whopSub: args.whopSub,
     });
   },
 });
@@ -34,6 +36,16 @@ export const getUserByGoogleSub = internalQuery({
     return await ctx.db
       .query("users")
       .withIndex("by_google_sub", (q) => q.eq("googleSub", googleSub))
+      .unique();
+  },
+});
+
+export const getUserByWhopSub = internalQuery({
+  args: { whopSub: v.string() },
+  handler: async (ctx, { whopSub }) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_whop_sub", (q) => q.eq("whopSub", whopSub))
       .unique();
   },
 });

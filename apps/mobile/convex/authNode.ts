@@ -182,6 +182,127 @@ export const signInWithGoogle = action({
   },
 });
 
+type WhopUserInfo = {
+  sub?: string;
+  email?: string;
+  email_verified?: boolean;
+  name?: string;
+  preferred_username?: string;
+};
+
+export const signInWithWhop = action({
+  args: {
+    code: v.string(),
+    redirectUri: v.string(),
+    codeVerifier: v.string(),
+  },
+  handler: async (ctx, args): Promise<AuthResult> => {
+    const clientId = process.env.WHOP_OAUTH_CLIENT_ID?.trim();
+    if (!clientId) {
+      throw new Error("Whop sign-in is not configured (missing WHOP_OAUTH_CLIENT_ID on the server).");
+    }
+
+    const tokenRes = await fetch("https://api.whop.com/oauth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        grant_type: "authorization_code",
+        code: args.code.trim(),
+        redirect_uri: args.redirectUri.trim(),
+        client_id: clientId,
+        code_verifier: args.codeVerifier.trim(),
+      }),
+    });
+
+    if (!tokenRes.ok) {
+      const err = (await tokenRes.json().catch(() => ({}))) as { error_description?: string };
+      throw new Error(err.error_description ?? `Whop token exchange failed (${tokenRes.status}).`);
+    }
+
+    const tokens = (await tokenRes.json()) as { access_token?: string };
+    const accessToken = tokens.access_token?.trim();
+    if (!accessToken) throw new Error("Whop did not return an access token.");
+
+    const uiRes = await fetch("https://api.whop.com/oauth/userinfo", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!uiRes.ok) {
+      throw new Error(`Whop userinfo failed (${uiRes.status}).`);
+    }
+    const info = (await uiRes.json()) as WhopUserInfo;
+    const whopSub = info.sub?.trim();
+    if (!whopSub) throw new Error("Whop did not return a user id.");
+
+    const rawEmail = info.email?.trim();
+    if (!rawEmail) throw new Error("Whop did not share an email. Grant email scope and try again.");
+    if (info.email_verified === false) {
+      throw new Error("Verify your Whop email, then try again.");
+    }
+    const email = rawEmail.toLowerCase();
+    const name = info.name?.trim() || info.preferred_username?.trim() || undefined;
+
+    const bySub = await ctx.runQuery(internal.auth.getUserByWhopSub, { whopSub });
+    if (bySub) {
+      const token = makeToken();
+      const expiresAt = Date.now() + SESSION_MS;
+      await ctx.runMutation(internal.auth.insertSession, {
+        userId: bySub._id,
+        token,
+        expiresAt,
+      });
+      return {
+        token,
+        user: { id: bySub._id as string, email: bySub.email, name: bySub.name ?? null },
+      };
+    }
+
+    const byEmail = await ctx.runQuery(internal.auth.getUserByEmail, { email });
+    if (byEmail) {
+      if (byEmail.whopSub && byEmail.whopSub !== whopSub) {
+        throw new Error("Whop sign-in could not be completed for this account.");
+      }
+      if (byEmail.googleSub && !byEmail.whopSub) {
+        throw new Error("This email is linked to Google. Use Google sign-in or a different Whop account.");
+      }
+      if (!byEmail.googleSub && !byEmail.whopSub) {
+        throw new Error(
+          "This email already has a password account. Sign in with email and password, or use a different Whop account.",
+        );
+      }
+      if (byEmail.whopSub === whopSub) {
+        const token = makeToken();
+        const expiresAt = Date.now() + SESSION_MS;
+        await ctx.runMutation(internal.auth.insertSession, {
+          userId: byEmail._id,
+          token,
+          expiresAt,
+        });
+        return {
+          token,
+          user: { id: byEmail._id as string, email: byEmail.email, name: byEmail.name ?? null },
+        };
+      }
+    }
+
+    const placeholderHash = await bcrypt.hash(randomBytes(32).toString("hex"), 10);
+    const userId: Id<"users"> = await ctx.runMutation(internal.auth.insertUser, {
+      email,
+      passwordHash: placeholderHash,
+      name,
+      whopSub,
+    });
+
+    const token = makeToken();
+    const expiresAt = Date.now() + SESSION_MS;
+    await ctx.runMutation(internal.auth.insertSession, { userId, token, expiresAt });
+
+    return {
+      token,
+      user: { id: userId as string, email, name: name ?? null },
+    };
+  },
+});
+
 export const requestPasswordReset = action({
   args: { email: v.string() },
   handler: async (
@@ -212,10 +333,15 @@ export const requestPasswordReset = action({
     }
 
     const deepLink = `receiptcycle://reset-password?token=${encodeURIComponent(rawToken)}`;
+    const webBase = process.env.PUBLIC_WEB_APP_URL?.trim().replace(/\/$/, "");
+    const webLink = webBase
+      ? `${webBase}/reset-password?token=${encodeURIComponent(rawToken)}`
+      : null;
     const body = `
       <p>You asked to reset your Receipt Cycle password.</p>
-      <p><a href="${deepLink}">Open the app to reset your password</a></p>
-      <p>If the link does not open, copy this token into the app (Reset password screen):</p>
+      ${webLink ? `<p><a href="${webLink}">Reset password on the web</a></p>` : ""}
+      <p><a href="${deepLink}">Open the mobile app to reset</a> (if installed)</p>
+      <p>If links don’t work, open Reset password in the app or on the web and paste this token:</p>
       <p style="font-family:monospace">${rawToken}</p>
       <p>This link expires in 1 hour.</p>
     `;

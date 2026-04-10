@@ -21,6 +21,7 @@ import { ScreenHeader } from "../components/ScreenHeader";
 import { SetBudgetModal } from "../components/SetBudgetModal";
 import { usePreferences } from "../contexts/PreferencesContext";
 import type { Id } from "../../convex/_generated/dataModel";
+import { userFacingErrorFromUnknown } from "../lib/userFacingErrors";
 
 function monthStr(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -106,9 +107,9 @@ export function BudgetsScreen() {
       return;
     }
     try {
-      await upsert({ workspace, category, month, limitAmount: roundMoney(n) });
+      await upsert({ workspace, userId: user!.id, category, month, limitAmount: roundMoney(n) });
     } catch (e) {
-      Alert.alert("Budget", e instanceof Error ? e.message : "Could not save");
+      Alert.alert("Budget", userFacingErrorFromUnknown(e));
     }
   };
 

@@ -1,26 +1,31 @@
+import {
+  PAYWALL_PRICING,
+  formatUsd,
+} from "../lib/pricingPaywall";
+
 /**
- * Matches web `src/pages/Pricing.tsx` — Receipt Cycle premium plans.
+ * Compact cards for onboarding — matches web paywall (free + monthly + yearly).
  */
 export const PRICING_PLANS = [
   {
-    id: "weekly" as const,
-    name: "Weekly",
-    price: "$0.99",
-    period: "/week",
-    blurb: "Trial · cancel anytime",
+    id: "free" as const,
+    name: "Free",
+    price: formatUsd(0),
+    period: "",
+    blurb: "7-day Pro trial · 25 transactions",
   },
   {
     id: "monthly" as const,
     name: "Monthly",
-    price: "$3.99",
+    price: formatUsd(PAYWALL_PRICING.monthlyUsd),
     period: "/month",
-    blurb: "Most flexible",
+    blurb: "Full Pro · flexible",
   },
   {
     id: "yearly" as const,
     name: "Yearly",
-    price: "$38.30",
+    price: formatUsd(PAYWALL_PRICING.yearlyUsd),
     period: "/year",
-    blurb: "Best value · ~$3.19/mo",
+    blurb: `7-day trial · ~${formatUsd(PAYWALL_PRICING.yearlyUsd / 12)}/mo`,
   },
 ] as const;

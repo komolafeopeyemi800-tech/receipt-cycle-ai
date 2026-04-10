@@ -2,12 +2,14 @@
 
 import { action } from "./_generated/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 
 type Finding = { title: string; detail: string; severity: "low" | "medium" | "high" };
 
 export const analyzeMoneyLeaks = action({
   args: {
     periodLabel: v.string(),
+    sessionToken: v.string(),
     rows: v.array(
       v.object({
         date: v.string(),
@@ -19,12 +21,31 @@ export const analyzeMoneyLeaks = action({
       }),
     ),
   },
-  handler: async (_ctx, { periodLabel, rows }) => {
+  handler: async (ctx, { periodLabel, rows, sessionToken }) => {
+    const gate = await ctx.runQuery(internal.subscription.evaluateForAction, { token: sessionToken.trim() });
+    if (!gate.ok) {
+      return {
+        ok: false as const,
+        error: "Sign in to generate entry highlights.",
+        summary: "",
+        findings: [] as { title: string; detail: string; severity: "low" | "medium" | "high" }[],
+        tips: [] as string[],
+      };
+    }
+    if (!gate.canUseAiFeatures) {
+      return {
+        ok: false as const,
+        error: gate.blockReason ?? "Upgrade to use optional entry highlights.",
+        summary: "",
+        findings: [] as { title: string; detail: string; severity: "low" | "medium" | "high" }[],
+        tips: [] as string[],
+      };
+    }
     const key = process.env.OPENAI_API_KEY?.trim();
     if (!key) {
       return {
         ok: false as const,
-        error: "Add OPENAI_API_KEY to your Convex deployment for AI money-leak analysis.",
+        error: "Add OPENAI_API_KEY to your Convex deployment for optional entry highlights.",
         summary: "",
         findings: [] as Finding[],
         tips: [] as string[],
@@ -35,16 +56,20 @@ export const analyzeMoneyLeaks = action({
     const slice = expenses.slice(0, 350);
     const payload = JSON.stringify(slice);
 
-    const system = `You are a personal finance analyst. Detect MONEY LEAKS from expense transactions.
+    const system = `You scan ONLY the expense rows the user exported into this tool. Highlight POSSIBLE PATTERNS or DATA ANOMALIES so they can double-check their own records — you are not a financial advisor.
 
-RULES — identify and explain (only when evidence exists in data):
-1) Recurring monthly micro-fees (small repeated charges, same merchant)
-2) Subscription duplicates (overlapping or duplicate subscriptions)
-3) High transfer / wire / FX / convenience fees vs typical
-4) Suspicious double charges (same amount + similar merchant + close dates)
-5) Unusual spikes vs the user's usual spending in this dataset
+STRICT:
+- Do NOT tell the user to spend less, save, invest, cancel services, or change behavior. No budgeting, debt, tax, investment, or legal guidance.
+- Use neutral wording: "appears in the data", "may be worth verifying against your bank statement", "similar entries on these dates".
+- "tips" must be non-advisory (e.g. "Compare with your statement if unsure") — not lifestyle or savings advice.
 
-Be specific: reference merchant/category and dates when possible. If data is sparse, say so and give general tips.`;
+When evidence exists in the rows, you may note:
+1) Repeated small amounts / same merchant
+2) Pairs of entries that might be duplicates (similar merchant, amount, close dates)
+3) Same amount on nearby dates (possible double-posting — user should verify)
+4) Amounts that stand out vs the rest of THIS dataset (describe only, no "you should" fixes)
+
+If the dataset is small or unclear, say so briefly.`;
 
     const user = `Period: ${periodLabel}\n\nExpense transactions (JSON, amount positive numbers):\n${payload.slice(0, 95000)}`;
 
@@ -95,12 +120,12 @@ Be specific: reference merchant/category and dates when possible. If data is spa
       return {
         ok: true as const,
         error: undefined as string | undefined,
-        summary: String(parsed.summary ?? "").trim() || "Analysis complete.",
+        summary: String(parsed.summary ?? "").trim() || "Review complete.",
         findings: Array.isArray(parsed.findings) ? parsed.findings.slice(0, 12) : [],
         tips: Array.isArray(parsed.tips) ? parsed.tips.slice(0, 8) : [],
       };
     } catch {
-      return { ok: false as const, error: "Could not parse AI response.", summary: "", findings: [], tips: [] };
+      return { ok: false as const, error: "Could not parse the summary.", summary: "", findings: [], tips: [] };
     }
   },
 });

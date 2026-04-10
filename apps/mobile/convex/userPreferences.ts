@@ -19,6 +19,7 @@ const prefsFields = {
   scanPayment: v.optional(v.boolean()),
   requirePay: v.optional(v.boolean()),
   requireNotes: v.optional(v.boolean()),
+  voiceInputLanguage: v.optional(v.string()),
 };
 
 export const get = query({

@@ -22,6 +22,7 @@ import {
   formatMoneyAmount,
   formatMoneyCompact,
   formatDateYmd,
+  normalizeVoiceInputLanguage,
 } from "@mobile-lib/preferences";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 
@@ -45,6 +46,9 @@ type Ctx = {
   setRequirePay: (v: boolean) => Promise<void>;
   requireNotes: boolean;
   setRequireNotes: (v: boolean) => Promise<void>;
+  /** Whisper language hint: ISO code or "auto" */
+  voiceInputLanguage: string;
+  setVoiceInputLanguage: (lang: string) => Promise<void>;
   formatMoney: (n: number) => string;
   formatMoneyCompact: (n: number) => string;
   formatDate: (ymd: string) => string;
@@ -89,6 +93,7 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
   const [scanPayment, setScanPaymentState] = useState(true);
   const [requirePay, setRequirePayState] = useState(false);
   const [requireNotes, setRequireNotesState] = useState(false);
+  const [voiceInputLanguage, setVoiceInputLanguageState] = useState("auto");
 
   const upsertRemote = useMutation(api.userPreferences.upsert);
   const remoteRow = useQuery(api.userPreferences.get, user?.id ? { userId: String(user.id) } : "skip");
@@ -108,6 +113,7 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
     scanPayment,
     requirePay,
     requireNotes,
+    voiceInputLanguage,
   });
   snapshot.current = {
     currency,
@@ -119,6 +125,7 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
     scanPayment,
     requirePay,
     requireNotes,
+    voiceInputLanguage,
   };
 
   const pushToConvex = useCallback(async () => {
@@ -137,6 +144,7 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
         scanPayment: s.scanPayment,
         requirePay: s.requirePay,
         requireNotes: s.requireNotes,
+        voiceInputLanguage: normalizeVoiceInputLanguage(s.voiceInputLanguage),
       });
     } catch {
       /* ignore */
@@ -163,6 +171,7 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
       SETTINGS_STORAGE_KEYS.scanPayment,
       SETTINGS_STORAGE_KEYS.requirePay,
       SETTINGS_STORAGE_KEYS.requireNotes,
+      SETTINGS_STORAGE_KEYS.voiceInputLanguage,
     ];
     const map: Record<string, string | null> = {};
     for (const k of keys) map[k] = storageGet(k);
@@ -180,6 +189,7 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
     setScanPaymentState(map[SETTINGS_STORAGE_KEYS.scanPayment] !== "0");
     setRequirePayState(map[SETTINGS_STORAGE_KEYS.requirePay] === "1");
     setRequireNotesState(map[SETTINGS_STORAGE_KEYS.requireNotes] === "1");
+    setVoiceInputLanguageState(normalizeVoiceInputLanguage(map[SETTINGS_STORAGE_KEYS.voiceInputLanguage]));
     setReady(true);
   }, []);
 
@@ -208,6 +218,7 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
             scanPayment: s.scanPayment,
             requirePay: s.requirePay,
             requireNotes: s.requireNotes,
+            voiceInputLanguage: normalizeVoiceInputLanguage(s.voiceInputLanguage),
           });
         } catch {
           nullRemoteSeeded.current = false;
@@ -228,6 +239,7 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
       scanPayment: remoteRow.scanPayment ?? true,
       requirePay: remoteRow.requirePay ?? false,
       requireNotes: remoteRow.requireNotes ?? false,
+      voiceInputLanguage: normalizeVoiceInputLanguage(remoteRow.voiceInputLanguage),
     };
     /** Stable fingerprint so Convex refetches / key order don’t thrash React state. */
     const j = JSON.stringify({
@@ -247,6 +259,7 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
     setScanPaymentState(payload.scanPayment);
     setRequirePayState(payload.requirePay);
     setRequireNotesState(payload.requireNotes);
+    setVoiceInputLanguageState(payload.voiceInputLanguage);
 
     storageSet(PREF_KEYS.currency, payload.currency);
     storageSet(PREF_KEYS.dateFormat, payload.dateFormat);
@@ -257,6 +270,7 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
     storageSet(SETTINGS_STORAGE_KEYS.scanPayment, payload.scanPayment ? "1" : "0");
     storageSet(SETTINGS_STORAGE_KEYS.requirePay, payload.requirePay ? "1" : "0");
     storageSet(SETTINGS_STORAGE_KEYS.requireNotes, payload.requireNotes ? "1" : "0");
+    storageSet(SETTINGS_STORAGE_KEYS.voiceInputLanguage, payload.voiceInputLanguage);
   }, [ready, user?.id, remoteRow, upsertRemote]);
 
   useEffect(() => {
@@ -362,6 +376,16 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
     [scheduleConvexSync, runtime?.adminManagedPreferences],
   );
 
+  const setVoiceInputLanguage = useCallback(
+    async (lang: string) => {
+      const normalized = normalizeVoiceInputLanguage(lang);
+      setVoiceInputLanguageState(normalized);
+      storageSet(SETTINGS_STORAGE_KEYS.voiceInputLanguage, normalized);
+      scheduleConvexSync();
+    },
+    [scheduleConvexSync],
+  );
+
   const formatMoney = useCallback((n: number) => formatMoneyAmount(n, currency), [currency]);
 
   const formatMoneyCompactCb = useCallback((n: number) => formatMoneyCompact(n, currency), [currency]);
@@ -389,6 +413,8 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
       setRequirePay,
       requireNotes,
       setRequireNotes,
+      voiceInputLanguage,
+      setVoiceInputLanguage,
       formatMoney,
       formatMoneyCompact: formatMoneyCompactCb,
       formatDate,
@@ -413,6 +439,8 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
       setRequirePay,
       requireNotes,
       setRequireNotes,
+      voiceInputLanguage,
+      setVoiceInputLanguage,
       formatMoney,
       formatMoneyCompactCb,
       formatDate,

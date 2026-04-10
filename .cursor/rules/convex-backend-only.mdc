@@ -1,0 +1,10 @@
+---
+description: Backend is Convex only — no Supabase in this repo or via MCP
+alwaysApply: true
+---
+
+# Convex-only backend
+
+- This monorepo uses **Convex** for auth, data, and server functions (`apps/mobile/convex`, `convex.json`, `VITE_CONVEX_URL` / `EXPO_PUBLIC_CONVEX_URL`).
+- **Do not** add or use **Supabase** (client SDK, Edge Functions, env vars, or documentation) unless the user explicitly asks to reintroduce it.
+- When suggesting **MCP tools**, do not assume a Supabase MCP server; use Convex docs, Convex dashboard, or repo code instead.

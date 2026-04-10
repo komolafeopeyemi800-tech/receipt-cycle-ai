@@ -12,10 +12,14 @@ const DesktopSidebar = () => {
   const { summary, loading: summaryLoading, hasUser } = useConvexMonthlySummary();
   const { formatMoney } = useWebPreferences();
 
-  const savingsAmount = summary && summary.netBalance > 0 ? summary.netBalance : summary?.netBalance ?? 0;
-  const displayBalance = !hasUser ? "—" : summaryLoading || !summary ? "…" : formatMoney(Math.max(0, savingsAmount));
+  const displayBalance =
+    !hasUser ? "—" : summaryLoading || !summary ? "…" : formatMoney(summary.netBalance);
   const rateDisplay =
-    !hasUser || summaryLoading || !summary ? "—" : `${Math.abs(summary.savingsRate).toFixed(1)}% savings rate`;
+    !hasUser || summaryLoading || !summary
+      ? "—"
+      : summary.savingsRate === null
+        ? "Savings rate N/A"
+        : `${summary.savingsRate.toFixed(1)}% savings rate`;
 
   const mainNav = [
     { path: inAdmin ? "/admin" : "/dashboard", icon: "fa-gauge-high", label: "Dashboard" },
@@ -36,7 +40,7 @@ const DesktopSidebar = () => {
           <div className="text-xs font-medium text-slate-600">This month (net)</div>
           <div className="mt-1 text-2xl font-bold tabular-nums text-slate-900">{displayBalance}</div>
           <div className="mt-1 flex items-center gap-1">
-            {hasUser && summary && !summaryLoading ? (
+            {hasUser && summary && !summaryLoading && summary.savingsRate !== null ? (
               <i
                 className={`fas text-xs text-primary ${summary.savingsRate >= 0 ? "fa-arrow-trend-up" : "fa-arrow-trend-down"}`}
               />

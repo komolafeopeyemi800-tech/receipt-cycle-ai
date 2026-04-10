@@ -32,4 +32,5 @@ export type RootStackParamList = {
   SignUp: undefined;
   ForgotPassword: undefined;
   ResetPassword: { token?: string } | undefined;
+  FinanceCoach: undefined;
 };

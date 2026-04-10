@@ -15,7 +15,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { data as ISO_CURRENCY_DATA } from "currency-codes";
-import { DATE_FORMAT_OPTIONS } from "../lib/preferences";
+import { DATE_FORMAT_OPTIONS, VOICE_INPUT_LANGUAGE_OPTIONS } from "../lib/preferences";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
@@ -25,7 +25,15 @@ type Row = { code: string; label: string; search: string };
 export function RegionalPreferencesScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { currency, setCurrency, dateFormat, setDateFormat, formatMoney } = usePreferences();
+  const {
+    currency,
+    setCurrency,
+    dateFormat,
+    setDateFormat,
+    voiceInputLanguage,
+    setVoiceInputLanguage,
+    formatMoney,
+  } = usePreferences();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -89,6 +97,24 @@ export function RegionalPreferencesScreen() {
             >
               <Text style={styles.rowTxt}>{d.label}</Text>
               {dateFormat === d.id ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}
+            </Pressable>
+          ))}
+        </View>
+
+        <Text style={[styles.section, { marginTop: 20 }]}>VOICE INPUT LANGUAGE</Text>
+        <Text style={styles.hint}>
+          Used for speech-to-text when you dictate transactions or use Ask AI. Auto lets the model detect
+          the language.
+        </Text>
+        <View style={styles.card}>
+          {VOICE_INPUT_LANGUAGE_OPTIONS.map((o) => (
+            <Pressable
+              key={o.id}
+              style={[styles.row, voiceInputLanguage === o.id && styles.rowOn]}
+              onPress={() => void setVoiceInputLanguage(o.id)}
+            >
+              <Text style={styles.rowTxt}>{o.label}</Text>
+              {voiceInputLanguage === o.id ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}
             </Pressable>
           ))}
         </View>

@@ -91,7 +91,7 @@ export function DashboardScreen() {
           <Text style={styles.greetTitle}>
             {greet}, {displayName}
           </Text>
-          <Text style={styles.greetSub}>Here&apos;s your financial snapshot for today</Text>
+          <Text style={styles.greetSub}>Here&apos;s your snapshot for today</Text>
         </View>
 
         {loading ? (
@@ -107,7 +107,7 @@ export function DashboardScreen() {
               >
                 <View style={styles.metricTop}>
                   <View>
-                    <Text style={styles.metricLabelLight}>Net Balance</Text>
+                    <Text style={styles.metricLabelLight}>Net (this month)</Text>
                     <Text style={styles.metricValueLight} numberOfLines={1} adjustsFontSizeToFit>
                       {formatMoney(summary.netBalance)}
                     </Text>
@@ -118,12 +118,18 @@ export function DashboardScreen() {
                 </View>
                 <View style={styles.rateRow}>
                   <View style={styles.ratePill}>
-                    <Ionicons
-                      name={summary.savingsRate >= 0 ? "arrow-up" : "arrow-down"}
-                      size={11}
-                      color="#fff"
-                    />
-                    <Text style={styles.rateText}>{Math.abs(summary.savingsRate).toFixed(1)}%</Text>
+                    {summary.savingsRate !== null ? (
+                      <>
+                        <Ionicons
+                          name={summary.savingsRate >= 0 ? "arrow-up" : "arrow-down"}
+                          size={11}
+                          color="#fff"
+                        />
+                        <Text style={styles.rateText}>{Math.abs(summary.savingsRate).toFixed(1)}%</Text>
+                      </>
+                    ) : (
+                      <Text style={styles.rateText}>—</Text>
+                    )}
                   </View>
                   <Text style={styles.rateHint}>savings rate</Text>
                 </View>

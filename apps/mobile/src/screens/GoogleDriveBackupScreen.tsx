@@ -44,6 +44,7 @@ import {
 } from "../tasks/driveBackupTask";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
+import { userFacingErrorFromUnknown } from "../lib/userFacingErrors";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -143,7 +144,7 @@ export function GoogleDriveBackupScreen() {
         if (w) await registerDriveWeeklyBackgroundTask();
         Alert.alert("Connected", "Google Drive is linked. Weekly backups will upload JSON exports when due.");
       } catch (e) {
-        Alert.alert("Google", e instanceof Error ? e.message : "Connection failed");
+        Alert.alert("Google", userFacingErrorFromUnknown(e));
       } finally {
         setBusy(false);
       }
@@ -194,7 +195,7 @@ export function GoogleDriveBackupScreen() {
       await refreshLocalState();
       Alert.alert("Backed up", "Your transactions were uploaded to Google Drive.");
     } catch (e) {
-      Alert.alert("Backup failed", e instanceof Error ? e.message : "Unknown error");
+      Alert.alert("Backup failed", userFacingErrorFromUnknown(e));
     } finally {
       setBusy(false);
     }

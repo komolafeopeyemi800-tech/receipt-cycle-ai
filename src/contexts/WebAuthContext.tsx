@@ -15,6 +15,7 @@ import {
   clearWebSessionUser,
   getWebSessionToken,
   getWebSessionUser,
+  setWebLastEmail,
   setWebSessionToken,
   setWebSessionUser,
 } from "@/lib/webSession";
@@ -33,6 +34,7 @@ type WebAuthCtx = {
   clearLocalSession: () => void;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, name?: string) => Promise<{ error: Error | null }>;
+  signInWithWhop: (code: string, redirectUri: string, codeVerifier: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 };
 
@@ -45,7 +47,9 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
 
   const signInAction = useAction(api.authNode.signIn);
   const signUpAction = useAction(api.authNode.signUp);
+  const signInWithWhopAction = useAction(api.authNode.signInWithWhop);
   const signOutMutation = useMutation(api.auth.signOut);
+  const bootstrapSubscription = useMutation(api.subscription.bootstrapSubscription);
 
   useEffect(() => {
     setToken(getWebSessionToken());
@@ -89,6 +93,13 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
     setWebSessionUser(nextUser);
   }, [me]);
 
+  useEffect(() => {
+    if (!token) return;
+    void bootstrapSubscription({ token }).catch(() => {
+      /* non-fatal */
+    });
+  }, [token, bootstrapSubscription]);
+
   const signIn = useCallback(
     async (email: string, password: string) => {
       try {
@@ -105,6 +116,7 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
           email: res.user.email,
           name: res.user.name ?? null,
         });
+        setWebLastEmail(res.user.email);
         return { error: null };
       } catch (e) {
         return { error: new Error(formatAuthError(e)) };
@@ -133,12 +145,38 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
           email: res.user.email,
           name: res.user.name ?? null,
         });
+        setWebLastEmail(res.user.email);
         return { error: null };
       } catch (e) {
         return { error: new Error(formatAuthError(e)) };
       }
     },
     [signUpAction],
+  );
+
+  const signInWithWhop = useCallback(
+    async (code: string, redirectUri: string, codeVerifier: string) => {
+      try {
+        const res = await signInWithWhopAction({ code, redirectUri, codeVerifier });
+        setWebSessionToken(res.token);
+        setWebSessionUser({
+          id: res.user.id,
+          email: res.user.email,
+          name: res.user.name ?? null,
+        });
+        setToken(res.token);
+        setCachedUser({
+          id: res.user.id,
+          email: res.user.email,
+          name: res.user.name ?? null,
+        });
+        setWebLastEmail(res.user.email);
+        return { error: null };
+      } catch (e) {
+        return { error: new Error(formatAuthError(e)) };
+      }
+    },
+    [signInWithWhopAction],
   );
 
   const clearLocalSession = useCallback(() => {
@@ -179,9 +217,10 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
       clearLocalSession,
       signIn,
       signUp,
+      signInWithWhop,
       signOut,
     }),
-    [user, token, loading, clearLocalSession, signIn, signUp, signOut],
+    [user, token, loading, clearLocalSession, signIn, signUp, signInWithWhop, signOut],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

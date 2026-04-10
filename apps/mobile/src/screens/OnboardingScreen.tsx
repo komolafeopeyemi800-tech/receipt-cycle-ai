@@ -19,6 +19,7 @@ import { data as ISO_CURRENCY_DATA } from "currency-codes";
 import { ReceiptCycleLogo } from "../components/ReceiptCycleLogo";
 import { getIsoCountries } from "../lib/isoCountries";
 import { usePreferences } from "../contexts/PreferencesContext";
+import { VOICE_INPUT_LANGUAGE_OPTIONS, normalizeVoiceInputLanguage } from "../lib/preferences";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import { PRICING_PLANS } from "../constants/pricing";
 
@@ -58,6 +59,8 @@ export type OnboardingPersisted = {
   usecases: string[];
   country: string;
   industry: string;
+  /** Whisper / voice transcription language (`auto` or ISO-639-1) */
+  voiceInputLanguage?: string;
   completed: boolean;
   completedAt: string;
 };
@@ -68,7 +71,7 @@ type CurrencyRow = { code: string; label: string; search: string };
 
 export function OnboardingScreen({ onDone }: Props) {
   const insets = useSafeAreaInsets();
-  const { setCurrency } = usePreferences();
+  const { setCurrency, setVoiceInputLanguage } = usePreferences();
   const [step, setStep] = useState(1);
   const [currency, setCurrencyLocal] = useState("USD");
   const [goals, setGoals] = useState<string[]>([]);
@@ -76,7 +79,9 @@ export function OnboardingScreen({ onDone }: Props) {
   const [country, setCountry] = useState("US");
   const [industry, setIndustry] = useState("");
   const [currencyModal, setCurrencyModal] = useState(false);
+  const [voiceLangModal, setVoiceLangModal] = useState(false);
   const [countryModal, setCountryModal] = useState(false);
+  const [voiceLang, setVoiceLang] = useState("auto");
   const [currencyQuery, setCurrencyQuery] = useState("");
   const [countryQuery, setCountryQuery] = useState("");
 
@@ -118,6 +123,7 @@ export function OnboardingScreen({ onDone }: Props) {
   };
 
   const persistAndFinish = useCallback(async () => {
+    const lang = normalizeVoiceInputLanguage(voiceLang);
     const data: OnboardingPersisted = {
       currency: currency || "USD",
       goals,
@@ -125,6 +131,7 @@ export function OnboardingScreen({ onDone }: Props) {
       usecases,
       country: country || "US",
       industry: industry || "other",
+      voiceInputLanguage: lang,
       completed: true,
       completedAt: new Date().toISOString(),
     };
@@ -134,8 +141,9 @@ export function OnboardingScreen({ onDone }: Props) {
       /* ignore */
     }
     await setCurrency(data.currency);
+    await setVoiceInputLanguage(lang);
     onDone();
-  }, [currency, goals, usecases, country, industry, setCurrency, onDone]);
+  }, [currency, goals, usecases, country, industry, voiceLang, setCurrency, setVoiceInputLanguage, onDone]);
 
   const skipEntireSetup = useCallback(async () => {
     const data: OnboardingPersisted = {
@@ -145,6 +153,7 @@ export function OnboardingScreen({ onDone }: Props) {
       usecases: [],
       country: "US",
       industry: "other",
+      voiceInputLanguage: "auto",
       completed: true,
       completedAt: new Date().toISOString(),
     };
@@ -154,8 +163,9 @@ export function OnboardingScreen({ onDone }: Props) {
       /* ignore */
     }
     await setCurrency("USD");
+    await setVoiceInputLanguage("auto");
     onDone();
-  }, [setCurrency, onDone]);
+  }, [setCurrency, setVoiceInputLanguage, onDone]);
 
   const next = () => {
     if (step < 7) setStep((s) => s + 1);
@@ -218,6 +228,19 @@ export function OnboardingScreen({ onDone }: Props) {
                 <Ionicons name="chevron-forward" size={22} color={colors.gray400} />
               </Pressable>
               <Text style={styles.miniHint}>Tap to search {currencyRows.length}+ currencies by code, name, or country.</Text>
+              <Text style={[styles.h2, { marginTop: 22 }]}>Voice input language</Text>
+              <Text style={styles.p}>
+                Used when you dictate expenses or use Ask AI. Choose a language or leave Auto-detect.
+              </Text>
+              <Pressable style={styles.choiceCard} onPress={() => setVoiceLangModal(true)}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.choiceLbl}>Spoken language</Text>
+                  <Text style={styles.choiceVal} numberOfLines={2}>
+                    {VOICE_INPUT_LANGUAGE_OPTIONS.find((x) => x.id === voiceLang)?.label ?? voiceLang}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={22} color={colors.gray400} />
+              </Pressable>
             </>
           )}
 
@@ -250,9 +273,9 @@ export function OnboardingScreen({ onDone }: Props) {
 
           {step === 3 && (
             <>
-              <Text style={styles.h2}>Personal finance</Text>
+              <Text style={styles.h2}>Your receipts & expenses</Text>
               <Text style={styles.p}>
-                Receipt Cycle is built for your individual finances — one private space for receipts and
+                Receipt Cycle is your private space for receipts and
                 transactions. There are no shared workspaces or team invites in this app.
               </Text>
               <View style={styles.infoCard}>
@@ -404,6 +427,36 @@ export function OnboardingScreen({ onDone }: Props) {
                 </Pressable>
               )}
               ListEmptyComponent={<Text style={styles.empty}>No matches.</Text>}
+            />
+          </View>
+        </Modal>
+
+        <Modal visible={voiceLangModal} animationType="slide" onRequestClose={() => setVoiceLangModal(false)}>
+          <View style={[styles.modalRoot, { paddingTop: insets.top + 8 }]}>
+            <View style={styles.modalHeader}>
+              <Pressable onPress={() => setVoiceLangModal(false)} hitSlop={12}>
+                <Text style={styles.modalCancel}>Done</Text>
+              </Pressable>
+              <Text style={styles.modalTitle}>Voice language</Text>
+              <View style={{ width: 56 }} />
+            </View>
+            <FlatList
+              data={VOICE_INPUT_LANGUAGE_OPTIONS}
+              keyExtractor={(item) => item.id}
+              keyboardShouldPersistTaps="handled"
+              initialNumToRender={28}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={[styles.pickerRow, item.id === voiceLang && styles.pickerRowOn]}
+                  onPress={() => {
+                    setVoiceLang(item.id);
+                    setVoiceLangModal(false);
+                  }}
+                >
+                  <Text style={styles.pickerRowTxt}>{item.label}</Text>
+                  {item.id === voiceLang ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}
+                </Pressable>
+              )}
             />
           </View>
         </Modal>

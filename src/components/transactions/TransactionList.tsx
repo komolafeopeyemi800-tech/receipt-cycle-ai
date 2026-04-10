@@ -1,4 +1,4 @@
-import { Transaction } from "@/hooks/use-transactions";
+import type { Transaction } from "@/types/transaction";
 import { useWebPreferences } from "@/contexts/WebPreferencesContext";
 
 interface TransactionListProps {

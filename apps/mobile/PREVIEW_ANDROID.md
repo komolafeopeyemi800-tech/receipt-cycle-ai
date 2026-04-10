@@ -54,12 +54,9 @@ Both must be the **same** `https://<deployment>.convex.cloud` URL.
 
 ## Receipt scanning (camera / gallery)
 
-The app calls the same **Supabase Edge Function** as the web app (`scan-receipt`). Add to `apps/mobile/.env.local`:
+Scanning uses the **Convex** action `scanReceipt.scanFromBase64` (see `apps/mobile/convex/scanReceipt.ts`). No Supabase env vars are required.
 
-- `EXPO_PUBLIC_SUPABASE_URL` — same as `VITE_SUPABASE_URL` in the repo root `.env`
-- `EXPO_PUBLIC_SUPABASE_ANON_KEY` — same as `VITE_SUPABASE_PUBLISHABLE_KEY`
-
-Without these, Quick Action **Scan Receipt** shows a configuration alert; manual add still works.
+Set **`OPENAI_API_KEY`** (and optional provider keys) in **Convex Dashboard → Settings → Environment Variables** for your deployment — see `apps/mobile/docs/CONVEX_SECRETS.md`.
 
 ## Troubleshooting
 

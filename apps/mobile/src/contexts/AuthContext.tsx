@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { api } from "../../convex/_generated/api";
 import { formatAuthError } from "../lib/authErrors";
 import { clearSessionTokenAsync, getSessionTokenAsync, setSessionTokenAsync } from "../lib/sessionStorage";
+import { setRememberedEmailAsync } from "../lib/rememberedEmail";
 
 export type AuthUser = {
   id: string;
@@ -17,6 +18,7 @@ type AuthCtx = {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, name?: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: (idToken: string) => Promise<{ error: Error | null }>;
+  signInWithWhop: (code: string, redirectUri: string, codeVerifier: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: Error | null }>;
   requestPasswordReset: (email: string) => Promise<
@@ -37,12 +39,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInAction = useAction(api.authNode.signIn);
   const signUpAction = useAction(api.authNode.signUp);
   const signInWithGoogleAction = useAction(api.authNode.signInWithGoogle);
+  const signInWithWhopAction = useAction(api.authNode.signInWithWhop);
   const changePasswordAction = useAction(api.authNode.changePassword);
   const requestPasswordResetAction = useAction(api.authNode.requestPasswordReset);
   const resetPasswordWithTokenAction = useAction(api.authNode.resetPasswordWithToken);
   const signOutMutation = useMutation(api.auth.signOut);
   const resetMyDataMutation = useMutation(api.auth.resetMyData);
   const deleteMyAccountMutation = useMutation(api.auth.deleteMyAccount);
+  const bootstrapSubscription = useMutation(api.subscription.bootstrapSubscription);
 
   useEffect(() => {
     void (async () => {
@@ -73,12 +77,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [hydrated, token, me]);
 
+  useEffect(() => {
+    if (!token) return;
+    void bootstrapSubscription({ token }).catch(() => {
+      /* non-fatal */
+    });
+  }, [token, bootstrapSubscription]);
+
   const signIn = useCallback(
     async (email: string, password: string) => {
       try {
         const res = await signInAction({ email: email.trim(), password });
         await setSessionTokenAsync(res.token);
         setToken(res.token);
+        await setRememberedEmailAsync(res.user.email);
         return { error: null };
       } catch (e) {
         return { error: new Error(formatAuthError(e)) };
@@ -97,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         await setSessionTokenAsync(res.token);
         setToken(res.token);
+        await setRememberedEmailAsync(res.user.email);
         return { error: null };
       } catch (e) {
         return { error: new Error(formatAuthError(e)) };
@@ -111,12 +124,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const res = await signInWithGoogleAction({ idToken });
         await setSessionTokenAsync(res.token);
         setToken(res.token);
+        await setRememberedEmailAsync(res.user.email);
         return { error: null };
       } catch (e) {
         return { error: new Error(formatAuthError(e)) };
       }
     },
     [signInWithGoogleAction],
+  );
+
+  const signInWithWhop = useCallback(
+    async (code: string, redirectUri: string, codeVerifier: string) => {
+      try {
+        const res = await signInWithWhopAction({ code, redirectUri, codeVerifier });
+        await setSessionTokenAsync(res.token);
+        setToken(res.token);
+        await setRememberedEmailAsync(res.user.email);
+        return { error: null };
+      } catch (e) {
+        return { error: new Error(formatAuthError(e)) };
+      }
+    },
+    [signInWithWhopAction],
   );
 
   const signOut = useCallback(async () => {
@@ -204,6 +233,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signInWithGoogle,
+      signInWithWhop,
       signOut,
       changePassword,
       requestPasswordReset,
@@ -218,6 +248,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signInWithGoogle,
+      signInWithWhop,
       signOut,
       changePassword,
       requestPasswordReset,

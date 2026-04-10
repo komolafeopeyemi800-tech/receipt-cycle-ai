@@ -101,7 +101,7 @@ function ConvexBudgetsInner() {
       return;
     }
     try {
-      await upsert({ workspace, category, month, limitAmount: roundMoney(n) });
+      await upsert({ workspace, userId, category, month, limitAmount: roundMoney(n) });
     } catch (e) {
       window.alert(e instanceof Error ? e.message : "Could not save");
     }

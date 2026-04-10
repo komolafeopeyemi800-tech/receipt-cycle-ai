@@ -19,7 +19,9 @@ import { api } from "../../convex/_generated/api";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useSubscriptionState } from "../hooks/useSubscriptionState";
 import { usePreferences } from "../contexts/PreferencesContext";
+import { userFacingError, userFacingErrorFromUnknown } from "../lib/userFacingErrors";
 import type { DocTx } from "../types/transaction";
 import {
   addMonthsYm,
@@ -29,6 +31,7 @@ import {
   ymToDateRange,
 } from "../utils/transactionMath";
 import { ExpensePieChart } from "../components/ExpensePieChart";
+import { MOBILE_NOT_ADVICE_DISCLAIMER } from "../lib/playStoreUiCopy";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { FinancialPeriodSummary } from "../components/FinancialPeriodSummary";
 import type { MainTabParamList, RootStackParamList } from "../navigation/types";
@@ -43,7 +46,9 @@ const CAT_PALETTE = ["#0f766e", "#2563eb", "#7c3aed", "#ea580c", "#db2777", "#0e
 export function InsightsScreen() {
   const navigation = useNavigation<Nav>();
   const { workspace, ready } = useWorkspace();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  const sub = useSubscriptionState();
+  const aiOk = !sub || sub.canUseAiFeatures;
   const { formatMoney, formatMoneyCompact } = usePreferences();
   const [period, setPeriod] = useState<"month" | "all">("all");
   const [selectedYm, setSelectedYm] = useState(() => todayYm());
@@ -110,6 +115,10 @@ export function InsightsScreen() {
       setLeakResult({ summary: "", findings: [], tips: [], error: "Add transactions first." });
       return;
     }
+    if (!token) {
+      setLeakResult({ summary: "", findings: [], tips: [], error: "Sign in to use optional entry highlights." });
+      return;
+    }
     setLeakBusy(true);
     setLeakResult(null);
     try {
@@ -121,13 +130,13 @@ export function InsightsScreen() {
         merchant: t.merchant ?? undefined,
         description: t.description ?? undefined,
       }));
-      const out = await leakScan({ periodLabel, rows });
+      const out = await leakScan({ periodLabel, sessionToken: token, rows });
       if (!out.ok) {
         setLeakResult({
           summary: "",
           findings: [],
           tips: [],
-          error: out.error ?? "Analysis failed.",
+          error: userFacingError(out.error ?? undefined),
         });
         return;
       }
@@ -141,12 +150,12 @@ export function InsightsScreen() {
         summary: "",
         findings: [],
         tips: [],
-        error: e instanceof Error ? e.message : "Unknown error",
+        error: userFacingErrorFromUnknown(e),
       });
     } finally {
       setLeakBusy(false);
     }
-  }, [all, leakScan, periodLabel]);
+  }, [all, leakScan, periodLabel, token]);
 
   const net = roundMoney(income - expense);
 
@@ -188,22 +197,43 @@ export function InsightsScreen() {
         </View>
 
         <View style={[styles.card, { marginTop: 12 }]}>
-          <Text style={styles.cardHdr}>Money leak detection</Text>
+          <Text style={styles.cardHdr}>Ask AI</Text>
           <Text style={styles.subHint}>
-            AI checks: micro-fees, duplicate subscriptions, high fees, double charges, unusual spikes — for this period.
+            Tell AI what to do with the entries you saved this period—summaries, labels, or plain-language recap. For organization only, not advice. Same period as above.
           </Text>
-          <Pressable style={[styles.leakBtn, leakBusy && { opacity: 0.75 }]} onPress={() => void runLeakScan()} disabled={leakBusy || loading}>
+          <Pressable
+            style={styles.coachBtn}
+            onPress={() => navigation.navigate("FinanceCoach")}
+            disabled={loading || !aiOk || !token}
+          >
+            <Ionicons name="chatbubbles-outline" size={18} color={colors.primary} />
+            <Text style={styles.coachBtnTxt}>Open Ask AI</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
+          </Pressable>
+        </View>
+
+        <View style={[styles.card, { marginTop: 12 }]}>
+          <Text style={styles.cardHdr}>Entry pattern highlights</Text>
+          <Text style={styles.subHint}>
+            Optional: look across entries you already saved for possible duplicates, repeated merchants, or amounts that stand out—so you can double-check. Informational only; not financial advice.
+          </Text>
+          {sub && !aiOk && sub.blockReason ? <Text style={styles.leakHint}>{sub.blockReason}</Text> : null}
+          <Pressable
+            style={[styles.leakBtn, (leakBusy || loading || !token || !aiOk) && { opacity: 0.55 }]}
+            onPress={() => void runLeakScan()}
+            disabled={leakBusy || loading || !token || !aiOk}
+          >
             {leakBusy ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <>
                 <Ionicons name="sparkles" size={16} color="#fff" />
-                <Text style={styles.leakBtnTxt}>Run AI analysis</Text>
+                <Text style={styles.leakBtnTxt}>Generate highlights</Text>
               </>
             )}
           </Pressable>
           {leakResult?.error ? (
-            <Text style={styles.leakErr}>{leakResult.error}</Text>
+            <Text style={styles.leakErr}>{userFacingError(leakResult.error)}</Text>
           ) : leakResult ? (
             <View style={styles.leakOut}>
               <Text style={styles.leakSummary}>{leakResult.summary}</Text>
@@ -222,7 +252,7 @@ export function InsightsScreen() {
               ))}
               {leakResult.tips.length > 0 ? (
                 <>
-                  <Text style={styles.tipsHdr}>Tips</Text>
+                  <Text style={styles.tipsHdr}>Ideas to review</Text>
                   {leakResult.tips.map((t, i) => (
                     <Text key={i} style={styles.tipLine}>
                       • {t}
@@ -232,6 +262,7 @@ export function InsightsScreen() {
               ) : null}
             </View>
           ) : null}
+          <Text style={styles.adviceFoot}>{MOBILE_NOT_ADVICE_DISCLAIMER}</Text>
         </View>
 
         <Text style={[styles.sectionStandalone, { marginTop: 16 }]}>By category</Text>
@@ -350,6 +381,30 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   leakBtnTxt: { color: "#fff", fontWeight: "700", fontSize: typeScale.md },
+  coachBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.primary + "55",
+    backgroundColor: colors.emerald50,
+    marginBottom: 6,
+  },
+  coachBtnTxt: { flex: 1, fontSize: typeScale.md, fontWeight: "700", color: colors.gray800 },
+  leakHint: {
+    fontSize: typeScale.sm,
+    color: "#78350f",
+    backgroundColor: "#fffbeb",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#fcd34d",
+    padding: 8,
+    marginBottom: 8,
+    lineHeight: 18,
+  },
   leakErr: { color: colors.rose600, fontSize: typeScale.sm, marginTop: 8 },
   leakOut: { marginTop: 8, gap: 10 },
   leakSummary: { fontSize: typeScale.md, color: colors.gray800, lineHeight: 20, marginBottom: 4 },
@@ -367,6 +422,13 @@ const styles = StyleSheet.create({
   findingDetail: { fontSize: typeScale.sm, color: colors.gray700, marginTop: 6, lineHeight: 18 },
   sevTag: { fontSize: typeScale.xs, fontWeight: "700", color: colors.gray500, marginTop: 6, textTransform: "uppercase" },
   tipsHdr: { fontSize: typeScale.sm, fontWeight: "700", color: colors.gray700, marginTop: 8 },
+  adviceFoot: {
+    marginTop: 12,
+    fontSize: 10,
+    lineHeight: 14,
+    color: colors.gray500,
+    textAlign: "center",
+  },
   tipLine: { fontSize: typeScale.sm, color: colors.gray800, marginTop: 4, lineHeight: 18 },
   catCard: {
     backgroundColor: colors.surface,

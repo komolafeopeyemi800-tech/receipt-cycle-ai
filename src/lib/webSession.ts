@@ -1,6 +1,7 @@
 /** Same key as `apps/mobile/src/lib/sessionStorage.ts` — one session for web + Expo web. */
 export const WEB_SESSION_TOKEN_KEY = "receiptcycle_session_token";
 export const WEB_SESSION_USER_KEY = "receiptcycle_session_user";
+export const WEB_LAST_EMAIL_KEY = "receiptcycle_last_signin_email";
 
 type SessionUser = { id: string; email: string; name: string | null };
 
@@ -55,6 +56,24 @@ export function setWebSessionUser(user: SessionUser): void {
 export function clearWebSessionUser(): void {
   try {
     localStorage.removeItem(WEB_SESSION_USER_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getWebLastEmail(): string {
+  try {
+    return localStorage.getItem(WEB_LAST_EMAIL_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function setWebLastEmail(email: string): void {
+  try {
+    const v = email.trim().toLowerCase();
+    if (v) localStorage.setItem(WEB_LAST_EMAIL_KEY, v);
+    else localStorage.removeItem(WEB_LAST_EMAIL_KEY);
   } catch {
     /* ignore */
   }

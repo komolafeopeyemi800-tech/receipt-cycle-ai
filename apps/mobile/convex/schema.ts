@@ -12,15 +12,24 @@ export default defineSchema({
     name: v.optional(v.string()),
     /** Google account subject (OpenID); set when user signs in with Google */
     googleSub: v.optional(v.string()),
+    /** Whop account subject (OIDC) when user signs in with Whop */
+    whopSub: v.optional(v.string()),
     /** Billing / tier (optional; legacy rows may omit) */
     plan: v.optional(v.string()),
+    /** Pro / paid subscriber (Whop or admin); full access + CSV export */
+    proSubscriptionActive: v.optional(v.boolean()),
+    /** Start of 7-day Pro trial window (defaults to account creation if unset) */
+    trialStartedAt: v.optional(v.number()),
+    /** Transactions counted toward trial cap while not Pro (max 25); migrated from existing rows on bootstrap */
+    trialLifetimeAdds: v.optional(v.number()),
     /** App role, e.g. user vs admin */
     role: v.optional(v.string()),
     /** Account state */
     status: v.optional(v.string()),
   })
     .index("by_email", ["email"])
-    .index("by_google_sub", ["googleSub"]),
+    .index("by_google_sub", ["googleSub"])
+    .index("by_whop_sub", ["whopSub"]),
 
   /** One-time password reset tokens (hashed lookup by raw token string) */
   passwordResetTokens: defineTable({
@@ -126,6 +135,8 @@ export default defineSchema({
     scanPayment: v.optional(v.boolean()),
     requirePay: v.optional(v.boolean()),
     requireNotes: v.optional(v.boolean()),
+    /** ISO-style code for Whisper, or "auto" — synced web + mobile */
+    voiceInputLanguage: v.optional(v.string()),
   }).index("by_user", ["userId"]),
 
   /** Global runtime controls for web + mobile */

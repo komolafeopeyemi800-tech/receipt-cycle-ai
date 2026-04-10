@@ -4,7 +4,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import { useState, useCallback, useEffect, type FormEvent, type ChangeEvent, type CSSProperties } from "react";
 import { useLocation } from "react-router-dom";
 import { TransactionList } from "@/components/transactions/TransactionList";
-import type { Transaction } from "@/hooks/use-transactions";
+import type { Transaction } from "@/types/transaction";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { AppChrome } from "@/components/layout/AppChrome";
@@ -52,7 +52,7 @@ function normalizeExtracted(data: unknown): {
 function ConvexTransactionsInner() {
   const location = useLocation();
   const { workspace, ready } = useWorkspace();
-  const { user } = useWebAuth();
+  const { user, token } = useWebAuth();
   const userId = user!.id;
   const transactions = useQuery(api.transactions.list, ready ? { workspace, userId } : "skip");
   const createTx = useMutation(api.transactions.create);
@@ -93,7 +93,15 @@ function ConvexTransactionsInner() {
           setScanMsg("Scanner is currently unavailable.");
           return;
         }
-        const result = await scanFromBase64({ imageBase64: base64, mimeType: f.type || "image/jpeg" });
+        if (!token) {
+          setScanMsg("Sign in to scan receipts.");
+          return;
+        }
+        const result = await scanFromBase64({
+          imageBase64: base64,
+          mimeType: f.type || "image/jpeg",
+          sessionToken: token,
+        });
         if ("error" in result && result.error) {
           setScanMsg(result.error);
           return;
@@ -110,7 +118,7 @@ function ConvexTransactionsInner() {
         setBusy(false);
       }
     },
-    [scanFromBase64, runtime?.maintenanceMode, runtime?.scannerEnabled],
+    [scanFromBase64, runtime?.maintenanceMode, runtime?.scannerEnabled, token],
   );
 
   async function handleAdd(e: FormEvent) {
@@ -187,8 +195,8 @@ function ConvexTransactionsInner() {
           <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>Records</h1>
         </div>
         <p style={{ fontSize: 12, color: "#64748b", margin: "0 0 14px", lineHeight: 1.45 }}>
-          Upload a receipt image to run OCR (camera capture lives on the mobile app). Same personal ledger as the
-          Expo app when both use this Convex deployment.
+          Upload a receipt image for OCR, or add transactions below. Your ledger stays in sync with the mobile app when
+          you use the same account.
         </p>
 
         <div style={{ ...card, display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>

@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
-import type { Id } from "../../convex/_generated/dataModel";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { Audio } from "expo-av";
+import { readAsStringAsync } from "expo-file-system/legacy";
+import type { Doc, Id } from "../../convex/_generated/dataModel";
 import { api } from "../../convex/_generated/api";
 import {
   ActivityIndicator,
@@ -25,7 +27,11 @@ import { colors, gradients } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import { useAuth } from "../contexts/AuthContext";
+import { usePreferences } from "../contexts/PreferencesContext";
+import { useSubscriptionState } from "../hooks/useSubscriptionState";
 import { AnimatedPressable } from "../components/AnimatedPressable";
+import { todayYm } from "../utils/transactionMath";
+import { userFacingError, userFacingErrorFromUnknown } from "../lib/userFacingErrors";
 
 const CAT_COLORS = ["#0f766e", "#2563eb", "#7c3aed", "#ea580c", "#db2777", "#64748b"];
 
@@ -42,8 +48,17 @@ export function AddTransactionScreen() {
   const ensureAcc = useMutation(api.accounts.ensureSeed);
   const createCat = useMutation(api.categories.create);
   const createAcc = useMutation(api.accounts.create);
+  const budgetUpsert = useMutation(api.budgets.upsert);
+  const voiceFromAudio = useAction(api.voiceFinance.voiceTransactionFromAudio);
+  const parseFromText = useAction(api.voiceFinance.parseTransactionFromSpeech);
   const { workspace, ready } = useWorkspace();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  const { voiceInputLanguage } = usePreferences();
+  const sub = useSubscriptionState();
+
+  const voiceAiOk = !sub || sub.canUseAiFeatures;
+  const canSaveNew = !sub || sub.canCreateTransaction;
+  const canSaveEdit = !sub || sub.canEditOrDeleteTransaction;
 
   const editId = route.params?.transactionId ? (route.params.transactionId as Id<"transactions">) : undefined;
   const existing = useQuery(
@@ -64,6 +79,11 @@ export function AddTransactionScreen() {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const [voiceRecording, setVoiceRecording] = useState(false);
+  const [voicePhrase, setVoicePhrase] = useState("");
+  const voiceRecRef = useRef<Audio.Recording | null>(null);
+
   const [catModal, setCatModal] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [accModal, setAccModal] = useState(false);
@@ -72,6 +92,16 @@ export function AddTransactionScreen() {
 
   const cats = useQuery(api.categories.list, ready ? { workspace } : "skip");
   const accounts = useQuery(api.accounts.list, ready ? { workspace } : "skip");
+
+  const voiceHints = useMemo(() => {
+    const cRows = (cats ?? []) as Doc<"categories">[];
+    const aRows = (accounts ?? []) as Doc<"accounts">[];
+    return {
+      expenseCategories: cRows.filter((row) => row.kind === "expense").map((row) => row.name),
+      incomeCategories: cRows.filter((row) => row.kind === "income").map((row) => row.name),
+      accountNames: aRows.map((row) => row.name),
+    };
+  }, [cats, accounts]);
 
   useEffect(() => {
     if (!ready) return;
@@ -177,9 +207,204 @@ export function AddTransactionScreen() {
     };
   }, [keyboardLift]);
 
+  useEffect(() => {
+    return () => {
+      void (async () => {
+        try {
+          if (voiceRecRef.current) {
+            await voiceRecRef.current.stopAndUnloadAsync();
+            voiceRecRef.current = null;
+          }
+        } catch {
+          /* ignore */
+        }
+      })();
+    };
+  }, []);
+
+  type VoiceDraft = {
+    intent: "transaction" | "budget";
+    amount: number | null;
+    type: "expense" | "income";
+    category: string;
+    merchant: string | null;
+    date: string | null;
+    description: string | null;
+    payment_method: string | null;
+    confidence: string;
+    budgetCategory: string | null;
+    budgetLimit: number | null;
+    budgetMonth: string | null;
+  };
+
+  async function applyVoiceDraft(draft: VoiceDraft) {
+    if (draft.intent === "budget" && draft.budgetLimit != null && draft.budgetLimit > 0 && user?.id) {
+      if (sub && !sub.canMutateBudgets) {
+        Alert.alert("Upgrade needed", sub.blockReason ?? "Pro or active trial required to edit budgets.");
+        return;
+      }
+      const month = draft.budgetMonth ?? todayYm();
+      const catRaw = (draft.budgetCategory || draft.category || "Other").trim() || "Other";
+      const list = cats ?? [];
+      const has = list.some((c) => c.name === catRaw && c.kind === "expense");
+      if (!has) {
+        const color = CAT_COLORS[Math.floor(Math.random() * CAT_COLORS.length)]!;
+        await createCat({ workspace, name: catRaw, kind: "expense", color });
+      }
+      await budgetUpsert({
+        workspace,
+        userId: user.id,
+        category: catRaw,
+        month,
+        limitAmount: draft.budgetLimit,
+      });
+      Alert.alert("Budget updated", `“${catRaw}” limit ${draft.budgetLimit} for ${month}.`);
+      return;
+    }
+
+    setTransactionType(draft.type === "income" ? "income" : "expense");
+    if (draft.amount != null && draft.amount > 0) {
+      setAmount(String(draft.amount));
+    }
+    if (draft.merchant?.trim()) {
+      setMerchant(draft.merchant.trim());
+    }
+    if (draft.date?.trim()) {
+      setDate(draft.date.trim());
+      const p = new Date(`${draft.date.trim()}T12:00:00`);
+      if (!Number.isNaN(p.getTime())) setDateObj(p);
+    }
+    const desc = draft.description?.trim();
+    if (desc) {
+      setNotes((n) => (n.trim() ? `${n.trim()}\n\n${desc}` : desc));
+    }
+    const pm = draft.payment_method?.trim();
+    if (pm) {
+      setPaymentMethod(pm);
+      const accList = accounts ?? [];
+      const acc = accList.find((a) => a.name.toLowerCase() === pm.toLowerCase());
+      if (acc) setAccountId(acc.id);
+    }
+
+    const catName = draft.category.trim();
+    if (!catName) return;
+    const expKind = draft.type === "income" ? "income" : "expense";
+    const list = cats ?? [];
+    const has = list.some((c) => c.name === catName && c.kind === expKind);
+    if (!has) {
+      const color = CAT_COLORS[Math.floor(Math.random() * CAT_COLORS.length)]!;
+      await createCat({ workspace, name: catName, kind: expKind, color });
+    }
+    setCategory(catName);
+  }
+
+  async function runParseFromText() {
+    const t = voicePhrase.trim();
+    if (!t) {
+      Alert.alert("Voice / text", 'Tap the mic and speak, or type something like "12 dollars coffee at Starbucks yesterday".');
+      return;
+    }
+    if (!token) {
+      Alert.alert("Sign in", "Sign in to use voice and optional smart fill.");
+      return;
+    }
+    setVoiceBusy(true);
+    try {
+      const out = await parseFromText({ text: t, sessionToken: token, hints: voiceHints });
+      if (!out.ok || !out.draft) {
+        Alert.alert("Could not parse", userFacingError(out.error || undefined));
+        return;
+      }
+      await applyVoiceDraft(out.draft as VoiceDraft);
+      Alert.alert("Filled from text", "Review the fields and tap Save.");
+    } catch (e) {
+      Alert.alert("Error", userFacingErrorFromUnknown(e));
+    } finally {
+      setVoiceBusy(false);
+    }
+  }
+
+  async function toggleVoiceRecording() {
+    if (voiceBusy && !voiceRecording) return;
+    if (voiceRecording && voiceRecRef.current) {
+      try {
+        setVoiceRecording(false);
+        await voiceRecRef.current.stopAndUnloadAsync();
+        const uri = voiceRecRef.current.getURI();
+        voiceRecRef.current = null;
+        if (!uri) return;
+        setVoiceBusy(true);
+        const b64 = await readAsStringAsync(uri, { encoding: "base64" });
+        const lower = uri.toLowerCase();
+        const mime = lower.endsWith(".webm")
+          ? "audio/webm"
+          : lower.endsWith(".wav")
+            ? "audio/wav"
+            : lower.endsWith(".caf")
+              ? "audio/x-caf"
+              : "audio/m4a";
+        if (!token) {
+          setVoiceBusy(false);
+          Alert.alert("Sign in", "Sign in to use voice entry.");
+          return;
+        }
+        const out = await voiceFromAudio({
+          audioBase64: b64,
+          mimeType: mime,
+          language: voiceInputLanguage,
+          sessionToken: token,
+          hints: voiceHints,
+        });
+        setVoiceBusy(false);
+        if (!out.ok || !out.draft) {
+          Alert.alert(
+            "Voice add",
+            out.transcript
+              ? `${userFacingError(out.error)}\n\nWe heard: “${out.transcript}”`
+              : userFacingError(out.error ?? "Could not process audio."),
+          );
+          if (out.transcript) setVoicePhrase(out.transcript);
+          return;
+        }
+        setVoicePhrase(out.transcript ?? "");
+        await applyVoiceDraft(out.draft as VoiceDraft);
+        Alert.alert("Filled from voice", "Review the fields and tap Save.");
+      } catch (e) {
+        setVoiceBusy(false);
+        Alert.alert("Recording", userFacingErrorFromUnknown(e));
+      }
+      return;
+    }
+
+    try {
+      const perm = await Audio.requestPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert("Microphone", "Allow microphone access to add transactions by voice.");
+        return;
+      }
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      voiceRecRef.current = recording;
+      setVoiceRecording(true);
+    } catch (e) {
+      Alert.alert("Recording", userFacingErrorFromUnknown(e));
+    }
+  }
+
   async function save() {
     if (!user?.id) {
       Alert.alert("Sign in required", "Sign in to save transactions to your account.");
+      return;
+    }
+    if (editId ? !canSaveEdit : !canSaveNew) {
+      Alert.alert(
+        "Upgrade needed",
+        sub?.blockReason ?? "Upgrade to Pro to add or edit transactions.",
+        [{ text: "OK" }, { text: "Pricing", onPress: () => navigation.navigate("Pricing") }],
+      );
       return;
     }
     const n = parseFloat(amount);
@@ -248,7 +473,7 @@ export function AddTransactionScreen() {
       }
       navigation.goBack();
     } catch (e) {
-      Alert.alert("Could not save", e instanceof Error ? e.message : "Unknown error");
+      Alert.alert("Could not save", userFacingErrorFromUnknown(e));
     } finally {
       setSaving(false);
     }
@@ -327,6 +552,24 @@ export function AddTransactionScreen() {
         <View style={{ width: 24 }} />
       </View>
       <ScrollView contentContainerStyle={styles.pad}>
+        {sub && !sub.pro && sub.trialTimeActive && sub.canCreateTransaction ? (
+          <View style={styles.subBannerTrial}>
+            <Text style={styles.subBannerTitle}>Pro trial</Text>
+            <Text style={styles.subBannerTxt}>
+              {sub.trialAddsUsed} of {sub.trialAddsLimit} transactions used (all entry types count).
+            </Text>
+          </View>
+        ) : null}
+        {sub && !sub.pro && sub.blockReason ? (
+          <View style={styles.subBannerWarn}>
+            <Text style={styles.subBannerTitle}>Subscription</Text>
+            <Text style={styles.subBannerTxt}>{sub.blockReason}</Text>
+            <Pressable style={styles.subBannerBtn} onPress={() => navigation.navigate("Pricing")}>
+              <Text style={styles.subBannerBtnTxt}>View plans</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         <View style={styles.typeRow}>
           <Pressable
             style={[styles.typeChip, transactionType === "expense" && styles.typeChipOn]}
@@ -341,6 +584,55 @@ export function AddTransactionScreen() {
             <Text style={[styles.typeTxt, transactionType === "income" && styles.typeTxtOn]}>Income</Text>
           </Pressable>
         </View>
+
+        {!editId ? (
+          <View style={styles.voiceCard}>
+            <Text style={styles.voiceTitle}>Voice or quick text</Text>
+            {voiceAiOk ? (
+              <Text style={styles.voiceHint}>
+                Speak a purchase (e.g. &quot;spent eighteen fifty on tacos at Chipotle Friday&quot;) or type below, then parse.
+              </Text>
+            ) : (
+              <Text style={styles.voiceHint}>
+                Voice and optional smart fill need an active trial slot or Pro. {sub?.blockReason ?? ""}
+              </Text>
+            )}
+            <View style={styles.voiceRow}>
+              <Pressable
+                style={[styles.voiceMic, voiceRecording && styles.voiceMicOn, (!voiceAiOk || !token) && { opacity: 0.45 }]}
+                onPress={() => void toggleVoiceRecording()}
+                disabled={voiceBusy || !voiceAiOk || !token}
+              >
+                {voiceBusy && !voiceRecording ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : (
+                  <Ionicons name={voiceRecording ? "stop" : "mic"} size={22} color={voiceRecording ? "#fff" : colors.primary} />
+                )}
+              </Pressable>
+              <TextInput
+                style={styles.voiceInput}
+                placeholder="Type a purchase…"
+                placeholderTextColor={colors.gray400}
+                value={voicePhrase}
+                onChangeText={setVoicePhrase}
+                editable={!voiceBusy && voiceAiOk && Boolean(token)}
+              />
+              <Pressable
+                style={[styles.voiceApply, (voiceBusy || !voiceAiOk || !token) && { opacity: 0.6 }]}
+                onPress={() => void runParseFromText()}
+                disabled={voiceBusy || !voiceAiOk || !token}
+              >
+                <Text style={styles.voiceApplyTxt}>Parse</Text>
+              </Pressable>
+            </View>
+            {!voiceAiOk || !token ? (
+              <Pressable style={{ marginTop: 8 }} onPress={() => navigation.navigate("Pricing")}>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>View plans</Text>
+              </Pressable>
+            ) : null}
+            {voiceRecording ? <Text style={styles.voiceRecLabel}>Recording… tap mic again to stop</Text> : null}
+          </View>
+        ) : null}
 
         <Text style={styles.label}>Amount</Text>
         <TextInput
@@ -399,9 +691,12 @@ export function AddTransactionScreen() {
 
         <Animated.View style={{ transform: [{ translateY: keyboardLift }] }}>
           <AnimatedPressable
-            style={[styles.saveBtn, saving && { opacity: 0.7 }]}
+            style={[
+              styles.saveBtn,
+              (saving || (editId ? !canSaveEdit : !canSaveNew)) && { opacity: 0.55 },
+            ]}
             onPress={save}
-            disabled={saving}
+            disabled={saving || (editId ? !canSaveEdit : !canSaveNew)}
             pressedScale={0.985}
           >
           {saving ? (
@@ -508,7 +803,68 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 18, fontWeight: "700", color: colors.gray900 },
   pad: { padding: 16, paddingBottom: 48 },
+  subBannerTrial: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary + "55",
+    backgroundColor: colors.teal50,
+    padding: 12,
+    marginBottom: 14,
+  },
+  subBannerWarn: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#fcd34d",
+    backgroundColor: "#fffbeb",
+    padding: 12,
+    marginBottom: 14,
+  },
+  subBannerTitle: { fontSize: 13, fontWeight: "800", color: colors.gray900 },
+  subBannerTxt: { fontSize: 12, color: colors.gray700, marginTop: 4, lineHeight: 17 },
+  subBannerBtn: { marginTop: 10, alignSelf: "flex-start" },
+  subBannerBtnTxt: { fontSize: 13, fontWeight: "700", color: colors.primary },
   typeRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
+  voiceCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.primary + "44",
+    backgroundColor: colors.teal50,
+    padding: 12,
+    marginBottom: 18,
+  },
+  voiceTitle: { fontSize: 13, fontWeight: "800", color: colors.gray800, marginBottom: 6 },
+  voiceHint: { fontSize: 11, color: colors.gray600, lineHeight: 15, marginBottom: 10 },
+  voiceRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  voiceMic: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+  },
+  voiceMicOn: { backgroundColor: colors.rose600, borderColor: colors.rose600 },
+  voiceInput: {
+    flex: 1,
+    minHeight: 44,
+    borderWidth: 1,
+    borderColor: colors.gray200,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    fontSize: 13,
+    color: colors.gray900,
+    backgroundColor: "#fff",
+  },
+  voiceApply: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+  },
+  voiceApplyTxt: { color: "#fff", fontWeight: "700", fontSize: 12 },
+  voiceRecLabel: { fontSize: 11, color: colors.rose600, marginTop: 8, fontWeight: "600" },
   typeChip: {
     flex: 1,
     paddingVertical: 12,

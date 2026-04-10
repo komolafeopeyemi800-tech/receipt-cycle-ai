@@ -1,0 +1,8 @@
+<!-- Vector mark matching Receipt Cycle app icon: teal circle, white receipt, line items -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Receipt Cycle">
+  <circle cx="256" cy="256" r="256" fill="#149184" />
+  <rect x="176" y="132" width="160" height="248" rx="18" fill="#ffffff" />
+  <rect x="208" y="200" width="96" height="20" rx="5" fill="#cbd5e1" />
+  <rect x="208" y="236" width="96" height="20" rx="5" fill="#cbd5e1" />
+  <rect x="208" y="272" width="72" height="20" rx="5" fill="#cbd5e1" />
+</svg>

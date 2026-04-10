@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -16,6 +16,8 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../contexts/AuthContext";
 import { GoogleSignInButton } from "../components/GoogleSignInButton";
+import { WhopSignInButton } from "../components/WhopSignInButton";
+import { getRememberedEmailAsync } from "../lib/rememberedEmail";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
 
@@ -27,6 +29,13 @@ export function SignUpScreen() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      const last = await getRememberedEmailAsync();
+      if (last) setEmail(last);
+    })();
+  }, []);
 
   const onGoogleError = useCallback((message: string) => {
     setErr(message);
@@ -52,6 +61,14 @@ export function SignUpScreen() {
           </Pressable>
           <Text style={styles.title}>Create account</Text>
           <Text style={styles.sub}>Create an account — email and password are stored securely via Convex.</Text>
+
+          <WhopSignInButton label="Sign up with Whop" onError={(m) => setErr(m)} disabled={busy} />
+
+          <View style={styles.orRow}>
+            <View style={styles.orLine} />
+            <Text style={styles.orTxt}>or</Text>
+            <View style={styles.orLine} />
+          </View>
 
           <View style={styles.field}>
             <Text style={styles.lbl}>Name (optional)</Text>
@@ -93,7 +110,7 @@ export function SignUpScreen() {
 
           <View style={styles.orRow}>
             <View style={styles.orLine} />
-            <Text style={styles.orTxt}>or</Text>
+            <Text style={styles.orTxt}>or Google</Text>
             <View style={styles.orLine} />
           </View>
 

@@ -3,7 +3,7 @@
 import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { anyOcrProviderConfigured, openRouterApiKey } from "./_ocrEnv";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 type ExtractedShape = {
   merchant_name?: string;
@@ -489,8 +489,22 @@ export const scanFromBase64 = action({
   args: {
     imageBase64: v.string(),
     mimeType: v.optional(v.string()),
+    /** Signed-in session — required for subscription / AI access gating */
+    sessionToken: v.string(),
   },
-  handler: async (ctx, { imageBase64, mimeType }) => {
+  handler: async (ctx, { imageBase64, mimeType, sessionToken }) => {
+    const gate = await ctx.runQuery(internal.subscription.evaluateForAction, { token: sessionToken });
+    if (!gate.ok) {
+      return { success: false as const, extracted_data: null, error: "Sign in to scan receipts.", pipeline: "blocked" };
+    }
+    if (!gate.canUseAiFeatures) {
+      return {
+        success: false as const,
+        extracted_data: null,
+        error: gate.blockReason ?? "Upgrade to Pro or use a trial slot to scan receipts.",
+        pipeline: "blocked",
+      };
+    }
     const cfg = await ctx.runQuery(api.admin.publicConfig, {});
     if (cfg.maintenanceMode) {
       return { success: false as const, extracted_data: null, error: "System is in maintenance mode.", pipeline: "blocked" };
@@ -567,8 +581,21 @@ export const scanFromBase64 = action({
 export const scanFromDocumentText = action({
   args: {
     text: v.string(),
+    sessionToken: v.string(),
   },
-  handler: async (ctx, { text }) => {
+  handler: async (ctx, { text, sessionToken }) => {
+    const gate = await ctx.runQuery(internal.subscription.evaluateForAction, { token: sessionToken });
+    if (!gate.ok) {
+      return { success: false as const, extracted_data: null, error: "Sign in to scan uploads.", pipeline: "blocked" };
+    }
+    if (!gate.canUseAiFeatures) {
+      return {
+        success: false as const,
+        extracted_data: null,
+        error: gate.blockReason ?? "Upgrade to Pro or use a trial slot for upload scanning.",
+        pipeline: "blocked",
+      };
+    }
     const cfg = await ctx.runQuery(api.admin.publicConfig, {});
     if (cfg.maintenanceMode) {
       return { success: false as const, extracted_data: null, error: "System is in maintenance mode.", pipeline: "blocked" };

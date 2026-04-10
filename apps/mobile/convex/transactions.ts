@@ -1,6 +1,14 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
+import {
+  assertCanCreateTransaction,
+  assertCanEditTransaction,
+  assertCanExportCsv,
+  computeSubscriptionState,
+  incrementTrialAddsIfNeeded,
+  type UserSubDoc,
+} from "./_subscriptionLogic";
 
 const workspaceKey = v.string();
 
@@ -80,30 +88,16 @@ function rowVisibleForUser(doc: TransactionDoc, userId: string | undefined, emai
   return false;
 }
 
-function monthRange(nowMs: number) {
-  const d = new Date(nowMs);
-  const start = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).getTime();
-  const end = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)).getTime();
-  return { start, end };
-}
-
-async function enforceMonthlySourceCap(
-  ctx: { db: { query: (table: "transactions") => { collect: () => Promise<unknown[]> } } },
-  userId: string,
-  entrySource: "camera" | "upload" | "manual",
-  sourceCaps: Record<"camera" | "upload" | "manual", number>,
-) {
-  const cap = sourceCaps[entrySource];
-  const { start, end } = monthRange(Date.now());
-  const all = (await ctx.db.query("transactions").collect()) as TransactionDoc[];
-  const used = all.filter((t) => {
-    if (t.userId !== userId) return false;
-    if (t.entrySource !== entrySource) return false;
-    return t._creationTime >= start && t._creationTime < end;
-  }).length;
-  if (used >= cap) {
-    throw new Error(`Monthly limit reached for ${entrySource} entries (${cap}). Please wait until next month.`);
+async function loadUserSubscriptionState(ctx: { db: { get: (id: Id<"users">) => Promise<unknown> } }, userId: string) {
+  let user: UserSubDoc | null = null;
+  try {
+    user = (await ctx.db.get(userId as Id<"users">)) as UserSubDoc | null;
+  } catch {
+    user = null;
   }
+  if (!user) throw new Error("You must be signed in to continue.");
+  const state = computeSubscriptionState(user, Date.now());
+  return { user, state };
 }
 
 async function getRuntimeConfig(
@@ -221,6 +215,8 @@ export const exportForBackup = query({
   args: { userId: v.optional(v.string()) },
   handler: async (ctx, { userId }) => {
     if (!userId?.trim()) return [];
+    const { state } = await loadUserSubscriptionState(ctx, userId.trim());
+    assertCanExportCsv(state);
     const all = await ctx.db.query("transactions").collect();
     const rows = all.filter((d) => (d as TransactionDoc).userId === userId);
     return rows.map((d) => toClientShape(d as TransactionDoc));
@@ -275,16 +271,8 @@ export const create = mutation({
     if (entrySource === "manual" && !cfg.manualAddEnabled) {
       throw new Error("Manual add is currently disabled by admin.");
     }
-    await enforceMonthlySourceCap(
-      ctx,
-      args.userId,
-      entrySource,
-      {
-        camera: cfg.freeCameraLimit,
-        upload: cfg.freeUploadLimit,
-        manual: cfg.freeManualLimit,
-      },
-    );
+    const { state } = await loadUserSubscriptionState(ctx, args.userId.trim());
+    assertCanCreateTransaction(state);
     const { workspace, userId, accountId, ...rest } = args;
     const id = await ctx.db.insert("transactions", {
       workspace,
@@ -296,6 +284,7 @@ export const create = mutation({
     if (accountId && args.amount > 0) {
       await applyAccountDelta(ctx, accountId, workspace, args.amount, args.type);
     }
+    await incrementTrialAddsIfNeeded(ctx, args.userId.trim() as Id<"users">);
     return id;
   },
 });
@@ -323,6 +312,9 @@ export const update = mutation({
     if (resolveWorkspace(old) !== args.workspace) throw new Error("Workspace mismatch");
     if (!args.userId?.trim()) throw new Error("Sign in required.");
     if (old.userId !== args.userId) throw new Error("Forbidden");
+
+    const { state } = await loadUserSubscriptionState(ctx, args.userId.trim());
+    assertCanEditTransaction(state);
 
     if (old.accountId && old.amount > 0) {
       const rev = old.type === "expense" ? old.amount : old.type === "income" ? -old.amount : 0;
@@ -363,6 +355,8 @@ export const remove = mutation({
     if (!row) throw new Error("Transaction not found");
     if (!userId?.trim()) throw new Error("Sign in required.");
     if (row.userId !== userId) throw new Error("Forbidden");
+    const { state } = await loadUserSubscriptionState(ctx, userId.trim());
+    assertCanEditTransaction(state);
     if (row?.accountId && row.amount > 0) {
       const ws = resolveWorkspace(row as TransactionDoc);
       const rev = row.type === "expense" ? row.amount : row.type === "income" ? -row.amount : 0;
@@ -402,7 +396,14 @@ export const bulkImport = mutation({
     const cfg = await getRuntimeConfig(ctx);
     if (cfg.maintenanceMode) throw new Error("System is in maintenance mode. Please try again later.");
     if (!cfg.uploadEnabled) throw new Error("Upload import is currently disabled by admin.");
+    const { state } = await loadUserSubscriptionState(ctx, args.userId.trim());
     const slice = args.rows.slice(0, MAX_BULK_IMPORT);
+    if (!state.pro && slice.length > state.trialAddsRemaining) {
+      throw new Error(
+        `This import has ${slice.length} rows but your trial has ${state.trialAddsRemaining} transaction slot(s) left. Upgrade to Pro for unlimited imports, or reduce the file.`,
+      );
+    }
+    if (slice.length > 0) assertCanCreateTransaction(state);
     let inserted = 0;
     for (const row of slice) {
       await ctx.db.insert("transactions", {
@@ -417,8 +418,10 @@ export const bulkImport = mutation({
         payment_method: row.payment_method ?? "Import",
         tags: ["import"],
         is_recurring: false,
+        entrySource: "upload",
       });
       inserted++;
+      await incrementTrialAddsIfNeeded(ctx, args.userId.trim() as Id<"users">);
     }
     return { inserted, truncated: args.rows.length > MAX_BULK_IMPORT };
   },

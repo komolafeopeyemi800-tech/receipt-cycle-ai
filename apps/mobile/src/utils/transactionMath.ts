@@ -5,13 +5,26 @@ export function roundMoney(n: number) {
   return Math.round(n * 100) / 100;
 }
 
+/** Calendar date in the user's local timezone as `YYYY-MM-DD` (avoid `toISOString()` UTC shifts). */
+export function toLocalISODate(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export function monthRangeISO() {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const startStr = start.toISOString().split("T")[0];
-  const endStr = end.toISOString().split("T")[0];
-  return { startStr, endStr };
+  return { startStr: toLocalISODate(start), endStr: toLocalISODate(end) };
+}
+
+function txKind(type: string): "income" | "expense" | "other" {
+  const k = type.trim().toLowerCase();
+  if (k === "income") return "income";
+  if (k === "expense") return "expense";
+  return "other";
 }
 
 export function filterByMonth(transactions: DocTx[]) {
@@ -58,26 +71,30 @@ export function ymToDateRange(ym: string): { start: string; end: string } {
 export function expenseTotalsByCategory(transactions: DocTx[], start: string, end: string) {
   const map = new Map<string, number>();
   for (const t of transactions) {
-    if (t.type !== "expense") continue;
+    if (txKind(t.type) !== "expense") continue;
     if (t.date < start || t.date > end) continue;
     const prev = map.get(t.category) ?? 0;
-    map.set(t.category, roundMoney(prev + t.amount));
+    map.set(t.category, roundMoney(prev + Math.abs(t.amount)));
   }
   return map;
 }
 
 export function buildSummary(transactions: DocTx[]) {
-  const totalIncome = roundMoney(transactions.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0));
-  const totalExpenses = roundMoney(transactions.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0));
+  const totalIncome = roundMoney(
+    transactions.filter((t) => txKind(t.type) === "income").reduce((s, t) => s + Math.abs(t.amount), 0),
+  );
+  const totalExpenses = roundMoney(
+    transactions.filter((t) => txKind(t.type) === "expense").reduce((s, t) => s + Math.abs(t.amount), 0),
+  );
   const netBalance = roundMoney(totalIncome - totalExpenses);
-  const savingsRate = totalIncome > 0 ? roundMoney((netBalance / totalIncome) * 100) : 0;
+  const savingsRate = totalIncome > 0 ? roundMoney((netBalance / totalIncome) * 100) : null;
   const categoryMap = new Map<string, { amount: number; count: number }>();
   transactions
-    .filter((t) => t.type === "expense")
+    .filter((t) => txKind(t.type) === "expense")
     .forEach((t) => {
       const cur = categoryMap.get(t.category) || { amount: 0, count: 0 };
       categoryMap.set(t.category, {
-        amount: roundMoney(cur.amount + t.amount),
+        amount: roundMoney(cur.amount + Math.abs(t.amount)),
         count: cur.count + 1,
       });
     });

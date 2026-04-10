@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../contexts/AuthContext";
+import { formatAuthError } from "../lib/authErrors";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
 
@@ -40,7 +41,7 @@ export function ForgotPasswordScreen() {
     try {
       const res = await requestPasswordReset(trimmed);
       if (!res.ok) {
-        setErr(res.error.message);
+        setErr(formatAuthError(res.error));
         return;
       }
       if (res.emailSent) {

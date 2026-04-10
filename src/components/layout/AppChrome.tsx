@@ -29,11 +29,11 @@ export function AppChrome({ children }: AppChromeProps) {
       : "/signin";
 
   const connLabel = conn.isWebSocketConnected
-    ? "Connected to backend"
+    ? "Connected"
     : conn.hasEverConnected
       ? "Reconnecting…"
       : conn.connectionRetries > 0
-        ? "Cannot reach backend (check URL / network)"
+        ? "Can’t reach the server — check your connection"
         : "Connecting…";
 
   const inner =
@@ -44,14 +44,13 @@ export function AppChrome({ children }: AppChromeProps) {
           <p className="text-sm font-medium">Loading your workspace…</p>
           <p className="mt-2 text-xs text-slate-500">{connLabel}</p>
           <p className="mt-2 text-xs text-slate-400">
-            Confirm <code className="rounded bg-slate-100 px-1">VITE_CONVEX_URL</code> matches your Convex deployment
-            and <code className="rounded bg-slate-100 px-1">npx convex dev</code> is running when using dev.
+            If loading takes unusually long, check your network or try refreshing the page.
           </p>
           {showStuckHint ? (
             <div className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-left">
               <p className="text-xs text-slate-600">
-                Still stuck? A stale session block can be cleared manually. Your session also resets automatically after
-                ~12s if the server never responds.
+                Still stuck? You can sign out locally and try signing in again. Your session also clears automatically
+                if the server doesn’t respond.
               </p>
               <button
                 type="button"
@@ -71,8 +70,7 @@ export function AppChrome({ children }: AppChromeProps) {
         </div>
         <h1 className="text-xl font-bold text-slate-900">Sign in to open your dashboard</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Web uses the same Convex account as the mobile app. Sign in with your email and password to see your
-          transactions and totals.
+          Use the same email and password as the mobile app to view your records and balances on the web.
         </p>
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <Link

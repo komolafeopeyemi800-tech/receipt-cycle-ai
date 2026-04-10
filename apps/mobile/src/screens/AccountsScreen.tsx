@@ -24,6 +24,7 @@ import { usePreferences } from "../contexts/PreferencesContext";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
+import { userFacingErrorFromUnknown } from "../lib/userFacingErrors";
 
 type AccRow = { id: Id<"accounts">; name: string; balance: number; iconKey: string };
 
@@ -76,7 +77,7 @@ export function AccountsScreen() {
       setNewName("");
       setAddOpen(false);
     } catch (e) {
-      Alert.alert("Account", e instanceof Error ? e.message : "Could not create");
+      Alert.alert("Account", userFacingErrorFromUnknown(e));
     }
   }
 
@@ -104,7 +105,7 @@ export function AccountsScreen() {
       setEditOpen(false);
       setEditing(null);
     } catch (e) {
-      Alert.alert("Account", e instanceof Error ? e.message : "Could not update");
+      Alert.alert("Account", userFacingErrorFromUnknown(e));
     }
   }
 

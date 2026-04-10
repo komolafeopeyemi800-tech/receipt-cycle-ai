@@ -40,6 +40,7 @@ import { SignInScreen } from "./src/screens/SignInScreen";
 import { SignUpScreen } from "./src/screens/SignUpScreen";
 import { ForgotPasswordScreen } from "./src/screens/ForgotPasswordScreen";
 import { ResetPasswordScreen } from "./src/screens/ResetPasswordScreen";
+import { FinanceCoachScreen } from "./src/screens/FinanceCoachScreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { colors } from "./src/theme/tokens";
 import type { RootStackParamList } from "./src/navigation/types";
@@ -122,6 +123,7 @@ function MainStackNavigator() {
       <Stack.Screen name="SavedLocations" component={SavedLocationsScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="Pricing" component={PricingScreen} options={{ presentation: "card" }} />
+      <Stack.Screen name="FinanceCoach" component={FinanceCoachScreen} options={{ presentation: "card" }} />
     </Stack.Navigator>
   );
 }

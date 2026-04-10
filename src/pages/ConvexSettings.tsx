@@ -3,9 +3,16 @@ import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Link, useNavigate } from "react-router-dom";
 import { useWebAuth } from "@/contexts/WebAuthContext";
+import { useSubscriptionState } from "@/hooks/use-subscription-state";
 import { useWebPreferences } from "@/contexts/WebPreferencesContext";
 import { AppChrome } from "@/components/layout/AppChrome";
-import { CURRENCY_OPTIONS, DATE_FORMAT_OPTIONS, type DateFormatId, type SavedLocation } from "@mobile-lib/preferences";
+import {
+  CURRENCY_OPTIONS,
+  DATE_FORMAT_OPTIONS,
+  VOICE_INPUT_LANGUAGE_OPTIONS,
+  type DateFormatId,
+  type SavedLocation,
+} from "@mobile-lib/preferences";
 
 const primary = "#0f766e";
 
@@ -26,13 +33,19 @@ function ConvexSettingsInner() {
   const { user, signOut } = useWebAuth();
   const navigate = useNavigate();
   const runtime = useQuery(api.admin.publicConfig, {});
-  const backupRows = useQuery(api.transactions.exportForBackup, user?.id ? { userId: user.id } : "skip");
+  const sub = useSubscriptionState();
+  const backupRows = useQuery(
+    api.transactions.exportForBackup,
+    user?.id && sub?.canExportCsv ? { userId: user.id } : "skip",
+  );
 
   const {
     currency,
     setCurrency,
     dateFormat,
     setDateFormat,
+    voiceInputLanguage,
+    setVoiceInputLanguage,
     merchants,
     setMerchants,
     locations,
@@ -56,6 +69,10 @@ function ConvexSettingsInner() {
   function exportCsvDownload() {
     if (runtime?.exportEnabled === false) {
       window.alert("Export is currently disabled by admin.");
+      return;
+    }
+    if (sub && !sub.canExportCsv) {
+      window.alert("CSV export is included with Pro. Open Pricing to upgrade and download all your transactions.");
       return;
     }
     if (!user?.id) {
@@ -144,7 +161,7 @@ function ConvexSettingsInner() {
       <div className="border-b border-slate-200 bg-white px-4 py-4">
         <h1 className="text-xl font-bold text-slate-900">Settings</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Same preferences as the mobile app — stored in Convex when you&apos;re signed in.
+          These settings match the mobile app and sync to your account when you&apos;re signed in.
         </p>
       </div>
 
@@ -193,7 +210,7 @@ function ConvexSettingsInner() {
           <p className="mb-2 text-xs text-slate-500">
             {adminLock
               ? "These toggles are centrally managed by admin."
-              : "Saved to your account (Convex) and this browser."}
+              : "Saved to your account and this browser."}
           </p>
           <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
             <ToggleRow
@@ -244,6 +261,21 @@ function ConvexSettingsInner() {
               onChange={(e) => void setDateFormat(e.target.value as DateFormatId)}
             >
               {DATE_FORMAT_OPTIONS.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <label className="mt-3 block text-xs font-semibold text-slate-600">Voice input language</label>
+            <p className="mb-2 text-xs text-slate-500">
+              Applies to voice dictation and the finance coach. Auto-detect works when you mix languages or are unsure.
+            </p>
+            <select
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              value={voiceInputLanguage}
+              onChange={(e) => void setVoiceInputLanguage(e.target.value)}
+            >
+              {VOICE_INPUT_LANGUAGE_OPTIONS.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.label}
                 </option>
@@ -355,7 +387,7 @@ function ConvexSettingsInner() {
           <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Management</p>
           <button
             type="button"
-            disabled={runtime?.exportEnabled === false}
+            disabled={runtime?.exportEnabled === false || Boolean(sub && !sub.canExportCsv)}
             onClick={exportCsvDownload}
             className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm hover:bg-slate-50 disabled:opacity-50"
           >
@@ -363,7 +395,11 @@ function ConvexSettingsInner() {
             <div>
               <p className="font-semibold text-slate-900">Export records</p>
               <p className="text-xs text-slate-500">
-                {runtime?.exportEnabled === false ? "Disabled by admin" : "Download CSV of all your transactions"}
+                {runtime?.exportEnabled === false
+                  ? "Disabled by admin"
+                  : sub && !sub.canExportCsv
+                    ? "Pro only — trial and free plans can view data in the app"
+                    : "Download CSV of all your transactions"}
               </p>
             </div>
           </button>
@@ -383,7 +419,7 @@ function ConvexSettingsInner() {
           </button>
         )}
 
-        <p className="text-center text-xs text-slate-400">Receipt Cycle · Convex auth &amp; data</p>
+        <p className="text-center text-xs text-slate-400">Receipt Cycle</p>
       </div>
     </div>
   );

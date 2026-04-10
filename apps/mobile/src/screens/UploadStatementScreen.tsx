@@ -21,7 +21,9 @@ import { colors, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useSubscriptionState } from "../hooks/useSubscriptionState";
 import { parseStatementCsv } from "../lib/statementCsv";
+import { userFacingError, userFacingErrorFromUnknown } from "../lib/userFacingErrors";
 import type { ScannedExtracted } from "../types/transaction";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -49,7 +51,10 @@ export function UploadStatementScreen() {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const { workspace, ready } = useWorkspace();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  const sub = useSubscriptionState();
+  const aiScanOk = Boolean(token && (!sub || sub.canUseAiFeatures));
+  const canImportRows = Boolean(user?.id && (!sub || sub.canCreateTransaction));
   const bulkImport = useMutation(api.transactions.bulkImport);
   const ensureCats = useMutation(api.categories.ensureSeed);
   const scanImage = useAction(api.scanReceipt.scanFromBase64);
@@ -75,7 +80,7 @@ export function UploadStatementScreen() {
       const txt = await res.text();
       setPreviewText(txt.slice(0, 8000));
     } catch (e) {
-      setPreviewText(`(Could not load preview: ${e instanceof Error ? e.message : "error"})`);
+      setPreviewText(`(Could not load preview: ${userFacingErrorFromUnknown(e)})`);
     }
   }, []);
 
@@ -140,13 +145,21 @@ export function UploadStatementScreen() {
 
   const processAiScan = useCallback(async () => {
     if (!picked || !ready) return;
+    if (!token) {
+      Alert.alert("Sign in", "Sign in to use smart read on uploads.");
+      return;
+    }
+    if (sub && !sub.canUseAiFeatures) {
+      Alert.alert("Upgrade needed", sub.blockReason ?? "Smart read on uploads requires Pro or an active trial slot.");
+      return;
+    }
     setBusy(true);
     setStatus(null);
     try {
       if (picked.kind === "image") {
         const b64 = await readBase64(picked.uri);
         const mime = picked.mime.startsWith("image/") ? picked.mime : "image/jpeg";
-        const result = await scanImage({ imageBase64: b64, mimeType: mime });
+        const result = await scanImage({ imageBase64: b64, mimeType: mime, sessionToken: token });
         const r = result as { extracted_data?: unknown; error?: string };
         let extracted = r.extracted_data as Record<string, unknown> | null | undefined;
         if (extracted && typeof extracted === "object" && "data" in extracted && (extracted as { data?: unknown }).data) {
@@ -164,29 +177,36 @@ export function UploadStatementScreen() {
       const res = await fetch(picked.uri);
       const fullText = await res.text();
 
-      const result = await scanText({ text: fullText });
+      const result = await scanText({ text: fullText, sessionToken: token });
       const r = result as { extracted_data?: unknown; error?: string };
       let extracted = r.extracted_data as Record<string, unknown> | null | undefined;
       if (extracted && typeof extracted === "object" && "data" in extracted && (extracted as { data?: unknown }).data) {
         extracted = (extracted as { data: Record<string, unknown> }).data;
       }
       if (r.error || !extracted || Object.keys(extracted).length === 0) {
-        Alert.alert("Scan", r.error ?? "Could not extract structured data. Try Import as table for CSV.");
+        Alert.alert(
+          "Scan",
+          userFacingError(r.error ?? "Could not extract structured data. Try Import as table for CSV."),
+        );
         return;
       }
       navigation.navigate("ScanReview", { scannedData: extracted as ScannedExtracted, source: "upload" });
       reset();
     } catch (e) {
-      Alert.alert("Scan failed", e instanceof Error ? e.message : "Unknown error");
+      Alert.alert("Scan failed", userFacingErrorFromUnknown(e));
     } finally {
       setBusy(false);
     }
-  }, [picked, ready, scanImage, scanText, navigation, reset]);
+  }, [picked, ready, scanImage, scanText, navigation, reset, token, sub]);
 
   const importTable = useCallback(async () => {
     if (!picked || !ready || picked.kind !== "csv") return;
     if (!user?.id) {
       Alert.alert("Sign in required", "Sign in to import transactions into your account.");
+      return;
+    }
+    if (sub && !sub.canCreateTransaction) {
+      Alert.alert("Upgrade needed", sub.blockReason ?? "Importing rows requires Pro or an available trial slot.");
       return;
     }
     setBusy(true);
@@ -198,7 +218,7 @@ export function UploadStatementScreen() {
       const parsed = parseStatementCsv(text);
 
       if (!parsed.ok) {
-        Alert.alert("Import", parsed.error);
+        Alert.alert("Import", userFacingError(parsed.error));
         return;
       }
 
@@ -223,11 +243,11 @@ export function UploadStatementScreen() {
       );
       reset();
     } catch (e) {
-      Alert.alert("Import failed", e instanceof Error ? e.message : "Unknown error");
+      Alert.alert("Import failed", userFacingErrorFromUnknown(e));
     } finally {
       setBusy(false);
     }
-  }, [picked, ready, workspace, user?.id, ensureCats, bulkImport, navigation, reset]);
+  }, [picked, ready, workspace, user?.id, ensureCats, bulkImport, navigation, reset, sub]);
 
   const onPick = () => {
     if (runtime?.maintenanceMode) {
@@ -265,7 +285,7 @@ export function UploadStatementScreen() {
           <FontAwesome5 name="file-invoice" size={28} color={colors.primary} />
           <Text style={styles.title}>Choose a file</Text>
           <Text style={styles.sub}>
-            Receipt photo or CSV only. Preview first, then run AI scan (like the camera flow) or import table rows from
+            Receipt photo or CSV only. Preview first, then run smart read (like the camera flow) or import table rows from
             CSV.
           </Text>
           <Pressable style={[styles.btn, busy && { opacity: 0.7 }]} onPress={onPick} disabled={busy || !ready}>
@@ -274,6 +294,9 @@ export function UploadStatementScreen() {
         </View>
       ) : (
         <View style={styles.card}>
+          {sub && !sub.pro && sub.blockReason ? (
+            <Text style={styles.limitHint}>{sub.blockReason}</Text>
+          ) : null}
           <Text style={styles.fileName}>{picked.name}</Text>
           <Text style={styles.meta}>
             {picked.kind.toUpperCase()} · {picked.mime || "unknown type"}
@@ -290,9 +313,9 @@ export function UploadStatementScreen() {
           )}
 
           <Pressable
-            style={[styles.btn, busy && { opacity: 0.7 }]}
+            style={[styles.btn, (busy || !ready || !aiScanOk) && { opacity: 0.55 }]}
             onPress={() => void processAiScan()}
-            disabled={busy || !ready}
+            disabled={busy || !ready || !aiScanOk}
           >
             {busy ? (
               <ActivityIndicator color="#fff" />
@@ -307,9 +330,9 @@ export function UploadStatementScreen() {
 
           {picked.kind === "csv" ? (
             <Pressable
-              style={[styles.btnSecondary, busy && { opacity: 0.7 }]}
+              style={[styles.btnSecondary, (busy || !ready || !canImportRows) && { opacity: 0.55 }]}
               onPress={() => void importTable()}
-              disabled={busy || !ready}
+              disabled={busy || !ready || !canImportRows}
             >
               <Text style={styles.btnSecondaryTxt}>Import as bank / CSV table</Text>
             </Pressable>
@@ -344,6 +367,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     alignItems: "stretch",
     gap: 10,
+  },
+  limitHint: {
+    fontSize: typeScale.sm,
+    color: "#78350f",
+    backgroundColor: "#fffbeb",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#fcd34d",
+    padding: 8,
+    marginBottom: 8,
+    lineHeight: 18,
   },
   title: { fontSize: typeScale.title, fontWeight: "700", color: colors.gray900, textAlign: "center" },
   sub: { fontSize: typeScale.body, color: colors.gray600, textAlign: "center", lineHeight: 20 },

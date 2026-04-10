@@ -14,7 +14,7 @@ function defaultCategory(type: "expense" | "income") {
   return type === "expense" ? "Other" : "Salary";
 }
 
-/** Web: upload CSV/PDF → Convex transactions (same backend as mobile). */
+/** Web: CSV/PDF statement import into the shared ledger (aligned with the mobile app). */
 function ConvexUploadStatementInner() {
   const { workspace, ready } = useWorkspace();
   const { user } = useWebAuth();

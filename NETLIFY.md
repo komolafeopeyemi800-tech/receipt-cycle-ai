@@ -7,10 +7,11 @@ Netlify hosts the **Vite React app** in this repository root (`npm run build` �
 ### 1. Create a site
 
 1. In [Netlify](https://app.netlify.com), **Add new site** → **Import an existing project** → connect this Git repo.
-2. Build settings are read from **`netlify.toml`**:
-   - **Build command:** `npm run build`
+2. Build settings should match **`netlify.toml`**:
+   - **Build command:** `npm run build` (do **not** set `bun run build` in the Netlify UI — it overrides this file and can fail if Bun is not used locally).
    - **Publish directory:** `dist`
-3. Deploy.
+3. Under **Site configuration → Build & deploy → Build settings**, clear any custom **Build command** if you want Netlify to use `netlify.toml` exactly. If you keep a UI override, set it to `npm run build`.
+4. Deploy.
 
 ### 2. Environment variables (Site settings → Environment variables)
 

@@ -36,7 +36,7 @@ export default function ReceiptCyclePaywall() {
       return;
     }
     window.alert(
-      "Checkout is not configured yet. Add VITE_WHOP_CHECKOUT_MONTHLY_URL and VITE_WHOP_CHECKOUT_YEARLY_URL to your environment, then redeploy.",
+      "Checkout is not configured yet. Add VITE_WHOP_CHECKOUT_MONTHLY_URL and VITE_WHOP_CHECKOUT_YEARLY_URL (Whop plan checkout URLs) to repo-root .env / .env.local or Netlify env, then restart dev or redeploy. You can use WHOP_CHECKOUT_MONTHLY_URL / WHOP_CHECKOUT_YEARLY_URL in .env; vite.config maps them for the build.",
     );
   }
 

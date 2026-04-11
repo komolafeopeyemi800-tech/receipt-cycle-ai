@@ -30,7 +30,7 @@ Set at least:
 |----------|--------|
 | `VITE_CONVEX_URL` | Same Convex deployment URL as mobile (`EXPO_PUBLIC_CONVEX_URL`). Convex Dashboard → your deployment → URL. |
 
-Copy optional keys from **`.env.example`** (Whop checkout URLs, OAuth client id, store links, etc.). Any variable prefixed with `VITE_` must be set in Netlify for production builds.
+Copy optional keys from **`.env.example`** (Whop checkout URLs, OAuth client id, store links, etc.). Any variable prefixed with `VITE_` must be set in Netlify for production builds (or use `WHOP_CHECKOUT_*` / `WHOP_MANAGE_URL` names in Netlify; `vite.config` maps them into the bundle like local `.env`).
 
 After changing env vars, trigger a **new deploy** so Vite embeds them in the bundle.
 

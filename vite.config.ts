@@ -16,6 +16,27 @@ export default defineConfig(({ mode }) => {
     .map((s) => s?.trim())
     .find(Boolean);
 
+  /** Public Whop checkout links — copy plan checkout URLs from your Whop dashboard. */
+  const checkoutMonthly =
+    env.VITE_WHOP_CHECKOUT_MONTHLY_URL?.trim() || env.WHOP_CHECKOUT_MONTHLY_URL?.trim();
+  const checkoutYearly =
+    env.VITE_WHOP_CHECKOUT_YEARLY_URL?.trim() || env.WHOP_CHECKOUT_YEARLY_URL?.trim();
+  const manageUrl = env.VITE_WHOP_MANAGE_URL?.trim() || env.WHOP_MANAGE_URL?.trim();
+
+  const define: Record<string, string> = {};
+  if (whopPublicClientId) {
+    define["import.meta.env.VITE_WHOP_OAUTH_CLIENT_ID"] = JSON.stringify(whopPublicClientId);
+  }
+  if (checkoutMonthly) {
+    define["import.meta.env.VITE_WHOP_CHECKOUT_MONTHLY_URL"] = JSON.stringify(checkoutMonthly);
+  }
+  if (checkoutYearly) {
+    define["import.meta.env.VITE_WHOP_CHECKOUT_YEARLY_URL"] = JSON.stringify(checkoutYearly);
+  }
+  if (manageUrl) {
+    define["import.meta.env.VITE_WHOP_MANAGE_URL"] = JSON.stringify(manageUrl);
+  }
+
   return {
     server: {
       host: "::",
@@ -33,10 +54,6 @@ export default defineConfig(({ mode }) => {
         "@mobile-lib": path.resolve(__dirname, "./apps/mobile/src/lib"),
       },
     },
-    define: whopPublicClientId
-      ? {
-          "import.meta.env.VITE_WHOP_OAUTH_CLIENT_ID": JSON.stringify(whopPublicClientId),
-        }
-      : {},
+    define,
   };
 });

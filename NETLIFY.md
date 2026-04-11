@@ -36,8 +36,10 @@ After changing env vars, trigger a **new deploy** so Vite embeds them in the bun
 
 ### 3. Convex & auth alignment
 
-- **Whop OAuth:** Add redirect URI `https://<your-netlify-domain>/oauth/whop` in the Whop developer dashboard (same OAuth app as in Convex `WHOP_OAUTH_CLIENT_ID`).
-- **Convex env:** Set `PUBLIC_WEB_APP_URL=https://<your-netlify-domain>` so password-reset and email links point at the live site.
+- **Convex env (Dashboard → Settings → Environment variables):** `WHOP_OAUTH_CLIENT_ID` (same as `VITE_WHOP_OAUTH_CLIENT_ID`, e.g. `app_kMFUEC8UntlEKY`). Optional: `WHOP_OAUTH_CLIENT_SECRET` if Whop requires confidential client token exchange. `WHOP_WEBHOOK_SECRET` = raw webhook signing secret from Whop (Standard Webhooks). Optional: `WHOP_PRO_PRODUCT_IDS=prod_CT6cyQj9lXcX6` so only that product toggles Pro. `PUBLIC_WEB_APP_URL=https://receiptcycle.com` for password-reset links.
+- **Whop OAuth redirect (web):** Register the exact URL you use in the browser. The app supports `/oauth/whop`, `/api/auth/callback/whop`, and `/auth/callback` as routes; the **authorize** request must send the **same** `redirect_uri` (set `VITE_WHOP_OAUTH_REDIRECT_URI` on Netlify if you use e.g. `https://receiptcycle.com/api/auth/callback/whop`).
+- **Whop webhooks:** Create a webhook in the Whop app dashboard pointing at **`https://<deployment-name>.convex.site/whop-webhook`** (Convex HTTP, not Netlify). API version `v1`. Subscribe to membership activated/deactivated (and `membership.went_valid` / `membership.went_invalid` if you use those). Copy the signing secret into Convex `WHOP_WEBHOOK_SECRET`.
+- **Mobile Whop sign-in:** Register `receiptcycle://auth/callback` (default) or override with `EXPO_PUBLIC_WHOP_OAUTH_REDIRECT_PATH` — must match the redirect URI in Whop for the native app.
 
 ### 4. Custom domain
 

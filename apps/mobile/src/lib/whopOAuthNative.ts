@@ -13,9 +13,10 @@ export function getWhopNativeClientId(): string {
 }
 
 export function getWhopNativeRedirectUri(): string {
+  const path = process.env.EXPO_PUBLIC_WHOP_OAUTH_REDIRECT_PATH?.trim() || "auth/callback";
   return AuthSession.makeRedirectUri({
     scheme: "receiptcycle",
-    path: "oauth/whop",
+    path,
   });
 }
 

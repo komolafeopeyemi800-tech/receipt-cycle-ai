@@ -34,6 +34,13 @@ The mobile app only sends the **image** to Convex; Convex calls Gemini/OpenAI us
 - **Upload statement** (mobile app + web) parses **CSV** with headers such as **Date**, **Amount** (or **Debit** / **Credit**), and **Description**, then creates transactions via Convex `transactions.bulkImport`.
 - **PDF** is not supported — export **CSV** from your bank for reliable imports. Receipt **images** (camera/gallery) are scanned via Convex OCR, not PDF.
 
+### Whop (OAuth + webhooks)
+
+- **`WHOP_OAUTH_CLIENT_ID`** — public app id (e.g. `app_kMFUEC8UntlEKY`); must match the web/mobile `VITE_*` / `EXPO_PUBLIC_*` client id.
+- **`WHOP_OAUTH_CLIENT_SECRET`** — optional; add if Whop’s token endpoint rejects PKCE-only exchanges.
+- **`WHOP_WEBHOOK_SECRET`** — signing secret from the Whop webhook (Standard Webhooks). Used by Convex `POST …/whop-webhook` only — **never** commit it.
+- **`WHOP_PRO_PRODUCT_IDS`** — optional comma/space-separated list (e.g. `prod_CT6cyQj9lXcX6`). If set, only membership events for those products toggle `proSubscriptionActive`.
+
 ### Test provider keys (HTTP ping, no receipt image)
 
 From `apps/mobile` (uses your **linked** Convex deployment’s env vars):

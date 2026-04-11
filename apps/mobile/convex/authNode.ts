@@ -212,16 +212,20 @@ export const signInWithWhop = action({
       throw new Error("Whop sign-in is not configured (missing WHOP_OAUTH_CLIENT_ID on the server).");
     }
 
+    const clientSecret = process.env.WHOP_OAUTH_CLIENT_SECRET?.trim();
+    const tokenBody: Record<string, string> = {
+      grant_type: "authorization_code",
+      code: args.code.trim(),
+      redirect_uri: args.redirectUri.trim(),
+      client_id: clientId,
+      code_verifier: args.codeVerifier.trim(),
+    };
+    if (clientSecret) tokenBody.client_secret = clientSecret;
+
     const tokenRes = await fetch("https://api.whop.com/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        grant_type: "authorization_code",
-        code: args.code.trim(),
-        redirect_uri: args.redirectUri.trim(),
-        client_id: clientId,
-        code_verifier: args.codeVerifier.trim(),
-      }),
+      body: JSON.stringify(tokenBody),
     });
 
     if (!tokenRes.ok) {

@@ -8,7 +8,8 @@ Netlify hosts the **Vite React app** in this repository root (`npm run build` �
 
 Commit and push **all** of these (Netlify clones GitHub; your machine-only fixes are not deployed until pushed):
 
-- `apps/mobile/tsconfig.json` — must be **fully inlined** (no `"extends"`). Vite loads this when bundling `@mobile-lib`; `extends` to `expo/tsconfig.base` breaks Netlify because `expo` is not installed at the repo root.
+- `apps/mobile/tsconfig.json` — **fully inlined** (no `"extends"` to `expo/tsconfig.base`) for Expo/Metro.
+- `apps/mobile/src/tsconfig.json` — same compiler options, **no `extends`**. Vite/esbuild resolves this file first for `apps/mobile/src/lib/*` (the web app’s `@mobile-lib` alias), so Netlify never needs `expo` even if a parent tsconfig is mis-merged.
 - `index.html` — Google Fonts loaded with `<link rel="stylesheet" …fonts.googleapis.com…>` (avoid CSS `@import`; Vite is strict about `@import` order)
 - `netlify.toml` — build command `npm run build`
 

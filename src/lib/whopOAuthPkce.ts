@@ -19,16 +19,55 @@ async function sha256base64url(str: string): Promise<string> {
   return base64url(new Uint8Array(hash));
 }
 
+/** www vs apex (and same path) — treat as same site for redirect alignment. */
+function canonicalSiteHost(hostname: string): string {
+  return hostname.toLowerCase().replace(/^www\./, "");
+}
+
+/**
+ * When a full redirect URL is set in env (e.g. apex) but the user is on www (or the reverse),
+ * Whop must redirect back to the same origin that stored PKCE in sessionStorage. Rebuild the
+ * redirect URL from the current tab's origin + configured path/query.
+ */
+function alignWhopRedirectWithCurrentOrigin(configuredFullUrl: string): string {
+  const cleaned = configuredFullUrl.trim().replace(/\/$/, "");
+  if (typeof window === "undefined") return cleaned;
+  try {
+    const want = new URL(cleaned);
+    const cur = new URL(window.location.href);
+    if (want.protocol !== cur.protocol) return cleaned;
+    const curH = cur.hostname.toLowerCase();
+    const wantH = want.hostname.toLowerCase();
+    const isLocal = (h: string) => h === "localhost" || h === "127.0.0.1";
+    const sameHostPort = curH === wantH && cur.port === want.port;
+    const sameSite =
+      sameHostPort ||
+      (!isLocal(curH) &&
+        !isLocal(wantH) &&
+        canonicalSiteHost(curH) === canonicalSiteHost(wantH) &&
+        cur.port === want.port);
+    if (!sameSite) return cleaned;
+    return `${cur.origin}${want.pathname}${want.search}`;
+  } catch {
+    return cleaned;
+  }
+}
+
 export function getWhopWebRedirectUri(): string {
   const full =
     (typeof import.meta !== "undefined" && import.meta.env?.VITE_WHOP_OAUTH_REDIRECT_URI?.trim()) ||
     (typeof import.meta !== "undefined" && import.meta.env?.VITE_WHOP_REDIRECT_URI?.trim()) ||
     "";
-  if (full) return full.replace(/\/$/, "");
+  if (full) return alignWhopRedirectWithCurrentOrigin(full);
 
+  // Prefer the tab's origin so PKCE in sessionStorage matches the callback (don't prefer
+  // VITE_WHOP_OAUTH_REDIRECT_ORIGIN over window — that breaks www vs apex).
+  const fromWindow = typeof window !== "undefined" ? window.location.origin.trim() : "";
   const origin =
+    fromWindow ||
     (typeof import.meta !== "undefined" && import.meta.env?.VITE_WHOP_OAUTH_REDIRECT_ORIGIN?.trim()) ||
-    (typeof window !== "undefined" ? window.location.origin : "");
+    "";
+  if (!origin) return "";
   return `${origin.replace(/\/$/, "")}/oauth/whop`;
 }
 

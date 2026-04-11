@@ -220,6 +220,10 @@ function whopOAuthClientSecret(): string | undefined {
  * When set (Convex env), `redirect_uri` must match one entry (comma- or newline-separated),
  * unless it is a known dev/native redirect that is never listed as https production URLs.
  */
+function canonicalSiteHostname(hostname: string): string {
+  return hostname.toLowerCase().replace(/^www\./, "");
+}
+
 function isExpoDevHost(hostname: string): boolean {
   const h = hostname.toLowerCase();
   return (
@@ -246,6 +250,55 @@ function isWhopRedirectAllowlistBypass(redirectUri: string): boolean {
   return false;
 }
 
+/** Web callback paths this app uses (must still match a host listed in WHOP_REDIRECT_URIS). */
+const KNOWN_WHOP_WEB_CALLBACK_PATHS = new Set([
+  "/oauth/whop",
+  "/api/auth/callback",
+  "/api/auth/callback/whop",
+  "/auth/callback",
+]);
+
+function pathnameNoTrailingSlash(u: URL): string {
+  const p = u.pathname.replace(/\/+$/, "") || "/";
+  return p;
+}
+
+/**
+ * Allow e.g. `/oauth/whop` when the list only has `https://domain/api/auth/callback` — same
+ * deployment, avoids production-only failures while still requiring an allowlisted host.
+ */
+function hostsMatchForWhopRedirectAllowlist(red: URL, u: URL): boolean {
+  if (red.protocol !== u.protocol || red.port !== u.port) return false;
+  const rH = red.hostname.toLowerCase();
+  const uH = u.hostname.toLowerCase();
+  if (rH === uH) return true;
+  const isLocal = (h: string) => h === "localhost" || h === "127.0.0.1";
+  if (isLocal(rH) || isLocal(uH)) return rH === uH;
+  return canonicalSiteHostname(rH) === canonicalSiteHostname(uH);
+}
+
+function isSameHostAsAllowlistedWhopRedirect(redirectUri: string, allowed: string[]): boolean {
+  let red: URL;
+  try {
+    red = new URL(redirectUri.trim());
+  } catch {
+    return false;
+  }
+  if (red.protocol !== "https:" && red.protocol !== "http:") return false;
+  const path = pathnameNoTrailingSlash(red);
+  if (!KNOWN_WHOP_WEB_CALLBACK_PATHS.has(path)) return false;
+  for (const rawEntry of allowed) {
+    const entry = rawEntry.replace(/\/$/, "");
+    try {
+      const u = new URL(entry);
+      if (hostsMatchForWhopRedirectAllowlist(red, u)) return true;
+    } catch {
+      continue;
+    }
+  }
+  return false;
+}
+
 function assertAllowedWhopRedirectUri(redirectUri: string): void {
   const raw =
     process.env.WHOP_REDIRECT_URIS?.trim() ||
@@ -259,6 +312,7 @@ function assertAllowedWhopRedirectUri(redirectUri: string): void {
     .filter(Boolean);
   const normalized = redirectUri.trim().replace(/\/$/, "");
   if (!allowed.some((a) => normalized === a.replace(/\/$/, ""))) {
+    if (isSameHostAsAllowlistedWhopRedirect(normalized, allowed)) return;
     throw new Error("Whop redirect URI is not allowed for this deployment.");
   }
 }

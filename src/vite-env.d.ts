@@ -13,7 +13,7 @@ interface ImportMetaEnv {
   readonly VITE_WHOP_OAUTH_REDIRECT_URI?: string;
   /** Same as VITE_WHOP_OAUTH_REDIRECT_URI if you prefer this name (e.g. https://receiptcycle.com/api/auth/callback). */
   readonly VITE_WHOP_REDIRECT_URI?: string;
-  /** When VITE_WHOP_OAUTH_REDIRECT_URI is unset: use this origin + `/oauth/whop` (default: window.location.origin). */
+  /** When VITE_WHOP_OAUTH_REDIRECT_URI is unset and `window` is missing (SSR): origin + `/oauth/whop`. Prefer leaving unset in the browser so the tab origin is used (avoids www vs apex PKCE issues). */
   readonly VITE_WHOP_OAUTH_REDIRECT_ORIGIN?: string;
 }
 

@@ -26,7 +26,9 @@ export function WhopOAuthButton({ mode, className = "", onError }: WhopOAuthButt
 
   async function handleClick() {
     if (!configured) {
-      onError?.("Add VITE_WHOP_OAUTH_CLIENT_ID to your .env to enable Whop sign-in.");
+      onError?.(
+        "Whop client id is missing in the web build. Add VITE_WHOP_OAUTH_CLIENT_ID (or VITE_WHOP_CLIENT_ID, or WHOP_CLIENT_ID / WHOP_OAUTH_CLIENT_ID) to the repo-root .env / .env.local, then restart `npm run dev`.",
+      );
       return;
     }
     setBusy(true);
@@ -44,7 +46,7 @@ export function WhopOAuthButton({ mode, className = "", onError }: WhopOAuthButt
         type="button"
         disabled={busy}
         onClick={() => void handleClick()}
-        title={!configured ? "Set VITE_WHOP_OAUTH_CLIENT_ID to enable" : undefined}
+        title={!configured ? "Set VITE_WHOP_OAUTH_CLIENT_ID (or WHOP_CLIENT_ID in .env) and restart dev" : undefined}
         className={[
           "flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-bold text-white shadow-md transition",
           "bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600",

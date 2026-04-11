@@ -217,15 +217,42 @@ function whopOAuthClientSecret(): string | undefined {
 }
 
 /**
- * When set (Convex env), `redirect_uri` from the browser must match one entry (comma- or newline‑separated).
- * Use the same value(s) you register in Whop and expose as `VITE_WHOP_REDIRECT_URI` / `VITE_WHOP_OAUTH_REDIRECT_URI` on the web.
+ * When set (Convex env), `redirect_uri` must match one entry (comma- or newline-separated),
+ * unless it is a known dev/native redirect that is never listed as https production URLs.
  */
+function isExpoDevHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  return (
+    h === "exp.direct" ||
+    h.endsWith(".exp.direct") ||
+    h === "expo.dev" ||
+    h.endsWith(".expo.dev")
+  );
+}
+
+function isWhopRedirectAllowlistBypass(redirectUri: string): boolean {
+  const u = redirectUri.trim();
+  if (!u) return false;
+  if (u.startsWith("receiptcycle://")) return true;
+  if (u.startsWith("exp://")) return true;
+  try {
+    const parsed = new URL(u);
+    const h = parsed.hostname;
+    if (h === "localhost" || h === "127.0.0.1") return true;
+    if (isExpoDevHost(h)) return true;
+  } catch {
+    // non-http(s) schemes may not parse; custom schemes handled above
+  }
+  return false;
+}
+
 function assertAllowedWhopRedirectUri(redirectUri: string): void {
   const raw =
     process.env.WHOP_REDIRECT_URIS?.trim() ||
     process.env.WHOP_REDIRECT_URI?.trim() ||
     "";
   if (!raw) return;
+  if (isWhopRedirectAllowlistBypass(redirectUri)) return;
   const allowed = raw
     .split(/[\n,]+/)
     .map((s) => s.trim().replace(/\/$/, ""))

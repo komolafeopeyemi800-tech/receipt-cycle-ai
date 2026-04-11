@@ -62,7 +62,12 @@ export function WhopSignInButton({ label = "Continue with Whop", onError, disabl
       accessibilityState={{ disabled: disabled || exchanging }}
       disabled={disabled || exchanging}
       onPress={() => {
-        if (!configured) return;
+        if (!configured) {
+          onError(
+            "Whop sign-in is not configured on this build. Set EXPO_PUBLIC_WHOP_OAUTH_CLIENT_ID (or EXPO_PUBLIC_WHOP_CLIENT_ID) and restart Expo.",
+          );
+          return;
+        }
         consumedRef.current = false;
         void promptAsync();
       }}

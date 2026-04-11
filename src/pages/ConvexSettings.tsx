@@ -6,6 +6,7 @@ import { useWebAuth } from "@/contexts/WebAuthContext";
 import { useSubscriptionState } from "@/hooks/use-subscription-state";
 import { useWebPreferences } from "@/contexts/WebPreferencesContext";
 import { AppChrome } from "@/components/layout/AppChrome";
+import { getWhopManageUrl } from "@/lib/whopCheckout";
 import {
   CURRENCY_OPTIONS,
   DATE_FORMAT_OPTIONS,
@@ -190,11 +191,23 @@ function ConvexSettingsInner() {
             >
               <i className="fas fa-crown w-5 text-center text-amber-500" />
               <div className="flex-1">
-                <p className="font-semibold text-slate-900">Upgrade to Premium</p>
-                <p className="text-xs text-slate-500">View plans</p>
+                <p className="font-semibold text-slate-900">Plans &amp; upgrade</p>
+                <p className="text-xs text-slate-500">Compare Free and Pro</p>
               </div>
               <i className="fas fa-chevron-right text-slate-400" />
             </Link>
+            <button
+              type="button"
+              onClick={() => window.open(getWhopManageUrl(), "_blank", "noopener,noreferrer")}
+              className="flex w-full items-center gap-3 border-b border-slate-100 px-4 py-3 text-left text-sm hover:bg-slate-50"
+            >
+              <i className="fas fa-receipt w-5 text-center text-teal-600" />
+              <div className="flex-1">
+                <p className="font-semibold text-slate-900">Manage subscription</p>
+                <p className="text-xs text-slate-500">Restore purchases, cancel, or update billing on Whop</p>
+              </div>
+              <i className="fas fa-external-link-alt text-xs text-slate-400" aria-hidden />
+            </button>
             <div className="flex items-center gap-3 px-4 py-3 text-sm text-slate-600">
               <i className="fas fa-user-lock w-5 text-center" />
               <div className="flex-1">

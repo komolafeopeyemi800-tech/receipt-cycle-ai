@@ -57,6 +57,16 @@ const DesktopNav = ({ variant = 'landing' }: DesktopNavProps) => {
               >
                 <i className="fas fa-chart-line mr-2"></i>Analysis
               </NavLink>
+              <NavLink 
+                to="/pricing" 
+                className={({ isActive }) => 
+                  `px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:bg-gray-50'
+                  }`
+                }
+              >
+                <i className="fas fa-tag mr-2"></i>Pricing
+              </NavLink>
             </nav>
           </div>
           
@@ -117,10 +127,18 @@ const DesktopNav = ({ variant = 'landing' }: DesktopNavProps) => {
         </div>
         
         <nav className="hidden md:flex items-center gap-8">
-          <a href="#features" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">Features</a>
-          <a href="#how-it-works" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">How It Works</a>
-          <NavLink to="/pricing" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">Pricing</NavLink>
-          <a href="#testimonials" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">Testimonials</a>
+          <a href="/#features" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+            Features
+          </a>
+          <a href="/#how" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+            How it works
+          </a>
+          <NavLink to="/pricing" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+            Pricing
+          </NavLink>
+          <a href="/#reviews" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+            Reviews
+          </a>
         </nav>
         
         <div className="flex items-center gap-3">

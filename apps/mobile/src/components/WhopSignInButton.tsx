@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { useWhopAuthRequest, getWhopNativeClientId, getWhopNativeRedirectUri } from "../lib/whopOAuthNative";
 import { useAuth } from "../contexts/AuthContext";
 import { type as typeScale } from "../theme/tokens";
@@ -52,45 +54,66 @@ export function WhopSignInButton({ label = "Continue with Whop", onError, disabl
     }
   }, [response, onError]);
 
-  if (!clientId) return null;
+  const configured = Boolean(clientId);
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.btn, (disabled || exchanging || pressed) && { opacity: 0.88 }]}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: disabled || exchanging }}
       disabled={disabled || exchanging}
       onPress={() => {
+        if (!configured) return;
         consumedRef.current = false;
         void promptAsync();
       }}
+      style={({ pressed }) => [
+        styles.hit,
+        (disabled || exchanging) && styles.hitDisabled,
+        pressed && configured && styles.hitPressed,
+        !configured && styles.hitUnconfigured,
+      ]}
+      android_ripple={configured ? { color: "rgba(255,255,255,0.28)" } : undefined}
     >
-      {exchanging ? (
-        <ActivityIndicator color="#fff" />
-      ) : (
-        <View style={styles.row}>
-          <Text style={styles.icon}>W</Text>
-          <Text style={styles.txt}>{label}</Text>
-        </View>
-      )}
+      <LinearGradient
+        colors={["#f97316", "#f43f5e"]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={styles.gradient}
+      >
+        {exchanging ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <View style={styles.row}>
+            <Ionicons name="flash" size={20} color="#fff" />
+            <Text style={styles.txt}>{label}</Text>
+          </View>
+        )}
+      </LinearGradient>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  btn: {
-    backgroundColor: "#6366f1",
-    borderRadius: 10,
-    paddingVertical: 12,
+  /** Rounded rect (not a full pill) — avoids a second “ring” look from borders + clipping. */
+  hit: {
+    alignSelf: "stretch",
+    borderRadius: 14,
+    overflow: "hidden",
+    ...Platform.select({
+      ios: { shadowColor: "#f97316", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.22, shadowRadius: 6 },
+      android: { elevation: 3 },
+    }),
+  },
+  hitDisabled: { opacity: 0.75 },
+  hitPressed: { opacity: 0.92 },
+  hitUnconfigured: { opacity: 0.78 },
+  gradient: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 44,
+    minHeight: 48,
   },
   row: { flexDirection: "row", alignItems: "center", gap: 8 },
-  icon: {
-    fontSize: 14,
-    fontWeight: "900",
-    color: "#fff",
-    width: 22,
-    textAlign: "center",
-  },
-  txt: { color: "#fff", fontWeight: "700", fontSize: typeScale.body },
+  txt: { color: "#fff", fontWeight: "800", fontSize: typeScale.body },
 });

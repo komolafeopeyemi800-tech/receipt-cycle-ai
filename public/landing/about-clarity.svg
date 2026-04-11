@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 675" role="img" aria-labelledby="t6">
+  <title id="t6">Built for clarity under pressure, honest ledger on mobile</title>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" style="stop-color:#e0f2fe"/>
+      <stop offset="100%" style="stop-color:#f0fdfa"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="675" fill="url(#sky)"/>
+  <ellipse cx="450" cy="520" rx="400" ry="80" fill="#149184" opacity="0.12"/>
+  <path d="M450 120 L560 175 V290 Q560 380 450 440 Q340 380 340 290 V175 Z" fill="#fff" stroke="#149184" stroke-width="4"/>
+  <circle cx="450" cy="280" r="64" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="3"/>
+  <path d="M420 285 L440 305 L485 250" fill="none" stroke="#149184" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="450" y="500" text-anchor="middle" fill="#0f172a" font-family="system-ui,Segoe UI,sans-serif" font-size="20" font-weight="700">Clarity under pressure</text>
+  <text x="450" y="535" text-anchor="middle" fill="#64748b" font-family="system-ui,Segoe UI,sans-serif" font-size="14">Capture fast, categorize once, export clean</text>
+</svg>

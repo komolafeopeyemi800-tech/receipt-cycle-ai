@@ -1,5 +1,6 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useScreenSize } from "@/hooks/use-screen-size";
+import { useWebAuth } from "@/contexts/WebAuthContext";
 import DesktopNav from "@/components/layout/DesktopNav";
 import {
   PAYWALL_BENEFITS,
@@ -10,7 +11,7 @@ import {
   PAYWALL_PRICING,
   type PaywallPlanId,
 } from "@mobile-lib/pricingPaywall";
-import { getWhopCheckoutUrl, getWhopManageUrl } from "@/lib/whopCheckout";
+import { getWhopCheckoutUrl } from "@/lib/whopCheckout";
 
 function TierCheck() {
   return (
@@ -20,6 +21,7 @@ function TierCheck() {
 
 export default function ReceiptCyclePaywall() {
   const navigate = useNavigate();
+  const { user } = useWebAuth();
   const { isMobileOrTablet } = useScreenSize();
   const discountPct = yearlyDiscountPercent();
 
@@ -38,13 +40,9 @@ export default function ReceiptCyclePaywall() {
     );
   }
 
-  function restoreOrManage() {
-    window.open(getWhopManageUrl(), "_blank", "noopener,noreferrer");
-  }
-
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 antialiased">
-      {!isMobileOrTablet ? <DesktopNav variant="landing" /> : null}
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 antialiased">
+      {!isMobileOrTablet ? <DesktopNav variant={user ? "app" : "landing"} /> : null}
 
       {isMobileOrTablet ? (
         <div className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/95 px-3 py-3 backdrop-blur-md">
@@ -61,7 +59,9 @@ export default function ReceiptCyclePaywall() {
         </div>
       ) : null}
 
-      <main className={`mx-auto max-w-6xl px-4 pb-16 pt-6 sm:px-6 ${!isMobileOrTablet ? "pt-24" : "pt-8"}`}>
+      <main
+        className={`mx-auto w-full max-w-6xl flex-1 px-4 pb-16 sm:px-6 ${isMobileOrTablet ? "pt-8" : "scroll-pt-24 pt-24"}`}
+      >
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal-700">Pricing</p>
           <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -160,25 +160,29 @@ export default function ReceiptCyclePaywall() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <button
-            type="button"
-            onClick={restoreOrManage}
-            className="text-sm font-semibold text-teal-700 underline-offset-4 hover:underline"
-          >
-            Restore purchases / manage subscription on Whop
-          </button>
-          <span className="hidden text-slate-300 sm:inline">·</span>
-          <button
-            type="button"
-            onClick={() => navigate("/dashboard")}
-            className="text-sm font-semibold text-slate-600 hover:text-slate-900"
-          >
-            Back to app
-          </button>
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-center text-sm">
+          <p className="text-slate-600">
+            Subscription, restore, and billing: use{" "}
+            <Link to="/settings" className="font-semibold text-teal-700 underline-offset-2 hover:underline">
+              Settings
+            </Link>
+            .
+          </p>
+          <span className="hidden text-slate-300 sm:inline" aria-hidden>
+            ·
+          </span>
+          {user ? (
+            <button type="button" onClick={() => navigate("/dashboard")} className="font-semibold text-slate-700 hover:text-slate-900">
+              Back to dashboard
+            </button>
+          ) : (
+            <button type="button" onClick={() => navigate("/signin")} className="font-semibold text-slate-700 hover:text-slate-900">
+              Sign in
+            </button>
+          )}
         </div>
 
-        <p className="mx-auto mt-8 max-w-lg text-center text-xs leading-relaxed text-slate-500">
+        <p className="mx-auto mt-6 max-w-lg text-center text-xs leading-relaxed text-slate-500">
           Payments are processed by Whop. Linking your Whop purchase to your Receipt Cycle account unlocks Pro on web and
           mobile.
         </p>

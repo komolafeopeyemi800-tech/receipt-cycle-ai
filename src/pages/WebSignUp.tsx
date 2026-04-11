@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useWebAuth } from "@/contexts/WebAuthContext";
-import { getWhopPublicClientId, startWhopOAuthWeb } from "@/lib/whopOAuthPkce";
+import { WhopOAuthButton } from "@/components/auth/WhopOAuthButton";
 import { getWebLastEmail } from "@/lib/webSession";
 
 function safeInternalPath(raw: string | null, fallback: string): string {
@@ -19,10 +19,7 @@ export default function WebSignUp() {
   const [email, setEmail] = useState(() => getWebLastEmail());
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [whopBusy, setWhopBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-
-  const whopConfigured = Boolean(getWhopPublicClientId());
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -37,17 +34,6 @@ export default function WebSignUp() {
       navigate(next, { replace: true });
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function onWhop() {
-    setMsg(null);
-    setWhopBusy(true);
-    try {
-      await startWhopOAuthWeb();
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Could not start Whop sign-up");
-      setWhopBusy(false);
     }
   }
 
@@ -71,24 +57,12 @@ export default function WebSignUp() {
             <p className="mt-2 text-sm text-slate-600">Use Whop or email — same account on mobile and web.</p>
           </div>
 
-          {whopConfigured ? (
-            <>
-              <button
-                type="button"
-                disabled={whopBusy}
-                onClick={() => void onWhop()}
-                className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-60"
-              >
-                <span className="font-black">W</span>
-                {whopBusy ? "Redirecting…" : "Sign up with Whop"}
-              </button>
-              <div className="my-8 flex items-center gap-3">
-                <span className="h-px flex-1 bg-slate-200" />
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">or email</span>
-                <span className="h-px flex-1 bg-slate-200" />
-              </div>
-            </>
-          ) : null}
+          <WhopOAuthButton mode="signup" className="mt-8" onError={(m) => setMsg(m)} />
+          <div className="my-8 flex items-center gap-3">
+            <span className="h-px flex-1 bg-slate-200" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">or email</span>
+            <span className="h-px flex-1 bg-slate-200" />
+          </div>
 
           <form onSubmit={(e) => void onSubmit(e)} className="space-y-4">
             <label className="block text-left">

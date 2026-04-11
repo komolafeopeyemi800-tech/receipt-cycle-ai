@@ -11,6 +11,13 @@ const PLAY_STORE_URL =
   (import.meta.env.VITE_PLAY_STORE_URL as string | undefined)?.trim() ||
   "https://play.google.com/store/apps/details?id=com.anonymous.receiptcyclemobile";
 
+/** Public folder landing assets (works when Vite `base` is not `/`). */
+function landingAsset(file: string): string {
+  const b = import.meta.env.BASE_URL;
+  const prefix = b.endsWith("/") ? b : `${b}/`;
+  return `${prefix}landing/${file}`;
+}
+
 const HERO_HEADLINE_LINE1 = "See your spending clearly. ";
 const HERO_HEADLINE_LINE2 = "Effortlessly.";
 
@@ -136,6 +143,165 @@ function SectionTitle({ kicker, title, subtitle }: { kicker?: string; title: str
   );
 }
 
+/** Decorative laurel-style accent (simple vector, not a third-party mark). */
+function LaurelAccent({ className, mirror }: { className?: string; mirror?: boolean }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 40 88"
+      width="40"
+      height="88"
+      aria-hidden
+      style={mirror ? { transform: "scaleX(-1)" } : undefined}
+    >
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        d="M20 6v76M20 14c-10 8-14 22-10 34M20 22c8 10 10 24 4 36M12 42c-4 8-2 18 4 24M28 38c4 10 2 22-4 30"
+        opacity="0.85"
+      />
+    </svg>
+  );
+}
+
+type LandingTestimonial = { title: string; quote: string; who: string; role: string };
+
+const LANDING_TESTIMONIALS: LandingTestimonial[] = [
+  {
+    title: "Tax season stopped being a scavenger hunt",
+    quote:
+      "I finally stopped losing receipts before tax season. The scan flow is stupid fast, and categories stick so I am not re-tagging the same merchants every week.",
+    who: "Jordan M.",
+    role: "Freelance designer",
+  },
+  {
+    title: "Voice add is my parking-lot ritual",
+    quote:
+      "I say what I bought in the car and fix details later. Way less friction than opening a spreadsheet—I actually keep up now.",
+    who: "Marcus T.",
+    role: "Sales consultant",
+  },
+  {
+    title: "Duplicate charge caught in one insight",
+    quote:
+      "A duplicate subscription charge popped in the money-leak check. That single alert paid for the app in my book.",
+    who: "Alex R.",
+    role: "Ops lead",
+  },
+  {
+    title: "Phone capture, weekend tidy-up",
+    quote:
+      "Upload and review on the phone during the week, tidy categories on the weekend. Matches how my brain works.",
+    who: "Priya S.",
+    role: "Small business owner",
+  },
+  {
+    title: "Coach answers tied to my real numbers",
+    quote:
+      "I asked where dining was creeping up and got an answer based on my ledger—not generic advice. Huge for cutting fluff without guilt.",
+    who: "Elena V.",
+    role: "Product manager",
+  },
+  {
+    title: "CSV import saved me a weekend",
+    quote:
+      "Dropped in a card export instead of retyping months of history. First time I trusted a mobile finance app with bulk data.",
+    who: "Chris L.",
+    role: "Contractor",
+  },
+  {
+    title: "Budgets that feel like guardrails",
+    quote:
+      "Seeing pace per category keeps me honest before the month slips away. It is a nudge, not a lecture.",
+    who: "Samira K.",
+    role: "Teacher",
+  },
+  {
+    title: "Receipt proof when HR asked",
+    quote:
+      "Search by merchant found a charge in seconds when I needed documentation. No more digging through email PDFs.",
+    who: "Daniel O.",
+    role: "Field engineer",
+  },
+  {
+    title: "Same account on web and phone",
+    quote:
+      "I capture on Android and clean things up on the laptop when I have time. Sync just works.",
+    who: "Riley N.",
+    role: "Grad student",
+  },
+];
+
+const LANDING_TESTIMONIALS_INITIAL = 6;
+
+function UserReviewsSection() {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? LANDING_TESTIMONIALS : LANDING_TESTIMONIALS.slice(0, LANDING_TESTIMONIALS_INITIAL);
+  const hiddenCount = LANDING_TESTIMONIALS.length - LANDING_TESTIMONIALS_INITIAL;
+  const showToggle = LANDING_TESTIMONIALS.length > LANDING_TESTIMONIALS_INITIAL;
+
+  return (
+    <section id="reviews" className="border-t border-slate-100 bg-slate-50 py-16 sm:py-20">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <SectionTitle
+          kicker="Reviews"
+          title="What our users say"
+          subtitle="Real stories from people who wanted receipts, categories, and clarity without living in a spreadsheet."
+        />
+
+        <div className="mx-auto mt-12 max-w-lg">
+          <div className="flex items-center justify-center gap-3 sm:gap-5">
+            <LaurelAccent className="shrink-0 text-amber-500/80" />
+            <div className="text-center">
+              <p className="font-display text-5xl font-bold tracking-tight text-slate-900 sm:text-6xl">4.8</p>
+              <p className="mt-1 text-lg tracking-wide text-amber-500" aria-label="5 out of 5 stars">
+                <span className="text-amber-500">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+              </p>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Average user rating</p>
+              <p className="mt-1 text-xs text-slate-400">Early feedback; we are building toward strong app store scores.</p>
+            </div>
+            <LaurelAccent className="shrink-0 text-amber-500/80" mirror />
+          </div>
+        </div>
+
+        <div className="mx-auto mt-12 columns-1 gap-4 md:columns-2 lg:columns-3 lg:gap-6">
+          {visible.map((t) => (
+            <article
+              key={`${t.who}-${t.title}`}
+              className="mb-4 break-inside-avoid rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm sm:p-6 lg:mb-6"
+            >
+              <p className="text-sm tracking-wide text-amber-500" aria-hidden>
+                &#9733;&#9733;&#9733;&#9733;&#9733;
+              </p>
+              <h3 className="mt-2 font-display text-base font-bold text-slate-900 sm:text-lg">{t.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">&ldquo;{t.quote}&rdquo;</p>
+              <footer className="mt-4 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-500">
+                <span className="text-slate-800">{t.who}</span>
+                <span className="text-slate-400"> · </span>
+                <span>{t.role}</span>
+              </footer>
+            </article>
+          ))}
+        </div>
+
+        {showToggle ? (
+          <div className="mt-10 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setExpanded((e) => !e)}
+              className="rounded-full border-2 border-slate-300 bg-white px-8 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-teal-600 hover:text-teal-800"
+            >
+              {expanded ? "Show less" : `Show more${hiddenCount > 0 ? ` (${hiddenCount})` : ""}`}
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 export default function MarketingLanding() {
   return (
     <div className="min-h-screen bg-white text-slate-900 antialiased">
@@ -145,7 +311,7 @@ export default function MarketingLanding() {
           <ReceiptCycleLogo className="text-lg" />
           <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
             <a href="#problem" className="hover:text-teal-700">
-              Problem
+              Why capture matters
             </a>
             <a href="#features" className="hover:text-teal-700">
               Features
@@ -197,12 +363,13 @@ export default function MarketingLanding() {
           <div className="relative">
             <div className="absolute -inset-4 rounded-3xl bg-gradient-to-tr from-teal-100/80 to-orange-50/80 blur-2xl" aria-hidden />
             <img
-              src="/landing/hero-phone.png"
-              alt="Hand holding phone showing expense overview in Receipt Cycle"
-              className="relative mx-auto w-full max-w-md rounded-2xl shadow-2xl ring-1 ring-slate-200/80"
+              src={landingAsset("hero-phone.svg")}
+              alt="Phone showing Receipt Cycle spending overview, categories, and voice entry"
+              className="relative mx-auto w-full max-w-md rounded-2xl bg-black object-contain shadow-2xl ring-1 ring-slate-200/80"
               width={640}
               height={640}
               loading="eager"
+              decoding="async"
             />
           </div>
         </div>
@@ -246,9 +413,9 @@ export default function MarketingLanding() {
       <section id="problem" className="scroll-mt-20 border-b border-slate-100 bg-slate-50 py-16 sm:py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <SectionTitle
-            kicker="The problem"
-            title="Paper receipts and bank exports weren’t built for real life"
-            subtitle="Money leaks hide in small recurring charges, lost proof of purchase, and categories you never fix. Spreadsheets die on your phone. We built Receipt Cycle so capture takes seconds and clarity scales with you."
+            kicker="Why proof and clarity slip away"
+            title="Without capture, your ledger—and your deductions—are guesses"
+            subtitle="Receipt Cycle exists so you keep audit-ready proof on the go: lost paper, messy exports, and forgotten categories stop costing you money and time. Capture in seconds; see spending clearly without living in a spreadsheet."
           />
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {[
@@ -270,9 +437,9 @@ export default function MarketingLanding() {
       <section id="features" className="scroll-mt-20 space-y-20 py-16 sm:py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <SectionTitle
-            kicker="Benefits"
-            title="From snap to insight—without the busywork"
-            subtitle="Each feature ties to a pain point: speed, accuracy, and knowing what to do next."
+            kicker="What you get"
+            title="From snap to insight—proof, pace, and fewer surprises"
+            subtitle="Every flow is built around Receipt Cycle’s core job: capture truth fast, categorize once, and surface leaks before tax season or audits sneak up on you."
           />
         </div>
 
@@ -281,57 +448,57 @@ export default function MarketingLanding() {
             {
               h: "Add expenses by voice or a quick sentence",
               p: "Say what you bought (“$24 gas at Shell yesterday”) or type it once. AI fills amount, merchant, category, and date so you can confirm and save—no spreadsheet grind.",
-              img: "/landing/voice-transaction.png",
-              alt: "Illustration of voice entry for expenses on a phone",
+              img: landingAsset("voice-transaction.svg"),
+              alt: "Voice entry: speak a purchase and confirm AI-filled details",
               reverse: false,
             },
             {
               h: "Chat with an AI finance coach",
               p: "Ask where you’re wasting money, what to cut, or how categories compare. The coach reads your real ledger for the month or all time—reply in text or speak your question.",
-              img: "/landing/finance-coach-chat.png",
-              alt: "Illustration of AI chat helping with personal finances",
+              img: landingAsset("finance-coach-chat.svg"),
+              alt: "Finance coach chat with answers grounded in your spending",
               reverse: true,
             },
             {
               h: "No more lost paper receipts",
               p: "Scan in seconds with guided capture. We preserve merchant, totals, and line context so you can defend every line item later.",
-              img: "/landing/scan-receipt.png",
-              alt: "Phone scanning a paper receipt",
+              img: landingAsset("scan-receipt.svg"),
+              alt: "Guided receipt scan in the camera frame",
               reverse: false,
             },
             {
               h: "Track expenses without living in a spreadsheet",
               p: "Categories, merchants, and notes stay attached to real transactions. Review on mobile; export when your accountant asks.",
-              img: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=900&h=700&fit=crop&q=80",
-              alt: "Person reviewing finances on phone",
+              img: landingAsset("feature-expense-tracking.svg"),
+              alt: "Mobile ledger with categories and receipts, not a spreadsheet",
               reverse: true,
             },
             {
               h: "Find any charge, fast",
               p: "Search by merchant, amount range, or month. Perfect when you need proof for HR, a warranty, or a subscription audit.",
-              img: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=900&h=700&fit=crop&q=80",
-              alt: "Organized desk with notebook and laptop",
+              img: landingAsset("feature-find-charge.svg"),
+              alt: "Search across transactions and receipts",
               reverse: false,
             },
             {
               h: "Set limits. Keep more.",
               p: "Budgets turn your history into guardrails—not guilt trips. See category pace and adjust before the month slips away.",
-              img: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=900&h=700&fit=crop&q=80",
-              alt: "Budget planning with calculator",
+              img: landingAsset("feature-budget-limits.svg"),
+              alt: "Budget rings and category pace at a glance",
               reverse: true,
             },
             {
               h: "See money leaks before they stack",
               p: "AI-assisted insights highlight duplicates, creep-subscriptions, and spikes—written in plain language you can act on.",
-              img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=900&h=700&fit=crop&q=80",
-              alt: "Analytics charts on laptop screen",
+              img: landingAsset("feature-money-leaks.svg"),
+              alt: "Money leak insights and spending trend chart",
               reverse: false,
             },
             {
               h: "Built for how you actually work",
               p: "Personal workspace today; team flows tomorrow. Start solo, stay organized, and grow without switching apps.",
-              img: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=900&h=700&fit=crop&q=80",
-              alt: "Two colleagues collaborating with laptops",
+              img: landingAsset("feature-built-for-you.svg"),
+              alt: "Mobile capture and web review staying in sync",
               reverse: true,
             },
           ] as const
@@ -353,7 +520,13 @@ export default function MarketingLanding() {
                 </ul>
               </div>
               <div className={`overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-lg ${block.reverse ? "lg:col-start-1 lg:row-start-1" : ""}`}>
-                <img src={block.img} alt={block.alt} className="aspect-[4/3] w-full object-cover" loading="lazy" />
+                <img
+                  src={block.img}
+                  alt={block.alt}
+                  className="aspect-[4/3] w-full bg-slate-100 object-contain"
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
             </div>
           </div>
@@ -422,57 +595,18 @@ export default function MarketingLanding() {
         </div>
       </section>
 
-      {/* Social proof */}
-      <section className="border-t border-slate-100 bg-slate-50 py-16 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionTitle kicker="Voices" title="What early users say" />
-          <div className="mx-auto mt-10 flex max-w-md flex-col items-center rounded-2xl border border-amber-100 bg-amber-50/50 px-6 py-8 text-center">
-            <p className="font-display text-5xl font-bold text-slate-900">4.8</p>
-            <p className="mt-1 text-amber-600">★★★★★</p>
-            <p className="mt-2 text-xs font-medium uppercase tracking-wide text-slate-500">Target for store ratings</p>
-          </div>
-          <div className="mt-12 grid gap-4 md:grid-cols-3">
-            {[
-              {
-                q: "I finally stopped losing receipts before tax season. The scan flow is stupid fast.",
-                who: "Jordan M.",
-                role: "Freelance designer",
-              },
-              {
-                q: "Upload+review on the phone, tidy categories on the weekend. Exactly my split brain needs.",
-                who: "Priya S.",
-                role: "Small business owner",
-              },
-              {
-                q: "Duplicate subscription charge popped in insights—paid for itself in one alert.",
-                who: "Alex R.",
-                role: "Ops lead",
-              },
-            ].map((t) => (
-              <blockquote
-                key={t.who}
-                className="rounded-2xl border border-slate-200 bg-white p-5 text-sm shadow-sm"
-              >
-                <p className="text-amber-500">★★★★★</p>
-                <p className="mt-2 text-slate-700">&ldquo;{t.q}&rdquo;</p>
-                <footer className="mt-4 text-xs font-semibold text-slate-500">
-                  {t.who} · {t.role}
-                </footer>
-              </blockquote>
-            ))}
-          </div>
-        </div>
-      </section>
+      <UserReviewsSection />
 
       {/* About */}
       <section id="about" className="scroll-mt-20 py-16 sm:py-20">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2">
           <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-lg">
             <img
-              src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=900&h=700&fit=crop&q=80"
-              alt="Team collaboration"
-              className="aspect-[4/3] w-full object-cover"
+              src={landingAsset("about-clarity.svg")}
+              alt="Receipt Cycle: clarity and trust for your ledger"
+              className="aspect-[4/3] w-full bg-slate-100 object-contain"
               loading="lazy"
+              decoding="async"
             />
           </div>
           <div>

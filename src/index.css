@@ -1,10 +1,10 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
+/* Fonts load from index.html (<link>) so Vite never parses @import ordering. */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Receipt Cycle Design System — fonts above (@import must be first for Vite/CSS). */
+/* Receipt Cycle Design System — Inter / Space Grotesk via index.html */
 
 @layer base {
   :root {

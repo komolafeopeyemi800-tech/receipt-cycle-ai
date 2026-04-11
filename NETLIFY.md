@@ -9,7 +9,7 @@ Netlify hosts the **Vite React app** in this repository root (`npm run build` �
 Commit and push **all** of these (Netlify clones GitHub; your machine-only fixes are not deployed until pushed):
 
 - `apps/mobile/tsconfig.json` — must be **fully inlined** (no `"extends"`). Vite loads this when bundling `@mobile-lib`; `extends` to `expo/tsconfig.base` breaks Netlify because `expo` is not installed at the repo root.
-- `src/index.css` — Google Fonts `@import` is the **first** line (required by Vite/CSS)
+- `index.html` — Google Fonts loaded with `<link rel="stylesheet" …fonts.googleapis.com…>` (avoid CSS `@import`; Vite is strict about `@import` order)
 - `netlify.toml` — build command `npm run build`
 
 ### 1. Create a site

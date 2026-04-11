@@ -1,12 +1,10 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Receipt Cycle Design System
-   Colors: Deep teal primary, soft lime accents, calm neutrals
-   Tone: Trust, clarity, growth
-   (Fonts load from index.html so @tailwind stays first — required by Vite/CSS.)
-*/
+/* Receipt Cycle Design System — fonts above (@import must be first for Vite/CSS). */
 
 @layer base {
   :root {

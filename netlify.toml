@@ -1,5 +1,9 @@
 # Netlify — Receipt Cycle web (Vite SPA at repo root)
 # https://docs.netlify.com/configure-builds/file-based-configuration/
+#
+# IMPORTANT: A custom "Build command" in the Netlify UI overrides this file.
+# If deploys use `bun run build` (or anything other than below), clear it under
+# Site configuration → Build & deploy → Build settings, or set it to: npm run build
 
 [build]
   command = "npm run build"

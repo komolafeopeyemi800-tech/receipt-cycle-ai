@@ -4,6 +4,15 @@
 
 Netlify hosts the **Vite React app** in this repository root (`npm run build` → `dist/`).
 
+### Before the first successful deploy
+
+Commit and push **all** of these (Netlify clones GitHub; your machine-only fixes are not deployed until pushed):
+
+- `apps/mobile/tsconfig.json` — must extend `./tsconfig.base.json` (not `expo/tsconfig.base`)
+- `apps/mobile/tsconfig.base.json` — committed copy of Expo-compatible compiler options (so the root install does not need the `expo` package)
+- `src/index.css` — Google Fonts `@import` is the **first** line (required by Vite/CSS)
+- `netlify.toml` — build command `npm run build`
+
 ### 1. Create a site
 
 1. In [Netlify](https://app.netlify.com), **Add new site** → **Import an existing project** → connect this Git repo.

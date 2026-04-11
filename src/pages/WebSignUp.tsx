@@ -2,7 +2,8 @@ import { FormEvent, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { WhopOAuthButton } from "@/components/auth/WhopOAuthButton";
-import { getWebLastEmail } from "@/lib/webSession";
+import { getWebLastEmail, getWebSessionUser } from "@/lib/webSession";
+import { setPendingWebOnboarding } from "@/lib/webOnboarding";
 
 function safeInternalPath(raw: string | null, fallback: string): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return fallback;
@@ -26,9 +27,15 @@ export default function WebSignUp() {
     setMsg(null);
     setBusy(true);
     try {
-      const { error } = await signUp(email, password, name || undefined);
+      const { error, isNewRegistration } = await signUp(email, password, name || undefined);
       if (error) {
         setMsg(error.message);
+        return;
+      }
+      const sessionUser = getWebSessionUser();
+      if (isNewRegistration && sessionUser) {
+        setPendingWebOnboarding(sessionUser.id);
+        navigate("/onboarding", { replace: true });
         return;
       }
       navigate(next, { replace: true });

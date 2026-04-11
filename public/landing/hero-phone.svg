@@ -30,14 +30,14 @@
   <text x="248" y="170" fill="#fff" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700">Receipt Cycle</text>
   <text x="320" y="238" text-anchor="middle" fill="#0f172a" font-family="system-ui,Segoe UI,sans-serif" font-size="36" font-weight="800">$568.97</text>
   <text x="320" y="262" text-anchor="middle" fill="#64748b" font-family="system-ui,Segoe UI,sans-serif" font-size="13">This month | Personal</text>
-  <rect x="210" y="288" width="56" height="100" rx="14" fill="#fb923c" opacity="0.9"/>
-  <rect x="282" y="308" width="56" height="80" rx="14" fill="#38bdf8" opacity="0.9"/>
-  <rect x="354" y="318" width="56" height="70" rx="14" fill="#f472b6" opacity="0.85"/>
-  <rect x="426" y="298" width="56" height="90" rx="14" fill="#facc15" opacity="0.85"/>
-  <text x="238" y="408" text-anchor="middle" fill="#64748b" font-family="system-ui,Segoe UI,sans-serif" font-size="11">Food</text>
-  <text x="310" y="408" text-anchor="middle" fill="#64748b" font-family="system-ui,Segoe UI,sans-serif" font-size="11">Fun</text>
-  <text x="382" y="408" text-anchor="middle" fill="#64748b" font-family="system-ui,Segoe UI,sans-serif" font-size="11">Shop</text>
-  <text x="454" y="408" text-anchor="middle" fill="#64748b" font-family="system-ui,Segoe UI,sans-serif" font-size="11">Bills</text>
+  <rect x="198" y="288" width="52" height="100" rx="14" fill="#fb923c" opacity="0.9"/>
+  <rect x="266" y="308" width="52" height="80" rx="14" fill="#38bdf8" opacity="0.9"/>
+  <rect x="334" y="318" width="52" height="70" rx="14" fill="#f472b6" opacity="0.85"/>
+  <rect x="402" y="298" width="52" height="90" rx="14" fill="#facc15" opacity="0.85"/>
+  <text x="224" y="408" text-anchor="middle" fill="#64748b" font-family="system-ui,Segoe UI,sans-serif" font-size="11">Food</text>
+  <text x="292" y="408" text-anchor="middle" fill="#64748b" font-family="system-ui,Segoe UI,sans-serif" font-size="11">Fun</text>
+  <text x="360" y="408" text-anchor="middle" fill="#64748b" font-family="system-ui,Segoe UI,sans-serif" font-size="11">Shop</text>
+  <text x="428" y="408" text-anchor="middle" fill="#64748b" font-family="system-ui,Segoe UI,sans-serif" font-size="11">Bills</text>
   <rect x="200" y="428" width="240" height="48" rx="12" fill="#fff" stroke="#e2e8f0"/>
   <text x="216" y="448" fill="#0f172a" font-family="system-ui,Segoe UI,sans-serif" font-size="13" font-weight="600">Coffee | Food</text>
   <text x="216" y="464" fill="#94a3b8" font-family="system-ui,Segoe UI,sans-serif" font-size="11">Today</text>

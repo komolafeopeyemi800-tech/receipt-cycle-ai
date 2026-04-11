@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { consumeWhopPkceState, getWhopWebRedirectUri } from "@/lib/whopOAuthPkce";
+import { getWebSessionUser } from "@/lib/webSession";
+import { needsWebOnboarding, setPendingWebOnboarding } from "@/lib/webOnboarding";
 
 export default function WebWhopCallback() {
   const [params] = useSearchParams();
@@ -34,9 +36,17 @@ export default function WebWhopCallback() {
     }
 
     void (async () => {
-      const { error } = await signInWithWhop(code, getWhopWebRedirectUri(), pkce.codeVerifier);
+      const { error, isNewRegistration } = await signInWithWhop(code, getWhopWebRedirectUri(), pkce.codeVerifier);
       if (error) {
         setMsg(error.message);
+        return;
+      }
+      const sessionUser = getWebSessionUser();
+      if (isNewRegistration && sessionUser) {
+        setPendingWebOnboarding(sessionUser.id);
+      }
+      if (sessionUser && needsWebOnboarding(sessionUser.id)) {
+        navigate("/onboarding", { replace: true });
         return;
       }
       navigate("/dashboard", { replace: true });

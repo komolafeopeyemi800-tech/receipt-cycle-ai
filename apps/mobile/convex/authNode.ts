@@ -17,6 +17,8 @@ function makeToken() {
 type AuthResult = {
   token: string;
   user: { id: string; email: string; name: string | null };
+  /** True when this session started a brand-new account (email sign-up or first-time OAuth user). */
+  isNewRegistration?: boolean;
 };
 
 export const signUp = action({
@@ -44,7 +46,11 @@ export const signUp = action({
     const expiresAt = Date.now() + SESSION_MS;
     await ctx.runMutation(internal.auth.insertSession, { userId, token, expiresAt });
 
-    return { token, user: { id: userId as string, email, name: args.name?.trim() ?? null } };
+    return {
+      token,
+      user: { id: userId as string, email, name: args.name?.trim() ?? null },
+      isNewRegistration: true,
+    };
   },
 });
 
@@ -68,6 +74,7 @@ export const signIn = action({
     return {
       token,
       user: { id: user._id as string, email: user.email, name: user.name ?? null },
+      isNewRegistration: false,
     };
   },
 });
@@ -137,6 +144,7 @@ export const signInWithGoogle = action({
       return {
         token,
         user: { id: bySub._id as string, email: bySub.email, name: bySub.name ?? null },
+        isNewRegistration: false,
       };
     }
 
@@ -160,6 +168,7 @@ export const signInWithGoogle = action({
       return {
         token,
         user: { id: byEmail._id as string, email: byEmail.email, name: byEmail.name ?? null },
+        isNewRegistration: false,
       };
     }
 
@@ -178,6 +187,7 @@ export const signInWithGoogle = action({
     return {
       token,
       user: { id: userId as string, email, name: name ?? null },
+      isNewRegistration: true,
     };
   },
 });
@@ -253,6 +263,7 @@ export const signInWithWhop = action({
       return {
         token,
         user: { id: bySub._id as string, email: bySub.email, name: bySub.name ?? null },
+        isNewRegistration: false,
       };
     }
 
@@ -280,6 +291,7 @@ export const signInWithWhop = action({
         return {
           token,
           user: { id: byEmail._id as string, email: byEmail.email, name: byEmail.name ?? null },
+          isNewRegistration: false,
         };
       }
     }
@@ -299,6 +311,7 @@ export const signInWithWhop = action({
     return {
       token,
       user: { id: userId as string, email, name: name ?? null },
+      isNewRegistration: true,
     };
   },
 });

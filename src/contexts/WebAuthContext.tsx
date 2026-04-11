@@ -26,15 +26,21 @@ export type WebAuthUser = {
   name: string | null;
 };
 
+export type WebAuthActionResult = {
+  error: Error | null;
+  /** Set when account was just created (show web onboarding). */
+  isNewRegistration?: boolean;
+};
+
 type WebAuthCtx = {
   user: WebAuthUser | null;
   token: string | null;
   loading: boolean;
   /** Clears the stored session without calling Convex (use when stuck loading or backend is unreachable). */
   clearLocalSession: () => void;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, name?: string) => Promise<{ error: Error | null }>;
-  signInWithWhop: (code: string, redirectUri: string, codeVerifier: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<WebAuthActionResult>;
+  signUp: (email: string, password: string, name?: string) => Promise<WebAuthActionResult>;
+  signInWithWhop: (code: string, redirectUri: string, codeVerifier: string) => Promise<WebAuthActionResult>;
   signOut: () => Promise<void>;
 };
 
@@ -117,7 +123,7 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
           name: res.user.name ?? null,
         });
         setWebLastEmail(res.user.email);
-        return { error: null };
+        return { error: null, isNewRegistration: res.isNewRegistration === true };
       } catch (e) {
         return { error: new Error(formatAuthError(e)) };
       }
@@ -146,7 +152,7 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
           name: res.user.name ?? null,
         });
         setWebLastEmail(res.user.email);
-        return { error: null };
+        return { error: null, isNewRegistration: res.isNewRegistration === true };
       } catch (e) {
         return { error: new Error(formatAuthError(e)) };
       }
@@ -171,7 +177,7 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
           name: res.user.name ?? null,
         });
         setWebLastEmail(res.user.email);
-        return { error: null };
+        return { error: null, isNewRegistration: res.isNewRegistration === true };
       } catch (e) {
         return { error: new Error(formatAuthError(e)) };
       }

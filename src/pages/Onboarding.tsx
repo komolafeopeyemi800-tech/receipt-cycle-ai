@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
+import { useWebAuth } from "@/contexts/WebAuthContext";
+import { markWebOnboardingComplete, needsWebOnboarding } from "@/lib/webOnboarding";
 import {
   SETTINGS_STORAGE_KEYS,
   VOICE_INPUT_LANGUAGE_OPTIONS,
@@ -9,6 +11,7 @@ import {
 
 const OnboardingContent = () => {
   const navigate = useNavigate();
+  const { user, loading } = useWebAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedCurrency, setSelectedCurrency] = useState("");
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
@@ -16,6 +19,18 @@ const OnboardingContent = () => {
   const [selectedUsecases, setSelectedUsecases] = useState<string[]>([]);
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("");
+  const [voiceInputLanguage, setVoiceInputLanguage] = useState("auto");
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      navigate("/signin", { replace: true });
+      return;
+    }
+    if (!needsWebOnboarding(user.id)) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [loading, user, navigate]);
 
   const handleNext = () => {
     if (currentStep < 7) {
@@ -39,13 +54,13 @@ const OnboardingContent = () => {
   };
 
   const handleFinish = () => {
+    if (!user) return;
     const voiceLang = normalizeVoiceInputLanguage(voiceInputLanguage);
     try {
       localStorage.setItem(SETTINGS_STORAGE_KEYS.voiceInputLanguage, voiceLang);
     } catch {
       /* ignore */
     }
-    // Store onboarding data in localStorage for later use in Settings
     const onboardingData = {
       currency: selectedCurrency,
       goals: selectedGoals,
@@ -55,12 +70,15 @@ const OnboardingContent = () => {
       industry: selectedIndustry,
       voiceInputLanguage: voiceLang,
       completed: true,
-      completedAt: new Date().toISOString()
+      completedAt: new Date().toISOString(),
     };
-    localStorage.setItem('onboardingData', JSON.stringify(onboardingData));
-    
-    // Navigate to pricing page so users can subscribe or start using the app
-    navigate('/pricing');
+    try {
+      localStorage.setItem("onboardingData", JSON.stringify(onboardingData));
+    } catch {
+      /* ignore */
+    }
+    markWebOnboardingComplete(user.id);
+    navigate("/dashboard", { replace: true });
   };
 
   const toggleGoal = (goal: string) => {

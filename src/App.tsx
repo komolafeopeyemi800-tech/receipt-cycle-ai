@@ -10,6 +10,7 @@ import { AppRouteFallback } from "@/components/AppRouteFallback";
 import { WebAuthProvider } from "@/contexts/WebAuthContext";
 import { WebPreferencesProvider } from "@/contexts/WebPreferencesContext";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
+import RequireCompleteWebOnboarding from "@/components/RequireCompleteWebOnboarding";
 import MarketingLanding from "./pages/MarketingLanding";
 
 const PrivacyPolicy = lazy(() => import("./pages/legal/PrivacyPolicy"));
@@ -34,6 +35,7 @@ const ConvexCategories = lazy(() => import("./pages/ConvexCategories"));
 const ConvexUploadStatement = lazy(() => import("./pages/ConvexUploadStatement"));
 const ConvexSettings = lazy(() => import("./pages/ConvexSettings"));
 const Pricing = lazy(() => import("./pages/Pricing"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
 
 /** Admin console only — requires Convex. */
 const Admin = lazy(() => import("./pages/Admin"));
@@ -99,15 +101,25 @@ const App = () => (
         <Route path="/oauth/whop" element={<WebWhopCallback />} />
         <Route path="/forgot-password" element={<WebForgotPassword />} />
         <Route path="/reset-password" element={<WebResetPassword />} />
-        <Route path="/dashboard" element={<ConvexDashboard />} />
-        <Route path="/transactions" element={<ConvexTransactions />} />
-        <Route path="/insights" element={<ConvexInsights />} />
-        <Route path="/budgets" element={<ConvexBudgets />} />
-        <Route path="/accounts" element={<ConvexAccounts />} />
-        <Route path="/categories" element={<ConvexCategories />} />
-        <Route path="/upload-statement" element={<ConvexUploadStatement />} />
-        <Route path="/settings" element={<ConvexSettings />} />
-        <Route path="/pricing" element={<Pricing />} />
+        <Route
+          path="/onboarding"
+          element={
+            <Suspense fallback={<AppRouteFallback />}>
+              <Onboarding />
+            </Suspense>
+          }
+        />
+        <Route element={<RequireCompleteWebOnboarding />}>
+          <Route path="/dashboard" element={<ConvexDashboard />} />
+          <Route path="/transactions" element={<ConvexTransactions />} />
+          <Route path="/insights" element={<ConvexInsights />} />
+          <Route path="/budgets" element={<ConvexBudgets />} />
+          <Route path="/accounts" element={<ConvexAccounts />} />
+          <Route path="/categories" element={<ConvexCategories />} />
+          <Route path="/upload-statement" element={<ConvexUploadStatement />} />
+          <Route path="/settings" element={<ConvexSettings />} />
+          <Route path="/pricing" element={<Pricing />} />
+        </Route>
       </Route>
       <Route element={<PublicShell />}>
         <Route path="/" element={<MarketingLanding />} />

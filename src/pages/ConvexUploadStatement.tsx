@@ -2,8 +2,7 @@ import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { parseLooseStatementText, parseStatementCsv } from "@mobile-lib/statementCsv";
-import { extractTextFromPdfArrayBuffer } from "@mobile-lib/pdfText";
+import { parseStatementCsv } from "@mobile-lib/statementCsv";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { AppChrome } from "@/components/layout/AppChrome";
@@ -14,7 +13,7 @@ function defaultCategory(type: "expense" | "income") {
   return type === "expense" ? "Other" : "Salary";
 }
 
-/** Web: CSV/PDF statement import into the shared ledger (aligned with the mobile app). */
+/** Web: CSV statement import into the shared ledger (aligned with mobile: CSV or image for scans — no PDF). */
 function ConvexUploadStatementInner() {
   const { workspace, ready } = useWorkspace();
   const { user } = useWebAuth();
@@ -46,22 +45,13 @@ function ConvexUploadStatementInner() {
         await ensureCats({ workspace });
         const name = file.name.toLowerCase();
         const isPdf = name.endsWith(".pdf") || file.type === "application/pdf";
-
-        let parsed;
         if (isPdf) {
-          let pdfText: string;
-          try {
-            const ab = await file.arrayBuffer();
-            pdfText = await extractTextFromPdfArrayBuffer(ab);
-          } catch (e) {
-            setMsg(e instanceof Error ? e.message : "Could not read PDF. Try CSV export.");
-            return;
-          }
-          parsed = parseLooseStatementText(pdfText);
-        } else {
-          const text = await file.text();
-          parsed = parseStatementCsv(text);
+          setMsg("PDF is not supported. Export a CSV from your bank and upload that file instead.");
+          return;
         }
+
+        const text = await file.text();
+        const parsed = parseStatementCsv(text);
 
         if (!parsed.ok) {
           setMsg(parsed.error);
@@ -96,7 +86,7 @@ function ConvexUploadStatementInner() {
   const onPick = () => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".csv,.pdf,application/pdf,text/csv,application/csv";
+    input.accept = ".csv,text/csv,application/csv";
     input.onchange = () => {
       const f = input.files?.[0];
       if (f) void runImport(f);
@@ -117,8 +107,8 @@ function ConvexUploadStatementInner() {
         </div>
         <h1 style={{ fontSize: 17, fontWeight: 700, margin: "0 0 8px" }}>Upload statement</h1>
         <p style={{ fontSize: 12, color: "#64748b", marginBottom: 16, lineHeight: 1.45 }}>
-          CSV exports work best (columns: Date, Amount or Debit/Credit, Description). PDFs use text extraction and are
-          best-effort — review on the Transactions page.
+          Upload a CSV export from your bank (columns: Date, Amount or Debit/Credit, Description). PDF is not supported —
+          use CSV for reliable imports.
         </p>
         <div
           style={{

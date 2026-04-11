@@ -1,6 +1,6 @@
 /**
  * Hermes / older JS engines may not define Promise.withResolvers (ES2024).
- * pdfjs-dist v4+ uses it — load this module before any pdf import (see index.ts).
+ * Load this module early from `apps/mobile/index.ts` if a dependency needs it.
  */
 const P = Promise as unknown as {
   withResolvers?: <T>() => {

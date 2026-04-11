@@ -29,10 +29,10 @@ The mobile app only sends the **image** to Convex; Convex calls Gemini/OpenAI us
 - After adding or changing keys, run **`npx convex dev`** (local) or **`npx convex deploy`** (production) so the backend picks them up.
 - The scan error message from Convex includes **API details** (401, 429, etc.) — use that to fix the provider, not only “missing key.”
 
-### Statement import (CSV / PDF)
+### Statement import (CSV)
 
 - **Upload statement** (mobile app + web) parses **CSV** with headers such as **Date**, **Amount** (or **Debit** / **Credit**), and **Description**, then creates transactions via Convex `transactions.bulkImport`.
-- **PDF** text is extracted in the **browser / app** with `pdfjs-dist` (best-effort); prefer **CSV** from your bank for reliable imports.
+- **PDF** is not supported — export **CSV** from your bank for reliable imports. Receipt **images** (camera/gallery) are scanned via Convex OCR, not PDF.
 
 ### Test provider keys (HTTP ping, no receipt image)
 

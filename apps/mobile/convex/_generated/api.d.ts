@@ -18,7 +18,6 @@ import type * as budgets from "../budgets.js";
 import type * as categories from "../categories.js";
 import type * as moneyLeak from "../moneyLeak.js";
 import type * as ocrHealth from "../ocrHealth.js";
-import type * as pdfExtract from "../pdfExtract.js";
 import type * as scanReceipt from "../scanReceipt.js";
 import type * as subscription from "../subscription.js";
 import type * as transactions from "../transactions.js";
@@ -43,7 +42,6 @@ declare const fullApi: ApiFromModules<{
   categories: typeof categories;
   moneyLeak: typeof moneyLeak;
   ocrHealth: typeof ocrHealth;
-  pdfExtract: typeof pdfExtract;
   scanReceipt: typeof scanReceipt;
   subscription: typeof subscription;
   transactions: typeof transactions;

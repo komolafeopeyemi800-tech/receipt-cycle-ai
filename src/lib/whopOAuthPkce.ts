@@ -21,7 +21,9 @@ async function sha256base64url(str: string): Promise<string> {
 
 export function getWhopWebRedirectUri(): string {
   const full =
-    (typeof import.meta !== "undefined" && import.meta.env?.VITE_WHOP_OAUTH_REDIRECT_URI?.trim()) || "";
+    (typeof import.meta !== "undefined" && import.meta.env?.VITE_WHOP_OAUTH_REDIRECT_URI?.trim()) ||
+    (typeof import.meta !== "undefined" && import.meta.env?.VITE_WHOP_REDIRECT_URI?.trim()) ||
+    "";
   if (full) return full.replace(/\/$/, "");
 
   const origin =
@@ -32,7 +34,9 @@ export function getWhopWebRedirectUri(): string {
 
 export function getWhopPublicClientId(): string {
   const id =
-    (typeof import.meta !== "undefined" && import.meta.env?.VITE_WHOP_OAUTH_CLIENT_ID?.trim()) || "";
+    (typeof import.meta !== "undefined" && import.meta.env?.VITE_WHOP_OAUTH_CLIENT_ID?.trim()) ||
+    (typeof import.meta !== "undefined" && import.meta.env?.VITE_WHOP_CLIENT_ID?.trim()) ||
+    "";
   return id;
 }
 

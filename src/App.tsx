@@ -100,6 +100,7 @@ const App = () => (
         <Route path="/signup" element={<WebSignUp />} />
         <Route path="/oauth/whop" element={<WebWhopCallback />} />
         <Route path="/api/auth/callback/whop" element={<WebWhopCallback />} />
+        <Route path="/api/auth/callback" element={<WebWhopCallback />} />
         <Route path="/auth/callback" element={<WebWhopCallback />} />
         <Route path="/forgot-password" element={<WebForgotPassword />} />
         <Route path="/reset-password" element={<WebResetPassword />} />

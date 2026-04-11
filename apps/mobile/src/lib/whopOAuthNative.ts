@@ -9,7 +9,11 @@ const discovery = {
 };
 
 export function getWhopNativeClientId(): string {
-  return process.env.EXPO_PUBLIC_WHOP_OAUTH_CLIENT_ID?.trim() ?? "";
+  return (
+    process.env.EXPO_PUBLIC_WHOP_OAUTH_CLIENT_ID?.trim() ||
+    process.env.EXPO_PUBLIC_WHOP_CLIENT_ID?.trim() ||
+    ""
+  );
 }
 
 export function getWhopNativeRedirectUri(): string {

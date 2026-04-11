@@ -36,10 +36,14 @@ The mobile app only sends the **image** to Convex; Convex calls Gemini/OpenAI us
 
 ### Whop (OAuth + webhooks)
 
-- **`WHOP_OAUTH_CLIENT_ID`** — public app id (e.g. `app_kMFUEC8UntlEKY`); must match the web/mobile `VITE_*` / `EXPO_PUBLIC_*` client id.
-- **`WHOP_OAUTH_CLIENT_SECRET`** — optional; add if Whop’s token endpoint rejects PKCE-only exchanges.
+- **`WHOP_OAUTH_CLIENT_ID`** or **`WHOP_CLIENT_ID`** — OAuth app id (e.g. `app_kMFUEC8UntlEKY`); must match `VITE_WHOP_OAUTH_CLIENT_ID` / `EXPO_PUBLIC_WHOP_OAUTH_CLIENT_ID` on clients.
+- **`WHOP_OAUTH_CLIENT_SECRET`** or **`WHOP_CLIENT_SECRET`** — optional; add if Whop’s token endpoint requires a confidential client.
+- **`WHOP_REDIRECT_URI`** or **`WHOP_REDIRECT_URIS`** — optional comma/newline-separated allowlist. If set, `signInWithWhop` rejects `redirect_uri` values not in the list (set the same URL(s) in Netlify as `VITE_WHOP_REDIRECT_URI` or `VITE_WHOP_OAUTH_REDIRECT_URI`).
+- **`WHOP_API_KEY`** — app API key from Whop (optional today; reserved for server-side Whop REST calls).
+- **`WHOP_COMPANY_API_KEY`** — company API key from Whop “Company API Keys” (optional today).
 - **`WHOP_WEBHOOK_SECRET`** — signing secret from the Whop webhook (Standard Webhooks). Used by Convex `POST …/whop-webhook` only — **never** commit it.
 - **`WHOP_PRO_PRODUCT_IDS`** — optional comma/space-separated list (e.g. `prod_CT6cyQj9lXcX6`). If set, only membership events for those products toggle `proSubscriptionActive`.
+- **`SESSION_SECRET`** — **not read** by this Convex app’s session system (sessions are DB-backed tokens). You may still set it for other tools or a future custom layer.
 
 ### Test provider keys (HTTP ping, no receipt image)
 

@@ -200,6 +200,42 @@ type WhopUserInfo = {
   preferred_username?: string;
 };
 
+function whopOAuthClientId(): string {
+  return (
+    process.env.WHOP_OAUTH_CLIENT_ID?.trim() ||
+    process.env.WHOP_CLIENT_ID?.trim() ||
+    ""
+  );
+}
+
+function whopOAuthClientSecret(): string | undefined {
+  return (
+    process.env.WHOP_OAUTH_CLIENT_SECRET?.trim() ||
+    process.env.WHOP_CLIENT_SECRET?.trim() ||
+    undefined
+  );
+}
+
+/**
+ * When set (Convex env), `redirect_uri` from the browser must match one entry (comma- or newline‑separated).
+ * Use the same value(s) you register in Whop and expose as `VITE_WHOP_REDIRECT_URI` / `VITE_WHOP_OAUTH_REDIRECT_URI` on the web.
+ */
+function assertAllowedWhopRedirectUri(redirectUri: string): void {
+  const raw =
+    process.env.WHOP_REDIRECT_URIS?.trim() ||
+    process.env.WHOP_REDIRECT_URI?.trim() ||
+    "";
+  if (!raw) return;
+  const allowed = raw
+    .split(/[\n,]+/)
+    .map((s) => s.trim().replace(/\/$/, ""))
+    .filter(Boolean);
+  const normalized = redirectUri.trim().replace(/\/$/, "");
+  if (!allowed.some((a) => normalized === a.replace(/\/$/, ""))) {
+    throw new Error("Whop redirect URI is not allowed for this deployment.");
+  }
+}
+
 export const signInWithWhop = action({
   args: {
     code: v.string(),
@@ -207,12 +243,16 @@ export const signInWithWhop = action({
     codeVerifier: v.string(),
   },
   handler: async (ctx, args): Promise<AuthResult> => {
-    const clientId = process.env.WHOP_OAUTH_CLIENT_ID?.trim();
+    const clientId = whopOAuthClientId();
     if (!clientId) {
-      throw new Error("Whop sign-in is not configured (missing WHOP_OAUTH_CLIENT_ID on the server).");
+      throw new Error(
+        "Whop sign-in is not configured (set WHOP_OAUTH_CLIENT_ID or WHOP_CLIENT_ID in Convex env).",
+      );
     }
 
-    const clientSecret = process.env.WHOP_OAUTH_CLIENT_SECRET?.trim();
+    assertAllowedWhopRedirectUri(args.redirectUri);
+
+    const clientSecret = whopOAuthClientSecret();
     const tokenBody: Record<string, string> = {
       grant_type: "authorization_code",
       code: args.code.trim(),

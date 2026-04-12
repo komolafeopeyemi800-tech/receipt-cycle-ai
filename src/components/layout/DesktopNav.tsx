@@ -2,10 +2,13 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 
 interface DesktopNavProps {
-  variant?: 'landing' | 'app';
+  variant?: "landing" | "app";
+  /** When true, show menu button to open the app sidebar (narrow viewports). */
+  showSidebarTrigger?: boolean;
+  onSidebarTrigger?: () => void;
 }
 
-const DesktopNav = ({ variant = 'landing' }: DesktopNavProps) => {
+const DesktopNav = ({ variant = "landing", showSidebarTrigger, onSidebarTrigger }: DesktopNavProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const inAdmin = location.pathname.startsWith("/admin");
@@ -13,20 +16,31 @@ const DesktopNav = ({ variant = 'landing' }: DesktopNavProps) => {
   
   if (variant === 'app') {
     return (
-      <header className="fixed top-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md z-50 border-b border-gray-100 shadow-sm">
-        <div className="max-w-7xl mx-auto h-full px-6 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <div 
-              className="flex items-center gap-3 cursor-pointer"
-              onClick={() => navigate('/dashboard')}
+      <header className="fixed top-0 left-0 right-0 z-50 h-16 border-b border-gray-100 bg-white/95 shadow-sm backdrop-blur-md">
+        <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-2 px-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-8">
+            {showSidebarTrigger ? (
+              <button
+                type="button"
+                onClick={() => onSidebarTrigger?.()}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
+                aria-label="Open menu"
+              >
+                <i className="fas fa-bars text-lg" />
+              </button>
+            ) : null}
+            <div
+              className="flex min-w-0 cursor-pointer items-center gap-2 sm:gap-3"
+              onClick={() => navigate("/dashboard")}
             >
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-teal-600 flex items-center justify-center shadow-md">
                 <i className="fas fa-receipt text-white text-lg"></i>
               </div>
-              <span className="text-lg font-bold text-gray-900">Receipt Cycle</span>
+              <span className="truncate text-base font-bold text-gray-900 sm:text-lg">Receipt Cycle</span>
             </div>
-            
-            <nav className="flex items-center gap-1">
+
+            {/* When the drawer is active, all section links live in the sidebar — avoids a crowded top bar. */}
+            <nav className={showSidebarTrigger ? "hidden" : "hidden items-center gap-1 md:flex"}>
               <NavLink 
                 to={inAdmin ? "/admin" : "/dashboard"} 
                 className={({ isActive }) => 
@@ -70,23 +84,23 @@ const DesktopNav = ({ variant = 'landing' }: DesktopNavProps) => {
             </nav>
           </div>
           
-          <div className="flex items-center gap-3">
-            <button 
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+            <button
               type="button"
-              onClick={() => navigate(inAdmin ? '/admin' : '/transactions#add-transaction')}
-              className="h-10 px-4 bg-gradient-to-r from-primary to-teal-600 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+              onClick={() => navigate(inAdmin ? "/admin" : "/transactions#add-transaction")}
+              className="flex h-9 items-center gap-1.5 rounded-lg bg-gradient-to-r from-primary to-teal-600 px-2.5 text-xs font-semibold text-white shadow-md transition-all hover:shadow-lg sm:h-10 sm:gap-2 sm:px-4 sm:text-sm"
             >
-              <i className="fas fa-plus"></i>
-              <span>Add Transaction</span>
+              <i className="fas fa-plus" />
+              <span className="hidden sm:inline">Add</span>
             </button>
-            <button 
+            <button
               type="button"
-              onClick={() => navigate(inAdmin ? '/admin' : '/settings')}
-              className="relative w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              onClick={() => navigate(inAdmin ? "/admin" : "/settings")}
+              className={`relative hidden h-10 w-10 items-center justify-center rounded-lg bg-gray-100 transition-colors hover:bg-gray-200 sm:flex ${showSidebarTrigger ? "md:hidden xl:flex" : ""}`}
               title="Notifications"
               aria-label="Notifications"
             >
-              <i className="fas fa-bell text-gray-600"></i>
+              <i className="fas fa-bell text-gray-600" />
             </button>
             <button
               type="button"
@@ -105,9 +119,12 @@ const DesktopNav = ({ variant = 'landing' }: DesktopNavProps) => {
                   await signOut();
                   navigate("/signin", { replace: true });
                 }}
-                className="h-10 px-3 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-gray-50 rounded-lg transition-colors"
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold text-slate-600 transition-colors hover:bg-gray-50 hover:text-slate-900 sm:h-10 sm:w-auto sm:px-3"
+                title="Sign out"
+                aria-label="Sign out"
               >
-                Sign out
+                <i className="fas fa-right-from-bracket sm:hidden" aria-hidden />
+                <span className="hidden sm:inline">Sign out</span>
               </button>
             ) : null}
           </div>

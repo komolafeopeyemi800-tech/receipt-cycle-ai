@@ -1,6 +1,8 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
+  /** Optional — opens in new tab for Free tier; if unset, Free still goes to dashboard. */
+  readonly VITE_WHOP_CHECKOUT_FREE_URL?: string;
   readonly VITE_WHOP_CHECKOUT_MONTHLY_URL?: string;
   readonly VITE_WHOP_CHECKOUT_YEARLY_URL?: string;
   /** Optional: Whop customer hub / manage subscription */

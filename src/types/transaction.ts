@@ -10,6 +10,7 @@ export interface Transaction {
   date: string;
   description: string | null;
   payment_method: string | null;
+  accountId?: string | null;
   tags: string[] | null;
   is_recurring: boolean | null;
   receipt_url: string | null;

@@ -26,17 +26,21 @@ export default function ReceiptCyclePaywall() {
   const discountPct = yearlyDiscountPercent();
 
   function ctaForPlan(id: PaywallPlanId) {
+    const url = getWhopCheckoutUrl(id);
     if (id === "free") {
+      if (url) {
+        window.open(url, "_blank", "noopener,noreferrer");
+        return;
+      }
       navigate("/dashboard");
       return;
     }
-    const url = getWhopCheckoutUrl(id);
     if (url) {
       window.open(url, "_blank", "noopener,noreferrer");
       return;
     }
     window.alert(
-      "Checkout is not configured yet. Add VITE_WHOP_CHECKOUT_MONTHLY_URL and VITE_WHOP_CHECKOUT_YEARLY_URL (Whop plan checkout URLs) to repo-root .env / .env.local or Netlify env, then restart dev or redeploy. You can use WHOP_CHECKOUT_MONTHLY_URL / WHOP_CHECKOUT_YEARLY_URL in .env; vite.config maps them for the build.",
+      "Checkout is not configured yet. Add VITE_WHOP_CHECKOUT_MONTHLY_URL and VITE_WHOP_CHECKOUT_YEARLY_URL (Whop plan checkout URLs). Optional: VITE_WHOP_CHECKOUT_FREE_URL for the Free tier button. Use repo-root .env / .env.local or Netlify, then restart dev or redeploy. WHOP_CHECKOUT_* names in .env are mapped by vite.config.",
     );
   }
 

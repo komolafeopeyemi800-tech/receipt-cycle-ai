@@ -20,6 +20,8 @@ import { FinancialPeriodSummaryWeb, type PeriodMode, type TxFilter } from "@/com
 import { VoiceQuickAddWeb, type VoiceDraft } from "@/components/dashboard/VoiceQuickAddWeb";
 import { FinanceCoachDialog, type CoachRow } from "@/components/dashboard/FinanceCoachDialog";
 import { useSubscriptionState } from "@/hooks/use-subscription-state";
+import type { Transaction } from "@/types/transaction";
+import { TransactionEditDialog } from "@/components/transactions/TransactionEditDialog";
 
 /** Matches `apps/mobile/src/theme/tokens.ts` */
 const primary = "#0f766e";
@@ -40,6 +42,7 @@ function ConvexDashboardInner() {
   const [coachOpen, setCoachOpen] = useState(false);
   const [parsedDraft, setParsedDraft] = useState<VoiceDraft | null>(null);
   const [voiceSaveBusy, setVoiceSaveBusy] = useState(false);
+  const [editTx, setEditTx] = useState<Transaction | null>(null);
 
   const range =
     period === "month"
@@ -77,13 +80,11 @@ function ConvexDashboardInner() {
 
   const summary = useMemo(() => buildSummary((all ?? []) as DocTx[]), [all]);
 
-  const baseFiltered = useMemo(() => {
-    const raw = (all ?? []) as DocTx[];
-    if (txFilter === "all") return raw;
-    return raw.filter((t) => t.type.toLowerCase() === txFilter);
+  const recent = useMemo(() => {
+    const raw = (all ?? []) as Transaction[];
+    const f = txFilter === "all" ? raw : raw.filter((t) => t.type.toLowerCase() === txFilter);
+    return f.slice(0, 5);
   }, [all, txFilter]);
-
-  const recent = useMemo(() => baseFiltered.slice(0, 5), [baseFiltered]);
 
   const periodLabel =
     period === "month" ? formatMonthYearLabel(selectedYm) : "All loaded transactions";
@@ -425,20 +426,26 @@ function ConvexDashboardInner() {
                   <p className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500">TOP CATEGORIES</p>
                   <ul className="space-y-1.5">
                     {summary.categoryBreakdown.slice(0, 3).map((cat) => (
-                      <li
-                        key={cat.category}
-                        className="flex items-center justify-between gap-3 rounded-[10px] bg-slate-100 px-2.5 py-2.5"
-                      >
-                        <div className="flex min-w-0 items-center gap-2.5">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-slate-200 bg-white">
-                            <i className="fas fa-tag text-xs" style={{ color: primary }} />
+                      <li key={cat.category}>
+                        <Link
+                          to={`/transactions?category=${encodeURIComponent(cat.category)}`}
+                          title={`View and edit ${cat.category} in Records`}
+                          className="flex items-center justify-between gap-3 rounded-[10px] bg-slate-100 px-2.5 py-2.5 transition hover:bg-slate-200/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
+                        >
+                          <div className="flex min-w-0 items-center gap-2.5">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-slate-200 bg-white">
+                              <i className="fas fa-tag text-xs" style={{ color: primary }} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-slate-900">{cat.category}</p>
+                              <p className="text-xs text-slate-500">{cat.count} transactions</p>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-slate-900">{cat.category}</p>
-                            <p className="text-xs text-slate-500">{cat.count} transactions</p>
-                          </div>
-                        </div>
-                        <span className="shrink-0 text-sm font-bold tabular-nums text-slate-900">{formatMoney(cat.amount)}</span>
+                          <span className="flex shrink-0 items-center gap-2">
+                            <span className="text-sm font-bold tabular-nums text-slate-900">{formatMoney(cat.amount)}</span>
+                            <i className="fas fa-chevron-right text-[10px] text-slate-400" aria-hidden />
+                          </span>
+                        </Link>
                       </li>
                     ))}
                   </ul>
@@ -468,7 +475,16 @@ function ConvexDashboardInner() {
                   {recent.map((tx) => (
                     <li
                       key={tx.id}
-                      className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setEditTx(tx)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setEditTx(tx);
+                        }
+                      }}
+                      className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm outline-none ring-primary/30 transition hover:border-teal-200 hover:bg-teal-50/30 focus-visible:ring-2"
                     >
                       <div
                         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
@@ -497,6 +513,13 @@ function ConvexDashboardInner() {
           </>
         )}
       </div>
+      <TransactionEditDialog
+        open={editTx !== null}
+        transaction={editTx}
+        onClose={() => setEditTx(null)}
+        workspace={workspace}
+        userId={String(user!.id)}
+      />
     </div>
   );
 }

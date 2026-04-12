@@ -2,9 +2,17 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useConvexMonthlySummary } from "@/hooks/use-convex-monthly-summary";
 import { useWebPreferences } from "@/contexts/WebPreferencesContext";
 import { useWebAuth } from "@/contexts/WebAuthContext";
+import { cn } from "@/lib/utils";
+
+type DesktopSidebarProps = {
+  /** Slide-over on phones / tablets; fixed strip on wide screens. */
+  drawerMode?: boolean;
+  drawerOpen?: boolean;
+  onNavigate?: () => void;
+};
 
 /** Primary app navigation — mirrors mobile tabs + dashboard home (SaaS-style sidebar). */
-const DesktopSidebar = () => {
+const DesktopSidebar = ({ drawerMode = false, drawerOpen = true, onNavigate }: DesktopSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const inAdmin = location.pathname.startsWith("/admin");
@@ -34,7 +42,14 @@ const DesktopSidebar = () => {
   ];
 
   return (
-    <aside className="fixed bottom-0 left-0 top-16 z-40 w-64 overflow-y-auto border-r border-slate-100 bg-white">
+    <aside
+      className={cn(
+        "fixed bottom-0 left-0 top-16 z-40 w-64 overflow-y-auto border-r border-slate-100 bg-white transition-transform duration-200 ease-out",
+        drawerMode && "shadow-xl",
+        drawerMode && !drawerOpen && "-translate-x-full",
+        drawerMode && drawerOpen && "translate-x-0",
+      )}
+    >
       <div className="flex flex-col p-4">
         <div className="mb-5 rounded-xl border border-teal-100 bg-gradient-to-br from-primary/10 to-teal-50 p-4">
           <div className="text-xs font-medium text-slate-600">This month (net)</div>
@@ -55,6 +70,7 @@ const DesktopSidebar = () => {
             <NavLink
               key={item.label}
               to={item.path}
+              onClick={() => onNavigate?.()}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                   isActive ? "bg-primary text-white shadow-md shadow-primary/25" : "text-slate-600 hover:bg-slate-50"
@@ -91,6 +107,7 @@ const DesktopSidebar = () => {
         <div className="mt-4 border-t border-slate-100 pt-4">
           <NavLink
             to="/admin"
+            onClick={() => onNavigate?.()}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive ? "bg-purple-100 text-purple-800" : "text-slate-600 hover:bg-slate-50"

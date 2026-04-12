@@ -7,11 +7,12 @@ export const PRICING_PAGE_URL =
   process.env.EXPO_PUBLIC_PRICING_URL?.trim() || "https://receiptcycle.app/pricing";
 
 export function expoWhopCheckoutUrl(plan: PaywallPlanId): string | null {
-  if (plan === "free") return null;
   const raw =
-    plan === "monthly"
-      ? process.env.EXPO_PUBLIC_WHOP_CHECKOUT_MONTHLY_URL
-      : process.env.EXPO_PUBLIC_WHOP_CHECKOUT_YEARLY_URL;
+    plan === "free"
+      ? process.env.EXPO_PUBLIC_WHOP_CHECKOUT_FREE_URL
+      : plan === "monthly"
+        ? process.env.EXPO_PUBLIC_WHOP_CHECKOUT_MONTHLY_URL
+        : process.env.EXPO_PUBLIC_WHOP_CHECKOUT_YEARLY_URL;
   const s = raw?.trim();
   return s || null;
 }

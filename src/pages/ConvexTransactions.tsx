@@ -2,8 +2,9 @@ import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useState, useCallback, useEffect, type FormEvent, type ChangeEvent, type CSSProperties } from "react";
-import { useLocation } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { TransactionList } from "@/components/transactions/TransactionList";
+import { TransactionEditDialog } from "@/components/transactions/TransactionEditDialog";
 import type { Transaction } from "@/types/transaction";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useWebAuth } from "@/contexts/WebAuthContext";
@@ -50,11 +51,17 @@ function normalizeExtracted(data: unknown): {
 }
 
 function ConvexTransactionsInner() {
-  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const categoryFilter = searchParams.get("category")?.trim() || undefined;
+
   const { workspace, ready } = useWorkspace();
   const { user, token } = useWebAuth();
   const userId = user!.id;
-  const transactions = useQuery(api.transactions.list, ready ? { workspace, userId } : "skip");
+  const transactions = useQuery(
+    api.transactions.list,
+    ready ? { workspace, userId, ...(categoryFilter ? { category: categoryFilter } : {}) } : "skip",
+  );
   const createTx = useMutation(api.transactions.create);
   const removeTx = useMutation(api.transactions.remove);
   const seedDemo = useMutation(api.transactions.seedDemo);
@@ -68,6 +75,11 @@ function ConvexTransactionsInner() {
   const [type, setType] = useState<"expense" | "income">("expense");
   const [busy, setBusy] = useState(false);
   const [scanMsg, setScanMsg] = useState<string | null>(null);
+  const [editTx, setEditTx] = useState<Transaction | null>(null);
+
+  useEffect(() => {
+    if (categoryFilter) setCategory(categoryFilter);
+  }, [categoryFilter]);
 
   const rows: Transaction[] = (transactions ?? []) as Transaction[];
 
@@ -199,6 +211,41 @@ function ConvexTransactionsInner() {
           you use the same account.
         </p>
 
+        {categoryFilter ? (
+          <div
+            style={{
+              ...card,
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              borderColor: "#99f6e4",
+              background: "#f0fdfa",
+            }}
+          >
+            <span style={{ fontSize: 13, color: "#0f172a" }}>
+              Showing <strong>{categoryFilter}</strong> — tap a row to edit or delete.
+            </span>
+            <button
+              type="button"
+              onClick={() => navigate("/transactions")}
+              style={{
+                padding: "6px 12px",
+                borderRadius: 8,
+                border: `1px solid ${primary}`,
+                background: "#fff",
+                color: primary,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Clear filter
+            </button>
+          </div>
+        ) : null}
+
         <div style={{ ...card, display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
           <label
             style={{
@@ -289,8 +336,22 @@ function ConvexTransactionsInner() {
         {transactions === undefined ? (
           <p style={{ fontSize: 13, color: "#64748b" }}>Loading…</p>
         ) : (
-          <TransactionList transactions={rows} loading={false} variant="table" onDelete={handleDelete} />
+          <TransactionList
+            transactions={rows}
+            loading={false}
+            variant="table"
+            onSelect={(tx) => setEditTx(tx)}
+            onDelete={handleDelete}
+          />
         )}
+
+        <TransactionEditDialog
+          open={editTx !== null}
+          transaction={editTx}
+          onClose={() => setEditTx(null)}
+          workspace={workspace}
+          userId={userId}
+        />
       </div>
     </div>
   );

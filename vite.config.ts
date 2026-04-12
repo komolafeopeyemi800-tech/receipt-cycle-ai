@@ -17,6 +17,8 @@ export default defineConfig(({ mode }) => {
     .find(Boolean);
 
   /** Public Whop checkout links — copy plan checkout URLs from your Whop dashboard. */
+  const checkoutFree =
+    env.VITE_WHOP_CHECKOUT_FREE_URL?.trim() || env.WHOP_CHECKOUT_FREE_URL?.trim();
   const checkoutMonthly =
     env.VITE_WHOP_CHECKOUT_MONTHLY_URL?.trim() || env.WHOP_CHECKOUT_MONTHLY_URL?.trim();
   const checkoutYearly =
@@ -26,6 +28,9 @@ export default defineConfig(({ mode }) => {
   const define: Record<string, string> = {};
   if (whopPublicClientId) {
     define["import.meta.env.VITE_WHOP_OAUTH_CLIENT_ID"] = JSON.stringify(whopPublicClientId);
+  }
+  if (checkoutFree) {
+    define["import.meta.env.VITE_WHOP_CHECKOUT_FREE_URL"] = JSON.stringify(checkoutFree);
   }
   if (checkoutMonthly) {
     define["import.meta.env.VITE_WHOP_CHECKOUT_MONTHLY_URL"] = JSON.stringify(checkoutMonthly);

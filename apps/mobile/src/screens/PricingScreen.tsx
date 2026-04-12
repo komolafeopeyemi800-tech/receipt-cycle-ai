@@ -1,13 +1,5 @@
 import { useState } from "react";
-import {
-  Alert,
-  Linking,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -22,6 +14,7 @@ import {
   type PaywallPlanId,
 } from "../lib/pricingPaywall";
 import { expoWhopCheckoutUrl, expoWhopManageUrl } from "../constants/urls";
+import { openHttpsOrExternalUrl } from "../lib/openExternalUrl";
 import type { RootStackParamList } from "../navigation/types";
 
 /** Same order as PAYWALL_BENEFITS */
@@ -41,22 +34,28 @@ export function PricingScreen() {
   const discountPct = yearlyDiscountPercent();
 
   async function openCheckout() {
+    const url = expoWhopCheckoutUrl(plan);
     if (plan === "free") {
+      if (url) {
+        try {
+          await openHttpsOrExternalUrl(url);
+        } catch {
+          Alert.alert("Could not open checkout", url);
+        }
+        return;
+      }
       navigation.navigate("Main");
       return;
     }
-    const url = expoWhopCheckoutUrl(plan);
     if (!url) {
       Alert.alert(
         "Checkout not configured",
-        "Set EXPO_PUBLIC_WHOP_CHECKOUT_MONTHLY_URL and EXPO_PUBLIC_WHOP_CHECKOUT_YEARLY_URL in your environment, then rebuild.",
+        "Add EXPO_PUBLIC_WHOP_CHECKOUT_MONTHLY_URL and EXPO_PUBLIC_WHOP_CHECKOUT_YEARLY_URL to apps/mobile/.env.local (same folder as app.json), then stop Expo and run `npx expo start -c` so Metro picks them up. EAS: set env in eas.json or EAS Secrets.",
       );
       return;
     }
     try {
-      const ok = await Linking.canOpenURL(url);
-      if (!ok) throw new Error("cannot open");
-      await Linking.openURL(url);
+      await openHttpsOrExternalUrl(url);
     } catch {
       Alert.alert("Could not open checkout", url);
     }
@@ -65,7 +64,7 @@ export function PricingScreen() {
   async function openManage() {
     const url = expoWhopManageUrl();
     try {
-      await Linking.openURL(url);
+      await openHttpsOrExternalUrl(url);
     } catch {
       Alert.alert("Could not open link", url);
     }

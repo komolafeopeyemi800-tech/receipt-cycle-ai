@@ -2,11 +2,12 @@ import type { PaywallPlanId } from "@mobile-lib/pricingPaywall";
 
 /** Whop checkout URLs from Vite env (set in `.env` for production). */
 export function getWhopCheckoutUrl(plan: PaywallPlanId): string | null {
-  if (plan === "free") return null;
   const raw =
-    plan === "monthly"
-      ? (import.meta.env.VITE_WHOP_CHECKOUT_MONTHLY_URL as string | undefined)
-      : (import.meta.env.VITE_WHOP_CHECKOUT_YEARLY_URL as string | undefined);
+    plan === "free"
+      ? (import.meta.env.VITE_WHOP_CHECKOUT_FREE_URL as string | undefined)
+      : plan === "monthly"
+        ? (import.meta.env.VITE_WHOP_CHECKOUT_MONTHLY_URL as string | undefined)
+        : (import.meta.env.VITE_WHOP_CHECKOUT_YEARLY_URL as string | undefined);
   const s = raw?.trim();
   return s || null;
 }

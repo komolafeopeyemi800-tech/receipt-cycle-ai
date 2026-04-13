@@ -15,6 +15,10 @@ function asRecord(v: unknown): Record<string, unknown> | null {
   return v !== null && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
 }
 
+function asString(v: unknown): string | undefined {
+  return typeof v === "string" && v.trim().length > 0 ? v.trim() : undefined;
+}
+
 /** Best-effort Whop user id (`user_…`) from Standard Webhooks payload `data`. */
 function extractWhopUserId(data: unknown): string | null {
   const d = asRecord(data);
@@ -29,6 +33,72 @@ function extractWhopUserId(data: unknown): string | null {
   if (member && typeof member.user_id === "string") return member.user_id;
   if (member && typeof member.userId === "string") return member.userId;
 
+  return null;
+}
+
+function extractWhopEmail(data: unknown): string | null {
+  const d = asRecord(data);
+  if (!d) return null;
+  const direct = asString(d.email) ?? asString(d.user_email);
+  if (direct) return direct.toLowerCase();
+  const user = asRecord(d.user);
+  const userEmail = user ? asString(user.email) : undefined;
+  return userEmail ? userEmail.toLowerCase() : null;
+}
+
+function extractMembershipId(data: unknown): string | null {
+  const d = asRecord(data);
+  if (!d) return null;
+  const direct = asString(d.membership_id) ?? asString(d.membershipId);
+  if (direct) return direct;
+  const membership = asRecord(d.membership);
+  return membership ? asString(membership.id) ?? null : null;
+}
+
+function extractBillingPeriodDays(data: unknown): number | null {
+  const d = asRecord(data);
+  if (!d) return null;
+  const plan = asRecord(d.plan) ?? asRecord(asRecord(d.membership)?.plan);
+  const value = plan?.billing_period;
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function toEntitlementStatus(
+  eventType: string,
+  data: unknown,
+): { status: "free" | "pro_monthly" | "pro_yearly" | "cancelling"; proActive: boolean; paymentStatus?: string } | null {
+  const activeTypes = new Set(["membership.activated", "membership.went_valid"]);
+  const deactiveTypes = new Set(["membership.deactivated", "membership.went_invalid", "refund.created", "dispute.created"]);
+  if (activeTypes.has(eventType)) {
+    const days = extractBillingPeriodDays(data);
+    return {
+      status: days && days >= 360 ? "pro_yearly" : "pro_monthly",
+      proActive: true,
+    };
+  }
+  if (eventType === "membership.cancel_at_period_end_changed") {
+    const d = asRecord(data);
+    const cancelAtPeriodEnd =
+      d?.cancel_at_period_end === true ||
+      d?.cancelAtPeriodEnd === true ||
+      asRecord(d?.membership)?.cancel_at_period_end === true;
+    return {
+      status: cancelAtPeriodEnd ? "cancelling" : "pro_monthly",
+      proActive: true,
+    };
+  }
+  if (deactiveTypes.has(eventType)) {
+    return { status: "free", proActive: false };
+  }
+  if (eventType === "payment.succeeded") {
+    return { status: "pro_monthly", proActive: true, paymentStatus: "succeeded" };
+  }
+  if (eventType === "payment.failed") {
+    return { status: "free", proActive: false, paymentStatus: "failed" };
+  }
+  if (eventType === "payment.pending" || eventType === "payment.created") {
+    return { status: "free", proActive: false, paymentStatus: eventType.replace("payment.", "") };
+  }
   return null;
 }
 
@@ -81,26 +151,23 @@ http.route({
         : [],
     );
 
-    const activateTypes = new Set(["membership.activated", "membership.went_valid"]);
-    const deactivateTypes = new Set([
-      "membership.deactivated",
-      "membership.went_invalid",
-      "refund.created",
-    ]);
+    const entitlement = toEntitlementStatus(type, data);
+    const shouldFilterProduct = type.startsWith("membership.") || type.startsWith("payment.");
+    if (shouldFilterProduct && !productMatches(data, allowedProducts)) {
+      return new Response("OK", { status: 200 });
+    }
 
-    if (activateTypes.has(type) || deactivateTypes.has(type)) {
-      if (!productMatches(data, allowedProducts)) {
-        return new Response("OK", { status: 200 });
-      }
-      const whopUserId = extractWhopUserId(data);
-      if (whopUserId) {
-        const pro = activateTypes.has(type);
-        await ctx.runMutation(internal.whopWebhook.setProByWhopUserId, {
-          whopUserId,
-          proSubscriptionActive: pro,
-          source: type,
-        });
-      }
+    if (entitlement) {
+      await ctx.runMutation(internal.whopWebhook.upsertEntitlementFromWebhook, {
+        whopUserId: extractWhopUserId(data) ?? undefined,
+        email: extractWhopEmail(data) ?? undefined,
+        membershipId: extractMembershipId(data) ?? undefined,
+        status: entitlement.status,
+        proActive: entitlement.proActive,
+        paymentStatus: entitlement.paymentStatus,
+        source: type,
+        eventType: type,
+      });
     }
 
     return new Response("OK", { status: 200 });

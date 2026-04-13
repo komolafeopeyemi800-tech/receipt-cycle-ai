@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { action, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { LIFETIME_PRO_EMAILS } from "./_subscriptionLogic";
+import { getLifetimeProEmails } from "./_subscriptionLogic";
 
 type AppConfigDoc = {
   _id: string;
@@ -44,7 +44,7 @@ function getAllowedAdminEmails() {
         .map((x) => x.trim().toLowerCase())
         .filter(Boolean)
     : [];
-  for (const e of LIFETIME_PRO_EMAILS) {
+  for (const e of getLifetimeProEmails()) {
     const n = e.trim().toLowerCase();
     if (!list.includes(n)) list.push(n);
   }

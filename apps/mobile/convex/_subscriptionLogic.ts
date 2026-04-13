@@ -4,11 +4,28 @@ export const TRIAL_MS = 7 * 24 * 60 * 60 * 1000;
 export const TRIAL_MAX_TRANSACTIONS = 25;
 
 /** Owner / comped accounts — always full Pro regardless of Whop billing. */
-export const LIFETIME_PRO_EMAILS = ["owner@example.com"] as const;
+export const STATIC_LIFETIME_PRO_EMAILS = ["owner@example.com"] as const;
+
+function lifetimeProEmailsFromEnv(): string[] {
+  const raw = process.env.LIFETIME_PRO_EMAILS?.trim() ?? "";
+  if (!raw) return [];
+  return raw
+    .split(/[\n,]+/)
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function getLifetimeProEmails(): string[] {
+  const out = [...(STATIC_LIFETIME_PRO_EMAILS as readonly string[]).map((e) => e.toLowerCase())];
+  for (const e of lifetimeProEmailsFromEnv()) {
+    if (!out.includes(e)) out.push(e);
+  }
+  return out;
+}
 
 export function isLifetimeProEmail(email: string): boolean {
   const k = email.trim().toLowerCase();
-  return (LIFETIME_PRO_EMAILS as readonly string[]).some((e) => e.toLowerCase() === k);
+  return getLifetimeProEmails().includes(k);
 }
 
 export type UserSubDoc = {

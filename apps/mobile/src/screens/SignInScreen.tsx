@@ -21,6 +21,8 @@ import { WhopSignInButton } from "../components/WhopSignInButton";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
 import { getRememberedEmailAsync } from "../lib/rememberedEmail";
+import { openHttpsOrExternalUrl } from "../lib/openExternalUrl";
+import { PRICING_PAGE_URL, WEB_SIGNIN_URL } from "../constants/urls";
 
 export function SignInScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -122,6 +124,25 @@ export function SignInScreen() {
               <Pressable style={styles.forgotRow} onPress={() => navigation.navigate("ForgotPassword")}>
                 <Text style={styles.forgot}>Forgot password?</Text>
               </Pressable>
+
+              <View style={styles.webFallbackRow}>
+                <Pressable
+                  style={styles.webFallbackBtn}
+                  onPress={() => {
+                    void openHttpsOrExternalUrl(WEB_SIGNIN_URL);
+                  }}
+                >
+                  <Text style={styles.webFallbackTxt}>Open web auth</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.webFallbackBtn}
+                  onPress={() => {
+                    void openHttpsOrExternalUrl(PRICING_PAGE_URL);
+                  }}
+                >
+                  <Text style={styles.webFallbackTxt}>Open web pricing</Text>
+                </Pressable>
+              </View>
             </View>
 
             <Pressable style={styles.linkRow} onPress={() => navigation.navigate("SignUp")}>
@@ -210,4 +231,16 @@ const styles = StyleSheet.create({
   orTxt: { fontSize: typeScale.sm, color: colors.gray400, fontWeight: "600" },
   linkRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 22 },
   link: { fontSize: typeScale.body, color: colors.primary, fontWeight: "600" },
+  webFallbackRow: { flexDirection: "row", gap: 8, marginTop: 2 },
+  webFallbackBtn: {
+    flex: 1,
+    minHeight: 38,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.gray200,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+  },
+  webFallbackTxt: { fontSize: typeScale.sm, color: colors.gray700, fontWeight: "600" },
 });

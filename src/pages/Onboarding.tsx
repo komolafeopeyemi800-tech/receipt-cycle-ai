@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { markWebOnboardingComplete, needsWebOnboarding } from "@/lib/webOnboarding";
+import { data as ISO_CURRENCY_DATA } from "currency-codes";
+import { getIsoCountries } from "@mobile-lib/isoCountries";
 import {
   SETTINGS_STORAGE_KEYS,
   VOICE_INPUT_LANGUAGE_OPTIONS,
@@ -20,6 +22,15 @@ const OnboardingContent = () => {
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("");
   const [voiceInputLanguage, setVoiceInputLanguage] = useState("auto");
+  const currencyRows = useMemo(
+    () =>
+      ISO_CURRENCY_DATA.map((c) => ({
+        code: c.code,
+        label: `${c.code} - ${c.currency}`,
+      })).sort((a, b) => a.code.localeCompare(b.code)),
+    [],
+  );
+  const countryRows = useMemo(() => getIsoCountries(), []);
 
   useEffect(() => {
     if (loading) return;
@@ -141,18 +152,11 @@ const OnboardingContent = () => {
                 className="w-full h-14 bg-white rounded-xl border-2 border-gray-200 px-4 text-base font-semibold text-gray-900 appearance-none focus:border-primary focus:outline-none transition-colors cursor-pointer"
               >
                 <option value="">Select currency...</option>
-                <option value="USD">🇺🇸 USD - US Dollar</option>
-                <option value="EUR">🇪🇺 EUR - Euro</option>
-                <option value="GBP">🇬🇧 GBP - British Pound</option>
-                <option value="CAD">🇨🇦 CAD - Canadian Dollar</option>
-                <option value="AUD">🇦🇺 AUD - Australian Dollar</option>
-                <option value="JPY">🇯🇵 JPY - Japanese Yen</option>
-                <option value="CHF">🇨🇭 CHF - Swiss Franc</option>
-                <option value="CNY">🇨🇳 CNY - Chinese Yuan</option>
-                <option value="INR">🇮🇳 INR - Indian Rupee</option>
-                <option value="MXN">🇲🇽 MXN - Mexican Peso</option>
-                <option value="BRL">🇧🇷 BRL - Brazilian Real</option>
-                <option value="ZAR">🇿🇦 ZAR - South African Rand</option>
+                {currencyRows.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.label}
+                  </option>
+                ))}
               </select>
               <i className="fas fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
             </div>
@@ -582,32 +586,11 @@ const OnboardingContent = () => {
                 className="w-full h-14 bg-white rounded-xl border-2 border-gray-200 px-4 text-base font-semibold text-gray-900 appearance-none focus:border-primary focus:outline-none transition-colors cursor-pointer"
               >
                 <option value="">Choose your country...</option>
-                <option value="US">🇺🇸 United States</option>
-                <option value="CA">🇨🇦 Canada</option>
-                <option value="GB">🇬🇧 United Kingdom</option>
-                <option value="AU">🇦🇺 Australia</option>
-                <option value="DE">🇩🇪 Germany</option>
-                <option value="FR">🇫🇷 France</option>
-                <option value="ES">🇪🇸 Spain</option>
-                <option value="IT">🇮🇹 Italy</option>
-                <option value="NL">🇳🇱 Netherlands</option>
-                <option value="SE">🇸🇪 Sweden</option>
-                <option value="NO">🇳🇴 Norway</option>
-                <option value="DK">🇩🇰 Denmark</option>
-                <option value="FI">🇫🇮 Finland</option>
-                <option value="CH">🇨🇭 Switzerland</option>
-                <option value="AT">🇦🇹 Austria</option>
-                <option value="BE">🇧🇪 Belgium</option>
-                <option value="IE">🇮🇪 Ireland</option>
-                <option value="NZ">🇳🇿 New Zealand</option>
-                <option value="SG">🇸🇬 Singapore</option>
-                <option value="JP">🇯🇵 Japan</option>
-                <option value="KR">🇰🇷 South Korea</option>
-                <option value="IN">🇮🇳 India</option>
-                <option value="BR">🇧🇷 Brazil</option>
-                <option value="MX">🇲🇽 Mexico</option>
-                <option value="AR">🇦🇷 Argentina</option>
-                <option value="ZA">🇿🇦 South Africa</option>
+                {countryRows.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name}
+                  </option>
+                ))}
               </select>
               <i className="fas fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
             </div>
@@ -944,6 +927,12 @@ const OnboardingContent = () => {
         <div className="flex-1"></div>
 
         <div id="action-button-finish" className="px-6 pb-6">
+          <button
+            onClick={() => navigate("/pricing")}
+            className="mb-3 w-full h-12 rounded-xl border border-primary/30 bg-white/80 text-primary text-sm font-semibold hover:bg-primary/5 transition-all"
+          >
+            View Pricing Plans First
+          </button>
           <button onClick={handleFinish} className="w-full h-14 bg-gradient-to-r from-primary to-teal-600 text-white text-base font-semibold rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2">
             <span>Get Started</span>
             <i className="fas fa-arrow-right"></i>

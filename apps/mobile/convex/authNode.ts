@@ -14,6 +14,15 @@ function makeToken() {
   return randomBytes(32).toString("hex");
 }
 
+async function safeReconcileEntitlement(ctx: Parameters<typeof signIn.handler>[0], userId: Id<"users">) {
+  try {
+    await ctx.runMutation(internal.whopWebhook.reconcileEntitlementForUser, { userId });
+  } catch (error) {
+    // Don't block auth if entitlement sync has stale/duplicate data issues.
+    console.error("whop entitlement reconcile failed", { userId, error });
+  }
+}
+
 type AuthResult = {
   token: string;
   user: { id: string; email: string; name: string | null };
@@ -45,6 +54,7 @@ export const signUp = action({
     const token = makeToken();
     const expiresAt = Date.now() + SESSION_MS;
     await ctx.runMutation(internal.auth.insertSession, { userId, token, expiresAt });
+    await safeReconcileEntitlement(ctx, userId);
 
     return {
       token,
@@ -70,6 +80,7 @@ export const signIn = action({
       token,
       expiresAt,
     });
+    await safeReconcileEntitlement(ctx, user._id);
 
     return {
       token,
@@ -141,6 +152,7 @@ export const signInWithGoogle = action({
         token,
         expiresAt,
       });
+      await safeReconcileEntitlement(ctx, bySub._id);
       return {
         token,
         user: { id: bySub._id as string, email: bySub.email, name: bySub.name ?? null },
@@ -165,6 +177,7 @@ export const signInWithGoogle = action({
         token,
         expiresAt,
       });
+      await safeReconcileEntitlement(ctx, byEmail._id);
       return {
         token,
         user: { id: byEmail._id as string, email: byEmail.email, name: byEmail.name ?? null },
@@ -183,6 +196,7 @@ export const signInWithGoogle = action({
     const token = makeToken();
     const expiresAt = Date.now() + SESSION_MS;
     await ctx.runMutation(internal.auth.insertSession, { userId, token, expiresAt });
+    await safeReconcileEntitlement(ctx, userId);
 
     return {
       token,
@@ -385,6 +399,7 @@ export const signInWithWhop = action({
         token,
         expiresAt,
       });
+      await safeReconcileEntitlement(ctx, bySub._id);
       return {
         token,
         user: { id: bySub._id as string, email: bySub.email, name: bySub.name ?? null },
@@ -413,6 +428,7 @@ export const signInWithWhop = action({
           token,
           expiresAt,
         });
+        await safeReconcileEntitlement(ctx, byEmail._id);
         return {
           token,
           user: { id: byEmail._id as string, email: byEmail.email, name: byEmail.name ?? null },
@@ -432,6 +448,7 @@ export const signInWithWhop = action({
     const token = makeToken();
     const expiresAt = Date.now() + SESSION_MS;
     await ctx.runMutation(internal.auth.insertSession, { userId, token, expiresAt });
+    await safeReconcileEntitlement(ctx, userId);
 
     return {
       token,

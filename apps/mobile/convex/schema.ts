@@ -173,4 +173,21 @@ export default defineSchema({
     details: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_created", ["createdAt"]),
+
+  /** Latest known Whop entitlement snapshot (allows granting access when user account appears later). */
+  whopEntitlements: defineTable({
+    whopUserId: v.optional(v.string()),
+    email: v.optional(v.string()),
+    membershipId: v.optional(v.string()),
+    /** free | pro_monthly | pro_yearly | cancelling */
+    subscriptionStatus: v.string(),
+    proActive: v.boolean(),
+    /** Optional metadata from payments / events */
+    paymentStatus: v.optional(v.string()),
+    source: v.optional(v.string()),
+    lastEventType: v.string(),
+    lastEventAt: v.number(),
+  })
+    .index("by_whop_user", ["whopUserId"])
+    .index("by_email", ["email"]),
 });

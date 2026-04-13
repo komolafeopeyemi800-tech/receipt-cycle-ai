@@ -22,6 +22,9 @@ import { usePreferences } from "../contexts/PreferencesContext";
 import { VOICE_INPUT_LANGUAGE_OPTIONS, normalizeVoiceInputLanguage } from "../lib/preferences";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import { PRICING_PLANS } from "../constants/pricing";
+import { expoWhopCheckoutUrl } from "../constants/urls";
+import { openHttpsOrExternalUrl } from "../lib/openExternalUrl";
+import type { PaywallPlanId } from "../lib/pricingPaywall";
 
 const ONBOARDING_DATA_KEY = "onboardingData";
 
@@ -121,6 +124,16 @@ export function OnboardingScreen({ onDone }: Props) {
   const toggle = (arr: string[], id: string, set: (v: string[]) => void) => {
     set(arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]);
   };
+
+  const openPlanCheckout = useCallback(async (planId: PaywallPlanId) => {
+    const url = expoWhopCheckoutUrl(planId);
+    if (!url) return;
+    try {
+      await openHttpsOrExternalUrl(url);
+    } catch {
+      // Ignore from onboarding card tap; Pricing screen has richer error messaging.
+    }
+  }, []);
 
   const persistAndFinish = useCallback(async () => {
     const lang = normalizeVoiceInputLanguage(voiceLang);
@@ -377,6 +390,10 @@ export function OnboardingScreen({ onDone }: Props) {
                   </View>
                 ))}
               </ScrollView>
+              <Pressable style={styles.pricingCta} onPress={() => void openPlanCheckout("yearly")}>
+                <Text style={styles.pricingCtaText}>View full pricing now</Text>
+                <Ionicons name="arrow-forward" size={18} color={colors.primary} />
+              </Pressable>
             </>
           )}
           <View style={{ height: 120 }} />
@@ -651,6 +668,19 @@ const styles = StyleSheet.create({
   pricingPrice: { fontSize: typeScale.md, fontWeight: "800", color: colors.gray900, marginTop: 4 },
   pricingPeriod: { fontSize: typeScale.xs, fontWeight: "600", color: colors.gray600 },
   pricingBlurb: { fontSize: 10, color: colors.gray500, marginTop: 4, lineHeight: 14 },
+  pricingCta: {
+    marginTop: 10,
+    minHeight: 42,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 6,
+    backgroundColor: "#fff",
+  },
+  pricingCtaText: { fontSize: typeScale.sm, fontWeight: "700", color: colors.primary },
   footer: {
     paddingHorizontal: 14,
     paddingTop: 10,

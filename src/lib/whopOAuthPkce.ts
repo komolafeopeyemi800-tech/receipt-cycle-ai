@@ -68,7 +68,8 @@ export function getWhopWebRedirectUri(): string {
     (typeof import.meta !== "undefined" && import.meta.env?.VITE_WHOP_OAUTH_REDIRECT_ORIGIN?.trim()) ||
     "";
   if (!origin) return "";
-  return `${origin.replace(/\/$/, "")}/oauth/whop`;
+  // Use the same callback path registered for production in Whop by default.
+  return `${origin.replace(/\/$/, "")}/api/auth/callback/whop`;
 }
 
 export function getWhopPublicClientId(): string {

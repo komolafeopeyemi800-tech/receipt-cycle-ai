@@ -17,10 +17,15 @@ export function getWhopNativeClientId(): string {
 }
 
 export function getWhopNativeRedirectUri(): string {
-  const path = process.env.EXPO_PUBLIC_WHOP_OAUTH_REDIRECT_PATH?.trim() || "auth/callback";
+  const explicit = process.env.EXPO_PUBLIC_WHOP_OAUTH_REDIRECT_URI?.trim();
+  if (explicit) return explicit;
+
+  const path = (process.env.EXPO_PUBLIC_WHOP_OAUTH_REDIRECT_PATH?.trim() || "auth/callback").replace(/^\/+/, "");
+  const native = `receiptcycle://${path}`;
   return AuthSession.makeRedirectUri({
     scheme: "receiptcycle",
     path,
+    native,
   });
 }
 

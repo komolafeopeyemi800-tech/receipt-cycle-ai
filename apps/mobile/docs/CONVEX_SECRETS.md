@@ -36,7 +36,7 @@ The mobile app only sends the **image** to Convex; Convex calls Gemini/OpenAI us
 
 ### Whop (OAuth + webhooks)
 
-- **`WHOP_OAUTH_CLIENT_ID`** or **`WHOP_CLIENT_ID`** — OAuth app id (e.g. `app_kMFUEC8UntlEKY`); must match `VITE_WHOP_OAUTH_CLIENT_ID` / `EXPO_PUBLIC_WHOP_OAUTH_CLIENT_ID` on clients.
+- **`WHOP_OAUTH_CLIENT_ID`** or **`WHOP_CLIENT_ID`** — OAuth app id (e.g. `app_your_whop_client_id`); must match `VITE_WHOP_OAUTH_CLIENT_ID` / `EXPO_PUBLIC_WHOP_OAUTH_CLIENT_ID` on clients.
 - **`WHOP_OAUTH_CLIENT_SECRET`** or **`WHOP_CLIENT_SECRET`** — optional; add if Whop’s token endpoint requires a confidential client.
 - **`WHOP_REDIRECT_URI`** or **`WHOP_REDIRECT_URIS`** — optional comma/newline-separated allowlist. If set, `signInWithWhop` rejects `redirect_uri` values not in the list (set the same URL(s) in Netlify as `VITE_WHOP_REDIRECT_URI` or `VITE_WHOP_OAUTH_REDIRECT_URI`).
 - **`WHOP_API_KEY`** — app API key from Whop (optional today; reserved for server-side Whop REST calls).

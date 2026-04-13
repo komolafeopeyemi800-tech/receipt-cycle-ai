@@ -30,10 +30,10 @@ function asJsonDownload(filename: string, payload: unknown) {
 
 export default function Admin() {
   const [adminEmailInput, setAdminEmailInput] = useState(
-    () => localStorage.getItem(ADMIN_EMAIL_KEY) ?? "komolafebamidele@rocketmail.com",
+    () => localStorage.getItem(ADMIN_EMAIL_KEY) ?? "",
   );
   const [adminEmail, setAdminEmail] = useState(
-    () => localStorage.getItem(ADMIN_EMAIL_KEY) ?? "komolafebamidele@rocketmail.com",
+    () => localStorage.getItem(ADMIN_EMAIL_KEY) ?? "",
   );
   const [secretInput, setSecretInput] = useState(() => localStorage.getItem(STORAGE_KEY) ?? "");
   const [secret, setSecret] = useState(() => localStorage.getItem(STORAGE_KEY) ?? "");

@@ -4,7 +4,7 @@ export const TRIAL_MS = 7 * 24 * 60 * 60 * 1000;
 export const TRIAL_MAX_TRANSACTIONS = 25;
 
 /** Owner / comped accounts — always full Pro regardless of Whop billing. */
-export const LIFETIME_PRO_EMAILS = ["komolafebamidele@rocketmail.com"] as const;
+export const LIFETIME_PRO_EMAILS = ["owner@example.com"] as const;
 
 export function isLifetimeProEmail(email: string): boolean {
   const k = email.trim().toLowerCase();

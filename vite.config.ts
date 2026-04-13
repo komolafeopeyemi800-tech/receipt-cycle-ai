@@ -1,11 +1,15 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { fileURLToPath } from "node:url";
 import { componentTagger } from "lovable-tagger";
+
+const repoRoot = path.dirname(fileURLToPath(import.meta.url));
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
+  /** Same directory as this file — avoids missing Whop keys when `process.cwd()` is not the repo root. */
+  const env = loadEnv(mode, repoRoot, ["VITE_", "WHOP_"]);
   /** Public OAuth app id only — same value as Convex WHOP_OAUTH_CLIENT_ID; never use client_secret here. */
   const whopPublicClientId = [
     env.VITE_WHOP_OAUTH_CLIENT_ID,
@@ -43,6 +47,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    envDir: repoRoot,
     server: {
       host: "::",
       port: 8080,
@@ -53,10 +58,10 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
     resolve: {
       alias: {
-        "@": path.resolve(__dirname, "./src"),
+        "@": path.resolve(repoRoot, "./src"),
         // Shared Convex backend (lives under apps/mobile per monorepo layout)
-        "@convex": path.resolve(__dirname, "./apps/mobile/convex"),
-        "@mobile-lib": path.resolve(__dirname, "./apps/mobile/src/lib"),
+        "@convex": path.resolve(repoRoot, "./apps/mobile/convex"),
+        "@mobile-lib": path.resolve(repoRoot, "./apps/mobile/src/lib"),
       },
     },
     define,

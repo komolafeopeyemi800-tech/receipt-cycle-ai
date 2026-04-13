@@ -27,7 +27,7 @@ export function WhopOAuthButton({ mode, className = "", onError }: WhopOAuthButt
   async function handleClick() {
     if (!configured) {
       onError?.(
-        "Whop client id is missing in the web build. Add VITE_WHOP_OAUTH_CLIENT_ID (or VITE_WHOP_CLIENT_ID, or WHOP_CLIENT_ID / WHOP_OAUTH_CLIENT_ID) to the repo-root .env / .env.local, then restart `npm run dev`.",
+        "Whop client id is missing in the web build. Add VITE_WHOP_OAUTH_CLIENT_ID (or VITE_WHOP_CLIENT_ID, or WHOP_CLIENT_ID / WHOP_OAUTH_CLIENT_ID) to repo-root `.env` / `.env.local`, restart `npm run dev`. On Netlify: Site settings → Environment variables → redeploy.",
       );
       return;
     }

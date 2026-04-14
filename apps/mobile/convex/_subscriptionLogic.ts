@@ -3,7 +3,7 @@ import type { Id } from "./_generated/dataModel";
 export const TRIAL_MS = 7 * 24 * 60 * 60 * 1000;
 export const TRIAL_MAX_TRANSACTIONS = 25;
 
-/** Owner / comped accounts — always full Pro regardless of Whop billing. */
+/** Admin allowlist emails (admin dashboard access), not subscription entitlements. */
 export const STATIC_LIFETIME_PRO_EMAILS = ["owner@example.com"] as const;
 
 function lifetimeProEmailsFromEnv(): string[] {
@@ -38,7 +38,7 @@ export type UserSubDoc = {
 };
 
 export function computeSubscriptionState(user: UserSubDoc, now: number) {
-  const pro = user.proSubscriptionActive === true || isLifetimeProEmail(user.email);
+  const pro = user.proSubscriptionActive === true;
   const trialStartMs = user.trialStartedAt ?? user._creationTime;
   const trialEndsAt = trialStartMs + TRIAL_MS;
   const trialTimeActive = now < trialEndsAt;
@@ -121,7 +121,7 @@ export async function incrementTrialAddsIfNeeded(
   convexUserId: Id<"users">,
 ) {
   const user = (await ctx.db.get(convexUserId)) as UserSubDoc | null;
-  if (!user || user.proSubscriptionActive === true || isLifetimeProEmail(user.email)) return;
+  if (!user || user.proSubscriptionActive === true) return;
   const cur = Math.max(0, Math.floor(user.trialLifetimeAdds ?? 0));
   await ctx.db.patch(convexUserId, { trialLifetimeAdds: cur + 1 });
 }

@@ -1,11 +1,11 @@
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { internalQuery, mutation, query } from "./_generated/server";
 import {
   TRIAL_MAX_TRANSACTIONS,
   type UserSubDoc,
   computeSubscriptionState,
-  isLifetimeProEmail,
   sessionErrorMessage,
 } from "./_subscriptionLogic";
 
@@ -120,10 +120,6 @@ export const bootstrapSubscription = mutation({
     await ctx.runMutation(internal.whopWebhook.reconcileEntitlementForUser, { userId });
     const user = (await ctx.db.get(userId as never)) as UserSubDoc | null;
     if (!user) return { ok: false as const };
-    if (isLifetimeProEmail(user.email) && user.proSubscriptionActive !== true) {
-      await ctx.db.patch(user._id, { proSubscriptionActive: true });
-      return { ok: true as const };
-    }
     if (user.proSubscriptionActive === true) return { ok: true as const };
 
     const patch: { trialLifetimeAdds?: number; trialStartedAt?: number } = {};

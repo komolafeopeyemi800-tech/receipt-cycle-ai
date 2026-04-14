@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { internalQuery, mutation, query } from "./_generated/server";
 import {
   TRIAL_MAX_TRANSACTIONS,
@@ -115,7 +115,10 @@ export const bootstrapSubscription = mutation({
   handler: async (ctx, { token }) => {
     const me = (await ctx.runQuery(api.auth.me, { token: token.trim() })) as { id?: string } | null;
     if (!me?.id) return { ok: false as const };
-    const user = (await ctx.db.get(me.id as never)) as UserSubDoc | null;
+    const userId = me.id as Id<"users">;
+    // Keep subscription status in sync even when webhook lands after the user session started.
+    await ctx.runMutation(internal.whopWebhook.reconcileEntitlementForUser, { userId });
+    const user = (await ctx.db.get(userId as never)) as UserSubDoc | null;
     if (!user) return { ok: false as const };
     if (isLifetimeProEmail(user.email) && user.proSubscriptionActive !== true) {
       await ctx.db.patch(user._id, { proSubscriptionActive: true });

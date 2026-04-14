@@ -31,6 +31,7 @@ import { QuickActionsRow } from "../components/QuickActionsRow";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { FinancialPeriodSummary } from "../components/FinancialPeriodSummary";
 import { AnimatedPressable } from "../components/AnimatedPressable";
+import { useSubscriptionState } from "../hooks/useSubscriptionState";
 import type { MainTabParamList, RootStackParamList } from "../navigation/types";
 
 type Nav = CompositeNavigationProp<
@@ -42,6 +43,7 @@ export function TransactionsListScreen() {
   const navigation = useNavigation<Nav>();
   const { workspace, ready } = useWorkspace();
   const { user } = useAuth();
+  const sub = useSubscriptionState();
   const { formatMoney, formatMoneyCompact, formatDate } = usePreferences();
   const [period, setPeriod] = useState<"month" | "all">("all");
   const [selectedYm, setSelectedYm] = useState(() => todayYm());
@@ -111,6 +113,21 @@ export function TransactionsListScreen() {
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled
       >
+        <View style={styles.statusPill}>
+          <Ionicons name="id-card-outline" size={13} color={colors.gray600} />
+          <Text style={styles.statusPillTxt}>
+            Status:{" "}
+            {sub
+              ? sub.pro
+                ? "Pro"
+                : sub.phase === "trial"
+                  ? "Free trial"
+                  : sub.phase === "trial_exhausted"
+                    ? "Free (limit reached)"
+                    : "Free"
+              : "Loading..."}
+          </Text>
+        </View>
         <FinancialPeriodSummary
           mode={period}
           onModeChange={(m) => {
@@ -241,6 +258,20 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
+  statusPill: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.gray200,
+    backgroundColor: colors.surface,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 10,
+  },
+  statusPillTxt: { fontSize: typeScale.sm, fontWeight: "600", color: colors.gray700 },
   addBtn: {
     flexDirection: "row",
     alignItems: "center",

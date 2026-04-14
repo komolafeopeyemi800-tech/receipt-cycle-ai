@@ -5,6 +5,8 @@ interface ImportMetaEnv {
   readonly VITE_WHOP_CHECKOUT_FREE_URL?: string;
   readonly VITE_WHOP_CHECKOUT_MONTHLY_URL?: string;
   readonly VITE_WHOP_CHECKOUT_YEARLY_URL?: string;
+  /** Optional success return URL for Whop checkout (defaults to /dashboard on current origin). */
+  readonly VITE_WHOP_CHECKOUT_SUCCESS_URL?: string;
   /** Optional: Whop customer hub / manage subscription */
   readonly VITE_WHOP_MANAGE_URL?: string;
   /** Public OAuth client id (app_xxx) for Sign in with Whop — must match Convex WHOP_OAUTH_CLIENT_ID / WHOP_CLIENT_ID */

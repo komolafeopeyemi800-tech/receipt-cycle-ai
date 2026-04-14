@@ -31,13 +31,13 @@ function csvValue(v: unknown): string {
 }
 
 function ConvexSettingsInner() {
-  const { user, signOut } = useWebAuth();
+  const { user, token, signOut } = useWebAuth();
   const navigate = useNavigate();
   const runtime = useQuery(api.admin.publicConfig, {});
   const sub = useSubscriptionState();
   const backupRows = useQuery(
     api.transactions.exportForBackup,
-    user?.id && sub?.canExportCsv ? { userId: user.id } : "skip",
+    user?.id && token && sub?.canExportCsv ? { userId: user.id, token } : "skip",
   );
 
   const {

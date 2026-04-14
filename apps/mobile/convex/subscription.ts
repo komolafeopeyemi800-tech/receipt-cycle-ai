@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { api } from "./_generated/api";
 import { internalQuery, mutation, query } from "./_generated/server";
 import {
   TRIAL_MAX_TRANSACTIONS,
@@ -50,14 +51,11 @@ async function collectTransactionsForUserKeys(
 export const evaluateForAction = internalQuery({
   args: { token: v.string() },
   handler: async (ctx, { token }) => {
-    const sess = await ctx.db
-      .query("sessions")
-      .withIndex("by_token", (q) => q.eq("token", token.trim()))
-      .unique();
-    if (!sess || sess.expiresAt < Date.now()) {
+    const me = (await ctx.runQuery(api.auth.me, { token: token.trim() })) as { id?: string } | null;
+    if (!me?.id) {
       return { ok: false as const, code: "auth" as const };
     }
-    const user = (await ctx.db.get(sess.userId)) as UserSubDoc | null;
+    const user = (await ctx.db.get(me.id as never)) as UserSubDoc | null;
     if (!user) return { ok: false as const, code: "user" as const };
 
     const now = Date.now();
@@ -86,12 +84,9 @@ export const evaluateForAction = internalQuery({
 export const getSubscriptionState = query({
   args: { token: v.string() },
   handler: async (ctx, { token }) => {
-    const sess = await ctx.db
-      .query("sessions")
-      .withIndex("by_token", (q) => q.eq("token", token.trim()))
-      .unique();
-    if (!sess || sess.expiresAt < Date.now()) return null;
-    const user = (await ctx.db.get(sess.userId)) as UserSubDoc | null;
+    const me = (await ctx.runQuery(api.auth.me, { token: token.trim() })) as { id?: string } | null;
+    if (!me?.id) return null;
+    const user = (await ctx.db.get(me.id as never)) as UserSubDoc | null;
     if (!user) return null;
     const now = Date.now();
     const st = computeSubscriptionState(user, now);
@@ -118,12 +113,9 @@ export const getSubscriptionState = query({
 export const bootstrapSubscription = mutation({
   args: { token: v.string() },
   handler: async (ctx, { token }) => {
-    const sess = await ctx.db
-      .query("sessions")
-      .withIndex("by_token", (q) => q.eq("token", token.trim()))
-      .unique();
-    if (!sess || sess.expiresAt < Date.now()) return { ok: false as const };
-    const user = (await ctx.db.get(sess.userId)) as UserSubDoc | null;
+    const me = (await ctx.runQuery(api.auth.me, { token: token.trim() })) as { id?: string } | null;
+    if (!me?.id) return { ok: false as const };
+    const user = (await ctx.db.get(me.id as never)) as UserSubDoc | null;
     if (!user) return { ok: false as const };
     if (isLifetimeProEmail(user.email) && user.proSubscriptionActive !== true) {
       await ctx.db.patch(user._id, { proSubscriptionActive: true });

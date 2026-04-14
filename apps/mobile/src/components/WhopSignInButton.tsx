@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useWhopAuthRequest, getWhopNativeClientId, getWhopNativeRedirectUri } from "../lib/whopOAuthNative";
@@ -18,6 +18,8 @@ export function WhopSignInButton({ label = "Continue with Whop", onError, disabl
   const clientId = getWhopNativeClientId();
   const redirectUri = getWhopNativeRedirectUri();
   const [request, response, promptAsync] = useWhopAuthRequest();
+  const debugOAuth = process.env.EXPO_PUBLIC_WHOP_OAUTH_DEBUG === "1";
+
   const consumedRef = useRef(false);
   const [exchanging, setExchanging] = useState(false);
 
@@ -40,13 +42,16 @@ export function WhopSignInButton({ label = "Continue with Whop", onError, disabl
     if (response?.type !== "success" || consumedRef.current) return;
     const code = response.params?.code;
     const verifier = request?.codeVerifier;
+    if (debugOAuth) {
+      Alert.alert("Whop OAuth Debug", `Callback success. code: ${code ? "received" : "missing"}`);
+    }
     if (!code || typeof code !== "string" || !verifier) {
       onError("Whop sign-in did not return a valid code.");
       return;
     }
     consumedRef.current = true;
     void runExchange(code, verifier);
-  }, [response, request?.codeVerifier, onError, runExchange]);
+  }, [response, request?.codeVerifier, onError, runExchange, debugOAuth]);
 
   useEffect(() => {
     if (response?.type === "error") {

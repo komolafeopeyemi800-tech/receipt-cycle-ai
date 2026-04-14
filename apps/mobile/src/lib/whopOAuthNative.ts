@@ -37,6 +37,7 @@ export function useWhopAuthRequest(): [
 ] {
   const clientId = getWhopNativeClientId();
   const redirectUri = getWhopNativeRedirectUri();
+  const nonce = Math.random().toString(36).slice(2);
   return AuthSession.useAuthRequest(
     {
       clientId,
@@ -45,6 +46,7 @@ export function useWhopAuthRequest(): [
       responseType: AuthSession.ResponseType.Code,
       usePKCE: true,
       codeChallengeMethod: AuthSession.CodeChallengeMethod.S256,
+      extraParams: { nonce },
     },
     discovery,
   );

@@ -12,9 +12,10 @@ type Props = {
   onClose: () => void;
   workspace: WorkspaceId;
   userId: string;
+  token: string | null;
 };
 
-export function TransactionEditDialog({ transaction, open, onClose, workspace, userId }: Props) {
+export function TransactionEditDialog({ transaction, open, onClose, workspace, userId, token }: Props) {
   const updateTx = useMutation(api.transactions.update);
   const removeTx = useMutation(api.transactions.remove);
 
@@ -49,10 +50,12 @@ export function TransactionEditDialog({ transaction, open, onClose, workspace, u
     setBusy(true);
     setErr(null);
     try {
+      if (!token) throw new Error("Sign in required.");
       await updateTx({
         id: transaction.id as Id<"transactions">,
         workspace,
         userId,
+        token,
         amount: n,
         type,
         category,
@@ -77,7 +80,8 @@ export function TransactionEditDialog({ transaction, open, onClose, workspace, u
     setBusy(true);
     setErr(null);
     try {
-      await removeTx({ id: transaction.id as Id<"transactions">, userId });
+      if (!token) throw new Error("Sign in required.");
+      await removeTx({ id: transaction.id as Id<"transactions">, userId, token });
       onClose();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Could not delete");

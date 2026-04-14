@@ -17,9 +17,19 @@ export function expoWhopCheckoutUrl(plan: PaywallPlanId): string | null {
         ? process.env.EXPO_PUBLIC_WHOP_CHECKOUT_MONTHLY_URL
         : process.env.EXPO_PUBLIC_WHOP_CHECKOUT_YEARLY_URL;
   const s = raw?.trim();
-  return s || null;
+  if (!s) return null;
+  try {
+    const u = new URL(s);
+    const returnUrl =
+      process.env.EXPO_PUBLIC_WHOP_CHECKOUT_SUCCESS_URL?.trim() || "receiptcycle://post-checkout?screen=Records";
+    if (!u.searchParams.get("redirect_uri")) u.searchParams.set("redirect_uri", returnUrl);
+    if (!u.searchParams.get("return_url")) u.searchParams.set("return_url", returnUrl);
+    return u.toString();
+  } catch {
+    return s;
+  }
 }
 
 export function expoWhopManageUrl(): string {
-  return process.env.EXPO_PUBLIC_WHOP_MANAGE_URL?.trim() || "https://whop.com/";
+  return process.env.EXPO_PUBLIC_WHOP_MANAGE_URL?.trim() || "https://whop.com/@me/settings/orders/";
 }

@@ -1,6 +1,44 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function findSessionByRawToken(ctx: any, token: string) {
+  const normalized = token.trim();
+  const hashed = await sha256Hex(normalized);
+  const byHashed = await ctx.db
+    .query("sessions")
+    .withIndex("by_token", (q) => q.eq("token", hashed))
+    .unique();
+  if (byHashed) return byHashed;
+  // Backward compatibility for old plaintext session rows.
+  return await ctx.db
+    .query("sessions")
+    .withIndex("by_token", (q) => q.eq("token", normalized))
+    .unique();
+}
+
+async function findPasswordResetByRawToken(ctx: any, token: string) {
+  const normalized = token.trim();
+  const hashed = await sha256Hex(normalized);
+  const byHashed = await ctx.db
+    .query("passwordResetTokens")
+    .withIndex("by_token", (q) => q.eq("token", hashed))
+    .unique();
+  if (byHashed) return byHashed;
+  // Backward compatibility for old plaintext reset token rows.
+  return await ctx.db
+    .query("passwordResetTokens")
+    .withIndex("by_token", (q) => q.eq("token", normalized))
+    .unique();
+}
+
 export const getUserByEmail = internalQuery({
   args: { email: v.string() },
   handler: async (ctx, { email }) => {
@@ -68,17 +106,15 @@ export const insertPasswordReset = internalMutation({
     expiresAt: v.number(),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("passwordResetTokens", args);
+    const hashed = await sha256Hex(args.token.trim());
+    return await ctx.db.insert("passwordResetTokens", { ...args, token: hashed });
   },
 });
 
 export const getPasswordReset = internalQuery({
   args: { token: v.string() },
   handler: async (ctx, { token }) => {
-    return await ctx.db
-      .query("passwordResetTokens")
-      .withIndex("by_token", (q) => q.eq("token", token))
-      .unique();
+    return await findPasswordResetByRawToken(ctx, token);
   },
 });
 
@@ -96,7 +132,8 @@ export const insertSession = internalMutation({
     expiresAt: v.number(),
   },
   handler: async (ctx, { userId, token, expiresAt }) => {
-    return await ctx.db.insert("sessions", { userId, token, expiresAt });
+    const hashed = await sha256Hex(token.trim());
+    return await ctx.db.insert("sessions", { userId, token: hashed, expiresAt });
   },
 });
 
@@ -104,10 +141,7 @@ export const me = query({
   args: { token: v.optional(v.string()) },
   handler: async (ctx, { token }) => {
     if (!token) return null;
-    const sess = await ctx.db
-      .query("sessions")
-      .withIndex("by_token", (q) => q.eq("token", token))
-      .unique();
+    const sess = await findSessionByRawToken(ctx, token);
     if (!sess || sess.expiresAt < Date.now()) return null;
     const user = await ctx.db.get(sess.userId);
     if (!user) return null;
@@ -122,10 +156,7 @@ export const me = query({
 export const signOut = mutation({
   args: { token: v.string() },
   handler: async (ctx, { token }) => {
-    const sess = await ctx.db
-      .query("sessions")
-      .withIndex("by_token", (q) => q.eq("token", token))
-      .unique();
+    const sess = await findSessionByRawToken(ctx, token);
     if (sess) await ctx.db.delete(sess._id);
   },
 });
@@ -134,10 +165,7 @@ export const signOut = mutation({
 export const getUserForPasswordChange = internalQuery({
   args: { token: v.string() },
   handler: async (ctx, { token }) => {
-    const sess = await ctx.db
-      .query("sessions")
-      .withIndex("by_token", (q) => q.eq("token", token))
-      .unique();
+    const sess = await findSessionByRawToken(ctx, token);
     if (!sess || sess.expiresAt < Date.now()) return null;
     const user = await ctx.db.get(sess.userId);
     if (!user) return null;
@@ -155,10 +183,7 @@ export const patchUserPassword = internalMutation({
 export const resetMyData = mutation({
   args: { token: v.string() },
   handler: async (ctx, { token }) => {
-    const sess = await ctx.db
-      .query("sessions")
-      .withIndex("by_token", (q) => q.eq("token", token))
-      .unique();
+    const sess = await findSessionByRawToken(ctx, token);
     const userId = !sess || sess.expiresAt < Date.now() ? null : sess.userId;
     if (!userId) throw new Error("Session expired. Sign in again.");
 
@@ -182,10 +207,7 @@ export const resetMyData = mutation({
 export const deleteMyAccount = mutation({
   args: { token: v.string() },
   handler: async (ctx, { token }) => {
-    const sess = await ctx.db
-      .query("sessions")
-      .withIndex("by_token", (q) => q.eq("token", token))
-      .unique();
+    const sess = await findSessionByRawToken(ctx, token);
     const userId = !sess || sess.expiresAt < Date.now() ? null : sess.userId;
     if (!userId) throw new Error("Session expired. Sign in again.");
     const uid = userId as string;

@@ -110,6 +110,19 @@ export const publicConfig = query({
   },
 });
 
+export const isCurrentUserAdmin = query({
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, { token }) => {
+    if (!token?.trim()) return false;
+    const me = (await ctx.runQuery(internal.auth.getUserForPasswordChange, { token: token.trim() })) as
+      | { user?: { email?: string } }
+      | null;
+    const email = me?.user?.email?.trim().toLowerCase();
+    if (!email) return false;
+    return getAllowedAdminEmails().includes(email);
+  },
+});
+
 export const adminConfig = query({
   args: { secret: v.string(), adminEmail: v.string() },
   handler: async (ctx, { secret, adminEmail }) => {

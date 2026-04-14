@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
+import { api } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import {
   assertCanCreateTransaction,
@@ -98,6 +99,22 @@ async function loadUserSubscriptionState(ctx: { db: { get: (id: Id<"users">) => 
   if (!user) throw new Error("You must be signed in to continue.");
   const state = computeSubscriptionState(user, Date.now());
   return { user, state };
+}
+
+async function requireAuthorizedUserId(
+  ctx: { runQuery: (ref: unknown, args: { token: string }) => Promise<unknown> },
+  token: string,
+  claimedUserId: string | undefined,
+): Promise<string> {
+  const normalized = token.trim();
+  if (!normalized) throw new Error("Sign in required.");
+  const me = (await ctx.runQuery(api.auth.me, { token: normalized })) as { id?: string } | null;
+  const authedUserId = me?.id?.trim();
+  if (!authedUserId) throw new Error("Sign in required.");
+  if (claimedUserId?.trim() && claimedUserId.trim() !== authedUserId) {
+    throw new Error("Forbidden");
+  }
+  return authedUserId;
 }
 
 async function getRuntimeConfig(
@@ -212,13 +229,13 @@ export const get = query({
 });
 
 export const exportForBackup = query({
-  args: { userId: v.optional(v.string()) },
-  handler: async (ctx, { userId }) => {
-    if (!userId?.trim()) return [];
-    const { state } = await loadUserSubscriptionState(ctx, userId.trim());
+  args: { userId: v.optional(v.string()), token: v.string() },
+  handler: async (ctx, { userId, token }) => {
+    const authedUserId = await requireAuthorizedUserId(ctx, token, userId);
+    const { state } = await loadUserSubscriptionState(ctx, authedUserId);
     assertCanExportCsv(state);
     const all = await ctx.db.query("transactions").collect();
-    const rows = all.filter((d) => (d as TransactionDoc).userId === userId);
+    const rows = all.filter((d) => (d as TransactionDoc).userId === authedUserId);
     return rows.map((d) => toClientShape(d as TransactionDoc));
   },
 });
@@ -241,6 +258,7 @@ export const create = mutation({
   args: {
     workspace: workspaceKey,
     userId: v.optional(v.string()),
+    token: v.string(),
     amount: v.number(),
     type: v.string(),
     category: v.string(),
@@ -256,9 +274,7 @@ export const create = mutation({
     entrySource: v.optional(v.union(v.literal("camera"), v.literal("upload"), v.literal("manual"))),
   },
   handler: async (ctx, args) => {
-    if (!args.userId?.trim()) {
-      throw new Error("You must be signed in to save transactions.");
-    }
+    const authedUserId = await requireAuthorizedUserId(ctx, args.token, args.userId);
     const cfg = await getRuntimeConfig(ctx);
     if (cfg.maintenanceMode) throw new Error("System is in maintenance mode. Please try again later.");
     const entrySource = args.entrySource ?? "manual";
@@ -271,12 +287,12 @@ export const create = mutation({
     if (entrySource === "manual" && !cfg.manualAddEnabled) {
       throw new Error("Manual add is currently disabled by admin.");
     }
-    const { state } = await loadUserSubscriptionState(ctx, args.userId.trim());
+    const { state } = await loadUserSubscriptionState(ctx, authedUserId);
     assertCanCreateTransaction(state);
-    const { workspace, userId, accountId, ...rest } = args;
+    const { workspace, userId: _claimedUserId, accountId, token: _token, ...rest } = args;
     const id = await ctx.db.insert("transactions", {
       workspace,
-      userId,
+      userId: authedUserId,
       accountId,
       ...rest,
       entrySource,
@@ -284,7 +300,7 @@ export const create = mutation({
     if (accountId && args.amount > 0) {
       await applyAccountDelta(ctx, accountId, workspace, args.amount, args.type);
     }
-    await incrementTrialAddsIfNeeded(ctx, args.userId.trim() as Id<"users">);
+    await incrementTrialAddsIfNeeded(ctx, authedUserId as Id<"users">);
     return id;
   },
 });
@@ -294,6 +310,7 @@ export const update = mutation({
     id: v.id("transactions"),
     workspace: workspaceKey,
     userId: v.optional(v.string()),
+    token: v.string(),
     amount: v.number(),
     type: v.string(),
     category: v.string(),
@@ -310,10 +327,10 @@ export const update = mutation({
     const old = (await ctx.db.get(args.id)) as (TransactionDoc & { accountId?: Id<"accounts"> }) | null;
     if (!old) throw new Error("Transaction not found");
     if (resolveWorkspace(old) !== args.workspace) throw new Error("Workspace mismatch");
-    if (!args.userId?.trim()) throw new Error("Sign in required.");
-    if (old.userId !== args.userId) throw new Error("Forbidden");
+    const authedUserId = await requireAuthorizedUserId(ctx, args.token, args.userId);
+    if (old.userId !== authedUserId) throw new Error("Forbidden");
 
-    const { state } = await loadUserSubscriptionState(ctx, args.userId.trim());
+    const { state } = await loadUserSubscriptionState(ctx, authedUserId);
     assertCanEditTransaction(state);
 
     if (old.accountId && old.amount > 0) {
@@ -349,13 +366,13 @@ export const update = mutation({
 });
 
 export const remove = mutation({
-  args: { id: v.id("transactions"), userId: v.optional(v.string()) },
-  handler: async (ctx, { id, userId }) => {
+  args: { id: v.id("transactions"), userId: v.optional(v.string()), token: v.string() },
+  handler: async (ctx, { id, userId, token }) => {
     const row = (await ctx.db.get(id)) as TransactionDoc & { accountId?: Id<"accounts">; workspace?: string } | null;
     if (!row) throw new Error("Transaction not found");
-    if (!userId?.trim()) throw new Error("Sign in required.");
-    if (row.userId !== userId) throw new Error("Forbidden");
-    const { state } = await loadUserSubscriptionState(ctx, userId.trim());
+    const authedUserId = await requireAuthorizedUserId(ctx, token, userId);
+    if (row.userId !== authedUserId) throw new Error("Forbidden");
+    const { state } = await loadUserSubscriptionState(ctx, authedUserId);
     assertCanEditTransaction(state);
     if (row?.accountId && row.amount > 0) {
       const ws = resolveWorkspace(row as TransactionDoc);
@@ -377,6 +394,7 @@ export const bulkImport = mutation({
   args: {
     workspace: workspaceKey,
     userId: v.optional(v.string()),
+    token: v.string(),
     rows: v.array(
       v.object({
         amount: v.number(),
@@ -390,13 +408,11 @@ export const bulkImport = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    if (!args.userId?.trim()) {
-      throw new Error("You must be signed in to import transactions.");
-    }
+    const authedUserId = await requireAuthorizedUserId(ctx, args.token, args.userId);
     const cfg = await getRuntimeConfig(ctx);
     if (cfg.maintenanceMode) throw new Error("System is in maintenance mode. Please try again later.");
     if (!cfg.uploadEnabled) throw new Error("Upload import is currently disabled by admin.");
-    const { state } = await loadUserSubscriptionState(ctx, args.userId.trim());
+    const { state } = await loadUserSubscriptionState(ctx, authedUserId);
     const slice = args.rows.slice(0, MAX_BULK_IMPORT);
     if (!state.pro && slice.length > state.trialAddsRemaining) {
       throw new Error(
@@ -408,7 +424,7 @@ export const bulkImport = mutation({
     for (const row of slice) {
       await ctx.db.insert("transactions", {
         workspace: args.workspace,
-        userId: args.userId,
+        userId: authedUserId,
         amount: row.amount,
         type: row.type,
         category: row.category,
@@ -421,7 +437,7 @@ export const bulkImport = mutation({
         entrySource: "upload",
       });
       inserted++;
-      await incrementTrialAddsIfNeeded(ctx, args.userId.trim() as Id<"users">);
+      await incrementTrialAddsIfNeeded(ctx, authedUserId as Id<"users">);
     }
     return { inserted, truncated: args.rows.length > MAX_BULK_IMPORT };
   },

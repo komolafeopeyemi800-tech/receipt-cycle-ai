@@ -16,7 +16,7 @@ function defaultCategory(type: "expense" | "income") {
 /** Web: CSV statement import into the shared ledger (aligned with mobile: CSV or image for scans — no PDF). */
 function ConvexUploadStatementInner() {
   const { workspace, ready } = useWorkspace();
-  const { user } = useWebAuth();
+  const { user, token } = useWebAuth();
   const userId = user!.id;
   const runtime = useQuery(api.admin.publicConfig, {});
   const bulkImport = useMutation(api.transactions.bulkImport);
@@ -29,6 +29,10 @@ function ConvexUploadStatementInner() {
     async (file: File) => {
       if (!ready) {
         setMsg("Workspace loading…");
+        return;
+      }
+      if (!token) {
+        setMsg("Sign in again to continue.");
         return;
       }
       if (runtime?.maintenanceMode) {
@@ -68,7 +72,7 @@ function ConvexUploadStatementInner() {
           payment_method: "Import",
         }));
 
-        const res = await bulkImport({ workspace, userId, rows });
+        const res = await bulkImport({ workspace, userId, token, rows });
 
         const w = parsed.warnings.join(" ");
         setMsg(
@@ -80,7 +84,7 @@ function ConvexUploadStatementInner() {
         setBusy(false);
       }
     },
-    [ready, workspace, userId, ensureCats, bulkImport, runtime?.maintenanceMode, runtime?.uploadEnabled],
+    [ready, workspace, userId, token, ensureCats, bulkImport, runtime?.maintenanceMode, runtime?.uploadEnabled],
   );
 
   const onPick = () => {

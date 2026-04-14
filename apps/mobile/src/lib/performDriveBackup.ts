@@ -77,7 +77,7 @@ export async function runDriveBackupWithStoredCredentials(): Promise<void> {
   const me = await client.query(api.auth.me, { token: session });
   if (!me || me.id !== userId) throw new Error("Session mismatch. Sign in again.");
 
-  const rows = await client.query(api.transactions.exportForBackup, { userId });
+  const rows = await client.query(api.transactions.exportForBackup, { userId, token: session });
   const payload = JSON.stringify(
     { exportedAt: new Date().toISOString(), app: "Receipt Cycle", transactions: rows },
     null,

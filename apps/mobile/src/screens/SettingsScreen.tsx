@@ -18,7 +18,7 @@ import { userFacingErrorFromUnknown } from "../lib/userFacingErrors";
 
 export function SettingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { user, signOut } = useAuth();
+  const { user, token, signOut } = useAuth();
   const sub = useSubscriptionState();
   const {
     reimbursements: reimb,
@@ -34,7 +34,7 @@ export function SettingsScreen() {
   } = usePreferences();
   const backupRows = useQuery(
     api.transactions.exportForBackup,
-    user?.id && sub?.canExportCsv ? { userId: user.id } : "skip",
+    user?.id && token && sub?.canExportCsv ? { userId: user.id, token } : "skip",
   );
   const runtime = useQuery(api.admin.publicConfig, {});
 

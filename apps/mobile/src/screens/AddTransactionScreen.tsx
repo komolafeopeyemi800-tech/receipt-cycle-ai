@@ -395,7 +395,7 @@ export function AddTransactionScreen() {
   }
 
   async function save() {
-    if (!user?.id) {
+    if (!user?.id || !token) {
       Alert.alert("Sign in required", "Sign in to save transactions to your account.");
       return;
     }
@@ -436,6 +436,7 @@ export function AddTransactionScreen() {
           id: editId,
           workspace,
           userId: user?.id,
+          token: token!,
           amount: n,
           type: transactionType,
           category,
@@ -452,6 +453,7 @@ export function AddTransactionScreen() {
         await createTx({
           workspace,
           userId: user?.id,
+          token: token!,
           amount: n,
           type: transactionType,
           category,

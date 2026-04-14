@@ -31,7 +31,7 @@ const green600 = "#16a34a";
 
 function ConvexDashboardInner() {
   const { workspace, ready } = useWorkspace();
-  const { user } = useWebAuth();
+  const { user, token } = useWebAuth();
   const sub = useSubscriptionState();
   const { formatMoney, formatMoneyCompact } = useWebPreferences();
   const conn = useConvexConnectionState();
@@ -138,7 +138,7 @@ function ConvexDashboardInner() {
 
   const saveParsedDraft = useCallback(async () => {
     if (parsedDraft?.intent !== "transaction") return;
-    if (!parsedDraft?.amount || parsedDraft.amount <= 0 || !user?.id) return;
+    if (!parsedDraft?.amount || parsedDraft.amount <= 0 || !user?.id || !token) return;
     if (sub && !sub.canCreateTransaction) return;
     if (runtime?.maintenanceMode || runtime?.manualAddEnabled === false) return;
     setVoiceSaveBusy(true);
@@ -146,6 +146,7 @@ function ConvexDashboardInner() {
       await createTx({
         workspace,
         userId: String(user.id),
+        token,
         amount: parsedDraft.amount,
         type: parsedDraft.type,
         category: parsedDraft.category || "Other",
@@ -163,11 +164,20 @@ function ConvexDashboardInner() {
     } finally {
       setVoiceSaveBusy(false);
     }
-  }, [parsedDraft, user?.id, workspace, createTx, runtime?.maintenanceMode, runtime?.manualAddEnabled, sub]);
+  }, [parsedDraft, user?.id, token, workspace, createTx, runtime?.maintenanceMode, runtime?.manualAddEnabled, sub]);
 
   const voiceBlocked = Boolean(sub && (!sub.canUseAiFeatures || !sub.canCreateTransaction));
   const addBlocked = Boolean(sub && !sub.canCreateTransaction);
   const budgetBlocked = Boolean(sub && !sub.canMutateBudgets);
+  const statusLabel = !sub
+    ? "Loading plan..."
+    : sub.pro
+      ? "Pro"
+      : sub.phase === "trial"
+        ? "Free trial"
+        : sub.phase === "trial_exhausted"
+          ? "Free (limit reached)"
+          : "Free";
 
   return (
     <div className="min-h-full bg-gradient-to-b from-white via-[#f0fdf9] to-[#f0fdfa]">
@@ -210,6 +220,10 @@ function ConvexDashboardInner() {
             {greet}, {displayName}
           </h1>
           <p className="mt-1 text-[13px] text-slate-600">Here&apos;s your financial snapshot for today</p>
+          <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
+            <i className="fas fa-id-badge text-[10px]" aria-hidden />
+            Status: {statusLabel}
+          </div>
         </div>
 
         {sub && !sub.pro && sub.trialTimeActive && sub.canCreateTransaction ? (
@@ -519,6 +533,7 @@ function ConvexDashboardInner() {
         onClose={() => setEditTx(null)}
         workspace={workspace}
         userId={String(user!.id)}
+        token={token}
       />
     </div>
   );

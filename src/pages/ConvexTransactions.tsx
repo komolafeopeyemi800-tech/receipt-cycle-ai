@@ -134,6 +134,10 @@ function ConvexTransactionsInner() {
   );
 
   async function handleAdd(e: FormEvent) {
+    if (!token) {
+      setScanMsg("Sign in again to continue.");
+      return;
+    }
     e.preventDefault();
     const n = parseFloat(amount);
     if (!Number.isFinite(n) || n <= 0) return;
@@ -150,6 +154,7 @@ function ConvexTransactionsInner() {
       await createTx({
         workspace,
         userId,
+        token,
         amount: n,
         type,
         category,
@@ -170,7 +175,8 @@ function ConvexTransactionsInner() {
   }
 
   async function handleDelete(id: string) {
-    await removeTx({ id: id as Id<"transactions">, userId });
+    if (!token) return;
+    await removeTx({ id: id as Id<"transactions">, userId, token });
   }
 
   async function handleSeed() {
@@ -351,6 +357,7 @@ function ConvexTransactionsInner() {
           onClose={() => setEditTx(null)}
           workspace={workspace}
           userId={userId}
+          token={token}
         />
       </div>
     </div>

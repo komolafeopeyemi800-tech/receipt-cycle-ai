@@ -19,7 +19,7 @@ export function TransactionDetailScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "TransactionDetail">>();
   const { workspace, ready } = useWorkspace();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { formatMoney, formatDate } = usePreferences();
   const removeTx = useMutation(api.transactions.remove);
 
@@ -41,11 +41,11 @@ export function TransactionDetailScreen() {
         text: "Delete",
         style: "destructive",
         onPress: async () => {
-          if (!user?.id) {
+          if (!user?.id || !token) {
             Alert.alert("Sign in required", "Sign in to delete this transaction.");
             return;
           }
-          await removeTx({ id, userId: user.id });
+          await removeTx({ id, userId: user.id, token });
           navigation.goBack();
         },
       },

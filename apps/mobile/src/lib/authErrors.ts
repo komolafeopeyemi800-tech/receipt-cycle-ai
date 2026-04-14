@@ -19,7 +19,7 @@ function mapKnownAuthMessage(normalized: string): string | null {
   const lower = normalized.toLowerCase();
 
   if (lower.includes("invalid email or password")) {
-    return "Incorrect email or password. Double-check both fields and try again. If you don\u2019t have an account yet, create one below.";
+    return "Wrong email or password.";
   }
   if (lower.includes("email already registered")) {
     return "This email is already registered. Sign in with that email, or use a different one.";

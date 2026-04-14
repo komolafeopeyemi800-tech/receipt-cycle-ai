@@ -69,6 +69,21 @@ function extractResetTokenFromUrl(url: string): string | null {
   }
 }
 
+function extractCheckoutTargetFromUrl(url: string): keyof RootStackParamList["Main"]["screen"] | null {
+  if (!url.includes("post-checkout") && !url.includes("dashboard")) return null;
+  try {
+    const q = url.indexOf("?");
+    const search = q >= 0 ? url.slice(q + 1) : "";
+    const screen = new URLSearchParams(search).get("screen");
+    if (screen === "Analysis" || screen === "Budgets" || screen === "Accounts" || screen === "Categories") {
+      return screen;
+    }
+    return "Records";
+  } catch {
+    return "Records";
+  }
+}
+
 function navigateToResetIfNeeded(url: string | null) {
   if (!url) return;
   const token = extractResetTokenFromUrl(url);
@@ -76,19 +91,31 @@ function navigateToResetIfNeeded(url: string | null) {
   navigationRef.navigate("ResetPassword", { token });
 }
 
+function navigateAfterCheckoutIfNeeded(url: string | null) {
+  if (!url || !navigationRef.isReady()) return;
+  const target = extractCheckoutTargetFromUrl(url);
+  if (!target) return;
+  navigationRef.navigate("Main", { screen: target });
+}
+
 function PasswordResetDeepLinks() {
   const { user, loading } = useAuth();
   /** Wait until auth resolved and guest stack is mounted before handling cold-start links. */
   useEffect(() => {
     if (loading || user) return;
-    void Linking.getInitialURL().then((url) => navigateToResetIfNeeded(url));
+    void Linking.getInitialURL().then((url) => {
+      navigateToResetIfNeeded(url);
+      navigateAfterCheckoutIfNeeded(url);
+    });
   }, [loading, user]);
 
   useEffect(() => {
-    if (user) return;
-    const sub = Linking.addEventListener("url", (e) => navigateToResetIfNeeded(e.url));
+    const sub = Linking.addEventListener("url", (e) => {
+      navigateToResetIfNeeded(e.url);
+      navigateAfterCheckoutIfNeeded(e.url);
+    });
     return () => sub.remove();
-  }, [user]);
+  }, []);
   return null;
 }
 

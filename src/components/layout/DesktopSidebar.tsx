@@ -1,4 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useQuery } from "convex/react";
+import { api } from "@convex/_generated/api";
 import { useConvexMonthlySummary } from "@/hooks/use-convex-monthly-summary";
 import { useWebPreferences } from "@/contexts/WebPreferencesContext";
 import { useWebAuth } from "@/contexts/WebAuthContext";
@@ -16,7 +18,8 @@ const DesktopSidebar = ({ drawerMode = false, drawerOpen = true, onNavigate }: D
   const navigate = useNavigate();
   const location = useLocation();
   const inAdmin = location.pathname.startsWith("/admin");
-  const { user } = useWebAuth();
+  const { user, token } = useWebAuth();
+  const isAdmin = useQuery(api.admin.isCurrentUserAdmin, token ? { token } : "skip");
   const { summary, loading: summaryLoading, hasUser } = useConvexMonthlySummary();
   const { formatMoney } = useWebPreferences();
 
@@ -104,20 +107,22 @@ const DesktopSidebar = ({ drawerMode = false, drawerOpen = true, onNavigate }: D
           </div>
         ) : null}
 
-        <div className="mt-4 border-t border-slate-100 pt-4">
-          <NavLink
-            to="/admin"
-            onClick={() => onNavigate?.()}
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                isActive ? "bg-purple-100 text-purple-800" : "text-slate-600 hover:bg-slate-50"
-              }`
-            }
-          >
-            <i className="fas fa-user-shield w-5 text-center" />
-            <span>Admin</span>
-          </NavLink>
-        </div>
+        {isAdmin ? (
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            <NavLink
+              to="/admin"
+              onClick={() => onNavigate?.()}
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                  isActive ? "bg-purple-100 text-purple-800" : "text-slate-600 hover:bg-slate-50"
+                }`
+              }
+            >
+              <i className="fas fa-user-shield w-5 text-center" />
+              <span>Admin</span>
+            </NavLink>
+          </div>
+        ) : null}
       </div>
     </aside>
   );

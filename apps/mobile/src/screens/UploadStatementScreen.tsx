@@ -201,7 +201,7 @@ export function UploadStatementScreen() {
 
   const importTable = useCallback(async () => {
     if (!picked || !ready || picked.kind !== "csv") return;
-    if (!user?.id) {
+    if (!user?.id || !token) {
       Alert.alert("Sign in required", "Sign in to import transactions into your account.");
       return;
     }
@@ -232,7 +232,7 @@ export function UploadStatementScreen() {
         payment_method: "Import",
       }));
 
-      const out = await bulkImport({ workspace, userId: user.id, rows });
+      const out = await bulkImport({ workspace, userId: user.id, token: token!, rows });
       const w = [...parsed.warnings];
       if (out.truncated) w.push(`Import capped — only ${out.inserted} rows saved.`);
       setStatus(`Imported ${out.inserted} row(s).`);
@@ -247,7 +247,7 @@ export function UploadStatementScreen() {
     } finally {
       setBusy(false);
     }
-  }, [picked, ready, workspace, user?.id, ensureCats, bulkImport, navigation, reset, sub]);
+  }, [picked, ready, workspace, user?.id, token, ensureCats, bulkImport, navigation, reset, sub]);
 
   const onPick = () => {
     if (runtime?.maintenanceMode) {

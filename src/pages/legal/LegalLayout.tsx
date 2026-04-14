@@ -39,6 +39,10 @@ export function LegalLayout({
             Terms
           </Link>
           <span className="mx-2">·</span>
+          <Link to="/refund-policy" className="hover:underline" style={{ color: primary }}>
+            Refund Policy
+          </Link>
+          <span className="mx-2">·</span>
           <Link to="/contact" className="hover:underline" style={{ color: primary }}>
             Contact
           </Link>

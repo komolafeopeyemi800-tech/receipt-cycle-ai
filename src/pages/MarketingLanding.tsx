@@ -764,6 +764,11 @@ export default function MarketingLanding() {
                   </Link>
                 </li>
                 <li>
+                  <Link to="/refund-policy" className="hover:text-teal-700">
+                    Refund Policy
+                  </Link>
+                </li>
+                <li>
                   <Link to="/impressum" className="hover:text-teal-700">
                     Impressum
                   </Link>

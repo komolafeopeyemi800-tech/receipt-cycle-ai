@@ -64,8 +64,9 @@ const DesktopFooter = () => {
             <ul className="space-y-3">
               <li><a href="#" className="text-gray-400 text-sm hover:text-white transition-colors">Help Center</a></li>
               <li><a href="#" className="text-gray-400 text-sm hover:text-white transition-colors">Community</a></li>
-              <li><a href="#" className="text-gray-400 text-sm hover:text-white transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="text-gray-400 text-sm hover:text-white transition-colors">Terms of Service</a></li>
+              <li><button onClick={() => navigate('/privacy')} className="text-gray-400 text-sm hover:text-white transition-colors">Privacy Policy</button></li>
+              <li><button onClick={() => navigate('/terms')} className="text-gray-400 text-sm hover:text-white transition-colors">Terms of Service</button></li>
+              <li><button onClick={() => navigate('/refund-policy')} className="text-gray-400 text-sm hover:text-white transition-colors">Refund Policy</button></li>
               <li><a href="#" className="text-gray-400 text-sm hover:text-white transition-colors">Security</a></li>
             </ul>
           </div>

@@ -20,6 +20,7 @@ const CookiePolicy = lazy(() => import("./pages/legal/CookiePolicy"));
 const CookieSettings = lazy(() => import("./pages/legal/CookieSettings"));
 const DoNotSell = lazy(() => import("./pages/legal/DoNotSell"));
 const Contact = lazy(() => import("./pages/legal/Contact"));
+const RefundPolicy = lazy(() => import("./pages/legal/RefundPolicy"));
 const FaqPage = lazy(() => import("./pages/FaqPage"));
 const WebSignIn = lazy(() => import("./pages/WebSignIn"));
 const WebSignUp = lazy(() => import("./pages/WebSignUp"));
@@ -140,6 +141,7 @@ const App = () => (
           <Route path="/cookie-settings" element={<CookieSettings />} />
           <Route path="/do-not-sell" element={<DoNotSell />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
           <Route path="/faq" element={<FaqPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

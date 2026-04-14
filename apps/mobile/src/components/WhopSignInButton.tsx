@@ -54,7 +54,26 @@ export function WhopSignInButton({ label = "Continue with Whop", onError, disabl
     }
   }, [response, onError]);
 
+  const requestReady = Boolean(request?.url);
   const configured = Boolean(clientId);
+  const hasValidAuthorizeUrl = (() => {
+    if (!request?.url) return false;
+    try {
+      const u = new URL(request.url);
+      const q = u.searchParams;
+      return Boolean(
+        q.get("response_type") &&
+          q.get("client_id") &&
+          q.get("redirect_uri") &&
+          q.get("scope") &&
+          q.get("state") &&
+          q.get("code_challenge") &&
+          q.get("code_challenge_method"),
+      );
+    } catch {
+      return false;
+    }
+  })();
 
   return (
     <Pressable
@@ -68,16 +87,24 @@ export function WhopSignInButton({ label = "Continue with Whop", onError, disabl
           );
           return;
         }
+        if (!requestReady) {
+          onError(`Whop sign-in is still initializing. Please retry in a moment. Redirect: ${redirectUri}`);
+          return;
+        }
+        if (!hasValidAuthorizeUrl) {
+          onError("Whop OAuth URL is incomplete. Please restart the app and try again.");
+          return;
+        }
         consumedRef.current = false;
-        void promptAsync();
+        void promptAsync({ showInRecents: Platform.OS === "android" });
       }}
       style={({ pressed }) => [
         styles.hit,
         (disabled || exchanging) && styles.hitDisabled,
-        pressed && configured && styles.hitPressed,
-        !configured && styles.hitUnconfigured,
+        pressed && configured && requestReady && styles.hitPressed,
+        (!configured || !requestReady) && styles.hitUnconfigured,
       ]}
-      android_ripple={configured ? { color: "rgba(255,255,255,0.28)" } : undefined}
+      android_ripple={configured && requestReady ? { color: "rgba(255,255,255,0.28)" } : undefined}
     >
       <LinearGradient
         colors={["#f97316", "#f43f5e"]}

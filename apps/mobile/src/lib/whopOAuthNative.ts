@@ -20,7 +20,7 @@ export function getWhopNativeRedirectUri(): string {
   const explicit = process.env.EXPO_PUBLIC_WHOP_OAUTH_REDIRECT_URI?.trim();
   if (explicit) return explicit;
 
-  const path = (process.env.EXPO_PUBLIC_WHOP_OAUTH_REDIRECT_PATH?.trim() || "auth/callback").replace(/^\/+/, "");
+  const path = (process.env.EXPO_PUBLIC_WHOP_OAUTH_REDIRECT_PATH?.trim() || "oauth/whop").replace(/^\/+/, "");
   const native = `receiptcycle://${path}`;
   return AuthSession.makeRedirectUri({
     scheme: "receiptcycle",
@@ -43,6 +43,8 @@ export function useWhopAuthRequest(): [
       scopes: ["openid", "profile", "email"],
       redirectUri,
       responseType: AuthSession.ResponseType.Code,
+      usePKCE: true,
+      codeChallengeMethod: AuthSession.CodeChallengeMethod.S256,
     },
     discovery,
   );

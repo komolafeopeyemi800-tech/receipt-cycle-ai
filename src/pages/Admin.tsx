@@ -7,6 +7,14 @@ const ADMIN_EMAIL_KEY = "receiptcycle_admin_email";
 const PAGE_SIZE = 10;
 
 type UserFilter = "all" | "active" | "premium" | "suspended";
+type EditableUser = {
+  id: string;
+  name: string;
+  role: string;
+  status: string;
+  plan: string;
+  proSubscriptionActive: boolean;
+};
 
 function fmtNum(n: number) {
   return new Intl.NumberFormat().format(n);
@@ -53,8 +61,12 @@ export default function Admin() {
   const logs = useQuery(api.admin.recentAuditLogs, authArgs ? { ...authArgs, limit: 80 } : "skip");
   const users = useQuery(api.admin.recentUsers, authArgs ? { ...authArgs, limit: 200 } : "skip");
   const updateConfig = useMutation(api.admin.updateConfig);
+  const updateUserManagement = useMutation(api.admin.updateUserManagement);
+  const deleteUserMutation = useMutation(api.admin.deleteUser);
   const fetchHealth = useAction(api.admin.systemHealth);
   const validateAccess = useAction(api.admin.validateAccess);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<EditableUser | null>(null);
 
   const [draft, setDraft] = useState({
     maintenanceMode: false,
@@ -112,8 +124,9 @@ export default function Admin() {
     const source = users ?? [];
     return source.filter((u) => {
       if (q && !u.email.toLowerCase().includes(q) && !(u.name ?? "").toLowerCase().includes(q)) return false;
-      if (filter === "premium" && !u.googleLinked) return false;
-      if (filter === "suspended") return false;
+      if (filter === "premium" && !u.proSubscriptionActive) return false;
+      if (filter === "active" && (u.status ?? "active") !== "active") return false;
+      if (filter === "suspended" && (u.status ?? "active") !== "suspended") return false;
       return true;
     });
   }, [filter, query, users]);
@@ -197,6 +210,65 @@ export default function Admin() {
       health: health ?? null,
     });
     setMsg("Admin snapshot exported.");
+  }
+
+  function startEditUser(u: {
+    id: string;
+    name: string | null;
+    role: string;
+    status: string;
+    plan: string;
+    proSubscriptionActive: boolean;
+  }) {
+    setEditingUserId(u.id);
+    setEditDraft({
+      id: u.id,
+      name: u.name ?? "",
+      role: u.role || "user",
+      status: u.status || "active",
+      plan: u.plan || "free",
+      proSubscriptionActive: u.proSubscriptionActive,
+    });
+  }
+
+  async function saveUserEdit() {
+    if (!authArgs || !editDraft) return;
+    await updateUserManagement({
+      ...authArgs,
+      actor: adminEmail,
+      userId: editDraft.id as never,
+      name: editDraft.name,
+      role: editDraft.role,
+      status: editDraft.status,
+      plan: editDraft.plan,
+      proSubscriptionActive: editDraft.proSubscriptionActive,
+    });
+    setEditingUserId(null);
+    setEditDraft(null);
+    setMsg("User updated.");
+  }
+
+  async function quickDowngrade(u: { id: string }) {
+    if (!authArgs) return;
+    await updateUserManagement({
+      ...authArgs,
+      actor: adminEmail,
+      userId: u.id as never,
+      plan: "free",
+      proSubscriptionActive: false,
+    });
+    setMsg("User downgraded to Free.");
+  }
+
+  async function deleteUser(u: { id: string; email: string }) {
+    if (!authArgs) return;
+    if (!window.confirm(`Delete user ${u.email}? This cannot be undone.`)) return;
+    await deleteUserMutation({
+      ...authArgs,
+      actor: adminEmail,
+      userId: u.id as never,
+    });
+    setMsg("User deleted.");
   }
 
   const monthly = stats?.monthly ?? [];
@@ -405,7 +477,8 @@ export default function Admin() {
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">User</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Plan</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Created</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Concurrent Jobs</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Role</th>
                     <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
@@ -413,29 +486,81 @@ export default function Admin() {
                   {pagedUsers.map((u) => (
                     <tr key={String(u.id)} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
-                        <div className="text-sm font-semibold text-gray-900">{u.name ?? u.email.split("@")[0]}</div>
+                        <div className="text-sm font-semibold text-gray-900">{u.name ?? "No name"}</div>
                         <div className="text-xs text-gray-500">{u.email}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="px-2 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-lg">Active</span>
+                        {editingUserId === u.id && editDraft ? (
+                          <select
+                            value={editDraft.status}
+                            onChange={(e) => setEditDraft({ ...editDraft, status: e.target.value })}
+                            className="h-8 rounded-lg border border-gray-200 px-2 text-xs"
+                          >
+                            <option value="active">Active</option>
+                            <option value="suspended">Suspended</option>
+                          </select>
+                        ) : (
+                          <span className={`px-2 py-1 text-xs font-medium rounded-lg ${u.status === "suspended" ? "bg-amber-50 text-amber-700" : "bg-green-50 text-green-700"}`}>
+                            {u.status === "suspended" ? "Suspended" : "Active"}
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded-lg">
-                          {u.googleLinked ? "Premium" : "Free"}
-                        </span>
+                        {editingUserId === u.id && editDraft ? (
+                          <select
+                            value={editDraft.plan}
+                            onChange={(e) =>
+                              setEditDraft({
+                                ...editDraft,
+                                plan: e.target.value,
+                                proSubscriptionActive: e.target.value !== "free",
+                              })
+                            }
+                            className="h-8 rounded-lg border border-gray-200 px-2 text-xs"
+                          >
+                            <option value="free">Free</option>
+                            <option value="pro_monthly">Pro Monthly</option>
+                            <option value="pro_yearly">Pro Yearly</option>
+                            <option value="cancelling">Cancelling</option>
+                          </select>
+                        ) : (
+                          <span className={`px-2 py-1 text-xs font-medium rounded-lg ${u.proSubscriptionActive ? "bg-primary/10 text-primary" : "bg-gray-100 text-gray-700"}`}>
+                            {u.proSubscriptionActive ? "Pro" : "Free"}
+                          </span>
+                        )}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{new Date(u.createdAt).toLocaleString()}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{u.concurrentJobs}</td>
+                      <td className="px-6 py-4">
+                        {editingUserId === u.id && editDraft ? (
+                          <select
+                            value={editDraft.role}
+                            onChange={(e) => setEditDraft({ ...editDraft, role: e.target.value })}
+                            className="h-8 rounded-lg border border-gray-200 px-2 text-xs"
+                          >
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        ) : (
+                          <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg">
+                            {u.role ?? "user"}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText(u.email).catch(() => undefined);
-                            setMsg(`Copied ${u.email}`);
-                          }}
-                          className="text-gray-500 hover:text-gray-700"
-                        >
-                          <i className="fas fa-copy" />
-                        </button>
+                        <div className="flex items-center justify-center gap-2">
+                          {editingUserId === u.id ? (
+                            <>
+                              <button type="button" onClick={() => void saveUserEdit()} className="px-2 py-1 rounded bg-primary text-white text-xs font-semibold">Save</button>
+                              <button type="button" onClick={() => { setEditingUserId(null); setEditDraft(null); }} className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs font-semibold">Cancel</button>
+                            </>
+                          ) : (
+                            <>
+                              <button type="button" onClick={() => startEditUser(u)} className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs font-semibold">Edit</button>
+                              <button type="button" onClick={() => void quickDowngrade(u)} className="px-2 py-1 rounded bg-amber-100 text-amber-700 text-xs font-semibold">Downgrade</button>
+                              <button type="button" onClick={() => void deleteUser(u)} className="px-2 py-1 rounded bg-rose-100 text-rose-700 text-xs font-semibold">Delete</button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

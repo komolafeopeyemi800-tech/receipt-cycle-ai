@@ -1,3 +1,5 @@
+import { data as ISO_CURRENCY_DATA } from "currency-codes";
+
 /** AsyncStorage keys for regional & lists (also mirrored to Convex when signed in) */
 export const PREF_KEYS = {
   currency: "pref_currency_iso",
@@ -60,18 +62,10 @@ export function normalizeVoiceInputLanguage(raw: string | undefined | null): str
 
 export type DateFormatId = "iso" | "us" | "eu";
 
-export const CURRENCY_OPTIONS = [
-  { code: "USD", label: "US Dollar ($)" },
-  { code: "EUR", label: "Euro (€)" },
-  { code: "GBP", label: "British Pound (£)" },
-  { code: "JPY", label: "Japanese Yen (¥)" },
-  { code: "CAD", label: "Canadian Dollar" },
-  { code: "AUD", label: "Australian Dollar" },
-  { code: "INR", label: "Indian Rupee (₹)" },
-  { code: "MXN", label: "Mexican Peso" },
-  { code: "BRL", label: "Brazilian Real" },
-  { code: "CHF", label: "Swiss Franc" },
-] as const;
+export const CURRENCY_OPTIONS: Array<{ code: string; label: string }> = ISO_CURRENCY_DATA.map((c) => ({
+  code: c.code,
+  label: `${c.currency} (${c.code})`,
+})).sort((a, b) => a.label.localeCompare(b.label));
 
 export const DATE_FORMAT_OPTIONS: { id: DateFormatId; label: string }[] = [
   { id: "iso", label: "YYYY-MM-DD (ISO)" },

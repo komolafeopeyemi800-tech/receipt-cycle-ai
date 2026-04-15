@@ -212,6 +212,14 @@ export const recentUsers = query({
     requireAdmin(secret, adminEmail);
     const lim = Math.max(1, Math.min(200, Math.floor(limit ?? 50)));
     const users = await ctx.db.query("users").collect();
+    const sessions = await ctx.db.query("sessions").collect();
+    const now = Date.now();
+    const liveSessionCounts = new Map<string, number>();
+    for (const s of sessions) {
+      if (s.expiresAt < now) continue;
+      const key = String(s.userId);
+      liveSessionCounts.set(key, (liveSessionCounts.get(key) ?? 0) + 1);
+    }
     users.sort((a, b) => b._creationTime - a._creationTime);
     return users.slice(0, lim).map((u) => ({
       id: u._id,
@@ -219,7 +227,118 @@ export const recentUsers = query({
       name: u.name ?? null,
       createdAt: u._creationTime,
       googleLinked: Boolean(u.googleSub),
+      plan: u.plan ?? (u.proSubscriptionActive ? "pro" : "free"),
+      proSubscriptionActive: u.proSubscriptionActive === true,
+      status: u.status ?? "active",
+      role: u.role ?? "user",
+      concurrentJobs: liveSessionCounts.get(String(u._id)) ?? 0,
     }));
+  },
+});
+
+export const updateUserManagement = mutation({
+  args: {
+    secret: v.string(),
+    adminEmail: v.string(),
+    actor: v.optional(v.string()),
+    userId: v.id("users"),
+    name: v.optional(v.string()),
+    role: v.optional(v.string()),
+    status: v.optional(v.string()),
+    plan: v.optional(v.string()),
+    proSubscriptionActive: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    requireAdmin(args.secret, args.adminEmail);
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new Error("User not found.");
+
+    const patch: Record<string, string | boolean> = {};
+    if (args.name !== undefined) patch.name = args.name.trim();
+    if (args.role !== undefined) patch.role = args.role.trim().toLowerCase() || "user";
+    if (args.status !== undefined) patch.status = args.status.trim().toLowerCase() || "active";
+    if (args.plan !== undefined) {
+      const plan = args.plan.trim().toLowerCase() || "free";
+      patch.plan = plan;
+      if (args.proSubscriptionActive === undefined) {
+        patch.proSubscriptionActive = plan !== "free";
+      }
+    }
+    if (args.proSubscriptionActive !== undefined) {
+      patch.proSubscriptionActive = args.proSubscriptionActive;
+      if (args.plan === undefined) {
+        patch.plan = args.proSubscriptionActive ? "pro" : "free";
+      }
+    }
+    await ctx.db.patch(args.userId, patch);
+
+    await ctx.db.insert("adminAuditLogs", {
+      action: "user.update",
+      actor: args.actor ?? args.adminEmail,
+      details: JSON.stringify({ userId: args.userId, patch }),
+      createdAt: Date.now(),
+    });
+    return { ok: true as const };
+  },
+});
+
+export const deleteUser = mutation({
+  args: {
+    secret: v.string(),
+    adminEmail: v.string(),
+    actor: v.optional(v.string()),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    requireAdmin(args.secret, args.adminEmail);
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new Error("User not found.");
+    const uid = String(args.userId);
+    const email = user.email.trim().toLowerCase();
+
+    const txRows = await ctx.db
+      .query("transactions")
+      .withIndex("by_user_workspace", (q) => q.eq("userId", uid))
+      .collect();
+    for (const t of txRows) await ctx.db.delete(t._id);
+    if (email !== uid) {
+      const txEmailRows = await ctx.db
+        .query("transactions")
+        .withIndex("by_user_workspace", (q) => q.eq("userId", email))
+        .collect();
+      for (const t of txEmailRows) await ctx.db.delete(t._id);
+    }
+
+    const sessions = await ctx.db.query("sessions").collect();
+    for (const s of sessions) {
+      if (String(s.userId) === uid) await ctx.db.delete(s._id);
+    }
+    const resets = await ctx.db
+      .query("passwordResetTokens")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+    for (const r of resets) await ctx.db.delete(r._id);
+
+    const prefs = await ctx.db
+      .query("userPreferences")
+      .withIndex("by_user", (q) => q.eq("userId", uid))
+      .collect();
+    for (const p of prefs) await ctx.db.delete(p._id);
+
+    const wsMembers = await ctx.db
+      .query("workspaceMembers")
+      .withIndex("by_user", (q) => q.eq("userId", uid))
+      .collect();
+    for (const m of wsMembers) await ctx.db.delete(m._id);
+
+    await ctx.db.delete(args.userId);
+    await ctx.db.insert("adminAuditLogs", {
+      action: "user.delete",
+      actor: args.actor ?? args.adminEmail,
+      details: JSON.stringify({ userId: args.userId, email }),
+      createdAt: Date.now(),
+    });
+    return { ok: true as const };
   },
 });
 

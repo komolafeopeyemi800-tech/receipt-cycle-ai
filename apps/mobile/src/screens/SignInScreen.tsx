@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -63,7 +64,7 @@ export function SignInScreen() {
           >
             <View style={styles.hero}>
               <View style={styles.logoMark}>
-                <Ionicons name="receipt-outline" size={32} color="#fff" />
+                <Image source={require("../../assets/icon.png")} style={styles.logoImg} resizeMode="contain" />
               </View>
               <Text style={styles.brand}>Receipt Cycle</Text>
               <Text style={styles.title}>Sign in</Text>
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 18,
-    backgroundColor: colors.primary,
+    backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
@@ -159,6 +160,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  logoImg: { width: 64, height: 64, borderRadius: 18 },
   brand: { fontSize: 13, fontWeight: "700", color: colors.gray500, letterSpacing: 0.6, marginBottom: 4 },
   title: { fontSize: 26, fontWeight: "800", color: colors.gray900 },
   sub: {

@@ -214,6 +214,20 @@ type WhopUserInfo = {
   preferred_username?: string;
 };
 
+function summarizeWhopTokenError(status: number, body: unknown): string {
+  const b = body as {
+    error?: string;
+    error_description?: string;
+    message?: string;
+  };
+  const desc = (b?.error_description ?? b?.message ?? "").trim();
+  const code = (b?.error ?? "").trim();
+  const parts = [`Whop token exchange failed (${status}).`];
+  if (code) parts.push(code);
+  if (desc) parts.push(desc);
+  return parts.join(" ");
+}
+
 function whopOAuthClientId(): string {
   return (
     process.env.WHOP_OAUTH_CLIENT_ID?.trim() ||
@@ -364,8 +378,16 @@ export const signInWithWhop = action({
     });
 
     if (!tokenRes.ok) {
-      const err = (await tokenRes.json().catch(() => ({}))) as { error_description?: string };
-      throw new Error(err.error_description ?? `Whop token exchange failed (${tokenRes.status}).`);
+      const rawText = await tokenRes.text().catch(() => "");
+      let parsed: unknown = null;
+      if (rawText.trim()) {
+        try {
+          parsed = JSON.parse(rawText) as unknown;
+        } catch {
+          parsed = { message: rawText.slice(0, 500) };
+        }
+      }
+      throw new Error(summarizeWhopTokenError(tokenRes.status, parsed ?? {}));
     }
 
     const tokens = (await tokenRes.json()) as { access_token?: string };

@@ -37,6 +37,7 @@ const ConvexUploadStatement = lazy(() => import("./pages/ConvexUploadStatement")
 const ConvexSettings = lazy(() => import("./pages/ConvexSettings"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
+const CheckoutReturn = lazy(() => import("./pages/CheckoutReturn"));
 
 /** Admin console only — requires Convex. */
 const Admin = lazy(() => import("./pages/Admin"));
@@ -105,6 +106,7 @@ const App = () => (
         <Route path="/auth/callback" element={<WebWhopCallback />} />
         <Route path="/forgot-password" element={<WebForgotPassword />} />
         <Route path="/reset-password" element={<WebResetPassword />} />
+        <Route path="/checkout-return" element={<CheckoutReturn />} />
         <Route
           path="/onboarding"
           element={

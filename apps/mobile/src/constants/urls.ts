@@ -21,7 +21,8 @@ export function expoWhopCheckoutUrl(plan: PaywallPlanId): string | null {
   try {
     const u = new URL(s);
     const returnUrl =
-      process.env.EXPO_PUBLIC_WHOP_CHECKOUT_SUCCESS_URL?.trim() || "receiptcycle://post-checkout?screen=Records";
+      process.env.EXPO_PUBLIC_WHOP_CHECKOUT_SUCCESS_URL?.trim() ||
+      "https://receiptcycle.com/checkout-return?whop_checkout=1&screen=Records";
     const pairs: [string, string][] = [
       ["return_url", returnUrl],
       ["returnUrl", returnUrl],

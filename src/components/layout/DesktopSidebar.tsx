@@ -21,9 +21,11 @@ const DesktopSidebar = ({ drawerMode = false, drawerOpen = true, onNavigate }: D
   const { user, token } = useWebAuth();
   const isAdmin = useQuery(api.admin.isCurrentUserAdmin, token ? { token } : "skip");
   const { summary, loading: summaryLoading, hasUser } = useConvexMonthlySummary();
-  const { formatMoney } = useWebPreferences();
+  const { formatMoney, formatMoneyCompact } = useWebPreferences();
 
   const displayBalance =
+    !hasUser ? "—" : summaryLoading || !summary ? "…" : formatMoneyCompact(summary.netBalance);
+  const fullBalance =
     !hasUser ? "—" : summaryLoading || !summary ? "…" : formatMoney(summary.netBalance);
   const rateDisplay =
     !hasUser || summaryLoading || !summary
@@ -56,14 +58,16 @@ const DesktopSidebar = ({ drawerMode = false, drawerOpen = true, onNavigate }: D
       <div className="flex flex-col p-4">
         <div className="mb-5 rounded-xl border border-teal-100 bg-gradient-to-br from-primary/10 to-teal-50 p-4">
           <div className="text-xs font-medium text-slate-600">This month (net)</div>
-          <div className="mt-1 text-2xl font-bold tabular-nums text-slate-900">{displayBalance}</div>
+          <div className="mt-1 text-2xl font-bold tabular-nums text-slate-900" title={fullBalance}>
+            {displayBalance}
+          </div>
           <div className="mt-1 flex items-center gap-1">
             {hasUser && summary && !summaryLoading && summary.savingsRate !== null ? (
               <i
                 className={`fas text-xs text-primary ${summary.savingsRate >= 0 ? "fa-arrow-trend-up" : "fa-arrow-trend-down"}`}
               />
             ) : null}
-            <span className="text-xs font-semibold text-primary">{rateDisplay}</span>
+            <span className="text-xs font-semibold leading-tight text-primary break-words">{rateDisplay}</span>
           </div>
         </div>
 

@@ -4,9 +4,9 @@ function getWebCheckoutReturnUrl(): string {
   const fromEnv = (import.meta.env.VITE_WHOP_CHECKOUT_SUCCESS_URL as string | undefined)?.trim();
   if (fromEnv) return fromEnv;
   if (typeof window !== "undefined" && window.location?.origin) {
-    return `${window.location.origin.replace(/\/$/, "")}/dashboard`;
+    return `${window.location.origin.replace(/\/$/, "")}/checkout-return?whop_checkout=1`;
   }
-  return "https://receiptcycle.com/dashboard";
+  return "https://receiptcycle.com/checkout-return?whop_checkout=1";
 }
 
 /** Whop hosted checkout / embed may read different query keys; set all common aliases. */

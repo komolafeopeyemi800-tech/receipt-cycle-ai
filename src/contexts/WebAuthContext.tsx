@@ -106,6 +106,33 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
     });
   }, [token, bootstrapSubscription]);
 
+  /** After Whop checkout the user may land on our site with `?status=success` or return to an existing tab — re-sync Pro. */
+  useEffect(() => {
+    if (!token || typeof window === "undefined") return;
+    const syncIfCheckoutReturn = () => {
+      const sp = new URLSearchParams(window.location.search);
+      const hit =
+        sp.get("status") === "success" ||
+        sp.get("checkout") === "success" ||
+        sp.get("whop_checkout") === "1";
+      if (!hit) return;
+      void bootstrapSubscription({ token }).finally(() => {
+        sp.delete("status");
+        sp.delete("checkout");
+        sp.delete("whop_checkout");
+        const qs = sp.toString();
+        window.history.replaceState(
+          {},
+          "",
+          `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`,
+        );
+      });
+    };
+    syncIfCheckoutReturn();
+    window.addEventListener("focus", syncIfCheckoutReturn);
+    return () => window.removeEventListener("focus", syncIfCheckoutReturn);
+  }, [token, bootstrapSubscription]);
+
   const signIn = useCallback(
     async (email: string, password: string) => {
       try {

@@ -22,8 +22,17 @@ export function expoWhopCheckoutUrl(plan: PaywallPlanId): string | null {
     const u = new URL(s);
     const returnUrl =
       process.env.EXPO_PUBLIC_WHOP_CHECKOUT_SUCCESS_URL?.trim() || "receiptcycle://post-checkout?screen=Records";
-    if (!u.searchParams.get("redirect_uri")) u.searchParams.set("redirect_uri", returnUrl);
-    if (!u.searchParams.get("return_url")) u.searchParams.set("return_url", returnUrl);
+    const pairs: [string, string][] = [
+      ["return_url", returnUrl],
+      ["returnUrl", returnUrl],
+      ["redirect_uri", returnUrl],
+      ["redirectUri", returnUrl],
+      ["success_url", returnUrl],
+      ["successUrl", returnUrl],
+    ];
+    for (const [key, val] of pairs) {
+      if (!u.searchParams.get(key)) u.searchParams.set(key, val);
+    }
     return u.toString();
   } catch {
     return s;

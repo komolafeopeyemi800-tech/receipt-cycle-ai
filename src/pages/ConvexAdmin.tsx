@@ -36,7 +36,7 @@ export default function ConvexAdmin() {
   const stats = useQuery(api.admin.dashboardStats, authArgs ? authArgs : "skip");
   const config = useQuery(api.admin.adminConfig, authArgs ? authArgs : "skip");
   const logs = useQuery(api.admin.recentAuditLogs, authArgs ? { ...authArgs, limit: 40 } : "skip");
-  const users = useQuery(api.admin.recentUsers, authArgs ? { ...authArgs, limit: 12 } : "skip");
+  const users = useQuery(api.admin.recentUsers, authArgs ? { ...authArgs, limit: 500 } : "skip");
   const updateConfig = useMutation(api.admin.updateConfig);
   const fetchHealth = useAction(api.admin.systemHealth);
   const validateAccess = useAction(api.admin.validateAccess);
@@ -317,6 +317,7 @@ export default function ConvexAdmin() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">User</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Sign-in</th>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Plan</th>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Last Active</th>
@@ -331,11 +332,24 @@ export default function ConvexAdmin() {
                           <div className="text-xs text-gray-500">{u.email}</div>
                         </td>
                         <td className="px-6 py-4">
+                          <div className="flex flex-wrap gap-1">
+                            {u.whopLinked ? (
+                              <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-orange-100 text-orange-800">Whop</span>
+                            ) : null}
+                            {u.googleLinked ? (
+                              <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-100 text-blue-800">Google</span>
+                            ) : null}
+                            {!u.whopLinked && !u.googleLinked ? (
+                              <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-gray-100 text-gray-700">Email</span>
+                            ) : null}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
                           <span className="px-2 py-1 rounded-lg text-xs font-medium bg-green-50 text-green-700">Active</span>
                         </td>
                         <td className="px-6 py-4">
                           <span className="px-2 py-1 rounded-lg text-xs font-medium bg-primary/10 text-primary">
-                            {u.googleLinked ? "Premium" : "Free"}
+                            {u.proSubscriptionActive ? "Pro" : "Free"}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-gray-600">{new Date(u.createdAt).toLocaleString()}</td>

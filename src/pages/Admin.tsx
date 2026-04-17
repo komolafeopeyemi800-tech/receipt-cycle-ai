@@ -6,7 +6,7 @@ const STORAGE_KEY = "receiptcycle_admin_secret";
 const ADMIN_EMAIL_KEY = "receiptcycle_admin_email";
 const PAGE_SIZE = 10;
 
-type UserFilter = "all" | "active" | "premium" | "suspended";
+type UserFilter = "all" | "active" | "premium" | "suspended" | "whop";
 type EditableUser = {
   id: string;
   name: string;
@@ -59,7 +59,7 @@ export default function Admin() {
   const stats = useQuery(api.admin.dashboardStats, authArgs ? authArgs : "skip");
   const config = useQuery(api.admin.adminConfig, authArgs ? authArgs : "skip");
   const logs = useQuery(api.admin.recentAuditLogs, authArgs ? { ...authArgs, limit: 80 } : "skip");
-  const users = useQuery(api.admin.recentUsers, authArgs ? { ...authArgs, limit: 200 } : "skip");
+  const users = useQuery(api.admin.recentUsers, authArgs ? { ...authArgs, limit: 2000 } : "skip");
   const updateConfig = useMutation(api.admin.updateConfig);
   const updateUserManagement = useMutation(api.admin.updateUserManagement);
   const deleteUserMutation = useMutation(api.admin.deleteUser);
@@ -125,6 +125,7 @@ export default function Admin() {
     return source.filter((u) => {
       if (q && !u.email.toLowerCase().includes(q) && !(u.name ?? "").toLowerCase().includes(q)) return false;
       if (filter === "premium" && !u.proSubscriptionActive) return false;
+      if (filter === "whop" && !u.whopLinked) return false;
       if (filter === "active" && (u.status ?? "active") !== "active") return false;
       if (filter === "suspended" && (u.status ?? "active") !== "suspended") return false;
       return true;
@@ -329,8 +330,14 @@ export default function Admin() {
           <div className="bg-white rounded-2xl p-6 border border-gray-100">Unlock admin to load live analytics and controls.</div>
         ) : (
           <>
-            <div className="grid md:grid-cols-4 gap-4 mb-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
               <StatCard title="Total Users" value={stats ? fmtNum(stats.totals.users) : "--"} sub={stats ? `+${fmtNum(stats.growth.users30)} this month` : "Loading..."} icon="fa-users" />
+              <StatCard
+                title="Whop sign-in"
+                value={stats ? fmtNum(stats.totals.whopUsers ?? 0) : "--"}
+                sub="users with Whop linked"
+                icon="fa-bolt"
+              />
               <StatCard title="Active Users (30d)" value={stats ? fmtNum(stats.growth.activeUsers30) : "--"} sub={stats ? pct(stats.growth.activeGrowthPct) : "Loading..."} icon="fa-user-check" />
               <StatCard title="Transactions" value={stats ? fmtNum(stats.totals.transactions) : "--"} sub={stats ? `+${fmtNum(stats.growth.tx30)} this month` : "Loading..."} icon="fa-exchange-alt" />
               <StatCard title="User Growth" value={stats ? pct(stats.growth.userGrowthPct) : "--"} sub="vs previous 30d" icon="fa-arrow-trend-up" />
@@ -469,12 +476,14 @@ export default function Admin() {
                 <FilterButton label="All Users" active={filter === "all"} onClick={() => { setFilter("all"); setPage(0); }} />
                 <FilterButton label="Active" active={filter === "active"} onClick={() => { setFilter("active"); setPage(0); }} />
                 <FilterButton label="Premium" active={filter === "premium"} onClick={() => { setFilter("premium"); setPage(0); }} />
+                <FilterButton label="Whop" active={filter === "whop"} onClick={() => { setFilter("whop"); setPage(0); }} />
                 <FilterButton label="Suspended" active={filter === "suspended"} onClick={() => { setFilter("suspended"); setPage(0); }} />
               </div>
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">User</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Sign-in</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Plan</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Concurrent Jobs</th>
@@ -488,6 +497,19 @@ export default function Admin() {
                       <td className="px-6 py-4">
                         <div className="text-sm font-semibold text-gray-900">{u.name ?? "No name"}</div>
                         <div className="text-xs text-gray-500">{u.email}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-1">
+                          {u.whopLinked ? (
+                            <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-orange-100 text-orange-800">Whop</span>
+                          ) : null}
+                          {u.googleLinked ? (
+                            <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-100 text-blue-800">Google</span>
+                          ) : null}
+                          {!u.whopLinked && !u.googleLinked ? (
+                            <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-gray-100 text-gray-700">Email</span>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         {editingUserId === u.id && editDraft ? (

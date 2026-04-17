@@ -9,12 +9,25 @@ function getWebCheckoutReturnUrl(): string {
   return "https://receiptcycle.com/dashboard";
 }
 
+/** Whop hosted checkout / embed may read different query keys; set all common aliases. */
+function appendWhopCheckoutReturnParams(u: URL, returnUrl: string) {
+  const pairs: [string, string][] = [
+    ["return_url", returnUrl],
+    ["returnUrl", returnUrl],
+    ["redirect_uri", returnUrl],
+    ["redirectUri", returnUrl],
+    ["success_url", returnUrl],
+    ["successUrl", returnUrl],
+  ];
+  for (const [key, val] of pairs) {
+    if (!u.searchParams.get(key)) u.searchParams.set(key, val);
+  }
+}
+
 function withCheckoutReturnUrl(raw: string): string {
   try {
     const u = new URL(raw);
-    const returnUrl = getWebCheckoutReturnUrl();
-    if (!u.searchParams.get("redirect_uri")) u.searchParams.set("redirect_uri", returnUrl);
-    if (!u.searchParams.get("return_url")) u.searchParams.set("return_url", returnUrl);
+    appendWhopCheckoutReturnParams(u, getWebCheckoutReturnUrl());
     return u.toString();
   } catch {
     return raw;

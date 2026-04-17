@@ -1,5 +1,57 @@
+import bcrypt from "bcryptjs";
 import { v } from "convex/values";
+import type { MutationCtx } from "./_generated/server";
 import { internalMutation } from "./_generated/server";
+
+function randomHex(bytes: number): string {
+  const arr = new Uint8Array(bytes);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Create or patch a `users` row from webhook identity (single mutation — avoids nested `runMutation`).
+ */
+async function ensureUserRowFromWebhook(
+  ctx: MutationCtx,
+  args: { email: string; whopUserId: string | undefined; proActive: boolean; plan: string },
+): Promise<void> {
+  const email = args.email.trim().toLowerCase();
+  const { whopUserId, proActive, plan } = args;
+
+  const byEmail = await ctx.db
+    .query("users")
+    .withIndex("by_email", (q) => q.eq("email", email))
+    .unique();
+  if (byEmail) {
+    await ctx.db.patch(byEmail._id, {
+      proSubscriptionActive: proActive,
+      plan,
+      ...(whopUserId && (!byEmail.whopSub || byEmail.whopSub === whopUserId) ? { whopSub: whopUserId } : {}),
+    });
+    return;
+  }
+
+  if (whopUserId) {
+    const bySub = await ctx.db
+      .query("users")
+      .withIndex("by_whop_sub", (q) => q.eq("whopSub", whopUserId))
+      .unique();
+    if (bySub) {
+      await ctx.db.patch(bySub._id, { proSubscriptionActive: proActive, plan });
+      return;
+    }
+  }
+
+  const passwordHash = await bcrypt.hash(randomHex(32), 10);
+  await ctx.db.insert("users", {
+    email,
+    passwordHash,
+    whopSub: whopUserId,
+    proSubscriptionActive: proActive,
+    plan,
+  });
+}
 
 const entitlementStatus = v.union(
   v.literal("free"),
@@ -106,7 +158,16 @@ export const upsertEntitlementFromWebhook = internalMutation({
       entitlement = await ctx.db.get(entitlement._id);
     }
 
-    const user = await findUserForEntitlement(ctx, whopUserId, email);
+    let user = await findUserForEntitlement(ctx, whopUserId, email);
+    if (!user && email) {
+      await ensureUserRowFromWebhook(ctx, {
+        email,
+        whopUserId,
+        proActive: args.proActive,
+        plan: args.status,
+      });
+      user = await findUserForEntitlement(ctx, whopUserId, email);
+    }
     if (user) {
       await ctx.db.patch(user._id, {
         proSubscriptionActive: args.proActive,

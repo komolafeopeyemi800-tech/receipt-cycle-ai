@@ -68,6 +68,25 @@ export const insertUser = internalMutation({
   },
 });
 
+/** Link Whop OIDC subject to an existing email/password row (OAuth proves email at Whop). */
+export const linkWhopToExistingUser = internalMutation({
+  args: {
+    userId: v.id("users"),
+    whopSub: v.string(),
+    name: v.optional(v.string()),
+  },
+  handler: async (ctx, { userId, whopSub, name }) => {
+    const user = await ctx.db.get(userId);
+    if (!user) throw new Error("User not found.");
+    if (user.whopSub && user.whopSub !== whopSub) {
+      throw new Error("This account is already linked to a different Whop login.");
+    }
+    const patch: { whopSub: string; name?: string } = { whopSub };
+    if (name && !user.name?.trim()) patch.name = name;
+    await ctx.db.patch(userId, patch);
+  },
+});
+
 export const getUserByGoogleSub = internalQuery({
   args: { googleSub: v.string() },
   handler: async (ctx, { googleSub }) => {

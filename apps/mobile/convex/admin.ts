@@ -185,10 +185,13 @@ export const dashboardStats = query({
       });
     }
 
+    const whopUsers = users.filter((u) => Boolean(u.whopSub?.trim())).length;
+
     return {
       totals: {
         users: users.length,
         transactions: txs.length,
+        whopUsers,
       },
       growth: {
         users30,
@@ -210,7 +213,7 @@ export const recentUsers = query({
   args: { secret: v.string(), adminEmail: v.string(), limit: v.optional(v.number()) },
   handler: async (ctx, { secret, adminEmail, limit }) => {
     requireAdmin(secret, adminEmail);
-    const lim = Math.max(1, Math.min(200, Math.floor(limit ?? 50)));
+    const lim = Math.max(1, Math.min(2000, Math.floor(limit ?? 50)));
     const users = await ctx.db.query("users").collect();
     const sessions = await ctx.db.query("sessions").collect();
     const now = Date.now();
@@ -227,6 +230,7 @@ export const recentUsers = query({
       name: u.name ?? null,
       createdAt: u._creationTime,
       googleLinked: Boolean(u.googleSub),
+      whopLinked: Boolean(u.whopSub?.trim()),
       plan: u.plan ?? (u.proSubscriptionActive ? "pro" : "free"),
       proSubscriptionActive: u.proSubscriptionActive === true,
       status: u.status ?? "active",

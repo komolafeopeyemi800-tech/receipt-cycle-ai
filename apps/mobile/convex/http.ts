@@ -35,6 +35,9 @@ function extractWhopUserId(data: unknown): string | null {
   const member = asRecord(d.member);
   if (member && typeof member.user_id === "string") return member.user_id;
   if (member && typeof member.userId === "string") return member.userId;
+  const memberUser = member ? asRecord(member.user) : null;
+  if (memberUser && typeof memberUser.id === "string" && memberUser.id.length > 0) return memberUser.id;
+
   const customer = asRecord(d.customer);
   if (customer && typeof customer.id === "string" && customer.id.length > 0) return customer.id;
 
@@ -49,6 +52,14 @@ function extractWhopEmail(data: unknown): string | null {
   const user = asRecord(d.user);
   const userEmail = user ? asString(user.email) : undefined;
   if (userEmail) return userEmail.toLowerCase();
+  const member = asRecord(d.member);
+  if (member) {
+    const memberUser = asRecord(member.user);
+    const fromNested = memberUser ? asString(memberUser.email) : undefined;
+    if (fromNested) return fromNested.toLowerCase();
+    const flat = asString(member.email);
+    if (flat) return flat.toLowerCase();
+  }
   const customer = asRecord(d.customer);
   const customerEmail = customer ? asString(customer.email) : undefined;
   if (customerEmail) return customerEmail.toLowerCase();
@@ -113,14 +124,50 @@ function toEntitlementStatus(
   return null;
 }
 
+/** Plan / product / pass ids used with `WHOP_PRO_PRODUCT_IDS` (comma-separated in Convex env). */
+function collectWhopProductScopedIds(data: unknown): string[] {
+  const d = asRecord(data);
+  if (!d) return [];
+  const out: string[] = [];
+  const push = (s: unknown) => {
+    if (typeof s === "string" && s.trim().length > 0) out.push(s.trim());
+  };
+  const product = asRecord(d.product);
+  const plan = asRecord(d.plan) ?? asRecord(asRecord(d.membership)?.plan);
+  push(d.product_id);
+  push(d.productId);
+  push(d.plan_id);
+  push(d.planId);
+  push(d.access_pass_id);
+  push(d.accessPassId);
+  if (product) {
+    push(product.id);
+    push(product.product_id);
+    push(product.access_pass_id);
+  }
+  if (plan) {
+    push(plan.id);
+    push(plan.product_id);
+    push(plan.access_pass_id);
+  }
+  const membership = asRecord(d.membership);
+  if (membership) {
+    push(membership.product_id);
+    push(membership.plan_id);
+    const mplan = asRecord(membership.plan);
+    if (mplan) {
+      push(mplan.id);
+      push(mplan.product_id);
+    }
+  }
+  return [...new Set(out)];
+}
+
 function productMatches(data: unknown, allowed: Set<string>): boolean {
   if (allowed.size === 0) return true;
-  const d = asRecord(data);
-  if (!d) return false;
-  const product = asRecord(d.product);
-  const ids = [d.product_id, d.productId, product?.id].filter(
-    (x): x is string => typeof x === "string" && x.length > 0,
-  );
+  const ids = collectWhopProductScopedIds(data);
+  // Payment payloads sometimes omit product fields; do not skip fulfillment in that case.
+  if (ids.length === 0) return true;
   return ids.some((id) => allowed.has(id));
 }
 

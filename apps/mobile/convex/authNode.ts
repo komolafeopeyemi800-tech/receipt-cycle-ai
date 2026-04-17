@@ -362,19 +362,19 @@ export const signInWithWhop = action({
     assertAllowedWhopRedirectUri(args.redirectUri);
 
     const clientSecret = whopOAuthClientSecret();
-    const tokenBody: Record<string, string> = {
-      grant_type: "authorization_code",
-      code: args.code.trim(),
-      redirect_uri: args.redirectUri.trim(),
-      client_id: clientId,
-      code_verifier: args.codeVerifier.trim(),
-    };
-    if (clientSecret) tokenBody.client_secret = clientSecret;
+    // OAuth 2.0 (RFC 6749) expects application/x-www-form-urlencoded; Whop may reject JSON.
+    const params = new URLSearchParams();
+    params.set("grant_type", "authorization_code");
+    params.set("code", args.code.trim());
+    params.set("redirect_uri", args.redirectUri.trim());
+    params.set("client_id", clientId);
+    params.set("code_verifier", args.codeVerifier.trim());
+    if (clientSecret) params.set("client_secret", clientSecret);
 
     const tokenRes = await fetch("https://api.whop.com/oauth/token", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(tokenBody),
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
     });
 
     if (!tokenRes.ok) {
@@ -438,9 +438,25 @@ export const signInWithWhop = action({
         throw new Error("This email is linked to Google. Use Google sign-in or a different Whop account.");
       }
       if (!byEmail.googleSub && !byEmail.whopSub) {
-        throw new Error(
-          "This email already has a password account. Sign in with email and password, or use a different Whop account.",
-        );
+        await ctx.runMutation(internal.auth.linkWhopToExistingUser, {
+          userId: byEmail._id,
+          whopSub,
+          name,
+        });
+        const token = makeToken();
+        const expiresAt = Date.now() + SESSION_MS;
+        await ctx.runMutation(internal.auth.insertSession, {
+          userId: byEmail._id,
+          token,
+          expiresAt,
+        });
+        await safeReconcileEntitlement(ctx, byEmail._id);
+        const displayName = name && !byEmail.name?.trim() ? name : byEmail.name ?? null;
+        return {
+          token,
+          user: { id: byEmail._id as string, email: byEmail.email, name: displayName },
+          isNewRegistration: false,
+        };
       }
       if (byEmail.whopSub === whopSub) {
         const token = makeToken();

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Receipt Cycle",
     "slug": "receipt-cycle-mobile",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "scheme": "receiptcycle",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -23,8 +23,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#149184",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/icon.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [

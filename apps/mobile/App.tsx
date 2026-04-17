@@ -100,22 +100,23 @@ function navigateAfterCheckoutIfNeeded(url: string | null) {
 
 function PasswordResetDeepLinks() {
   const { user, loading } = useAuth();
-  /** Wait until auth resolved and guest stack is mounted before handling cold-start links. */
+  /** Post-checkout deep links must run even when signed in; password reset only on the guest stack. */
   useEffect(() => {
-    if (loading || user) return;
+    if (loading) return;
     void Linking.getInitialURL().then((url) => {
-      navigateToResetIfNeeded(url);
+      if (!url) return;
       navigateAfterCheckoutIfNeeded(url);
+      if (!user) navigateToResetIfNeeded(url);
     });
   }, [loading, user]);
 
   useEffect(() => {
     const sub = Linking.addEventListener("url", (e) => {
-      navigateToResetIfNeeded(e.url);
       navigateAfterCheckoutIfNeeded(e.url);
+      if (!user) navigateToResetIfNeeded(e.url);
     });
     return () => sub.remove();
-  }, []);
+  }, [user]);
   return null;
 }
 

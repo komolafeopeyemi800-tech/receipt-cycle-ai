@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "brand:mobile": "node scripts/sync-mobile-brand-assets.mjs",
+    "seo:assets": "node scripts/generate-seo-assets.mjs",
+    "seo:blog-images": "node scripts/generate-blog-feature-images.mjs",
+    "seo:prerender": "node scripts/prerender.mjs",
     "convex:dev": "convex dev",
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run seo:assets && npm run seo:blog-images && vite build && npm run seo:prerender",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",

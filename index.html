@@ -2,46 +2,151 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="google-site-verification" content="0swvQpSG7dW9rXiUbzbkaUunenkiLYGNiQzXTSkzFl8" />
+
+    <!-- Primary -->
+    <title>Receipt Cycle — AI Receipt Scanner & Expense Tracker</title>
+    <meta name="description" content="Scan receipts, track spending automatically, and catch money leaks before they stack. AI expense tracker and budget manager for freelancers and small teams." />
+    <meta name="author" content="Receipt Cycle" />
+    <meta name="keywords" content="receipt scanner, AI expense tracker, budget manager, money leaks, tax refund receipts, freelancer expense app, small business bookkeeping, receipt OCR" />
+    <link rel="canonical" href="https://receiptcycle.com/" />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+    <meta name="googlebot" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+
+    <!-- Favicons (cache-busted — forces Google & browsers to refetch) -->
+    <link rel="icon" href="/favicon.ico?v=3" sizes="any" />
+    <link rel="icon" href="/favicon-32.png?v=3" type="image/png" sizes="32x32" />
+    <link rel="icon" href="/favicon-16.png?v=3" type="image/png" sizes="16x16" />
+    <link rel="icon" href="/icon-192.png?v=3" type="image/png" sizes="192x192" />
+    <link rel="icon" href="/icon-512.png?v=3" type="image/png" sizes="512x512" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest?v=3" />
+
+    <!-- Theme -->
+    <meta name="theme-color" content="#149184" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Receipt Cycle" />
+    <meta name="application-name" content="Receipt Cycle" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Open Graph -->
+    <meta property="og:site_name" content="Receipt Cycle" />
+    <meta property="og:title" content="Receipt Cycle — AI Receipt Scanner & Expense Tracker" />
+    <meta property="og:description" content="Scan receipts, track spending automatically, and catch money leaks before they stack. AI expense tracker for freelancers and small teams." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://receiptcycle.com/" />
+    <meta property="og:image" content="https://receiptcycle.com/og-image.png?v=3" />
+    <meta property="og:image:secure_url" content="https://receiptcycle.com/og-image.png?v=3" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Receipt Cycle — Scan once. See your money clearly." />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@receiptcycle" />
+    <meta name="twitter:creator" content="@receiptcycle" />
+    <meta name="twitter:title" content="Receipt Cycle — AI Receipt Scanner & Expense Tracker" />
+    <meta name="twitter:description" content="Scan receipts, track spending automatically, and catch money leaks before they stack." />
+    <meta name="twitter:image" content="https://receiptcycle.com/og-image.png?v=3" />
+    <meta name="twitter:image:alt" content="Receipt Cycle — Scan once. See your money clearly." />
+
+    <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
+
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
     />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="google-site-verification" content="0swvQpSG7dW9rXiUbzbkaUunenkiLYGNiQzXTSkzFl8" />
-    <link rel="icon" href="/brand/logo.png" type="image/png" />
-    <link rel="apple-touch-icon" href="/brand/logo.png" />
-
-    <meta name="theme-color" content="#149184" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    
-    <title>Receipt Cycle - Scan Once. Claim Your Tax Refund</title>
-    <meta name="description" content="AI-powered expense and budget manager. Scan receipts, track spending automatically, and reveal money leaks in seconds." />
-    <meta name="author" content="Receipt Cycle" />
-    <meta name="keywords" content="receipt scanner, expense tracker, budget manager, money leaks, tax refund, financial management" />
-
-    <meta property="og:title" content="Receipt Cycle - Smart Expense Tracking" />
-    <meta property="og:description" content="AI-powered expense manager that scans receipts, tracks spending, and reveals money leaks." />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://receiptcycle.com/brand/logo.png" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Receipt Cycle - Smart Expense Tracking" />
-    <meta name="twitter:description" content="AI-powered expense manager that scans receipts and reveals money leaks." />
-    <meta name="twitter:image" content="https://receiptcycle.com/brand/logo.png" />
-
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     />
+
+    <!-- JSON-LD: Organization -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Receipt Cycle",
+        "url": "https://receiptcycle.com",
+        "logo": "https://receiptcycle.com/icon-512.png?v=3",
+        "email": "support@receiptcycle.com",
+        "sameAs": [
+          "https://x.com/receiptcycle",
+          "https://www.instagram.com/receiptcycle"
+        ]
+      }
+    </script>
+
+    <!-- JSON-LD: WebSite + SearchAction -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Receipt Cycle",
+        "url": "https://receiptcycle.com",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://receiptcycle.com/blog?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+
+    <!-- JSON-LD: SoftwareApplication -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Receipt Cycle",
+        "operatingSystem": "iOS, Android, Web",
+        "applicationCategory": "FinanceApplication",
+        "description": "AI-powered receipt scanner and expense tracker. Capture purchases, catch money leaks, and keep audit-ready records for tax time.",
+        "image": "https://receiptcycle.com/og-image.png?v=3",
+        "url": "https://receiptcycle.com",
+        "offers": [
+          { "@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Free" },
+          { "@type": "Offer", "price": "9.99", "priceCurrency": "USD", "name": "Pro Monthly" },
+          { "@type": "Offer", "price": "89.99", "priceCurrency": "USD", "name": "Pro Yearly" }
+        ],
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.8",
+          "ratingCount": "124"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "Receipt Cycle"
+        }
+      }
+    </script>
   </head>
 
   <body>
     <div id="root"></div>
+    <!-- Minimal noscript fallback so crawlers that do not execute JS still see on-brand content.
+         Per-route prerender will replace this with page-specific content in production builds. -->
+    <noscript>
+      <div style="font-family:Inter,system-ui,-apple-system,sans-serif;max-width:720px;margin:40px auto;padding:24px;color:#0f172a">
+        <h1 style="margin:0 0 12px 0;font-size:28px">Receipt Cycle</h1>
+        <p style="margin:0 0 8px 0">
+          AI-powered receipt scanner and expense tracker for freelancers and small teams.
+          Scan purchases, catch money leaks, and keep audit-ready records for tax time.
+        </p>
+        <p style="margin:12px 0 0 0">
+          Learn more: <a href="/about">About</a> · <a href="/blog">Blog</a> ·
+          <a href="/pricing">Pricing</a> · <a href="/faq">FAQ</a> · <a href="/contact">Contact</a>
+        </p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

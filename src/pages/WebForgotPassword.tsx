@@ -18,9 +18,7 @@ export default function WebForgotPassword() {
     try {
       const res = await requestPasswordReset({ email: email.trim() });
       if (!res.emailSent) {
-        setMsg(
-          "If that address is registered, you’ll get an email shortly. (Password reset is not fully configured on the server if no email arrives.)",
-        );
+        setMsg("If that address is registered, you’ll get an email shortly.");
       } else {
         setMsg(null);
       }

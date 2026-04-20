@@ -2,10 +2,21 @@ import { Link } from "react-router-dom";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ReceiptCycleLogo } from "@/components/brand/ReceiptCycleLogo";
 import { SITE_FAQ_ITEMS } from "@/content/siteFaq";
+import { Seo } from "@/components/Seo";
+import { getRouteSeo } from "@/content/routesSeo";
 
 export default function FaqPage() {
+  const seo = getRouteSeo("/faq");
   return (
     <div className="min-h-screen bg-white">
+      {seo ? (
+        <Seo
+          title={seo.title}
+          description={seo.description}
+          path="/faq"
+          structuredData={seo.structuredData}
+        />
+      ) : null}
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4 sm:px-6">
           <ReceiptCycleLogo size={32} />

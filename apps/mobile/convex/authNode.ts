@@ -228,6 +228,20 @@ function summarizeWhopTokenError(status: number, body: unknown): string {
   return parts.join(" ");
 }
 
+function shouldRetryWhopTokenWithoutSecret(body: unknown): boolean {
+  const b = body as {
+    error?: string;
+    error_description?: string;
+    message?: string;
+  };
+  const merged = `${b?.error ?? ""} ${b?.error_description ?? ""} ${b?.message ?? ""}`.toLowerCase();
+  return (
+    merged.includes("oauth:token_exchange") ||
+    merged.includes("invalid_client") ||
+    merged.includes("client_secret")
+  );
+}
+
 function whopOAuthClientId(): string {
   return (
     process.env.WHOP_OAUTH_CLIENT_ID?.trim() ||
@@ -362,22 +376,25 @@ export const signInWithWhop = action({
     assertAllowedWhopRedirectUri(args.redirectUri);
 
     const clientSecret = whopOAuthClientSecret();
-    // OAuth 2.0 (RFC 6749) expects application/x-www-form-urlencoded; Whop may reject JSON.
-    const params = new URLSearchParams();
-    params.set("grant_type", "authorization_code");
-    params.set("code", args.code.trim());
-    params.set("redirect_uri", args.redirectUri.trim());
-    params.set("client_id", clientId);
-    params.set("code_verifier", args.codeVerifier.trim());
-    if (clientSecret) params.set("client_secret", clientSecret);
+    const requestToken = async (secret: string | undefined) => {
+      // OAuth 2.0 (RFC 6749) expects application/x-www-form-urlencoded; Whop may reject JSON.
+      const params = new URLSearchParams();
+      params.set("grant_type", "authorization_code");
+      params.set("code", args.code.trim());
+      params.set("redirect_uri", args.redirectUri.trim());
+      params.set("client_id", clientId);
+      params.set("code_verifier", args.codeVerifier.trim());
+      if (secret) params.set("client_secret", secret);
 
-    const tokenRes = await fetch("https://api.whop.com/oauth/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: params.toString(),
-    });
-
-    if (!tokenRes.ok) {
+      const tokenRes = await fetch("https://api.whop.com/oauth/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: params.toString(),
+      });
+      if (tokenRes.ok) {
+        const tokens = (await tokenRes.json()) as { access_token?: string };
+        return { ok: true as const, tokens };
+      }
       const rawText = await tokenRes.text().catch(() => "");
       let parsed: unknown = null;
       if (rawText.trim()) {
@@ -387,10 +404,23 @@ export const signInWithWhop = action({
           parsed = { message: rawText.slice(0, 500) };
         }
       }
-      throw new Error(summarizeWhopTokenError(tokenRes.status, parsed ?? {}));
+      return {
+        ok: false as const,
+        status: tokenRes.status,
+        parsed: parsed ?? {},
+      };
+    };
+
+    let tokenAttempt = await requestToken(clientSecret);
+    // Some Whop apps are PKCE/public and reject secret usage; retry once without client secret.
+    if (!tokenAttempt.ok && clientSecret && shouldRetryWhopTokenWithoutSecret(tokenAttempt.parsed)) {
+      tokenAttempt = await requestToken(undefined);
+    }
+    if (!tokenAttempt.ok) {
+      throw new Error(summarizeWhopTokenError(tokenAttempt.status, tokenAttempt.parsed));
     }
 
-    const tokens = (await tokenRes.json()) as { access_token?: string };
+    const tokens = tokenAttempt.tokens;
     const accessToken = tokens.access_token?.trim();
     if (!accessToken) throw new Error("Whop did not return an access token.");
 

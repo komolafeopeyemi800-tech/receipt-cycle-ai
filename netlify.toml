@@ -12,7 +12,15 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# Client-side routing: send all non-file paths to the app shell
+# Client-side routing: prefer prerendered per-route HTML (dist/<route>/index.html).
+# Netlify's Pretty URLs feature already serves /about -> /about/index.html for
+# static files, BUT we still need to make sure the generic SPA fallback does
+# not swallow unknown paths *before* the static file is checked.
+#
+# The order below matters. Static files (including the prerendered per-route
+# HTML) are checked first by Netlify; the `/*` -> `/index.html` rewrite is the
+# fallback for paths that do NOT have a matching file on disk (dashboard,
+# signin, dynamic blog slugs not yet prerendered, etc.).
 [[redirects]]
   from = "/*"
   to = "/index.html"
@@ -23,8 +31,43 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# Never let the CDN cache SEO assets too long — we cache-bust with ?v=N but
+# still want new deploys to propagate within minutes.
+[[headers]]
+  for = "/robots.txt"
+  [headers.values]
+    Cache-Control = "public, max-age=300"
+
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Cache-Control = "public, max-age=300"
+
+[[headers]]
+  for = "/llms.txt"
+  [headers.values]
+    Cache-Control = "public, max-age=300"
+
+[[headers]]
+  for = "/og-image.png"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+[[headers]]
+  for = "/favicon.ico"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+# Per-route prerendered HTML — short TTL so new content publishes fast.
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=300, must-revalidate"
+
 [[headers]]
   for = "/*"
   [headers.values]
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "SAMEORIGIN"
+    Permissions-Policy = "camera=(self), microphone=(self), geolocation=()"

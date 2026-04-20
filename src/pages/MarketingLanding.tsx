@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ReceiptCycleLogo } from "@/components/brand/ReceiptCycleLogo";
 import { SUPPORT_EMAIL, TWITTER_URL, INSTAGRAM_URL } from "@/content/site";
+import { Seo } from "@/components/Seo";
+import { getRouteSeo } from "@/content/routesSeo";
 
 /** Static marketing site — no Convex or database calls. */
 const accent = "#ea580c";
@@ -303,22 +305,34 @@ function UserReviewsSection() {
 }
 
 export default function MarketingLanding() {
+  const seo = getRouteSeo("/");
   return (
     <div className="min-h-screen bg-white text-slate-900 antialiased">
+      {seo ? (
+        <Seo
+          title={seo.title}
+          description={seo.description}
+          path="/"
+          structuredData={seo.structuredData}
+        />
+      ) : null}
       {/* Nav */}
       <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <ReceiptCycleLogo className="text-lg" />
-          <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
-            <a href="#problem" className="hover:text-teal-700">
-              Why capture matters
-            </a>
+          <nav className="hidden items-center gap-7 text-sm font-medium text-slate-600 lg:flex">
             <a href="#features" className="hover:text-teal-700">
               Features
             </a>
             <a href="#how" className="hover:text-teal-700">
               How it works
             </a>
+            <Link to="/about" className="hover:text-teal-700">
+              About
+            </Link>
+            <Link to="/blog" className="hover:text-teal-700">
+              Blog
+            </Link>
             <Link to="/pricing" className="hover:text-teal-700">
               Pricing
             </Link>
@@ -748,6 +762,16 @@ export default function MarketingLanding() {
                     FAQ
                   </Link>
                 </li>
+                <li>
+                  <Link to="/blog" className="hover:text-teal-700">
+                    Blog
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/about" className="hover:text-teal-700">
+                    About
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
@@ -809,9 +833,14 @@ export default function MarketingLanding() {
                   </Link>
                 </li>
                 <li>
-                  <a href="#about" className="hover:text-teal-700">
+                  <Link to="/about" className="hover:text-teal-700">
                     About
-                  </a>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/blog" className="hover:text-teal-700">
+                    Blog
+                  </Link>
                 </li>
               </ul>
             </div>

@@ -38,6 +38,9 @@ const ConvexSettings = lazy(() => import("./pages/ConvexSettings"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const CheckoutReturn = lazy(() => import("./pages/CheckoutReturn"));
+const About = lazy(() => import("./pages/About"));
+const Blog = lazy(() => import("./pages/Blog"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
 
 /** Admin console only — requires Convex. */
 const Admin = lazy(() => import("./pages/Admin"));
@@ -145,6 +148,9 @@ const App = () => (
           <Route path="/contact" element={<Contact />} />
           <Route path="/refund-policy" element={<RefundPolicy />} />
           <Route path="/faq" element={<FaqPage />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

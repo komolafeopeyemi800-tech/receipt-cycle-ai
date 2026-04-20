@@ -16,6 +16,7 @@ import type * as auth from "../auth.js";
 import type * as authNode from "../authNode.js";
 import type * as budgets from "../budgets.js";
 import type * as categories from "../categories.js";
+import type * as email from "../email.js";
 import type * as http from "../http.js";
 import type * as moneyLeak from "../moneyLeak.js";
 import type * as ocrHealth from "../ocrHealth.js";
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   authNode: typeof authNode;
   budgets: typeof budgets;
   categories: typeof categories;
+  email: typeof email;
   http: typeof http;
   moneyLeak: typeof moneyLeak;
   ocrHealth: typeof ocrHealth;

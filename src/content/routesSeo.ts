@@ -260,10 +260,8 @@ const staticRoutes: RouteSeo[] = [
     title: "FAQ — Receipt Cycle",
     description:
       "Answers to common questions about Receipt Cycle: how scanning works, where data is stored, offline support, and how the web and mobile apps fit together.",
-    structuredData: [organization, faqSchema(), breadcrumb([
-      { name: "Home", path: "/" },
-      { name: "FAQ", path: "/faq" },
-    ])],
+    // Keep FAQ page schema focused to avoid unsupported/unnamed rich-result items.
+    structuredData: [faqSchema()],
     noscriptHtml: noscriptWrap(
       "Frequently asked questions",
       `<dl>${SITE_FAQ_ITEMS.map(

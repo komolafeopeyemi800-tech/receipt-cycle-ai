@@ -3,11 +3,32 @@ import { SUPPORT_EMAIL } from "@/content/site";
 
 export default function TermsOfService() {
   return (
-    <LegalLayout title="Terms of Service">
+    <LegalLayout title="Terms of Service" updated="April 22, 2026">
       <p>
         These Terms govern use of Receipt Cycle software and related materials. They are a <strong>starting template</strong> only—have
         legal counsel adapt them for your entity, product, and countries of operation.
       </p>
+
+      <h2>Legal entity</h2>
+      <p>
+        The supplier of the Receipt Cycle product and related services is <strong>TempEmailGen</strong> (legal business
+        name as registered for payment and checkout purposes). <strong>Receipt Cycle</strong> is the trade name and
+        product branding under which TempEmailGen offers the software. In these Terms, &quot;we&quot;, &quot;us&quot;,
+        and &quot;our&quot; refer to TempEmailGen in that capacity.
+      </p>
+      <p>
+        Where you pay through Paddle, Paddle acts as Merchant of Record for the transaction; your purchase is also
+        subject to Paddle&apos;s{" "}
+        <a href="https://www.paddle.com/legal/buyer-terms" rel="noopener noreferrer" target="_blank">
+          Buyer Terms and Conditions
+        </a>{" "}
+        and{" "}
+        <a href="https://www.paddle.com/legal/refund-policy" rel="noopener noreferrer" target="_blank">
+          Refund Policy
+        </a>
+        .
+      </p>
+
       <h2>1. Acceptance</h2>
       <p>By downloading or using Receipt Cycle, you agree to these Terms. If you disagree, do not use the Services.</p>
       <h2>2. The Services</h2>

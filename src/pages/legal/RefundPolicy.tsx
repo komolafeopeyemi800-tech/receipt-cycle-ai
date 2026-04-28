@@ -84,6 +84,27 @@ export default function RefundPolicy() {
         highest level of protection that applies to you will govern.
       </p>
 
+      <h3>3.1A Standard refund window for Receipt Cycle</h3>
+      <p>
+        For Receipt Cycle subscriptions sold through Paddle, we apply a <strong>3-day full refund window</strong> from
+        the timestamp of your initial successful payment.
+      </p>
+      <ul>
+        <li>
+          If you request a refund within <strong>3 calendar days</strong> of purchase, you are eligible for a{" "}
+          <strong>full refund</strong> (subject to Paddle verification and applicable law).
+        </li>
+        <li>
+          If you request a refund <strong>after 3 calendar days</strong>, the payment is not refunded for the current
+          billing period. Instead, your subscription will be <strong>canceled at period end</strong>, and you can keep
+          using paid features until the end of your current monthly billing cycle.
+        </li>
+      </ul>
+      <p>
+        This 3-day window is our standard commercial rule and does not limit any stronger statutory rights you may have
+        under applicable law.
+      </p>
+
       <h3>3.2 How to request a refund or manage a Paddle subscription</h3>
       <p>Follow Paddle&apos;s instructions. In summary, you can typically:</p>
       <ul>

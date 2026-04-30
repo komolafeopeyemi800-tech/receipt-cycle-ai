@@ -134,6 +134,13 @@ function blogPostNoscript(post: BlogPost): string {
       if (b.kind === "p") return `<p>${escapeHtml(b.text)}</p>`;
       if (b.kind === "h2") return `<h2 id="${b.id}">${escapeHtml(b.text)}</h2>`;
       if (b.kind === "h3") return `<h3 id="${b.id}">${escapeHtml(b.text)}</h3>`;
+      if (b.kind === "h4") return `<h4 id="${b.id}">${escapeHtml(b.text)}</h4>`;
+      if (b.kind === "image") {
+        const safeSrc = escapeHtml(b.src);
+        const safeAlt = escapeHtml(b.alt);
+        const caption = b.caption ? `<figcaption>${escapeHtml(b.caption)}</figcaption>` : "";
+        return `<figure><img src="${safeSrc}" alt="${safeAlt}"/>${caption}</figure>`;
+      }
       if (b.kind === "links") {
         return `<section><h3>${escapeHtml(b.title)}</h3><ul>${b.items
           .map((item) => {

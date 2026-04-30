@@ -92,6 +92,41 @@ const COVERS = [
     line1: "CSV & PDF",
     line2: "into one ledger.",
   },
+  {
+    slug: "what-is-a-receipt-scanner-freelancers-2026",
+    motif: "scanner",
+    kicker: "FREELANCERS",
+    line1: "What scanners",
+    line2: "actually solve.",
+  },
+  {
+    slug: "receipt-scanner-tax-purposes-audit-ready-year-round",
+    motif: "tax",
+    kicker: "AUDIT READY",
+    line1: "Track now,",
+    line2: "file calmly.",
+  },
+  {
+    slug: "expense-tracker-receipt-scanner-one-two-punch",
+    motif: "tracker",
+    kicker: "CLEAN BOOKS",
+    line1: "Scan + track",
+    line2: "in one flow.",
+  },
+  {
+    slug: "how-ocr-receipt-scanning-works-ai-smarter",
+    motif: "receipt",
+    kicker: "OCR + AI",
+    line1: "Read receipts",
+    line2: "with context.",
+  },
+  {
+    slug: "ai-in-finance-personal-business-money-management",
+    motif: "subscription",
+    kicker: "AI FINANCE",
+    line1: "Automate admin,",
+    line2: "keep judgment.",
+  },
 ];
 
 function escapeXml(s) {

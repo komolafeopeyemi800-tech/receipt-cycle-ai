@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Receipt Cycle Search Assistant",
+  "description": "Google overlay launcher and toggleable split sidebar for Receipt Cycle.",
+  "version": "0.2.0",
+  "permissions": ["tabs", "activeTab", "scripting"],
+  "host_permissions": ["https://www.google.com/search*", "https://receiptcycle.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Toggle Receipt Cycle sidebar"
+  },
+  "commands": {
+    "toggle-sidebar": {
+      "suggested_key": {
+        "default": "Ctrl+J"
+      },
+      "description": "Toggle Receipt Cycle sidebar"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.google.com/search*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

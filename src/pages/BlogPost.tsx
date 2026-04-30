@@ -4,8 +4,70 @@ import { Seo } from "@/components/Seo";
 import { getBlogPostSeo } from "@/content/routesSeo";
 import { getPostBySlug, BLOG_POSTS, type BlogBlock } from "@/content/blogPosts";
 import { SITE_URL } from "@/lib/seo";
+import type { ReactNode } from "react";
 
 const primary = "#0f766e";
+
+const INLINE_LINK_RULES: Array<{ phrase: string; href: string; external?: boolean }> = [
+  { phrase: "how to organize receipts for your accountant", href: "/blog/best-expense-tracker-for-freelancers" },
+  { phrase: "staying compliant with a tax receipt tracker", href: "/blog/receipt-scanner-tax-purposes-audit-ready-year-round" },
+  { phrase: "how to track business travel expenses", href: "/blog/scan-receipts-for-tax-refund" },
+  { phrase: "how freelancers can track business expenses", href: "/blog/freelancers-guide-tracking-business-expenses" },
+  { phrase: "how OCR and AI work together in receipt scanning", href: "/blog/how-ocr-receipt-scanning-works-ai-smarter" },
+  { phrase: "why a combined expense tracker and receipt scanner changes everything", href: "/blog/expense-tracker-receipt-scanner-one-two-punch" },
+  { phrase: "IRS Publication 463", href: "https://www.irs.gov/publications/p463", external: true },
+  {
+    phrase: "NerdWallet's research on subscription spending",
+    href: "https://www.nerdwallet.com/article/finance/how-to-stop-paying-monthly-subscriptions-you-forgot-about",
+    external: true,
+  },
+  { phrase: "receiptcycle.com", href: "/" },
+];
+
+function renderInlineLinkedText(text: string): ReactNode[] {
+  const out: ReactNode[] = [];
+  let remaining = text;
+  let key = 0;
+
+  while (remaining.length > 0) {
+    let best: { idx: number; rule: (typeof INLINE_LINK_RULES)[number] } | null = null;
+    for (const rule of INLINE_LINK_RULES) {
+      const idx = remaining.toLowerCase().indexOf(rule.phrase.toLowerCase());
+      if (idx === -1) continue;
+      if (!best || idx < best.idx) best = { idx, rule };
+    }
+
+    if (!best) {
+      out.push(remaining);
+      break;
+    }
+
+    if (best.idx > 0) out.push(remaining.slice(0, best.idx));
+    const originalPhrase = remaining.slice(best.idx, best.idx + best.rule.phrase.length);
+    if (best.rule.external) {
+      out.push(
+        <a
+          key={`inline-link-${key++}`}
+          href={best.rule.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-teal-700 hover:underline"
+        >
+          {originalPhrase}
+        </a>,
+      );
+    } else {
+      out.push(
+        <Link key={`inline-link-${key++}`} to={best.rule.href} className="font-medium text-teal-700 hover:underline">
+          {originalPhrase}
+        </Link>,
+      );
+    }
+    remaining = remaining.slice(best.idx + best.rule.phrase.length);
+  }
+
+  return out;
+}
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -13,7 +75,7 @@ function formatDate(iso: string): string {
 }
 
 function Block({ block }: { block: BlogBlock }) {
-  if (block.kind === "p") return <p className="mt-5 leading-relaxed text-slate-700">{block.text}</p>;
+  if (block.kind === "p") return <p className="mt-5 leading-relaxed text-slate-700">{renderInlineLinkedText(block.text)}</p>;
   if (block.kind === "h2")
     return (
       <h2
@@ -28,6 +90,19 @@ function Block({ block }: { block: BlogBlock }) {
       <h3 id={block.id} className="mt-10 scroll-mt-20 font-display text-xl font-bold text-slate-900">
         {block.text}
       </h3>
+    );
+  if (block.kind === "h4")
+    return (
+      <h4 id={block.id} className="mt-8 scroll-mt-20 font-display text-lg font-semibold text-slate-900">
+        {block.text}
+      </h4>
+    );
+  if (block.kind === "image")
+    return (
+      <figure className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <img src={block.src} alt={block.alt} className="h-auto w-full object-cover" loading="lazy" />
+        {block.caption ? <figcaption className="border-t border-slate-100 px-4 py-3 text-sm text-slate-600">{block.caption}</figcaption> : null}
+      </figure>
     );
   if (block.kind === "links")
     return (
@@ -90,6 +165,8 @@ export default function BlogPost() {
   const seo = getBlogPostSeo(slug);
   const related = BLOG_POSTS.filter((p) => p.slug !== slug).slice(0, 2);
   const ogImage = post.featuredImage.startsWith("http") ? post.featuredImage : `${SITE_URL}${post.featuredImage}`;
+  const hasInlineImage = post.body.some((b) => b.kind === "image");
+  const hasLinksBlock = post.body.some((b) => b.kind === "links");
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -151,6 +228,46 @@ export default function BlogPost() {
           {post.body.map((block, i) => (
             <Block key={i} block={block} />
           ))}
+          {!hasInlineImage ? (
+            <figure className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <img
+                src="/landing/hero-phone.png"
+                alt="Receipt Cycle app showing receipt and expense tracking workflow"
+                className="h-auto w-full object-cover"
+                loading="lazy"
+              />
+              <figcaption className="border-t border-slate-100 px-4 py-3 text-sm text-slate-600">
+                A practical receipt-to-ledger workflow helps keep records clean all year.
+              </figcaption>
+            </figure>
+          ) : null}
+          {!hasLinksBlock ? (
+            <section className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-5">
+              <h3 className="font-display text-lg font-bold text-slate-900">Related resources</h3>
+              <ul className="mt-3 space-y-2">
+                <li className="text-sm">
+                  <Link to="/blog" className="font-medium text-teal-700 hover:underline">
+                    Explore more Receipt Cycle articles
+                  </Link>
+                </li>
+                <li className="text-sm">
+                  <Link to="/blog/freelancers-guide-tracking-business-expenses" className="font-medium text-teal-700 hover:underline">
+                    Freelancer expense tracking guide
+                  </Link>
+                </li>
+                <li className="text-sm">
+                  <a
+                    href="https://www.irs.gov/businesses/small-businesses-self-employed/what-kind-of-records-should-i-keep"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-teal-700 hover:underline"
+                  >
+                    IRS recordkeeping overview ↗
+                  </a>
+                </li>
+              </ul>
+            </section>
+          ) : null}
         </article>
 
         <div className="mt-10 flex flex-wrap gap-2">

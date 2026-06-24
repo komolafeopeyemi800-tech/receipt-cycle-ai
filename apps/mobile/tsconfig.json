@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "Expo-compatible — fully inlined (no `extends`) so root Vite/Netlify never resolve `expo/tsconfig.base`",
+  "display": "Expo-compatible — fully inlined (no `extends`) so root Vite/Cloudflare Pages never resolve `expo/tsconfig.base`",
   "compilerOptions": {
     "allowJs": true,
     "esModuleInterop": true,

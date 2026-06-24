@@ -33,7 +33,9 @@ Commit and push **all** of these (Cloudflare clones GitHub; local-only fixes are
 
 4. **Save and deploy.** The first build produces a `*.pages.dev` preview URL.
 
-Node version: Cloudflare reads [`.nvmrc`](.nvmrc) (`20`). Do not use `bun run build` unless you add Bun to the build image.
+Node version: Cloudflare reads [`.nvmrc`](.nvmrc) (`20`). This repo uses **npm** only (`package-lock.json`). Do **not** commit `bun.lock` — if it exists, Cloudflare runs `bun install --frozen-lockfile` and the build can fail. Build command must be `npm run build` (not `bun run build`).
+
+**If install still fails with Bun:** Pages project → Settings → Environment variables → add `SKIP_DEPENDENCY_INSTALL` = `1`, then set build command to `npm ci && npm run build`.
 
 ### 2. Environment variables
 

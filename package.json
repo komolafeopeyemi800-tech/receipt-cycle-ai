@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "npm@10.9.2",
   "scripts": {
     "brand:mobile": "node scripts/sync-mobile-brand-assets.mjs",
     "seo:assets": "node scripts/generate-seo-assets.mjs",

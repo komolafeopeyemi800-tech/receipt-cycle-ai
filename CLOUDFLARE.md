@@ -14,8 +14,8 @@ Commit and push **all** of these (Cloudflare clones GitHub; local-only fixes are
 - `apps/mobile/src/tsconfig.json` — same compiler options, **no `extends`**. Vite/esbuild resolves this file first for `apps/mobile/src/lib/*` (the web app’s `@mobile-lib` alias), so the build never needs `expo` even if a parent tsconfig is mis-merged.
 - `index.html` — Google Fonts loaded with `<link rel="stylesheet" …fonts.googleapis.com…>` (avoid CSS `@import`; Vite is strict about `@import` order)
 - `.nvmrc` — Node `20` (matches former Netlify `NODE_VERSION`)
-- `public/_redirects` — SPA fallback (`/* /index.html 200`)
 - `public/_headers` — cache + security headers (ported from former `netlify.toml`)
+- [`wrangler.toml`](wrangler.toml) — SPA routing via `not_found_handling = "single-page-application"` (Workers deploy). **Do not** add `public/_redirects` with `/* /index.html 200` — that conflicts with Workers and causes deploy error 100324.
 
 ### 1. Create a Pages project
 
@@ -41,7 +41,9 @@ Commit and push **all** of these (Cloudflare clones GitHub; local-only fixes are
 | Build command | `npm run build` |
 | Deploy command | `npx wrangler deploy` |
 
-[`wrangler.toml`](wrangler.toml) serves `./dist` as static assets with SPA fallback (`not_found_handling = "single-page-application"`). Uses `public/_redirects` and `public/_headers` copied into `dist/` by Vite.
+[`wrangler.toml`](wrangler.toml) serves `./dist` as static assets with SPA fallback (`not_found_handling = "single-page-application"`). Uses `public/_headers` copied into `dist/` by Vite. Do **not** use `public/_redirects` with `/* /index.html 200` on Workers — it causes an infinite-loop deploy error; SPA routing is already in `wrangler.toml`.
+
+**Cloudflare Pages only (Option A):** if you are **not** using `wrangler deploy`, you may add `public/_redirects` containing `/* /index.html 200` instead of `wrangler.toml` SPA handling.
 
 4. **Save and deploy.** The first build produces a `*.pages.dev` preview URL.
 

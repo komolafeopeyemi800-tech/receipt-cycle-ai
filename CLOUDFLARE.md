@@ -29,7 +29,19 @@ Commit and push **all** of these (Cloudflare clones GitHub; local-only fixes are
 | Framework preset | None (or Vite) |
 | Build command | `npm run build` |
 | Build output directory | `dist` |
+| **Deploy command** | **Leave empty** (Pages publishes `dist` automatically). Do **not** use `npx wrangler deploy` unless you are on the Workers flow below. |
 | Root directory | `/` (repository root) |
+
+**Important:** If the build log shows `Executing user deploy command: npx wrangler deploy` and fails with *Vite … at least 6.0.0*, you created a **Worker** project or set a custom deploy command. Either clear the deploy command (Pages) or keep it — this repo now includes [`wrangler.toml`](wrangler.toml) for static `dist/` deploy without the Vite 6 plugin.
+
+**Workers + Git (if you cannot switch to Pages):**
+
+| Setting | Value |
+|---------|--------|
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy` |
+
+[`wrangler.toml`](wrangler.toml) serves `./dist` as static assets with SPA fallback (`not_found_handling = "single-page-application"`). Uses `public/_redirects` and `public/_headers` copied into `dist/` by Vite.
 
 4. **Save and deploy.** The first build produces a `*.pages.dev` preview URL.
 

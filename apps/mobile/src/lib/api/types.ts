@@ -109,6 +109,8 @@ export type PublicConfig = {
   adminManagedPreferences: boolean;
   /** False on the free-plan deployment: sign in with Google or an emailed code instead. */
   passwordAuthEnabled: boolean;
+  /** False until the server has an email key: the apps then hide the "email me a code" form. */
+  emailCodesEnabled: boolean;
   prefReimbursements: boolean | null;
   prefTxnNumber: boolean | null;
   prefScanPayment: boolean | null;

@@ -113,7 +113,11 @@ describe("password sign-in switch", () => {
 
   it("tells the apps which sign-in options to show", async () => {
     const on = await app.request("/api/config", {}, env);
-    expect(((await on.json()) as any).passwordAuthEnabled).toBe(true);
+    const onBody = (await on.json()) as any;
+    expect(onBody.passwordAuthEnabled).toBe(true);
+    expect(onBody.emailCodesEnabled).toBe(true);
+    const noMail = await app.request("/api/config", {}, { ...env, RESEND_API_KEY: "" });
+    expect(((await noMail.json()) as any).emailCodesEnabled).toBe(false);
     const disabled = await app.request("/api/config", {}, off);
     expect(((await disabled.json()) as any).passwordAuthEnabled).toBe(false);
   });

@@ -23,7 +23,9 @@ export default function WebSignUp() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const passwordsOn = useQuery(api.admin.publicConfig, {})?.passwordAuthEnabled === true;
+  const config = useQuery(api.admin.publicConfig, {});
+  const passwordsOn = config?.passwordAuthEnabled === true;
+  const emailCodesOn = config?.emailCodesEnabled !== false; // shown while loading; hidden only when the server says no
 
   function afterCodeSignIn(isNewRegistration: boolean) {
     const sessionUser = getWebSessionUser();
@@ -104,6 +106,8 @@ export default function WebSignUp() {
               {msg}
             </p>
           ) : null}
+          {emailCodesOn ? (
+          <>
           <div className="my-8 flex items-center gap-3">
             <span className="h-px flex-1 bg-slate-200" />
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">or with your email</span>
@@ -111,6 +115,12 @@ export default function WebSignUp() {
           </div>
 
           <EmailCodeForm mode="signup" initialEmail={email} onDone={(r) => afterCodeSignIn(r.isNewRegistration)} />
+          </>
+          ) : (
+            <p className="mt-6 rounded-xl bg-slate-50 p-3 text-center text-xs text-slate-600">
+              Email sign-in is not available yet. Please continue with Google.
+            </p>
+          )}
 
           {passwordsOn ? (
           <>

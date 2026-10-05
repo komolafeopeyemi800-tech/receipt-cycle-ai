@@ -9,17 +9,11 @@ import { applySeo, type SeoMeta } from "@/lib/seo";
  * for initial page load + crawlers; this keeps SPA navigation in sync too.
  */
 export function Seo(props: SeoMeta): null {
+  const serialized = JSON.stringify(props);
+
   useEffect(() => {
-    applySeo(props);
-  }, [
-    props.title,
-    props.description,
-    props.path,
-    props.ogImage,
-    props.ogType,
-    props.noindex,
-    JSON.stringify(props.structuredData ?? []),
-  ]);
+    applySeo(JSON.parse(serialized) as SeoMeta);
+  }, [serialized]);
 
   return null;
 }

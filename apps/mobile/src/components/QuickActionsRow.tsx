@@ -62,7 +62,7 @@ export function QuickActionsRow() {
       return;
     }
     if (scheme === "budget") {
-      navigation.navigate("Budgets");
+      navigation.getParent()?.navigate("Main", { screen: "More", params: { screen: "Budgets" } });
     }
   };
 

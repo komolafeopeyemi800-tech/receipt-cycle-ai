@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { GOOGLE_WEB_CLIENT_ID } from "@/lib/publicEnv";
 
 type GoogleCredentialResponse = { credential?: string };
 type GoogleId = {
@@ -40,7 +41,7 @@ type GoogleSignInButtonProps = {
 
 /** Google's own button (Google Identity Services). Needs VITE_GOOGLE_WEB_CLIENT_ID. */
 export function GoogleSignInButton({ mode, onCredential, onError, className = "" }: GoogleSignInButtonProps) {
-  const clientId = import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined;
+  const clientId = GOOGLE_WEB_CLIENT_ID;
   const holder = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
   const callbacks = useRef({ onCredential, onError });

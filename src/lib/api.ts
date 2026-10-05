@@ -1,14 +1,8 @@
 import { ApiClient } from "@mobile-lib/api";
+import { API_URL } from "@/lib/publicEnv";
 
-/**
- * Origin of the Receipt Cycle API Worker. Set VITE_API_URL for deployed builds
- * (e.g. https://api.receiptcycle.com); local dev falls back to `wrangler dev`.
- */
-const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8787" : "");
-
-if (!baseUrl) {
-  throw new Error("Receipt Cycle web app is missing its server URL. Set VITE_API_URL in the project configuration.");
-}
+/** Origin of the Receipt Cycle API Worker: see publicEnv.ts for how it is chosen. */
+const baseUrl = API_URL;
 
 export const apiClient = new ApiClient({
   baseUrl,

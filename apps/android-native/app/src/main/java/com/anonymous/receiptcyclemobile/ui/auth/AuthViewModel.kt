@@ -26,6 +26,11 @@ class AuthViewModel(
     private val authRepository: AuthRepository,
     private val sessionStorage: SessionStorage,
 ) : ViewModel() {
+    private val _passwordsEnabled = MutableStateFlow(false)
+
+    /** Password fields are shown only when the server has them on. */
+    val passwordsEnabled: StateFlow<Boolean> = _passwordsEnabled.asStateFlow()
+
     private val tokenState = MutableStateFlow(sessionStorage.getToken())
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
@@ -49,6 +54,7 @@ class AuthViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AuthUiState(loading = true))
 
     init {
+        viewModelScope.launch { _passwordsEnabled.value = authRepository.passwordsEnabled() }
         viewModelScope.launch {
             meResult.collect { result ->
                 val token = tokenState.value ?: return@collect
@@ -95,6 +101,24 @@ class AuthViewModel(
             authRepository.signUp(email, password, name)
                 .onSuccess { refreshToken(); onDone() }
                 .onFailure { _error.value = it.message }
+        }
+    }
+
+    fun sendEmailCode(email: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            _error.value = null
+            authRepository.sendEmailCode(email)
+                .onSuccess { onResult(true) }
+                .onFailure { _error.value = it.message; onResult(false) }
+        }
+    }
+
+    fun signInWithEmailCode(email: String, otp: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            _error.value = null
+            authRepository.signInWithEmailCode(email, otp)
+                .onSuccess { refreshToken(); onResult(true) }
+                .onFailure { _error.value = it.message; onResult(false) }
         }
     }
 

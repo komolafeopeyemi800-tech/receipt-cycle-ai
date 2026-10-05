@@ -1,7 +1,7 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth";
 import { hashPassword as defaultHash, verifyPassword as defaultVerify } from "better-auth/crypto";
-import { bearer } from "better-auth/plugins";
+import { bearer, emailOTP } from "better-auth/plugins";
 import bcrypt from "bcryptjs";
 import { and, eq } from "drizzle-orm";
 import { authAccount, profile, session, user, verification } from "../db/schema";
@@ -46,11 +46,43 @@ async function sendResetEmail(env: Env, email: string, token: string): Promise<v
   if (!res.ok) throw new Error(`Could not send reset email: ${(await res.text()) || res.statusText}`);
 }
 
+/** Sign-in code email: short, plain, and says what to do if it was not you. */
+async function sendCodeEmail(env: Env, email: string, otp: string): Promise<void> {
+  const key = env.RESEND_API_KEY?.trim();
+  if (!key) {
+    console.warn("RESEND_API_KEY is not set; sign-in code email was not sent.");
+    return;
+  }
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: env.RESEND_FROM_EMAIL?.trim() || "Receipt Cycle <onboarding@resend.dev>",
+      to: [email],
+      subject: `${otp} is your Receipt Cycle sign-in code`,
+      html: `
+        <p>Your Receipt Cycle sign-in code is:</p>
+        <p style="font-family:monospace;font-size:28px;letter-spacing:6px;margin:12px 0"><strong>${escapeHtml(otp)}</strong></p>
+        <p>It works for 10 minutes. If you did not ask for it, you can ignore this email.</p>`,
+      text: `Your Receipt Cycle sign-in code is ${otp}. It works for 10 minutes. If you did not ask for it, ignore this email.`,
+    }),
+  });
+  if (!res.ok) throw new Error(`Could not send sign-in code: ${(await res.text()) || res.statusText}`);
+}
+
 /**
- * Better Auth instance for one request. Built per request because Workers bindings (D1, secrets)
- * only exist inside a request.
+ * Better Auth instance. Building it is not free (plugins, validators), and Workers CPU time is
+ * limited, so it is built once per isolate and reused while the bindings stay the same.
  */
+let cached: { db: D1Database; passwords: boolean; auth: ReturnType<typeof build> } | null = null;
+
 export function getAuth(env: Env, db: Db) {
+  const passwords = env.PASSWORD_AUTH_ENABLED === "true";
+  if (!cached || cached.db !== env.DB || cached.passwords !== passwords) cached = { db: env.DB, passwords, auth: build(env, db) };
+  return cached.auth;
+}
+
+function build(env: Env, db: Db) {
   return betterAuth({
     appName: "Receipt Cycle",
     baseURL: env.BETTER_AUTH_URL,
@@ -69,7 +101,7 @@ export function getAuth(env: Env, db: Db) {
     session: { expiresIn: SESSION_SECONDS, updateAge: 24 * 60 * 60 },
     advanced: { database: { generateId: () => crypto.randomUUID() } },
     emailAndPassword: {
-      enabled: true,
+      enabled: env.PASSWORD_AUTH_ENABLED === "true",
       minPasswordLength: 6,
       autoSignIn: true,
       resetPasswordTokenExpiresIn: RESET_SECONDS,
@@ -114,7 +146,20 @@ export function getAuth(env: Env, db: Db) {
         },
       },
     },
-    plugins: [bearer()],
+    plugins: [
+      bearer(),
+      // Passwordless sign-in: a 6-digit code by email. Codes are stored hashed (cheap), expire in
+      // 10 minutes and lock after 5 wrong tries. The first successful code also creates the account.
+      emailOTP({
+        otpLength: 6,
+        expiresIn: 600,
+        storeOTP: "hashed",
+        allowedAttempts: 5,
+        sendVerificationOTP: async ({ email, otp }) => {
+          await sendCodeEmail(env, email, otp);
+        },
+      }),
+    ],
   });
 }
 

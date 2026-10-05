@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectDateOrder, excelSerialToIso, parseAmount, parseDate } from "../src/docs/normalize";
+import { detectDateOrder, excelSerialToIso, parseAmount, parseDate } from "../../../apps/mobile/src/lib/statementParse/normalize";
 
 describe("parseDate", () => {
   it("reads ISO and slash/dot/dash dates", () => {

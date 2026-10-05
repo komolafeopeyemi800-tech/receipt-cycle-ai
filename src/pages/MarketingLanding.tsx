@@ -1,855 +1,99 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ReceiptCycleLogo } from "@/components/brand/ReceiptCycleLogo";
-import { SUPPORT_EMAIL, TWITTER_URL, INSTAGRAM_URL } from "@/content/site";
+import { CommercialFooter, CommercialHeader, LandingPrimaryCta } from "@/components/marketing/CommercialLandingLayout";
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
 
-/** Static marketing site — no Convex or database calls. */
-const accent = "#ea580c";
-const primary = "#0f766e";
-const PLAY_STORE_URL =
-  (import.meta.env.VITE_PLAY_STORE_URL as string | undefined)?.trim() ||
-  "https://play.google.com/store/apps/details?id=com.anonymous.receiptcyclemobile";
+const asset = (name: string) => `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}landing/${name}`;
+const PLAY_STORE_URL = (import.meta.env.VITE_PLAY_STORE_URL as string | undefined)?.trim() || "https://play.google.com/store/apps/details?id=com.anonymous.receiptcyclemobile";
 
-/** Public folder landing assets (works when Vite `base` is not `/`). */
-function landingAsset(file: string): string {
-  const b = import.meta.env.BASE_URL;
-  const prefix = b.endsWith("/") ? b : `${b}/`;
-  return `${prefix}landing/${file}`;
-}
-
-const HERO_HEADLINE_LINE1 = "See your spending clearly. ";
-const HERO_HEADLINE_LINE2 = "Effortlessly.";
-
-const heroH1Class =
-  "mt-3 font-display text-4xl font-bold leading-[1.1] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.25rem]";
-
-function HeroTypingHeadline({ accentColor }: { accentColor: string }) {
-  const full = `${HERO_HEADLINE_LINE1}${HERO_HEADLINE_LINE2}`;
-  const [reduceMotion, setReduceMotion] = useState(
-    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-  );
-  const [line1Len, setLine1Len] = useState(0);
-  const [line2Len, setLine2Len] = useState(0);
-  const [phase, setPhase] = useState<"line1" | "line2" | "done">("line1");
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const onChange = () => setReduceMotion(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-
-  useEffect(() => {
-    if (reduceMotion) return;
-
-    if (phase === "line1") {
-      if (line1Len >= HERO_HEADLINE_LINE1.length) {
-        const t = window.setTimeout(() => setPhase("line2"), 240);
-        return () => window.clearTimeout(t);
-      }
-      const t = window.setTimeout(() => setLine1Len((n) => n + 1), 44);
-      return () => window.clearTimeout(t);
-    }
-
-    if (phase === "line2") {
-      if (line2Len >= HERO_HEADLINE_LINE2.length) {
-        setPhase("done");
-        return;
-      }
-      const t = window.setTimeout(() => setLine2Len((n) => n + 1), 52);
-      return () => window.clearTimeout(t);
-    }
-  }, [reduceMotion, phase, line1Len, line2Len]);
-
-  if (reduceMotion) {
-    return (
-      <h1 className={heroH1Class} aria-label={full}>
-        <span className="text-slate-900">{HERO_HEADLINE_LINE1}</span>
-        <span style={{ color: accentColor }}>{HERO_HEADLINE_LINE2}</span>
-      </h1>
-    );
-  }
-
-  const v1 = HERO_HEADLINE_LINE1.slice(0, line1Len);
-  const v2 = HERO_HEADLINE_LINE2.slice(0, line2Len);
-  const showCaret = phase !== "done";
-
-  return (
-    <h1 className={heroH1Class} aria-label={full}>
-      <span className="text-slate-900">{v1}</span>
-      <span style={{ color: accentColor }}>{v2}</span>
-      {showCaret ? (
-        <span
-          className="ml-0.5 inline-block h-[0.82em] w-[2px] translate-y-0.5 animate-pulse rounded-sm align-middle bg-slate-900"
-          style={phase === "line2" ? { backgroundColor: accentColor } : undefined}
-          aria-hidden
-        />
-      ) : null}
-    </h1>
-  );
-}
-
-function JoinNowCta({
-  className = "",
-  variant = "hero",
-}: {
-  className?: string;
-  /** `hero`: teal gradient on light sections. `inverse`: dark slate for dark band. */
-  variant?: "hero" | "inverse";
-}) {
-  const pill =
-    variant === "inverse"
-      ? "inline-flex h-12 items-center justify-center rounded-xl bg-white px-8 text-sm font-semibold text-slate-900 shadow-lg transition hover:bg-slate-100"
-      : "inline-flex h-12 items-center justify-center rounded-xl px-8 text-sm font-semibold text-white shadow-lg transition hover:opacity-95";
-  const style = variant === "hero" ? { background: `linear-gradient(135deg, ${primary}, #0d9488)` } : undefined;
-  const playClass =
-    variant === "inverse"
-      ? "inline-flex h-12 items-center justify-center rounded-xl border-2 border-white/90 bg-white/10 px-5 text-sm font-semibold text-white shadow-md backdrop-blur-sm transition hover:bg-white/15"
-      : "inline-flex h-12 items-center justify-center rounded-xl border-2 border-slate-900 bg-white px-5 text-sm font-semibold text-slate-900 shadow-md transition hover:bg-slate-50";
-  return (
-    <div
-      className={`flex flex-col gap-3 ${variant === "inverse" ? "items-center" : "items-start"} ${className}`}
-    >
-      <div
-        className={`flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center ${variant === "inverse" ? "sm:justify-center" : ""} sm:gap-3`}
-      >
-        <Link to="/signin" className={pill} style={style}>
-          Join now
-        </Link>
-        <a
-          href={PLAY_STORE_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={playClass}
-        >
-          <i className={`fab fa-google-play mr-2 text-lg ${variant === "inverse" ? "text-emerald-300" : "text-emerald-600"}`} aria-hidden />
-          Google Play
-        </a>
-      </div>
-    </div>
-  );
-}
-
-function SectionTitle({ kicker, title, subtitle }: { kicker?: string; title: string; subtitle?: string }) {
-  return (
-    <div className="mx-auto max-w-3xl text-center">
-      {kicker ? (
-        <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">{kicker}</p>
-      ) : null}
-      <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">{title}</h2>
-      {subtitle ? <p className="mt-3 text-base text-slate-600 sm:text-lg">{subtitle}</p> : null}
-    </div>
-  );
-}
-
-/** Decorative laurel-style accent (simple vector, not a third-party mark). */
-function LaurelAccent({ className, mirror }: { className?: string; mirror?: boolean }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 40 88"
-      width="40"
-      height="88"
-      aria-hidden
-      style={mirror ? { transform: "scaleX(-1)" } : undefined}
-    >
-      <path
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        d="M20 6v76M20 14c-10 8-14 22-10 34M20 22c8 10 10 24 4 36M12 42c-4 8-2 18 4 24M28 38c4 10 2 22-4 30"
-        opacity="0.85"
-      />
-    </svg>
-  );
-}
-
-type LandingTestimonial = { title: string; quote: string; who: string; role: string };
-
-const LANDING_TESTIMONIALS: LandingTestimonial[] = [
-  {
-    title: "Tax season stopped being a scavenger hunt",
-    quote:
-      "I finally stopped losing receipts before tax season. The scan flow is stupid fast, and categories stick so I am not re-tagging the same merchants every week.",
-    who: "Jordan M.",
-    role: "Freelance designer",
-  },
-  {
-    title: "Voice add is my parking-lot ritual",
-    quote:
-      "I say what I bought in the car and fix details later. Way less friction than opening a spreadsheet—I actually keep up now.",
-    who: "Marcus T.",
-    role: "Sales consultant",
-  },
-  {
-    title: "Duplicate charge caught in one insight",
-    quote:
-      "A duplicate subscription charge popped in the money-leak check. That single alert paid for the app in my book.",
-    who: "Alex R.",
-    role: "Ops lead",
-  },
-  {
-    title: "Phone capture, weekend tidy-up",
-    quote:
-      "Upload and review on the phone during the week, tidy categories on the weekend. Matches how my brain works.",
-    who: "Priya S.",
-    role: "Small business owner",
-  },
-  {
-    title: "Coach answers tied to my real numbers",
-    quote:
-      "I asked where dining was creeping up and got an answer based on my ledger—not generic advice. Huge for cutting fluff without guilt.",
-    who: "Elena V.",
-    role: "Product manager",
-  },
-  {
-    title: "CSV import saved me a weekend",
-    quote:
-      "Dropped in a card export instead of retyping months of history. First time I trusted a mobile finance app with bulk data.",
-    who: "Chris L.",
-    role: "Contractor",
-  },
-  {
-    title: "Budgets that feel like guardrails",
-    quote:
-      "Seeing pace per category keeps me honest before the month slips away. It is a nudge, not a lecture.",
-    who: "Samira K.",
-    role: "Teacher",
-  },
-  {
-    title: "Receipt proof when HR asked",
-    quote:
-      "Search by merchant found a charge in seconds when I needed documentation. No more digging through email PDFs.",
-    who: "Daniel O.",
-    role: "Field engineer",
-  },
-  {
-    title: "Same account on web and phone",
-    quote:
-      "I capture on Android and clean things up on the laptop when I have time. Sync just works.",
-    who: "Riley N.",
-    role: "Grad student",
-  },
+const audiences = [
+  { name: "Freelancers", title: "Keep the admin from taking over the work", copy: "Capture the cost of a job, prepare the customer documents, and keep the record ready for the day you need it again.", href: "/freelancer-tax-receipt-tracker/" },
+  { name: "Consultants", title: "Take a project from proposal to payment", copy: "Price the work, keep the client details close, issue the invoice, and record what has been paid without starting over at each step.", href: "/estimate-quotation-software/" },
+  { name: "Small businesses", title: "See where the business stands today", copy: "Bring purchases, customer billing, budgets, and reports together so the next decision starts with a complete record.", href: "/business-budgeting-software/" },
+  { name: "Operations teams", title: "Make every review easier to explain", copy: "Organize evidence as the work happens, then move from a report total back to the receipt, payment, or customer activity behind it.", href: "/expense-reporting-software/" },
 ];
 
-const LANDING_TESTIMONIALS_INITIAL = 6;
+const faqs = [
+  ["What can I do with Receipt Cycle?", "You can capture receipts, organize expenses, maintain customer details, prepare estimates and invoices, record payments, set budgets, review reports, and ask questions based on saved business records."],
+  ["Is Receipt Cycle a complete accounting system?", "Receipt Cycle is a practical workspace for spending, customer billing, and business records. It does not replace a complete accounting system, a qualified accountant, or professional tax advice."],
+  ["Can I use the same account on mobile and web?", "Yes. Capture information from your phone and return to the web workspace when a larger screen is better for reviewing documents, budgets, or reports."],
+  ["What does the AI do?", "AI can help extract receipt details and answer questions using the activity you have saved. You remain in control of corrections, classifications, and business decisions."],
+  ["Do I need a credit card to get started?", "No. You can create an account without entering a credit card. If you decide to upgrade later, current plan details are available on the pricing page."],
+] as const;
 
-function UserReviewsSection() {
-  const [expanded, setExpanded] = useState(false);
-  const visible = expanded ? LANDING_TESTIMONIALS : LANDING_TESTIMONIALS.slice(0, LANDING_TESTIMONIALS_INITIAL);
-  const hiddenCount = LANDING_TESTIMONIALS.length - LANDING_TESTIMONIALS_INITIAL;
-  const showToggle = LANDING_TESTIMONIALS.length > LANDING_TESTIMONIALS_INITIAL;
+function PhoneMockup() {
+  return <div className="relative mx-auto w-[220px] rounded-[34px] border-[7px] border-slate-950 bg-slate-950 p-1 shadow-2xl sm:w-[250px]">
+    <div className="absolute left-1/2 top-2 z-10 h-5 w-20 -translate-x-1/2 rounded-full bg-slate-950" />
+    <div aria-label="Receipt Cycle mobile dashboard" className="aspect-[9/18] overflow-hidden rounded-[24px] bg-gradient-to-b from-white to-teal-50 p-3 pt-8 text-slate-900">
+      <div className="flex items-center justify-between"><div className="flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-700 text-[10px] text-white"><i className="fas fa-arrows-rotate" /></span><div><p className="text-[9px] font-black leading-none">Receipt Cycle</p><p className="mt-1 text-[7px] text-slate-400">Dashboard</p></div></div><i className="far fa-bell text-[10px] text-slate-500" /></div>
+      <p className="mt-5 text-[11px] font-black">Good morning, there</p><p className="mt-1 text-[7px] text-slate-400">Here is your snapshot for today</p>
+      <div className="mt-3 bg-gradient-to-br from-teal-700 to-teal-500 p-3 text-white shadow"><p className="text-[7px] font-bold text-teal-100">NET THIS MONTH</p><p className="mt-1 text-xl font-black">$5,235</p><p className="mt-2 text-[7px]">28.4% savings rate</p></div>
+      <p className="mt-4 text-[9px] font-black">Quick actions</p><div className="mt-2 grid grid-cols-4 gap-1">{[["fa-camera","Scan"],["fa-plus","Add"],["fa-microphone","Voice"],["fa-file-arrow-up","Import"]].map(([i,t])=><div key={t} className="bg-white p-1.5 text-center shadow-sm"><i className={`fas ${i} text-[9px] text-teal-700`} /><p className="mt-1 text-[6px] font-bold">{t}</p></div>)}</div>
+      <div className="mt-4 flex justify-between"><p className="text-[9px] font-black">Recent transactions</p><p className="text-[7px] font-bold text-teal-700">View all</p></div>{[["Office Depot","Supplies","-$86.40"],["Client payment","Income","+$1,400"],["Fuel station","Transport","-$54.20"]].map(([m,c,a])=><div key={m} className="mt-2 flex items-center bg-white p-2 shadow-sm"><span className="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-teal-50 text-[8px] text-teal-700"><i className="fas fa-receipt" /></span><div><p className="text-[7px] font-black">{m}</p><p className="text-[6px] text-slate-400">{c}</p></div><p className={`ml-auto text-[7px] font-black ${a.startsWith("+")?"text-emerald-600":"text-rose-600"}`}>{a}</p></div>)}
+    </div>
+  </div>;
+}
 
-  return (
-    <section id="reviews" className="border-t border-slate-100 bg-slate-50 py-16 sm:py-20">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <SectionTitle
-          kicker="Reviews"
-          title="What our users say"
-          subtitle="Real stories from people who wanted receipts, categories, and clarity without living in a spreadsheet."
-        />
-
-        <div className="mx-auto mt-12 max-w-lg">
-          <div className="flex items-center justify-center gap-3 sm:gap-5">
-            <LaurelAccent className="shrink-0 text-amber-500/80" />
-            <div className="text-center">
-              <p className="font-display text-5xl font-bold tracking-tight text-slate-900 sm:text-6xl">4.8</p>
-              <p className="mt-1 text-lg tracking-wide text-amber-500" aria-label="5 out of 5 stars">
-                <span className="text-amber-500">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
-              </p>
-              <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Average user rating</p>
-              <p className="mt-1 text-xs text-slate-400">Early feedback; we are building toward strong app store scores.</p>
-            </div>
-            <LaurelAccent className="shrink-0 text-amber-500/80" mirror />
-          </div>
-        </div>
-
-        <div className="mx-auto mt-12 columns-1 gap-4 md:columns-2 lg:columns-3 lg:gap-6">
-          {visible.map((t) => (
-            <article
-              key={`${t.who}-${t.title}`}
-              className="mb-4 break-inside-avoid rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm sm:p-6 lg:mb-6"
-            >
-              <p className="text-sm tracking-wide text-amber-500" aria-hidden>
-                &#9733;&#9733;&#9733;&#9733;&#9733;
-              </p>
-              <h3 className="mt-2 font-display text-base font-bold text-slate-900 sm:text-lg">{t.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">&ldquo;{t.quote}&rdquo;</p>
-              <footer className="mt-4 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-500">
-                <span className="text-slate-800">{t.who}</span>
-                <span className="text-slate-400"> · </span>
-                <span>{t.role}</span>
-              </footer>
-            </article>
-          ))}
-        </div>
-
-        {showToggle ? (
-          <div className="mt-10 flex justify-center">
-            <button
-              type="button"
-              onClick={() => setExpanded((e) => !e)}
-              className="rounded-full border-2 border-slate-300 bg-white px-8 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-teal-600 hover:text-teal-800"
-            >
-              {expanded ? "Show less" : `Show more${hiddenCount > 0 ? ` (${hiddenCount})` : ""}`}
-            </button>
-          </div>
-        ) : null}
-      </div>
-    </section>
-  );
+function MiniDocument({ type }: { type: "invoice" | "receipt" | "report" }) {
+  if (type === "receipt") return <div className="rounded-2xl bg-white p-5 shadow-lg"><div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100 text-orange-600"><i className="fas fa-receipt" /></span><div><p className="text-xs font-bold text-slate-400">PURCHASE</p><p className="font-black">Office supplies</p></div><p className="ml-auto font-black">$86.40</p></div><div className="mt-4 flex gap-2"><span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-teal-700">Receipt attached</span><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">Categorized</span></div></div>;
+  if (type === "report") return <div className="rounded-2xl bg-white p-5 shadow-lg"><div className="flex items-end justify-between gap-2"><div><p className="text-xs font-bold text-slate-400">THIS MONTH</p><p className="mt-1 text-2xl font-black">Business activity</p></div><span className="rounded-lg bg-teal-50 px-3 py-2 text-xs font-black text-teal-700">View report</span></div><div className="mt-5 flex h-24 items-end gap-2">{[42,68,50,88,62,96,74].map((h,i)=><span key={i} className="flex-1 rounded-t-md bg-teal-600" style={{height:`${h}%`,opacity:.35+i*.08}} />)}</div></div>;
+  return <div className="rounded-2xl bg-white p-5 shadow-lg"><div className="flex justify-between"><div><p className="text-xs font-black text-teal-700">INVOICE</p><p className="mt-1 font-black">Web design project</p></div><span className="h-fit rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-700">Sent</span></div><div className="mt-5 space-y-2 border-y py-4 text-sm"><div className="flex justify-between text-slate-500"><span>Project services</span><span>$1,400</span></div><div className="flex justify-between font-black"><span>Balance</span><span>$1,400</span></div></div></div>;
 }
 
 export default function MarketingLanding() {
   const seo = getRouteSeo("/");
-  return (
-    <div className="min-h-screen bg-white text-slate-900 antialiased">
-      {seo ? (
-        <Seo
-          title={seo.title}
-          description={seo.description}
-          path="/"
-          structuredData={seo.structuredData}
-        />
-      ) : null}
-      {/* Nav */}
-      <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <ReceiptCycleLogo className="text-lg" />
-          <nav className="hidden items-center gap-7 text-sm font-medium text-slate-600 lg:flex">
-            <a href="#features" className="hover:text-teal-700">
-              Features
-            </a>
-            <a href="#how" className="hover:text-teal-700">
-              How it works
-            </a>
-            <Link to="/about" className="hover:text-teal-700">
-              About
-            </Link>
-            <Link to="/blog" className="hover:text-teal-700">
-              Blog
-            </Link>
-            <Link to="/pricing" className="hover:text-teal-700">
-              Pricing
-            </Link>
-            <Link to="/faq" className="hover:text-teal-700">
-              FAQ
-            </Link>
-          </nav>
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <Link
-              to="/pricing"
-              className="text-sm font-semibold text-slate-600 hover:text-teal-700 md:hidden"
-            >
-              Pricing
-            </Link>
-            <Link
-              to="/signin"
-              className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
-            >
-              Join now
-            </Link>
+  const [audience, setAudience] = useState(0);
+  return <div className="min-h-screen overflow-x-hidden bg-white text-[#08244a]">
+    {seo && <Seo title={seo.title} description={seo.description} path="/" structuredData={seo.structuredData} />}
+    <CommercialHeader ctaLabel="Start free" ctaHref="/signup?intent=home" />
+    <main>
+      <section className="relative overflow-hidden bg-[#eef8f7]">
+        <div className="mx-auto grid min-h-[650px] max-w-6xl items-center gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[.9fr_1.1fr] lg:py-20">
+          <div className="relative z-20 max-w-xl">
+            <h1 className="font-display text-5xl font-black leading-[1.04] tracking-[-.045em] sm:text-6xl">The simpler way to run your business finances</h1>
+            <p className="mt-6 text-lg leading-8 text-slate-600">Keep receipts, expenses, customer work, payments, budgets, and reports in one place. Receipt Cycle helps you stay on top of the details without letting the paperwork take over your day.</p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row"><LandingPrimaryCta to="/signup?intent=home" className="px-8">Start for free</LandingPrimaryCta><a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 items-center justify-center gap-3 border-2 border-[#08244a] bg-white px-6 py-3 text-sm font-black text-[#08244a] transition hover:bg-slate-50"><i className="fab fa-google-play text-lg" />Download the mobile app</a></div>
+            <p className="mt-3 text-sm font-semibold text-slate-500">No credit card required for the web app. One account works across mobile and web.</p>
           </div>
-        </div>
-      </header>
-
-      {/* Hero */}
-      <section className="border-b border-slate-100 bg-gradient-to-b from-slate-50 to-white">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:items-center lg:py-20">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">Mobile-first expense clarity</p>
-            <HeroTypingHeadline accentColor={accent} />
-            <p className="mt-5 max-w-xl text-lg text-slate-600">
-              Receipt Cycle captures receipts, categorizes spend, and surfaces money leaks—so you stop losing deductions
-              and guessing where cash went. Built for people who live on their phone, not a spreadsheet.
-            </p>
-            <div id="download" className="mt-8 scroll-mt-24">
-              <JoinNowCta />
-              <p className="mt-3 text-xs text-slate-500">
-                Join on the web or get the app on Google Play—same account and data across both.
-              </p>
-            </div>
-          </div>
-          <div className="relative">
-            <div className="absolute -inset-4 rounded-3xl bg-gradient-to-tr from-teal-100/80 to-orange-50/80 blur-2xl" aria-hidden />
-            <img
-              src={landingAsset("hero-phone.svg")}
-              alt="Phone showing Receipt Cycle spending overview, categories, and voice entry"
-              className="relative mx-auto w-full max-w-md rounded-2xl bg-black object-contain shadow-2xl ring-1 ring-slate-200/80"
-              width={640}
-              height={640}
-              loading="eager"
-              decoding="async"
-            />
+          <div className="relative min-h-[500px]">
+            <img src={asset("home/home-hero-founder.webp")} alt="A small business owner using Receipt Cycle on her phone" className="absolute inset-0 h-full w-full rounded-[38px] object-cover shadow-xl" />
+            <div className="absolute -bottom-8 left-3 z-10 sm:left-8"><PhoneMockup /></div>
+            <div className="absolute right-3 top-7 w-52 rounded-2xl border border-white/80 bg-white/95 p-4 shadow-xl backdrop-blur sm:right-7 sm:w-60"><p className="text-xs font-black uppercase tracking-wider text-teal-700">Ready to review</p><p className="mt-2 text-lg font-black">Your latest receipt is saved</p><div className="mt-3 flex items-center gap-2 text-sm text-slate-500"><i className="fas fa-circle-check text-teal-600" /><span>Details extracted</span></div></div>
           </div>
         </div>
       </section>
 
-      {/* Trust strip */}
-      <section className="border-b border-slate-100 bg-white py-12">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 sm:grid-cols-3 sm:px-6">
-          {[
-            {
-              icon: "fa-calendar-check",
-              title: "Every receipt, one timeline",
-              body: "Capture paper, email PDFs, or CSV statements—stay audit-ready without the shoebox.",
-            },
-            {
-              icon: "fa-bolt",
-              title: "Real-time sync",
-              body: "Your ledger stays consistent across devices the moment you sign in.",
-            },
-            {
-              icon: "fa-shield-halved",
-              title: "You own your data",
-              body: "Your workspace, your rules. No ad-powered bank scraping—we start from what you upload and scan.",
-            },
-          ].map((item) => (
-            <div key={item.title} className="rounded-2xl border border-slate-100 bg-slate-50/80 p-6 text-center shadow-sm">
-              <div
-                className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl text-white"
-                style={{ background: `linear-gradient(135deg, ${primary}, #0d9488)` }}
-              >
-                <i className={`fas ${item.icon}`} aria-hidden />
-              </div>
-              <h3 className="font-display text-lg font-bold text-slate-900">{item.title}</h3>
-              <p className="mt-2 text-sm text-slate-600">{item.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Problem */}
-      <section id="problem" className="scroll-mt-20 border-b border-slate-100 bg-slate-50 py-16 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionTitle
-            kicker="Why proof and clarity slip away"
-            title="Without capture, your ledger—and your deductions—are guesses"
-            subtitle="Receipt Cycle exists so you keep audit-ready proof on the go: lost paper, messy exports, and forgotten categories stop costing you money and time. Capture in seconds; see spending clearly without living in a spreadsheet."
-          />
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              "Lost receipts = lost deductions and disputed expenses.",
-              "Manual entry breaks when you’re busy—you stop at February.",
-              "Subscriptions and micro-fees add up before you notice.",
-              "Tax time becomes archaeology instead of a 10-minute export.",
-            ].map((t) => (
-              <div key={t} className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-sm">
-                <span className="mr-2 text-teal-600">✓</span>
-                {t}
-              </div>
-            ))}
+      <section className="py-20 lg:py-28">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8">
+          <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-4xl font-black tracking-tight sm:text-5xl">Everything you need for the paperwork behind the work</h2><p className="mt-5 text-lg leading-8 text-slate-600">Create the documents customers expect, capture the receipts your business collects, and keep spending ready for budgets, reports, and tax-time review.</p></div>
+          <div className="mx-auto mt-14 grid max-w-5xl gap-4 lg:grid-cols-2">
+            <article className="grid overflow-hidden bg-[#f7f3ec] sm:grid-cols-[.85fr_1.15fr]"><div className="p-7"><h3 className="text-2xl font-black">Invoicing</h3><p className="mt-3 leading-7 text-slate-600">Create a polished invoice, add taxes or discounts, send it to the customer, and keep its payment status visible.</p><Link to="/invoice-software/" className="mt-5 inline-block font-black text-teal-700">Explore invoicing</Link></div><div className="self-end p-5 pl-0"><MiniDocument type="invoice" /></div></article>
+            <article className="overflow-hidden bg-[#087fdb] p-7 text-white"><h3 className="text-2xl font-black">Estimates and quotations</h3><p className="mt-3 leading-7 text-blue-50">Describe the job, price each line, set a validity period, and move accepted work toward an invoice.</p><Link to="/estimate-quotation-software/" className="mt-5 inline-block font-black text-white">Explore estimates</Link><div className="mt-6 border border-white/25 bg-white/10 p-4"><div className="flex justify-between text-sm"><span>Kitchen repair estimate</span><strong>Awaiting reply</strong></div><div className="mt-4 grid grid-cols-2 gap-2 text-xs"><span className="bg-white/10 p-2">Materials $320</span><span className="bg-white/10 p-2">Labour $480</span></div></div></article>
+            <article className="overflow-hidden bg-[#eaf5ff]"><div className="p-7"><h3 className="text-2xl font-black">AI receipt scanning</h3><p className="mt-3 leading-7 text-slate-600">Photograph or upload a receipt, extract the merchant, date, amount, tax, and line items, then review before saving.</p><Link to="/ai-receipt-scanner/" className="mt-5 inline-block font-black text-teal-700">Explore AI scanning</Link></div><div className="px-7 pb-7"><MiniDocument type="receipt" /></div></article>
+            <article className="grid overflow-hidden bg-[#092f6d] text-white sm:grid-cols-[.9fr_1.1fr]"><div className="p-7"><h3 className="text-2xl font-black">Expense tracking</h3><p className="mt-3 leading-7 text-blue-100">Keep purchases categorized, search the history, attach evidence, and understand where the business is spending.</p><Link to="/business-travel-expense-tracker/" className="mt-5 inline-block font-black text-white">Explore expense tracking</Link></div><div className="self-end p-5 pl-0 text-slate-900"><MiniDocument type="report" /></div></article>
+            <article className="bg-[#fff4d8] p-7"><h3 className="text-2xl font-black">Business budgeting</h3><p className="mt-3 leading-7 text-slate-700">Set monthly limits by category, compare budget with actual spending, and see the amount remaining before another purchase.</p><Link to="/business-budgeting-software/" className="mt-5 inline-block font-black text-teal-700">Explore budgeting</Link><div className="mt-6 border-t border-amber-300 pt-4"><div className="flex justify-between text-sm font-black"><span>Tools and supplies</span><span>68% used</span></div><div className="mt-3 h-3 bg-white"><div className="h-3 w-2/3 bg-amber-500" /></div></div></article>
+            <article className="bg-[#ffd43b] p-7"><h3 className="text-2xl font-black">Reports and AI analysis</h3><p className="mt-3 leading-7 text-slate-700">Review income and expenses by period, then ask focused questions grounded in the records saved to your workspace.</p><div className="mt-5 flex flex-wrap gap-5 font-black"><Link to="/expense-reporting-software/">Explore reports</Link><Link to="/ai-financial-assistant/">Explore Ask AI</Link></div><div className="mt-6 grid grid-cols-3 gap-2 text-center text-xs font-black">{["Income","Expenses","Cash flow"].map(x=><span key={x} className="bg-white/60 p-3">{x}</span>)}</div></article>
           </div>
         </div>
       </section>
 
-      {/* Alternating features */}
-      <section id="features" className="scroll-mt-20 space-y-20 py-16 sm:py-24">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionTitle
-            kicker="What you get"
-            title="From snap to insight—proof, pace, and fewer surprises"
-            subtitle="Every flow is built around Receipt Cycle’s core job: capture truth fast, categorize once, and surface leaks before tax season or audits sneak up on you."
-          />
-        </div>
-
-        {(
-          [
-            {
-              h: "Add expenses by voice or a quick sentence",
-              p: "Say what you bought (“$24 gas at Shell yesterday”) or type it once. AI fills amount, merchant, category, and date so you can confirm and save—no spreadsheet grind.",
-              img: landingAsset("voice-transaction.svg"),
-              alt: "Voice entry: speak a purchase and confirm AI-filled details",
-              reverse: false,
-            },
-            {
-              h: "Chat with an AI finance coach",
-              p: "Ask where you’re wasting money, what to cut, or how categories compare. The coach reads your real ledger for the month or all time—reply in text or speak your question.",
-              img: landingAsset("finance-coach-chat.svg"),
-              alt: "Finance coach chat with answers grounded in your spending",
-              reverse: true,
-            },
-            {
-              h: "No more lost paper receipts",
-              p: "Scan in seconds with guided capture. We preserve merchant, totals, and line context so you can defend every line item later.",
-              img: landingAsset("scan-receipt.svg"),
-              alt: "Guided receipt scan in the camera frame",
-              reverse: false,
-            },
-            {
-              h: "Track expenses without living in a spreadsheet",
-              p: "Categories, merchants, and notes stay attached to real transactions. Review on mobile; export when your accountant asks.",
-              img: landingAsset("feature-expense-tracking.svg"),
-              alt: "Mobile ledger with categories and receipts, not a spreadsheet",
-              reverse: true,
-            },
-            {
-              h: "Find any charge, fast",
-              p: "Search by merchant, amount range, or month. Perfect when you need proof for HR, a warranty, or a subscription audit.",
-              img: landingAsset("feature-find-charge.svg"),
-              alt: "Search across transactions and receipts",
-              reverse: false,
-            },
-            {
-              h: "Set limits. Keep more.",
-              p: "Budgets turn your history into guardrails—not guilt trips. See category pace and adjust before the month slips away.",
-              img: landingAsset("feature-budget-limits.svg"),
-              alt: "Budget rings and category pace at a glance",
-              reverse: true,
-            },
-            {
-              h: "See money leaks before they stack",
-              p: "AI-assisted insights highlight duplicates, creep-subscriptions, and spikes—written in plain language you can act on.",
-              img: landingAsset("feature-money-leaks.svg"),
-              alt: "Money leak insights and spending trend chart",
-              reverse: false,
-            },
-            {
-              h: "Built for how you actually work",
-              p: "Personal workspace today; team flows tomorrow. Start solo, stay organized, and grow without switching apps.",
-              img: landingAsset("feature-built-for-you.svg"),
-              alt: "Mobile capture and web review staying in sync",
-              reverse: true,
-            },
-          ] as const
-        ).map((block) => (
-          <div key={block.h} className="mx-auto max-w-6xl px-4 sm:px-6">
-            <div
-              className={`grid items-center gap-10 lg:grid-cols-2 ${block.reverse ? "lg:grid-flow-dense" : ""}`}
-            >
-              <div className={block.reverse ? "lg:col-start-2" : ""}>
-                <h3 className="font-display text-2xl font-bold text-slate-900 sm:text-3xl">{block.h}</h3>
-                <p className="mt-4 text-slate-600">{block.p}</p>
-                <ul className="mt-6 space-y-2 text-sm text-slate-700">
-                  <li className="flex gap-2">
-                    <span className="text-teal-600">●</span> Pain: forgotten purchases and messy exports.
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-teal-600">●</span> Outcome: one organized ledger you trust.
-                  </li>
-                </ul>
-              </div>
-              <div className={`overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-lg ${block.reverse ? "lg:col-start-1 lg:row-start-1" : ""}`}>
-                <img
-                  src={block.img}
-                  alt={block.alt}
-                  className="aspect-[4/3] w-full bg-slate-100 object-contain"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-            </div>
-          </div>
-        ))}
-      </section>
-
-      {/* How it works */}
-      <section id="how" className="scroll-mt-20 border-y border-slate-100 bg-slate-50 py-16 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionTitle
-            kicker="How it works"
-            title="Three steps. No jargon."
-            subtitle="You bring real-world mess—we structure it."
-          />
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {[
-              { step: "1", t: "Capture", d: "Snap receipts, upload statements, or say what you bought—voice or text." },
-              { step: "2", t: "Classify", d: "Edit categories merchants once; patterns stick next time." },
-              { step: "3", t: "Act", d: "Run leak checks, chat with your finance coach, watch budgets, export clean data." },
-            ].map((s) => (
-              <div key={s.step} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <span
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white"
-                  style={{ backgroundColor: primary }}
-                >
-                  {s.step}
-                </span>
-                <h3 className="mt-4 font-display text-lg font-bold">{s.t}</h3>
-                <p className="mt-2 text-sm text-slate-600">{s.d}</p>
-              </div>
-            ))}
-          </div>
+      <section className="relative overflow-hidden bg-[#f9f5e9] pt-16">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8"><div className="grid items-end gap-8 lg:grid-cols-[.7fr_1.3fr]"><div className="pb-10"><h2 className="font-display text-4xl font-black sm:text-5xl">Made for people who have real work to finish</h2><p className="mt-4 text-lg leading-8 text-slate-600">Whether you send estimates from a job site, invoice clients from a studio, or sort a month of receipts before tax time, Receipt Cycle keeps the paperwork attached to the work it belongs to.</p></div><img src={asset("home/home-small-team.webp")} alt="A small team reviewing business work together" className="h-[390px] w-full object-cover" loading="lazy" /></div>
+          <div className="relative z-10 -mt-10 grid bg-[#082f6b] sm:grid-cols-2 lg:grid-cols-4">{audiences.map((item,index)=><button key={item.name} onClick={()=>setAudience(index)} className={`border-b border-r border-white/10 p-6 text-left text-white transition ${audience===index?"bg-[#0b4193]":"hover:bg-white/5"}`}><span className="text-lg font-black">{item.name}</span><span className="mt-3 block text-sm leading-6 text-blue-100">{item.copy}</span></button>)}</div>
+          <div className="mx-auto max-w-3xl py-12 text-center"><h3 className="text-3xl font-black">{audiences[audience].title}</h3><Link to={audiences[audience].href} className="mt-5 inline-flex items-center gap-2 font-black text-teal-700">See how Receipt Cycle fits <i className="fas fa-arrow-right text-xs" /></Link></div>
         </div>
       </section>
 
-      {/* Feature grid */}
-      <section className="py-16 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionTitle
-            kicker="Everything else"
-            title="Unlimited ways to stay on top of spend"
-            subtitle="Small tools that compound—notifications, exports, Drive backup, and more in the mobile app."
-          />
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              ["fa-microphone", "Voice & quick-add", "Speak or type a purchase; AI drafts the transaction for you to confirm."],
-              ["fa-comments", "Finance coach", "Chat about waste, cuts, and patterns—typed or spoken—grounded in your data."],
-              ["fa-bell", "Smart reminders", "Nudges when uploads stall or limits approach."],
-              ["fa-cloud", "Backup-friendly", "Optional export workflows for your own archive."],
-              ["fa-earth-americas", "Multi-currency aware", "Track context for travel and cross-border spends."],
-              ["fa-file-csv", "Bulk import", "Pull history in from banks and cards without retyping."],
-              ["fa-lock", "Session-aware", "Sign in securely; your data stays with your account."],
-              ["fa-chart-pie", "Insights that explain", "Plain-language findings—not just another dashboard."],
-            ].map(([icon, title, desc]) => (
-              <div key={title} className="flex gap-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
-                  <i className={`fas ${icon}`} aria-hidden />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-slate-900">{title}</h3>
-                  <p className="mt-1 text-sm text-slate-600">{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <section className="py-20 lg:py-28"><div className="mx-auto max-w-5xl px-5 sm:px-8"><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"><article className="bg-[#fff4d8] p-7 lg:row-span-2"><h2 className="font-display text-4xl font-black">Spend less time rebuilding your paperwork</h2><p className="mt-5 leading-7 text-slate-600">A receipt saved today can support an expense report later. An accepted estimate can supply the details for an invoice. A recorded payment can update the balance you discuss with a customer. Receipt Cycle keeps that trail intact.</p><LandingPrimaryCta to="/signup?intent=home-middle" className="mt-7">Start for free</LandingPrimaryCta></article>{[["fa-mobile-screen","Capture it before it gets lost","Save receipts and quick details from your phone while the purchase is still fresh."],["fa-display","Handle detailed work on the web","Use a larger screen for estimates, invoices, budgets, reports, and careful review."],["fa-link","Keep the evidence with the number","Connect the receipt, customer, payment reference, or note to the record it explains."],["fa-shield-halved","Review before you rely on it","Check extracted details and AI-assisted answers before using them in a business decision."]].map(([i,t,b],x)=><article key={t} className={`p-7 ${x%2?"bg-[#087fdb] text-white":"bg-[#092f6d] text-white"}`}><i className={`fas ${i} text-2xl text-teal-200`} /><h3 className="mt-8 text-xl font-black">{t}</h3><p className="mt-3 text-sm leading-6 text-blue-100">{b}</p></article>)}</div></div></section>
 
-      <UserReviewsSection />
+      <section className="bg-[#edf7ff] py-20"><div className="mx-auto grid max-w-5xl overflow-hidden bg-white shadow-sm lg:grid-cols-2"><img src={asset("home/home-support-specialist.webp")} alt="Receipt Cycle customer support specialist" className="h-full min-h-[420px] w-full object-cover" loading="lazy" /><div className="flex flex-col justify-center p-8 sm:p-12"><h2 className="font-display text-4xl font-black">Support from people who want you to succeed</h2><p className="mt-5 text-lg leading-8 text-slate-600">When you have a question about the product or your account, you should not have to search through a maze of generic answers. Start with the help center or contact our team directly.</p><div className="mt-7 flex flex-wrap gap-3"><Link to="/contact" className="bg-teal-700 px-5 py-3 text-sm font-black text-white">Contact us</Link><Link to="/faq" className="border-2 border-slate-200 px-5 py-3 text-sm font-black">Visit the help center</Link></div></div></div></section>
 
-      {/* About */}
-      <section id="about" className="scroll-mt-20 py-16 sm:py-20">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2">
-          <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-lg">
-            <img
-              src={landingAsset("about-clarity.svg")}
-              alt="Receipt Cycle: clarity and trust for your ledger"
-              className="aspect-[4/3] w-full bg-slate-100 object-contain"
-              loading="lazy"
-              decoding="async"
-            />
-          </div>
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">Why we exist</p>
-            <h2 className="mt-2 font-display text-3xl font-bold text-slate-900">Built for clarity under pressure</h2>
-            <p className="mt-4 text-slate-600">
-              Finance tools fail when capture is harder than ignoring the problem. Receipt Cycle compresses the grind—scan,
-              classify, export—so independent workers and growing teams can justify spend, reclaim tax-time hours, and catch
-              leaks while they’re small.
-            </p>
-            <p className="mt-4 text-slate-600">
-              You stay on mobile; your ledger stays honest. That’s the promise.
-            </p>
-          </div>
-        </div>
-      </section>
+      <section className="py-20"><div className="mx-auto max-w-4xl px-4 sm:px-6"><h2 className="text-center font-display text-4xl font-black">Frequently asked questions</h2><Accordion type="single" collapsible className="mt-10 space-y-3">{faqs.map(([q,a],i)=><AccordionItem value={`home-${i}`} key={q} className="rounded-xl border-0 bg-[#edf7ff] px-5"><AccordionTrigger className="text-left font-black hover:no-underline">{q}</AccordionTrigger><AccordionContent className="leading-7 text-slate-600">{a}</AccordionContent></AccordionItem>)}</Accordion></div></section>
 
-      {/* Pricing teaser */}
-      <section id="pricing" className="scroll-mt-20 border-t border-slate-100 bg-slate-50 py-16">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-          <SectionTitle
-            kicker="Pricing"
-            title="Start free. Upgrade when Receipt Cycle pays for itself."
-            subtitle="See in-app tiers and limits—designed so hobbyists and heavy scanners both win."
-          />
-          <p className="mt-6 text-sm text-slate-600">
-            Details live in the mobile app (and on our pricing page when published). No credit card required to try capture
-            and categorization.
-          </p>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section id="faq" className="scroll-mt-20 py-16 sm:py-20">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6">
-          <SectionTitle kicker="FAQ" title="Quick answers" />
-          <Accordion type="single" collapsible className="mt-10 w-full">
-            {[
-              {
-                q: "Do I need the web app to use Receipt Cycle?",
-                a: "No. This website is for downloads and storytelling. The product lives on iOS and Android.",
-              },
-              {
-                q: "Where is my data stored?",
-                a: "Data lives in the secure backend you or your organization connects to the app—your team controls where it runs.",
-              },
-              {
-                q: "Does scanning work offline?",
-                a: "You can capture images offline; sync and OCR run when you reconnect (subject to your plan and admin settings).",
-              },
-              {
-                q: "Is this page connected to my account?",
-                a: "This landing page is static and does not load your data. Only the separate /admin console talks to your backend.",
-              },
-            ].map((item, i) => (
-              <AccordionItem key={item.q} value={`faq-${i}`}>
-                <AccordionTrigger className="text-left font-semibold">{item.q}</AccordionTrigger>
-                <AccordionContent className="text-slate-600">{item.a}</AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="border-t border-slate-200 bg-slate-900 py-16 text-white">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-          <h2 className="font-display text-3xl font-bold sm:text-4xl">Start understanding your money today</h2>
-          <p className="mt-4 text-slate-300">
-            Sign in or sign up on the web, or grab Receipt Cycle from Google Play—one account everywhere.
-          </p>
-          <div className="mt-8 flex justify-center">
-            <JoinNowCta className="justify-center" variant="inverse" />
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-12">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid gap-10 md:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,1fr))]">
-            <div>
-              <ReceiptCycleLogo />
-              <p className="mt-3 max-w-sm text-sm text-slate-600">
-                Scan once. Categorize smarter. Prove every expense. Mobile-first expense intelligence for teams and
-                individuals.
-              </p>
-              <div className="mt-4 flex flex-wrap items-center gap-3 text-slate-500">
-                <a
-                  href={TWITTER_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-lg text-slate-700 transition hover:border-teal-200 hover:text-teal-700"
-                  aria-label="Receipt Cycle on X (Twitter)"
-                >
-                  <i className="fab fa-x-twitter" aria-hidden />
-                </a>
-                <a
-                  href={INSTAGRAM_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-lg text-slate-700 transition hover:border-teal-200 hover:text-teal-700"
-                  aria-label="Receipt Cycle on Instagram"
-                >
-                  <i className="fab fa-instagram" aria-hidden />
-                </a>
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Product</p>
-              <ul className="mt-3 space-y-2 text-sm text-slate-600">
-                <li>
-                  <a href="#features" className="hover:text-teal-700">
-                    Features
-                  </a>
-                </li>
-                <li>
-                  <Link to="/pricing" className="hover:text-teal-700">
-                    Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/signin" className="hover:text-teal-700">
-                    Join now
-                  </Link>
-                </li>
-                <li>
-                  <a
-                    href={PLAY_STORE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-teal-700"
-                  >
-                    Google Play
-                  </a>
-                </li>
-                <li>
-                  <Link to="/faq" className="hover:text-teal-700">
-                    FAQ
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/blog" className="hover:text-teal-700">
-                    Blog
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/about" className="hover:text-teal-700">
-                    About
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Legal</p>
-              <ul className="mt-3 space-y-2 text-sm text-slate-600">
-                <li>
-                  <Link to="/privacy" className="hover:text-teal-700">
-                    Privacy Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/terms" className="hover:text-teal-700">
-                    Terms of Service
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/refund-policy" className="hover:text-teal-700">
-                    Refund Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/impressum" className="hover:text-teal-700">
-                    Impressum
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/cookies" className="hover:text-teal-700">
-                    Cookie Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/cookie-settings" className="hover:text-teal-700">
-                    Cookie Settings
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/do-not-sell" className="hover:text-teal-700">
-                    Do Not Sell/Share My Info
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/contact" className="hover:text-teal-700">
-                    Contact
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Support</p>
-              <ul className="mt-3 space-y-2 text-sm text-slate-600">
-                <li>
-                  <a href={`mailto:${SUPPORT_EMAIL}`} className="font-medium text-teal-700 hover:underline">
-                    {SUPPORT_EMAIL}
-                  </a>
-                </li>
-                <li>
-                  <Link to="/contact" className="hover:text-teal-700">
-                    Contact form
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/about" className="hover:text-teal-700">
-                    About
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/blog" className="hover:text-teal-700">
-                    Blog
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <p className="mx-auto mt-10 max-w-6xl px-4 text-center text-xs text-slate-400 sm:px-6">
-          © {new Date().getFullYear()} Receipt Cycle. All rights reserved.
-        </p>
-      </footer>
-    </div>
-  );
+      <section className="relative overflow-hidden bg-[#063c91] py-16 text-white"><div className="absolute -bottom-40 -left-20 h-96 w-96 rounded-full border-[70px] border-blue-400/15" /><div className="relative mx-auto grid max-w-6xl items-center gap-10 px-5 sm:px-8 lg:grid-cols-2"><div><h2 className="font-display text-4xl font-black sm:text-5xl">Ready to spend less time on the paperwork?</h2><p className="mt-4 max-w-xl text-lg leading-8 text-blue-100">Create your workspace, add the next receipt, estimate, or invoice, and keep the details ready for payment follow-up, budgeting, reporting, and tax-time preparation.</p><LandingPrimaryCta to="/signup?intent=home-final" inverse className="mt-7">Start for free</LandingPrimaryCta></div><div className="relative hidden h-64 lg:block"><div className="absolute right-12 top-0 w-72 rotate-3"><MiniDocument type="invoice" /></div><div className="absolute bottom-0 left-6 w-64 -rotate-3"><MiniDocument type="report" /></div></div></div></section>
+    </main>
+    <CommercialFooter />
+  </div>;
 }

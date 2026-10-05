@@ -68,7 +68,7 @@ async function audit(db: Db, action: string, actor: string, details: unknown) {
 export const configRoutes = new Hono<AppEnv>();
 configRoutes.get("/", async (c) => {
   const row = await c.get("db").select().from(appConfig).where(eq(appConfig.key, "global")).get();
-  return c.json(toPublicConfig(row));
+  return c.json({ ...toPublicConfig(row), passwordAuthEnabled: c.env.PASSWORD_AUTH_ENABLED === "true" });
 });
 
 /** True for the signed-in user when their email is on the admin allowlist (was `isCurrentUserAdmin`). */

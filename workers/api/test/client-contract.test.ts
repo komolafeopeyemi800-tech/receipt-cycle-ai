@@ -8,16 +8,20 @@ import app from "../src/index";
 import { ApiClient, ApiRequestError } from "../../../apps/mobile/src/lib/api/client";
 import { api } from "../../../apps/mobile/src/lib/api/registry";
 import { describeParse, importInChunks } from "../../../apps/mobile/src/lib/statementUpload";
+import { apiStatementTools } from "../../../apps/mobile/src/lib/statementParse/apiTools";
+import { readStatement } from "../../../apps/mobile/src/lib/statementParse/pipeline";
+import { testEngine } from "./anydocEngine";
+import { makeImageOnlyPdf } from "./fixtures";
 
 afterEach(() => vi.unstubAllGlobals());
 
-function makeClient() {
+function makeClient(e: typeof env = env) {
   return new ApiClient({
     baseUrl: "http://localhost",
     webAppUrl: "http://localhost",
     fetch: ((url: string, init?: RequestInit) => {
       const u = new URL(url);
-      return app.request(`${u.pathname}${u.search}`, init, env);
+      return app.request(`${u.pathname}${u.search}`, init, e);
     }) as typeof fetch,
   });
 }
@@ -207,19 +211,19 @@ describe("admin calls", () => {
 });
 
 describe("uploads and receipts", () => {
-  it("reads a statement file, remembers it, and imports the rows in chunks", async () => {
+  it("reads a big statement in the browser with no AI, then imports it in chunks", async () => {
     const { client } = await signedIn("pro@example.com");
     await env.DB.prepare("UPDATE profile SET pro_subscription_active = 1").run();
+    const tools = apiStatementTools(client);
     const lines = ["Date,Description,Amount", ...Array.from({ length: 1200 }, (_, i) => `2026-10-01,Item ${i},-${(i % 9) + 1}.00`)];
-    const file = new File([lines.join(String.fromCharCode(10))], "big.csv", { type: "text/csv" });
+    const bytes = new TextEncoder().encode(lines.join(String.fromCharCode(10)));
 
-    const first = await client.action(api.uploads.parseStatement, { file });
-    expect(first).toMatchObject({ status: "ok", source: "heuristic", cached: false, totalRows: 1200, fileName: "big.csv" });
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const first = await readStatement(bytes, { fileName: "big.csv", engine: testEngine, ai: tools.ai, cache: tools.cache });
+    expect(first).toMatchObject({ status: "ok", source: "heuristic", cached: false, totalRows: 1200, aiCalls: 0 });
     expect(describeParse(first)).toBe("");
-
-    const again = await client.action(api.uploads.parseStatement, { file, fileName: "copy.csv" });
-    expect(again).toMatchObject({ cached: true, fileName: "copy.csv" });
-    expect(describeParse(again)).toMatch(/earlier upload/);
+    expect(fetchSpy).not.toHaveBeenCalled(); // the server's AI was never involved
 
     const progress: number[] = [];
     const res = await importInChunks(
@@ -232,9 +236,34 @@ describe("uploads and receipts", () => {
     expect((await client.query(api.transactions.list, { workspace: "personal" })).length).toBe(1200);
   });
 
+  it("pays for a scanned PDF once: the second read comes from the saved result", async () => {
+    const withKey = { ...env, OPENAI_API_KEY: "sk-test" };
+    const client = makeClient(withKey);
+    const up = await client.action(api.authNode.signUp, { email: "scan@example.com", password: "secret123" });
+    client.setToken(up.token);
+    const tools = apiStatementTools(client);
+    const spy = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ transactions: [{ date: "2026-10-01", description: "Scanned", amount: 20, type: "expense" }] }) } }] }), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", spy);
+    const pdf = makeImageOnlyPdf();
+
+    const first = await readStatement(pdf, { fileName: "scan.pdf", engine: testEngine, ai: tools.ai, cache: tools.cache });
+    expect(first).toMatchObject({ status: "ok", source: "ai", aiCalls: 1, cached: false });
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    const again = await readStatement(pdf, { fileName: "copy.pdf", engine: testEngine, ai: tools.ai, cache: tools.cache });
+    expect(again).toMatchObject({ cached: true, fileName: "copy.pdf", status: "ok" });
+    expect(again.rows).toEqual(first.rows);
+    expect(spy).toHaveBeenCalledTimes(1); // no second AI call
+    expect(describeParse(again)).toMatch(/earlier upload/);
+  });
+
   it("explains an unsupported file instead of failing", async () => {
     const { client } = await signedIn();
-    const r = await client.action(api.uploads.parseStatement, { file: new File([new Uint8Array([1, 2, 3])], "old.xls") });
+    const tools = apiStatementTools(client);
+    const r = await readStatement(new Uint8Array([1, 2, 3]), { fileName: "old.xls", engine: testEngine, ai: tools.ai, cache: tools.cache });
     expect(r.status).toBe("unsupported");
     expect(r.message).toMatch(/\.xlsx/);
   });

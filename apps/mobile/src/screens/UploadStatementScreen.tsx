@@ -25,8 +25,8 @@ import { useWorkspace } from "../contexts/WorkspaceContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useSubscriptionState } from "../hooks/useSubscriptionState";
 import { parseStatementCsv } from "../lib/statementCsv";
-import { describeParse, importInChunks } from "../lib/statementUpload";
-import type { StatementRow, UploadFile } from "../lib/api";
+import { importInChunks } from "../lib/statementUpload";
+import type { StatementRow } from "../lib/api";
 import { userFacingError, userFacingErrorFromUnknown } from "../lib/userFacingErrors";
 import type { ScannedExtracted } from "../types/transaction";
 
@@ -36,7 +36,7 @@ type Picked = {
   uri: string;
   name: string;
   mime: string;
-  /** "statement" = Excel, PDF or Word, read by the API. */
+  /** "statement" = Excel, PDF or Word: imported from the web app (phones cannot run the reader). */
   kind: "image" | "csv" | "statement";
 };
 
@@ -67,7 +67,6 @@ export function UploadStatementScreen() {
   const ensureCats = useMutation(api.categories.ensureSeed);
   const scanImage = useAction(api.scanReceipt.scanFromBase64);
   const scanText = useAction(api.scanReceipt.scanFromDocumentText);
-  const parseOnServer = useAction(api.uploads.parseStatement);
   const runtime = useQuery(api.admin.publicConfig, {});
 
   const [picked, setPicked] = useState<Picked | null>(null);
@@ -209,7 +208,7 @@ export function UploadStatementScreen() {
   }, [picked, ready, scanImage, scanText, navigation, reset, token, sub]);
 
   const importTable = useCallback(async () => {
-    if (!picked || !ready || picked.kind === "image") return;
+    if (!picked || !ready || picked.kind !== "csv") return;
     if (!user?.id || !token) {
       Alert.alert("Sign in required", "Sign in to import transactions into your account.");
       return;
@@ -239,24 +238,15 @@ export function UploadStatementScreen() {
             description: r.description,
           }));
           w.push(...parsed.warnings);
+        } else {
+          Alert.alert("Import", userFacingError(parsed.error));
+          return;
         }
       }
 
-      // Excel, PDF, Word (or a CSV the on-device reader could not understand): the API reads the file.
       if (!rows) {
-        setStatus("Reading your file…");
-        const file: UploadFile =
-          Platform.OS === "web"
-            ? await (await fetch(picked.uri)).blob()
-            : { uri: picked.uri, name: picked.name, type: picked.mime || "application/octet-stream" };
-        const parsed = await parseOnServer({ file, fileName: picked.name });
-        if (parsed.status !== "ok") {
-          Alert.alert("Import", userFacingError(parsed.message ?? "Could not read this file."));
-          return;
-        }
-        rows = parsed.rows;
-        const note = describeParse(parsed);
-        if (note) w.push(note);
+        Alert.alert("Import", userFacingError("Could not read this CSV. It needs Date, Description and Amount (or Debit/Credit) columns."));
+        return;
       }
 
       const total = rows.length;
@@ -283,7 +273,7 @@ export function UploadStatementScreen() {
     } finally {
       setBusy(false);
     }
-  }, [picked, ready, workspace, user?.id, token, ensureCats, bulkImport, parseOnServer, navigation, reset, sub]);
+  }, [picked, ready, workspace, user?.id, token, ensureCats, bulkImport, navigation, reset, sub]);
 
   const canPick = () => {
     if (!ready || busy) return false;
@@ -311,7 +301,7 @@ export function UploadStatementScreen() {
   const onPickGallery = async () => {
     if (!canPick()) return;
     if (Platform.OS === "web") { onPickWeb(); return; }
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.9 });
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.78 });
     if (res.canceled || !res.assets[0]) return;
     const asset = res.assets[0];
     const p: Picked = { uri: asset.uri, name: asset.fileName ?? "receipt-image.jpg", mime: asset.mimeType ?? "image/jpeg", kind: "image" };
@@ -339,7 +329,7 @@ export function UploadStatementScreen() {
           <View style={styles.dropZone}>
             <Ionicons name="cloud-upload-outline" size={42} color={colors.primary} />
             <Text style={styles.title}>Upload a document</Text>
-            <Text style={styles.sub}>Choose a receipt image, or a statement as Excel, CSV or PDF</Text>
+            <Text style={styles.sub}>Choose a receipt image or a CSV statement</Text>
             <Pressable style={styles.chooseButton} onPress={onPick} disabled={busy || !ready}><Text style={styles.chooseText}>Choose files</Text></Pressable>
           </View>
           <View style={styles.tileGrid}>
@@ -348,7 +338,7 @@ export function UploadStatementScreen() {
             <Pressable style={[styles.tile, { backgroundColor: colors.roseSoft }]} onPress={onPick}><Ionicons name="document-text-outline" size={27} color={colors.rose600} /><Text style={styles.tileText}>PDF / Excel</Text></Pressable>
             <Pressable style={[styles.tile, { backgroundColor: colors.mintSoft }]} onPress={() => void onPickGallery()}><Ionicons name="image-outline" size={27} color={colors.primary} /><Text style={styles.tileText}>Image</Text></Pressable>
           </View>
-          <View style={styles.infoCard}><Ionicons name="bulb-outline" size={19} color={colors.amber600} /><Text style={styles.infoText}>AI extracts key details from receipt images. Bank statements and sales reports (Excel, CSV, PDF) are read into transaction rows, usually without any AI, so large files import quickly.</Text></View>
+          <View style={styles.infoCard}><Ionicons name="bulb-outline" size={19} color={colors.amber600} /><Text style={styles.infoText}>AI extracts key details from receipt images. CSV statements import as transaction rows on your phone; Excel and PDF statements are imported from the web app.</Text></View>
         </View>
       ) : (
         <View style={styles.card}>
@@ -364,7 +354,8 @@ export function UploadStatementScreen() {
             <Image source={{ uri: picked.uri }} style={styles.previewImg} resizeMode="contain" />
           ) : picked.kind === "statement" ? (
             <Text style={styles.previewTxt}>
-              This file is read when you import it. Large Excel and PDF statements are fine.
+              Excel and PDF statements are imported from the web app (receiptcycle.com), where large files take seconds. On your phone,
+              export the statement as CSV, or photograph a receipt.
             </Text>
           ) : (
             <ScrollView style={styles.previewBox} nestedScrollEnabled>
@@ -394,13 +385,13 @@ export function UploadStatementScreen() {
             </>
           ) : null}
 
-          {picked.kind !== "image" ? (
+          {picked.kind === "csv" ? (
             <Pressable
               style={[styles.btnSecondary, (busy || !ready || !canImportRows) && { opacity: 0.55 }]}
               onPress={() => void importTable()}
               disabled={busy || !ready || !canImportRows}
             >
-              <Text style={styles.btnSecondaryTxt}>{picked.kind === "csv" ? "Import as bank / CSV table" : "Import transactions"}</Text>
+              <Text style={styles.btnSecondaryTxt}>Import as bank / CSV table</Text>
             </Pressable>
           ) : null}
 

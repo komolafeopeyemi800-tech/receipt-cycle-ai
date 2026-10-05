@@ -1,9 +1,7 @@
 import { Link } from "react-router-dom";
-import { ReceiptCycleLogo } from "@/components/brand/ReceiptCycleLogo";
+import { CommercialFooter, CommercialHeader } from "@/components/marketing/CommercialLandingLayout";
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
-
-const primary = "#0f766e";
 
 const PRINCIPLES = [
   {
@@ -37,26 +35,19 @@ export default function About() {
         />
       ) : null}
 
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4 sm:px-6">
-          <ReceiptCycleLogo size={32} />
-          <Link to="/" className="text-sm font-medium text-slate-600 hover:text-teal-700">
-            ← Home
-          </Link>
-        </div>
-      </header>
+      <CommercialHeader ctaLabel="Start free" ctaHref="/signup" />
 
       <main className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
-        <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: primary }}>
+        <p className="text-xs font-semibold uppercase tracking-wider text-teal-700">
           About Receipt Cycle
         </p>
         <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-          Bookkeeping that respects your time.
+          Business paperwork should not become a second job.
         </h1>
         <p className="mt-6 text-lg text-slate-600">
-          Receipt Cycle is an AI-powered receipt scanner and expense tracker built for freelancers,
-          independent professionals, and small teams. We started it because the tools we used at
-          previous jobs all had the same flaw: capture was harder than ignoring the problem.
+          Receipt Cycle helps freelancers, independent professionals, and small businesses keep receipts,
+          expenses, estimates, invoices, payments, budgets, and reports connected. It is built for people
+          who need reliable records without spending their working day maintaining them.
         </p>
 
         <section className="mt-14">
@@ -69,9 +60,9 @@ export default function About() {
             to “do I have the receipt for that?” is always yes.
           </p>
           <p className="mt-4 text-slate-600">
-            Our promise is narrow on purpose. We don't do payroll, invoicing, or inventory. We do
-            the boring core — capture, categorize, reconcile, export — extremely well, so the rest
-            of your stack gets clean data.
+            Our scope is practical on purpose. We focus on the records behind everyday spending and customer
+            billing: capture, organization, estimates, invoices, payment records, budgets, and review. Receipt
+            Cycle does not claim to replace payroll, inventory management, tax filing, or professional advice.
           </p>
         </section>
 
@@ -107,8 +98,8 @@ export default function About() {
         <section className="mt-14">
           <h2 className="font-display text-2xl font-bold text-slate-900">Where we are</h2>
           <p className="mt-4 text-slate-600">
-            We're a small, independent team. We ship the mobile app on iOS and Android, the web
-            dashboard at{" "}
+            We're a small, independent team. Receipt Cycle is available through the web workspace and Android
+            mobile app. You can open the web dashboard at{" "}
             <Link to="/dashboard" className="font-semibold text-teal-700 hover:underline">
               receiptcycle.com/dashboard
             </Link>
@@ -116,15 +107,15 @@ export default function About() {
             <a href="mailto:support@receiptcycle.com" className="font-semibold text-teal-700 hover:underline">
               support@receiptcycle.com
             </a>
-            . We reply within one business day.
+            . A real person reads every support message.
           </p>
         </section>
 
         <section className="mt-14 rounded-2xl border border-slate-200 bg-gradient-to-br from-teal-50 to-white p-6 sm:p-8">
           <h2 className="font-display text-2xl font-bold text-slate-900">Try it free</h2>
           <p className="mt-3 text-slate-600">
-            The free plan covers basic scanning and tracking — no credit card required. Upgrade
-            to Pro when you need the AI finance coach, bank imports, and money-leak alerts.
+            Create an account without a credit card and begin organizing your records. The pricing page explains
+            the current plan options and what each one includes.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
@@ -149,23 +140,7 @@ export default function About() {
         </section>
       </main>
 
-      <footer className="border-t border-slate-100 py-10">
-        <div className="mx-auto max-w-4xl px-4 text-center text-sm text-slate-500 sm:px-6">
-          <Link to="/" className="hover:underline" style={{ color: primary }}>Home</Link>
-          <span className="mx-2">·</span>
-          <Link to="/blog" className="hover:underline" style={{ color: primary }}>Blog</Link>
-          <span className="mx-2">·</span>
-          <Link to="/pricing" className="hover:underline" style={{ color: primary }}>Pricing</Link>
-          <span className="mx-2">·</span>
-          <Link to="/faq" className="hover:underline" style={{ color: primary }}>FAQ</Link>
-          <span className="mx-2">·</span>
-          <Link to="/privacy" className="hover:underline" style={{ color: primary }}>Privacy</Link>
-          <span className="mx-2">·</span>
-          <Link to="/terms" className="hover:underline" style={{ color: primary }}>Terms</Link>
-          <span className="mx-2">·</span>
-          <Link to="/contact" className="hover:underline" style={{ color: primary }}>Contact</Link>
-        </div>
-      </footer>
+      <CommercialFooter />
     </div>
   );
 }

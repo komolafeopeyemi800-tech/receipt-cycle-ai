@@ -41,6 +41,8 @@ type WebAuthCtx = {
   signIn: (email: string, password: string) => Promise<WebAuthActionResult>;
   signUp: (email: string, password: string, name?: string) => Promise<WebAuthActionResult>;
   signInWithGoogle: (idToken: string) => Promise<WebAuthActionResult>;
+  sendEmailCode: (email: string) => Promise<{ error: Error | null }>;
+  signInWithEmailCode: (email: string, otp: string) => Promise<WebAuthActionResult>;
   signOut: () => Promise<void>;
 };
 
@@ -55,6 +57,8 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
   const signInAction = useAction(api.authNode.signIn);
   const signUpAction = useAction(api.authNode.signUp);
   const signInWithGoogleAction = useAction(api.authNode.signInWithGoogle);
+  const sendEmailCodeAction = useAction(api.authNode.sendEmailCode);
+  const signInWithEmailCodeAction = useAction(api.authNode.signInWithEmailCode);
   const signOutMutation = useMutation(api.auth.signOut);
   const bootstrapSubscription = useMutation(api.subscription.bootstrapSubscription);
 
@@ -217,6 +221,35 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
     [signInWithGoogleAction],
   );
 
+  const sendEmailCode = useCallback(
+    async (email: string) => {
+      try {
+        await sendEmailCodeAction({ email });
+        return { error: null };
+      } catch (e) {
+        return { error: new Error(formatAuthError(e)) };
+      }
+    },
+    [sendEmailCodeAction],
+  );
+
+  const signInWithEmailCode = useCallback(
+    async (email: string, otp: string) => {
+      try {
+        const res = await signInWithEmailCodeAction({ email, otp });
+        setWebSessionToken(res.token);
+        setWebSessionUser({ id: res.user.id, email: res.user.email, name: res.user.name ?? null });
+        setToken(res.token);
+        setCachedUser({ id: res.user.id, email: res.user.email, name: res.user.name ?? null });
+        setWebLastEmail(res.user.email);
+        return { error: null, isNewRegistration: res.isNewRegistration === true };
+      } catch (e) {
+        return { error: new Error(formatAuthError(e)) };
+      }
+    },
+    [signInWithEmailCodeAction],
+  );
+
   const clearLocalSession = useCallback(() => {
     clearWebSessionToken();
     clearWebSessionUser();
@@ -256,9 +289,11 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signInWithGoogle,
+      sendEmailCode,
+      signInWithEmailCode,
       signOut,
     }),
-    [user, token, loading, clearLocalSession, signIn, signUp, signInWithGoogle, signOut],
+    [user, token, loading, clearLocalSession, signIn, signUp, signInWithGoogle, sendEmailCode, signInWithEmailCode, signOut],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

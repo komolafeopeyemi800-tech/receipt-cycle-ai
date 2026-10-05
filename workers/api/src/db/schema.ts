@@ -320,3 +320,10 @@ export const uploadParses = sqliteTable(
   },
   (t) => [uniqueIndex("upload_parses_user_hash_idx").on(t.userId, t.fileHash), index("upload_parses_user_created_idx").on(t.userId, t.createdAt)],
 );
+
+/** Fixed-window counters: per-user AI budget, and brute-force limits on sign-in and email sending. */
+export const rateLimits = sqliteTable("rate_limits", {
+  key: text("key").primaryKey(),
+  windowStart: integer("window_start").notNull(),
+  count: integer("count").notNull(),
+});

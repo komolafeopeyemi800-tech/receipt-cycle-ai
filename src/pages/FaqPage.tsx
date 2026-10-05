@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ReceiptCycleLogo } from "@/components/brand/ReceiptCycleLogo";
+import { CommercialFooter, CommercialHeader } from "@/components/marketing/CommercialLandingLayout";
 import { SITE_FAQ_ITEMS } from "@/content/siteFaq";
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
@@ -17,22 +17,15 @@ export default function FaqPage() {
           structuredData={seo.structuredData}
         />
       ) : null}
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4 sm:px-6">
-          <ReceiptCycleLogo size={32} />
-          <Link to="/" className="text-sm font-medium text-slate-600 hover:text-teal-700">
-            ← Home
-          </Link>
-        </div>
-      </header>
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
-        <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">FAQ</h1>
-        <p className="mt-3 text-slate-600">Quick answers about Receipt Cycle. For legal topics, see our policies linked in the footer.</p>
-        <Accordion type="single" collapsible className="mt-10 w-full">
+      <CommercialHeader ctaLabel="Start free" ctaHref="/signup" />
+      <main className="bg-slate-50 py-14 sm:py-20"><div className="mx-auto max-w-4xl px-5 sm:px-8">
+        <div className="max-w-2xl"><h1 className="font-display text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">Questions before you get started</h1>
+        <p className="mt-5 text-lg leading-8 text-slate-600">Find straightforward answers about accounts, receipt capture, billing records, AI-assisted features, and your data.</p></div>
+        <Accordion type="single" collapsible className="mt-12 w-full space-y-3">
           {SITE_FAQ_ITEMS.map((item, i) => (
-            <AccordionItem key={item.q} value={`faq-${i}`}>
-              <AccordionTrigger className="text-left font-semibold">{item.q}</AccordionTrigger>
-              <AccordionContent className="text-slate-600">{item.a}</AccordionContent>
+            <AccordionItem key={item.q} value={`faq-${i}`} className="border border-slate-200 bg-white px-5 shadow-sm">
+              <AccordionTrigger className="text-left font-bold hover:no-underline">{item.q}</AccordionTrigger>
+              <AccordionContent className="leading-7 text-slate-600">{item.a}</AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
@@ -42,7 +35,7 @@ export default function FaqPage() {
             Contact us
           </Link>
         </p>
-      </div>
+      </div></main><CommercialFooter />
     </div>
   );
 }

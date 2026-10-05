@@ -6,7 +6,7 @@ export const colors = {
   primary: "#0f766e",
   primaryDark: "#0d5c56",
   teal600: "#0d9488",
-  background: "#f8fafc",
+  background: "#f8fdfb",
   surface: "#ffffff",
   gray900: "#0f172a",
   gray800: "#1e293b",
@@ -23,7 +23,41 @@ export const colors = {
   amber600: "#d97706",
   emerald50: "#ecfdf5",
   teal50: "#f0fdfa",
+  surfaceSoft: "#f3fbfa",
+  textPrimary: "#14213a",
+  textSecondary: "#475569",
+  textMuted: "#718096",
+  success: "#07956f",
+  danger: "#e11d48",
+  warning: "#d97706",
+  info: "#2563eb",
+  border: "#dbe7ee",
+  divider: "#e8eef2",
+  mintSoft: "#e9faf5",
+  blueSoft: "#e8f3ff",
+  roseSoft: "#fff0f4",
+  amberSoft: "#fff6e9",
+  purpleSoft: "#f5edff",
 };
+
+/** Shared mobile scale for this worksheet and subsequent feature screens. */
+export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32 } as const;
+export const radius = { small: 8, medium: 12, large: 16, extraLarge: 22, pill: 999 } as const;
+export const controlHeight = { input: 46, button: 48, touch: 44 } as const;
+export const uiType = {
+  caption: 11,
+  secondary: 12,
+  body: 14,
+  cardTitle: 14,
+  sectionTitle: 16,
+  screenTitle: 20,
+  amount: 16,
+  kpi: 21,
+} as const;
+export const shadows = {
+  card: { shadowColor: "#0f172a", shadowOpacity: 0.035, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
+  floating: { shadowColor: "#0f766e", shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+} as const;
 
 export const gradients = {
   page: [colors.surface, "#f0fdf9", colors.teal50] as const,

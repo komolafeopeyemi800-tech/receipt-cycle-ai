@@ -4,6 +4,7 @@
  * Worker route it hits and how to reshape the answer.
  */
 import type { ApiClient } from "./client";
+import type { ColumnMapping } from "../statementParse/statement";
 import type {
   Account,
   AdminArgs,
@@ -27,8 +28,8 @@ import type {
   TxDraft,
   VoiceHints,
   WorkspaceSummary,
-  StatementParseResult,
   StoredReceipt,
+  StatementRow,
   UploadFile,
   BulkRow,
   DateFormat,
@@ -96,6 +97,23 @@ export const api = {
         true,
       ),
     ),
+    /** Passwordless sign-in, step 1: email a 6-digit code. */
+    sendEmailCode: fn<{ email: string }, { ok: true }>("action", "authNode.sendEmailCode", async (c, a) => {
+      await c.request("POST", "/api/auth/email-otp/send-verification-otp", {
+        body: { email: a.email.trim(), type: "sign-in" },
+        anonymous: true,
+      });
+      return { ok: true };
+    }),
+    /** Step 2: trade the code for a session. The first code for a new email also creates the account. */
+    signInWithEmailCode: fn<{ email: string; otp: string }, AuthResult>("action", "authNode.signInWithEmailCode", async (c, a) => {
+      const r = await c.request<BetterAuthSession & { user: { createdAt?: string } }>("POST", "/api/auth/sign-in/email-otp", {
+        body: { email: a.email.trim(), otp: a.otp.trim() },
+        anonymous: true,
+      });
+      const created = r.user.createdAt ? Date.parse(r.user.createdAt) : 0;
+      return toAuthResult(r, Date.now() - created < 2 * 60 * 1000);
+    }),
     signInWithGoogle: fn<{ idToken: string }, AuthResult>("action", "authNode.signInWithGoogle", (c, a) =>
       c.request<AuthResult>("POST", "/api/social/google", { body: { idToken: a.idToken }, anonymous: true }),
     ),
@@ -378,16 +396,23 @@ export const api = {
     ),
   },
   uploads: {
-    /** Reads an Excel/CSV/PDF/Word statement into rows (no import yet). Repeat uploads of the same file are free. */
-    parseStatement: fn<{ file: UploadFile; fileName?: string; refresh?: boolean }, StatementParseResult>(
-      "action",
-      "uploads.parseStatement",
-      (c, a) => {
-        const form = new FormData();
-        appendFile(form, a.file, a.fileName);
-        return c.request("POST", "/api/uploads/statement", { form, query: { refresh: a.refresh ? "1" : undefined } });
-      },
+    /** AI helper calls for statement reading. The file itself is read in the browser; these are the last resort. */
+    aiMapColumns: fn<{ grid: string[][] }, ColumnMapping | null>("action", "uploads.aiMapColumns", async (c, a) =>
+      (await c.request<{ mapping: ColumnMapping | null }>("POST", "/api/uploads/ai/map-columns", { body: { grid: a.grid } })).mapping,
     ),
+    aiExtract: fn<{ text: string }, StatementRow[]>("action", "uploads.aiExtract", async (c, a) =>
+      (await c.request<{ rows: StatementRow[] }>("POST", "/api/uploads/ai/extract", { body: { text: a.text } })).rows,
+    ),
+    aiOcrPdf: fn<{ pdfBase64: string }, StatementRow[]>("action", "uploads.aiOcrPdf", async (c, a) =>
+      (await c.request<{ rows: StatementRow[] }>("POST", "/api/uploads/ai/ocr-pdf", { body: { pdfBase64: a.pdfBase64 } })).rows,
+    ),
+    cacheGet: fn<{ hash: string }, unknown | null>("action", "uploads.cacheGet", async (c, a) => {
+      const res = await c.request<{ result: unknown } | null>("GET", "/api/uploads/cache", { query: { hash: a.hash }, nullOn404: true });
+      return res?.result ?? null;
+    }),
+    cachePut: fn<{ hash: string; fileName: string; result: unknown }, void>("action", "uploads.cachePut", async (c, a) => {
+      await c.request("PUT", "/api/uploads/cache", { body: { hash: a.hash, fileName: a.fileName, result: a.result } });
+    }),
   },
   receipts: {
     /** Stores a receipt image/PDF in your private storage; put the returned `key` in `receipt_url`. */

@@ -2,6 +2,8 @@ import { FormEvent, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { EmailCodeForm } from "@/components/auth/EmailCodeForm";
+import { api, useQuery } from "@mobile-lib/api";
 import { getWebLastEmail, getWebSessionUser } from "@/lib/webSession";
 import { needsWebOnboarding } from "@/lib/webOnboarding";
 
@@ -20,6 +22,16 @@ export default function WebSignIn() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const passwordsOn = useQuery(api.admin.publicConfig, {})?.passwordAuthEnabled === true;
+
+  function afterCodeSignIn(isNewRegistration: boolean) {
+    const sessionUser = getWebSessionUser();
+    if (sessionUser && (isNewRegistration || needsWebOnboarding(sessionUser.id))) {
+      navigate("/onboarding", { replace: true });
+      return;
+    }
+    navigate(next, { replace: true });
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -83,9 +95,24 @@ export default function WebSignIn() {
           </div>
 
           <GoogleSignInButton mode="signin" className="mt-8" onCredential={onGoogle} onError={(m) => setMsg(m)} />
+          {msg && !passwordsOn ? (
+            <p className="mt-3 text-sm text-red-600" role="alert" aria-live="polite">
+              {msg}
+            </p>
+          ) : null}
           <div className="my-8 flex items-center gap-3">
             <span className="h-px flex-1 bg-slate-200" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">or email</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">or with your email</span>
+            <span className="h-px flex-1 bg-slate-200" />
+          </div>
+
+          <EmailCodeForm mode="signin" initialEmail={email} onDone={(r) => afterCodeSignIn(r.isNewRegistration)} />
+
+          {passwordsOn ? (
+          <>
+          <div className="my-8 flex items-center gap-3">
+            <span className="h-px flex-1 bg-slate-200" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">or password</span>
             <span className="h-px flex-1 bg-slate-200" />
           </div>
 
@@ -133,6 +160,8 @@ export default function WebSignIn() {
               {busy ? "Signing in…" : "Sign in"}
             </button>
           </form>
+          </>
+          ) : null}
 
           <p className="mt-8 text-center text-sm text-slate-600">
             No account?{" "}

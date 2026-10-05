@@ -16,6 +16,8 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../contexts/AuthContext";
 import { GoogleSignInButton } from "../components/GoogleSignInButton";
+import { EmailCodeForm } from "../components/EmailCodeForm";
+import { api, useQuery } from "../lib/api";
 import { getRememberedEmailAsync } from "../lib/rememberedEmail";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
@@ -28,6 +30,7 @@ export function SignUpScreen() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const passwordsOn = useQuery(api.admin.publicConfig, {})?.passwordAuthEnabled === true;
 
   useEffect(() => {
     void (async () => {
@@ -61,6 +64,10 @@ export function SignUpScreen() {
           <Text style={styles.title}>Create account</Text>
           <Text style={styles.sub}>Create an account with your email, or continue with Google below.</Text>
 
+          {!passwordsOn ? <EmailCodeForm mode="signup" initialEmail={email} /> : null}
+          {err && !passwordsOn ? <Text style={styles.err}>{err}</Text> : null}
+          {passwordsOn ? (
+          <>
           <View style={styles.field}>
             <Text style={styles.lbl}>Name (optional)</Text>
             <TextInput
@@ -98,6 +105,8 @@ export function SignUpScreen() {
           <Pressable style={[styles.btn, busy && { opacity: 0.7 }]} onPress={onSubmit} disabled={busy}>
             {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnTxt}>Sign up</Text>}
           </Pressable>
+          </>
+          ) : null}
 
           <View style={styles.orRow}>
             <View style={styles.orLine} />

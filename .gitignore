@@ -31,3 +31,8 @@ bun.lockb
 *.njsproj
 *.sln
 *.sw?
+
+# Local build outputs that must never be committed (an APK is 200 MB; GitHub rejects files over 100 MB)
+apps/mobile/*.apk
+apps/mobile/dist-*/
+apps/android-native/**/*.apk

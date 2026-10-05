@@ -44,6 +44,9 @@ private val AUTH_MESSAGES = mapOf(
     "INVALID_PASSWORD" to "Current password is incorrect.",
     "INVALID_TOKEN" to "This reset link has expired. Request a new password reset.",
     "SESSION_EXPIRED" to "Session expired. Sign in again.",
+    "INVALID_OTP" to "That code is not right. Check it and try again.",
+    "OTP_EXPIRED" to "That code has expired. Request a new one.",
+    "TOO_MANY_ATTEMPTS" to "Too many wrong tries. Request a new code.",
 )
 
 /**
@@ -153,7 +156,7 @@ class ApiClient(
      * Re-runs [fetch] every [intervalMs] and whenever something was written, emitting each outcome.
      * Failures are emitted as `Result.failure` and the flow keeps going.
      */
-    fun <T> live(intervalMs: Long = 30_000, fetch: suspend () -> T?): Flow<Result<T?>> {
+    fun <T> live(intervalMs: Long = 300_000, fetch: suspend () -> T?): Flow<Result<T?>> {
         val ticker = flow {
             while (true) {
                 delay(intervalMs)

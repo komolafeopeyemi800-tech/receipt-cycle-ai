@@ -15,6 +15,13 @@
       "when": 1791232506437,
       "tag": "0001_orange_roxanne_simpson",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791234885391,
+      "tag": "0002_cooing_kabuki",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findHeaderRow, mapColumns, rowsFromGrid } from "../src/docs/statement";
+import { findHeaderRow, mapColumns, rowsFromGrid } from "../../../apps/mobile/src/lib/statementParse/statement";
 
 const run = (grid: string[][]) => {
   const m = mapColumns(grid);

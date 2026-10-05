@@ -54,7 +54,7 @@ function escapeHtml(s) {
 }
 
 /** Rewrite the <head> of `html` with per-route SEO tags. */
-function rewriteHead(html, { title, description, canonical, ogImage, ogType, jsonLd }) {
+function rewriteHead(html, { title, description, canonical, ogImage, ogImageAlt, ogType, jsonLd }) {
   let out = html;
 
   // <title>
@@ -92,6 +92,10 @@ function rewriteHead(html, { title, description, canonical, ogImage, ogType, jso
     `<meta property="og:image" content="${escapeHtml(ogImage)}" />`,
   );
   replaceMeta(
+    `property=["']og:image:alt["']`,
+    `<meta property="og:image:alt" content="${escapeHtml(ogImageAlt)}" />`,
+  );
+  replaceMeta(
     `property=["']og:image:secure_url["']`,
     `<meta property="og:image:secure_url" content="${escapeHtml(ogImage)}" />`,
   );
@@ -106,6 +110,10 @@ function rewriteHead(html, { title, description, canonical, ogImage, ogType, jso
   replaceMeta(
     `name=["']twitter:image["']`,
     `<meta name="twitter:image" content="${escapeHtml(ogImage)}" />`,
+  );
+  replaceMeta(
+    `name=["']twitter:image:alt["']`,
+    `<meta name="twitter:image:alt" content="${escapeHtml(ogImageAlt)}" />`,
   );
 
   // canonical
@@ -139,6 +147,7 @@ function injectNoscript(html, innerHtml) {
 async function writeRouteFile(route, baseHtml, siteUrl) {
   const canonical = `${siteUrl}${route.path === "/" ? "/" : route.path}`;
   const ogImage = route.ogImage ?? `${siteUrl}/og-image.png?v=3`;
+  const ogImageAlt = route.ogImageAlt ?? route.title;
   const ogType = route.ogType ?? "website";
   const jsonLd = route.structuredData ?? [];
 
@@ -147,6 +156,7 @@ async function writeRouteFile(route, baseHtml, siteUrl) {
     description: route.description,
     canonical,
     ogImage,
+    ogImageAlt,
     ogType,
     jsonLd,
   });

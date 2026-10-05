@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Pressable, useWindowDimensions, View, Text, StyleSheet } from "react-native";
-import Svg, { G, Path } from "react-native-svg";
+import Svg, { Circle, G, Path } from "react-native-svg";
 import { colors, type as typeScale } from "../theme/tokens";
 
 type Slice = { label: string; value: number; color: string };
@@ -28,10 +28,10 @@ type Props = {
 
 export function ExpensePieChart({ data, total, onSlicePress, formatMoney }: Props) {
   const { width } = useWindowDimensions();
-  const size = Math.min(216, Math.max(160, width - 64));
+  const size = Math.min(154, Math.max(128, width * 0.38));
   const cx = size / 2;
   const cy = size / 2;
-  const r = size * 0.38;
+  const r = size * 0.46;
 
   const slices: Slice[] = useMemo(() => {
     return data.map((d, i) => ({
@@ -65,7 +65,6 @@ export function ExpensePieChart({ data, total, onSlicePress, formatMoney }: Prop
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.hint}>Tap a slice or category below</Text>
       <View style={styles.chartBox}>
         <Svg width={size} height={size}>
           <G>
@@ -86,7 +85,12 @@ export function ExpensePieChart({ data, total, onSlicePress, formatMoney }: Prop
               />
             ))}
           </G>
+          <Circle cx={cx} cy={cy} r={r * 0.59} fill={colors.surface} />
         </Svg>
+        <View style={styles.centerLabel} pointerEvents="none">
+          <Text style={styles.centerAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{formatMoney ? formatMoney(total) : total.toFixed(0)}</Text>
+          <Text style={styles.centerCaption}>Total Expenses</Text>
+        </View>
       </View>
       <View style={styles.legend}>
         {paths.map((p, i) => (
@@ -102,11 +106,6 @@ export function ExpensePieChart({ data, total, onSlicePress, formatMoney }: Prop
             </Text>
             <View style={styles.legValCol}>
               <Text style={styles.legPct}>{p.pct.toFixed(0)}%</Text>
-              {formatMoney ? (
-                <Text style={styles.legMoney} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
-                  {formatMoney(p.value)}
-                </Text>
-              ) : null}
             </View>
           </Pressable>
         ))}
@@ -116,19 +115,21 @@ export function ExpensePieChart({ data, total, onSlicePress, formatMoney }: Prop
 }
 
 const styles = StyleSheet.create({
-  wrap: { width: "100%", alignItems: "stretch", marginVertical: 8 },
-  chartBox: { alignItems: "center", width: "100%" },
-  hint: { fontSize: typeScale.sm, color: colors.gray500, marginBottom: 8, textAlign: "center", paddingHorizontal: 8 },
+  wrap: { width: "100%", alignItems: "center", flexDirection: "row", marginVertical: 8, gap: 12 },
+  chartBox: { alignItems: "center", justifyContent: "center" },
+  centerLabel: { position: "absolute", alignItems: "center", justifyContent: "center", width: "57%" },
+  centerAmount: { fontSize: typeScale.bodyStrong, fontWeight: "800", color: colors.gray900, width: "100%", textAlign: "center" },
+  centerCaption: { fontSize: typeScale.xs, color: colors.gray500, textAlign: "center" },
   empty: { padding: 16, alignItems: "center" },
   emptyTxt: { fontSize: typeScale.md, color: colors.gray500 },
-  legend: { width: "100%", marginTop: 10, alignSelf: "stretch", paddingHorizontal: 4 },
+  legend: { flex: 1, minWidth: 0, alignSelf: "center", paddingHorizontal: 2 },
   legRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     marginBottom: 6,
     paddingVertical: 2,
-    minHeight: 34,
+    minHeight: 25,
   },
   dot: { width: 8, height: 8, borderRadius: 4, marginTop: 2, flexShrink: 0 },
   legLbl: {
@@ -139,7 +140,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     lineHeight: 15,
   },
-  legValCol: { width: 100, alignItems: "flex-end", flexShrink: 0 },
+  legValCol: { width: 38, alignItems: "flex-end", flexShrink: 0 },
   legPct: { fontSize: typeScale.xs, color: colors.gray500, fontWeight: "600" },
   legMoney: { fontSize: typeScale.sm, color: colors.gray800, fontWeight: "700", marginTop: 2 },
 });

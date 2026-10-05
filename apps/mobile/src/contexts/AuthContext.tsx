@@ -19,6 +19,8 @@ type AuthCtx = {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, name?: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: (idToken: string) => Promise<{ error: Error | null }>;
+  sendEmailCode: (email: string) => Promise<{ error: Error | null }>;
+  signInWithEmailCode: (email: string, otp: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: Error | null }>;
   requestPasswordReset: (email: string) => Promise<
@@ -40,6 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInAction = useAction(api.authNode.signIn);
   const signUpAction = useAction(api.authNode.signUp);
   const signInWithGoogleAction = useAction(api.authNode.signInWithGoogle);
+  const sendEmailCodeAction = useAction(api.authNode.sendEmailCode);
+  const signInWithEmailCodeAction = useAction(api.authNode.signInWithEmailCode);
   const changePasswordAction = useAction(api.authNode.changePassword);
   const requestPasswordResetAction = useAction(api.authNode.requestPasswordReset);
   const resetPasswordWithTokenAction = useAction(api.authNode.resetPasswordWithToken);
@@ -171,6 +175,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [signInWithGoogleAction],
   );
 
+  const sendEmailCode = useCallback(
+    async (email: string) => {
+      try {
+        await sendEmailCodeAction({ email });
+        return { error: null };
+      } catch (e) {
+        return { error: new Error(formatAuthError(e)) };
+      }
+    },
+    [sendEmailCodeAction],
+  );
+
+  const signInWithEmailCode = useCallback(
+    async (email: string, otp: string) => {
+      try {
+        const res = await signInWithEmailCodeAction({ email, otp });
+        await setSessionTokenAsync(res.token);
+        setToken(res.token);
+        await setRememberedEmailAsync(res.user.email);
+        return { error: null };
+      } catch (e) {
+        return { error: new Error(formatAuthError(e)) };
+      }
+    },
+    [signInWithEmailCodeAction],
+  );
+
   const signOut = useCallback(async () => {
     const t = token ?? (await getSessionTokenAsync());
     if (t) {
@@ -256,6 +287,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signInWithGoogle,
+      sendEmailCode,
+      signInWithEmailCode,
       signOut,
       changePassword,
       requestPasswordReset,
@@ -270,6 +303,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signInWithGoogle,
+      sendEmailCode,
+      signInWithEmailCode,
       signOut,
       changePassword,
       requestPasswordReset,

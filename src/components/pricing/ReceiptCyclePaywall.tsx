@@ -1,7 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useScreenSize } from "@/hooks/use-screen-size";
 import { useWebAuth } from "@/contexts/WebAuthContext";
-import DesktopNav from "@/components/layout/DesktopNav";
 import {
   PAYWALL_BENEFITS,
   PAYWALL_PLANS,
@@ -22,7 +20,6 @@ function TierCheck() {
 export default function ReceiptCyclePaywall() {
   const navigate = useNavigate();
   const { user } = useWebAuth();
-  const { isMobileOrTablet } = useScreenSize();
   const discountPct = yearlyDiscountPercent();
 
   function ctaForPlan(id: PaywallPlanId) {
@@ -45,26 +42,9 @@ export default function ReceiptCyclePaywall() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 antialiased">
-      {!isMobileOrTablet ? <DesktopNav variant={user ? "app" : "landing"} /> : null}
-
-      {isMobileOrTablet ? (
-        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/95 px-3 py-3 backdrop-blur-md">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100"
-            aria-label="Back"
-          >
-            <i className="fas fa-arrow-left" />
-          </button>
-          <span className="text-sm font-semibold text-slate-900">Pricing</span>
-          <span className="w-10" />
-        </div>
-      ) : null}
-
+    <div className="flex flex-col bg-slate-50 text-slate-900 antialiased">
       <main
-        className={`mx-auto w-full max-w-6xl flex-1 px-4 pb-16 sm:px-6 ${isMobileOrTablet ? "pt-8" : "scroll-pt-24 pt-24"}`}
+        className="mx-auto w-full max-w-6xl flex-1 px-4 py-16 sm:px-6"
       >
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal-700">Pricing</p>

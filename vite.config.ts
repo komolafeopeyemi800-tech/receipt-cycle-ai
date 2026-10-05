@@ -49,6 +49,8 @@ export default defineConfig(({ mode }) => {
         "@mobile-lib": path.resolve(repoRoot, "./apps/mobile/src/lib"),
       },
     },
+    // wasm-bindgen packages locate their .wasm with import.meta.url, which pre-bundling would break.
+    optimizeDeps: { exclude: ["@firecrawl/anydoc-wasm"] },
     define,
   };
 });

@@ -1,12 +1,10 @@
 import { Link, useParams, Navigate } from "react-router-dom";
-import { ReceiptCycleLogo } from "@/components/brand/ReceiptCycleLogo";
+import { CommercialFooter, CommercialHeader } from "@/components/marketing/CommercialLandingLayout";
 import { Seo } from "@/components/Seo";
 import { getBlogPostSeo } from "@/content/routesSeo";
 import { getPostBySlug, BLOG_POSTS, type BlogBlock } from "@/content/blogPosts";
 import { SITE_URL } from "@/lib/seo";
 import type { ReactNode } from "react";
-
-const primary = "#0f766e";
 
 const INLINE_LINK_RULES: Array<{ phrase: string; href: string; external?: boolean }> = [
   { phrase: "how to organize receipts for your accountant", href: "/blog/best-expense-tracker-for-freelancers" },
@@ -163,7 +161,11 @@ export default function BlogPost() {
   if (!post) return <Navigate to="/blog" replace />;
 
   const seo = getBlogPostSeo(slug);
-  const related = BLOG_POSTS.filter((p) => p.slug !== slug).slice(0, 2);
+  const related = BLOG_POSTS.filter((p) => p.slug !== slug)
+    .map((candidate) => ({ candidate, score: candidate.tags.filter((tag) => post.tags.includes(tag)).length }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map(({ candidate }) => candidate);
   const ogImage = post.featuredImage.startsWith("http") ? post.featuredImage : `${SITE_URL}${post.featuredImage}`;
   const hasInlineImage = post.body.some((b) => b.kind === "image");
   const hasLinksBlock = post.body.some((b) => b.kind === "links");
@@ -181,14 +183,7 @@ export default function BlogPost() {
         />
       ) : null}
 
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4 sm:px-6">
-          <ReceiptCycleLogo size={32} />
-          <Link to="/blog" className="text-sm font-medium text-slate-600 hover:text-teal-700">
-            ← Blog
-          </Link>
-        </div>
-      </header>
+      <CommercialHeader ctaLabel="Start free" ctaHref="/signup" />
 
       <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
         <nav className="mb-6 text-xs text-slate-500" aria-label="Breadcrumb">
@@ -281,7 +276,7 @@ export default function BlogPost() {
         <section className="mt-16 rounded-2xl border border-slate-200 bg-gradient-to-br from-teal-50 to-white p-6 sm:p-8">
           <h2 className="font-display text-2xl font-bold text-slate-900">Try Receipt Cycle free</h2>
           <p className="mt-3 text-slate-600">
-            Scan receipts, import statements, chat with an AI finance coach — all in one app.
+            Capture receipts, organize expenses, and review saved business activity in one workspace.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
@@ -302,7 +297,7 @@ export default function BlogPost() {
         {related.length > 0 ? (
           <section className="mt-16 border-t border-slate-200 pt-10">
             <h2 className="font-display text-2xl font-bold text-slate-900">Keep reading</h2>
-            <div className="mt-6 grid gap-6 sm:grid-cols-2">
+            <div className="mt-6 grid gap-6 sm:grid-cols-3">
               {related.map((r) => (
                 <Link
                   key={r.slug}
@@ -320,19 +315,7 @@ export default function BlogPost() {
         ) : null}
       </main>
 
-      <footer className="border-t border-slate-100 py-10">
-        <div className="mx-auto max-w-3xl px-4 text-center text-sm text-slate-500 sm:px-6">
-          <Link to="/" className="hover:underline" style={{ color: primary }}>Home</Link>
-          <span className="mx-2">·</span>
-          <Link to="/about" className="hover:underline" style={{ color: primary }}>About</Link>
-          <span className="mx-2">·</span>
-          <Link to="/blog" className="hover:underline" style={{ color: primary }}>Blog</Link>
-          <span className="mx-2">·</span>
-          <Link to="/faq" className="hover:underline" style={{ color: primary }}>FAQ</Link>
-          <span className="mx-2">·</span>
-          <Link to="/contact" className="hover:underline" style={{ color: primary }}>Contact</Link>
-        </div>
-      </footer>
+      <CommercialFooter />
     </div>
   );
 }

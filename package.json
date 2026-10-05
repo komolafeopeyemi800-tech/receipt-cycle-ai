@@ -11,7 +11,7 @@
     "seo:prerender": "node scripts/prerender.mjs",
     "convex:dev": "convex dev",
     "dev": "vite",
-    "build": "npm run seo:assets && npm run seo:blog-images && vite build && npm run seo:prerender",
+    "build": "npm run seo:assets && vite build && npm run seo:prerender",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -19,6 +19,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@firecrawl/anydoc-wasm": "^0.2.4",
     "@fortawesome/fontawesome-free": "^6.4.0",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",

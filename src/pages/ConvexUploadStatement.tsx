@@ -1,9 +1,13 @@
 import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAction, useMutation, useQuery } from "@mobile-lib/api";
+import { useMutation, useQuery } from "@mobile-lib/api";
 import { api, type StatementRow } from "@mobile-lib/api";
 import { parseStatementCsv } from "@mobile-lib/statementCsv";
 import { describeParse, importInChunks } from "@mobile-lib/statementUpload";
+import { apiStatementTools } from "@mobile-lib/statementParse/apiTools";
+import { readStatement } from "@mobile-lib/statementParse/pipeline";
+import { apiClient } from "@/lib/api";
+import { loadStatementEngine } from "@/lib/statementReader";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { AppChrome } from "@/components/layout/AppChrome";
@@ -14,7 +18,7 @@ function defaultCategory(type: "expense" | "income") {
   return type === "expense" ? "Other" : "Salary";
 }
 
-/** Web: statement import (CSV, Excel, PDF, Word). CSV is read in the browser first; everything else is read by the API. */
+/** Web: statement import (CSV, Excel, PDF, Word). Every file is read in the browser; the API is only asked for AI help as a last resort. */
 function ConvexUploadStatementInner() {
   const { workspace, ready } = useWorkspace();
   const { user, token } = useWebAuth();
@@ -22,7 +26,6 @@ function ConvexUploadStatementInner() {
   const runtime = useQuery(api.admin.publicConfig, {});
   const bulkImport = useMutation(api.transactions.bulkImport);
   const ensureCats = useMutation(api.categories.ensureSeed);
-  const parseOnServer = useAction(api.uploads.parseStatement);
 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -69,10 +72,17 @@ function ConvexUploadStatementInner() {
           }
         }
 
-        // Excel, PDF, Word (or a CSV the local reader could not understand): the API reads the file.
+        // Excel, PDF, Word (or a CSV the quick reader could not understand): read in the browser with anydoc.
         if (!rows) {
           setMsg("Reading your file…");
-          const parsed = await parseOnServer({ file, fileName: file.name });
+          const engine = await loadStatementEngine();
+          const tools = apiStatementTools(apiClient);
+          const parsed = await readStatement(new Uint8Array(await file.arrayBuffer()), {
+            fileName: file.name,
+            engine,
+            ai: tools.ai,
+            cache: tools.cache,
+          });
           if (parsed.status !== "ok") {
             setMsg(parsed.message ?? "Could not read this file.");
             return;

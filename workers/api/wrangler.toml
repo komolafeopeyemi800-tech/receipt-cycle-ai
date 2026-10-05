@@ -5,6 +5,11 @@ main = "src/index.ts"
 compatibility_date = "2025-09-01"
 compatibility_flags = ["nodejs_compat"]
 
+# The API lives on its own subdomain of the live site.
+routes = [{ pattern = "api.receiptcycle.com", custom_domain = true }]
+# Keep the workers.dev address too, as a backup.
+workers_dev = true
+
 [[d1_databases]]
 binding = "DB"
 database_name = "receipt-cycle-db"
@@ -17,3 +22,11 @@ bucket_name = "receipt-cycle-files"
 
 [vars]
 PUBLIC_WEB_APP_URL = "https://receiptcycle.com"
+# This Worker's own address; Better Auth builds its links from it.
+BETTER_AUTH_URL = "https://api.receiptcycle.com"
+# Password sign-in is off on the free plan (see src/types.ts). Set to "true" after upgrading.
+PASSWORD_AUTH_ENABLED = "false"
+# Public Google OAuth web client id (safe to commit; it ships in the website anyway).
+GOOGLE_WEB_CLIENT_ID = "257702962892-m2m0terd11tbn8049umc5bltp5sjqqr1.apps.googleusercontent.com"
+# Browser addresses allowed to call the auth endpoints (the live site, www, and Cloudflare preview versions).
+TRUSTED_ORIGINS = "https://www.receiptcycle.com,https://receipt-cycle-ai.komolafebamidele.workers.dev,https://*-receipt-cycle-ai.komolafebamidele.workers.dev"

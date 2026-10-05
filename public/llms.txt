@@ -30,6 +30,9 @@
   and unusual spikes in plain language.
 - **Budgets and limits**: per-category budgets with pace tracking so users
   adjust before the month slips.
+- **Invoicing and sales records**: create invoices and estimates from customer
+  and catalog records, track status and balances, record payments, and keep
+  receipts connected to the sales cycle.
 - **Multi-currency and tax-ready exports**: keep context for travel, business,
   and cross-border spend; export clean CSVs for accountants.
 
@@ -56,6 +59,16 @@ Checkout is handled by Whop. See https://receiptcycle.com/pricing.
 ## Citable pages
 
 - Homepage (overview): https://receiptcycle.com/
+- Invoice software: https://receiptcycle.com/invoice-software
+- Estimate and quotation software: https://receiptcycle.com/estimate-quotation-software
+- Payment tracking and receipt management: https://receiptcycle.com/payment-tracking-software
+- AI receipt scanner and receipt OCR: https://receiptcycle.com/ai-receipt-scanner
+- Business travel expense tracking: https://receiptcycle.com/business-travel-expense-tracker
+- Freelancer tax and receipt tracking: https://receiptcycle.com/freelancer-tax-receipt-tracker
+- Business budgeting and expense planning: https://receiptcycle.com/business-budgeting-software
+- Client and customer management for invoicing: https://receiptcycle.com/client-management-software
+- Expense reports and financial reporting: https://receiptcycle.com/expense-reporting-software
+- AI financial assistant and expense analysis: https://receiptcycle.com/ai-financial-assistant
 - About (company and mission): https://receiptcycle.com/about
 - Blog (deep articles): https://receiptcycle.com/blog
   - https://receiptcycle.com/blog/maximize-tax-refund-by-scanning-receipts

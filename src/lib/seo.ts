@@ -21,6 +21,7 @@ export interface SeoMeta {
   /** Path-only (we resolve it to absolute with SITE_URL). */
   path: string;
   ogImage?: string;
+  ogImageAlt?: string;
   ogType?: "website" | "article";
   /** Optional extra JSON-LD blocks (Article, FAQPage, Breadcrumb, etc.). */
   structuredData?: StructuredData[];
@@ -70,6 +71,7 @@ export function applySeo(meta: SeoMeta): void {
 
   const canonical = canonicalUrl(meta.path);
   const ogImage = meta.ogImage ?? DEFAULT_OG_IMAGE;
+  const ogImageAlt = meta.ogImageAlt ?? meta.title;
   const ogType = meta.ogType ?? "website";
 
   document.title = meta.title;
@@ -91,12 +93,14 @@ export function applySeo(meta: SeoMeta): void {
   upsertMeta('meta[property="og:image:secure_url"]', { property: "og:image:secure_url", content: ogImage });
   upsertMeta('meta[property="og:image:width"]', { property: "og:image:width", content: String(OG_IMAGE_WIDTH) });
   upsertMeta('meta[property="og:image:height"]', { property: "og:image:height", content: String(OG_IMAGE_HEIGHT) });
+  upsertMeta('meta[property="og:image:alt"]', { property: "og:image:alt", content: ogImageAlt });
   upsertMeta('meta[property="og:site_name"]', { property: "og:site_name", content: SITE_NAME });
 
   upsertMeta('meta[name="twitter:card"]', { name: "twitter:card", content: "summary_large_image" });
   upsertMeta('meta[name="twitter:title"]', { name: "twitter:title", content: meta.title });
   upsertMeta('meta[name="twitter:description"]', { name: "twitter:description", content: meta.description });
   upsertMeta('meta[name="twitter:image"]', { name: "twitter:image", content: ogImage });
+  upsertMeta('meta[name="twitter:image:alt"]', { name: "twitter:image:alt", content: ogImageAlt });
 
   removeSeoJsonLd();
   for (const block of meta.structuredData ?? []) {

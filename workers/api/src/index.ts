@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import * as schema from "./db/schema";
 import { ApiError } from "./lib/errors";
+import { enforce } from "./lib/rateLimit";
 import { adminRoutes, configRoutes } from "./routes/admin";
 import { aiRoutes, contactRoutes } from "./routes/ai";
 import { preferenceRoutes, subscriptionRoutes } from "./routes/account";
@@ -26,6 +27,38 @@ app.use("*", async (c, next) => {
 });
 
 app.get("/api/health", (c) => c.json({ ok: true, time: Date.now() }));
+
+const HOUR = 60 * 60 * 1000;
+const clientIp = (c: { req: { header: (n: string) => string | undefined } }) => c.req.header("cf-connecting-ip") ?? "unknown";
+
+// Password endpoints exist but are off unless PASSWORD_AUTH_ENABLED=true (see types.ts for why).
+const PASSWORD_PATHS = ["sign-up/email", "sign-in/email", "request-password-reset", "reset-password", "change-password"];
+for (const p of PASSWORD_PATHS) {
+  app.use(`/api/auth/${p}`, async (c, next) => {
+    if (c.env.PASSWORD_AUTH_ENABLED !== "true") {
+      throw new ApiError(403, "Password sign-in is turned off. Continue with Google or get an emailed sign-in code.");
+    }
+    await next();
+  });
+}
+
+// Emailed codes: only sign-in codes, and capped so nobody can use us to spam an inbox or guess codes.
+app.use("/api/auth/email-otp/send-verification-otp", async (c, next) => {
+  const body = (await c.req.raw.clone().json().catch(() => ({}))) as { email?: unknown; type?: unknown };
+  if (body.type !== "sign-in") throw new ApiError(400, "Only sign-in codes can be requested here.");
+  const email = String(body.email ?? "").trim().toLowerCase();
+  const db = c.get("db");
+  await enforce(db, `otp-send:email:${email}`, 5, HOUR, "Too many codes were requested for this email.");
+  await enforce(db, `otp-send:ip:${clientIp(c)}`, 20, HOUR, "Too many codes were requested from this network.");
+  await next();
+});
+app.use("/api/auth/sign-in/email-otp", async (c, next) => {
+  const body = (await c.req.raw.clone().json().catch(() => ({}))) as { email?: unknown };
+  const db = c.get("db");
+  await enforce(db, `otp-verify:ip:${clientIp(c)}`, 30, 10 * 60 * 1000, "Too many attempts.");
+  await enforce(db, `otp-verify:email:${String(body.email ?? "").trim().toLowerCase()}`, 10, 10 * 60 * 1000, "Too many attempts for this email.");
+  await next();
+});
 
 // Better Auth: /api/auth/sign-up/email, /sign-in/email, /sign-out, /change-password, /request-password-reset, /reset-password, ...
 app.on(["GET", "POST"], "/api/auth/*", (c) => getAuth(c.env, c.get("db")).handler(c.req.raw));

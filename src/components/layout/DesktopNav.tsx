@@ -87,7 +87,11 @@ const DesktopNav = ({ variant = "landing", showSidebarTrigger, onSidebarTrigger 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
             <button
               type="button"
-              onClick={() => navigate(inAdmin ? "/admin" : "/transactions#add-transaction")}
+              onClick={() => {
+                if (inAdmin) navigate("/admin");
+                else if (location.pathname === "/transactions") window.dispatchEvent(new Event("receipt-cycle:add-transaction"));
+                else navigate("/transactions#add-transaction");
+              }}
               className="flex h-9 items-center gap-1.5 rounded-lg bg-gradient-to-r from-primary to-teal-600 px-2.5 text-xs font-semibold text-white shadow-md transition-all hover:shadow-lg sm:h-10 sm:gap-2 sm:px-4 sm:text-sm"
             >
               <i className="fas fa-plus" />
@@ -95,7 +99,7 @@ const DesktopNav = ({ variant = "landing", showSidebarTrigger, onSidebarTrigger 
             </button>
             <button
               type="button"
-              onClick={() => navigate(inAdmin ? "/admin" : "/settings")}
+              onClick={() => navigate(inAdmin ? "/admin" : "/notifications")}
               className={`relative hidden h-10 w-10 items-center justify-center rounded-lg bg-gray-100 transition-colors hover:bg-gray-200 sm:flex ${showSidebarTrigger ? "md:hidden xl:flex" : ""}`}
               title="Notifications"
               aria-label="Notifications"
@@ -104,9 +108,9 @@ const DesktopNav = ({ variant = "landing", showSidebarTrigger, onSidebarTrigger 
             </button>
             <button
               type="button"
-              onClick={() => navigate(inAdmin ? '/admin' : '/settings')}
+              onClick={() => navigate(inAdmin ? '/admin' : '/profile')}
               className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-gray-100 bg-gray-50 text-sm font-semibold text-primary hover:border-primary transition-colors"
-              title="Settings"
+              title="Profile and security"
             >
               {user?.name?.trim()?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? (
                 <i className="fas fa-user text-gray-500" />

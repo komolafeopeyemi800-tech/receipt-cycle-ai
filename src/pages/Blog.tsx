@@ -1,10 +1,8 @@
 import { Link } from "react-router-dom";
-import { ReceiptCycleLogo } from "@/components/brand/ReceiptCycleLogo";
+import { CommercialFooter, CommercialHeader } from "@/components/marketing/CommercialLandingLayout";
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
 import { BLOG_POSTS } from "@/content/blogPosts";
-
-const primary = "#0f766e";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -24,35 +22,25 @@ export default function Blog() {
         />
       ) : null}
 
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4 sm:px-6">
-          <ReceiptCycleLogo size={32} />
-          <Link to="/" className="text-sm font-medium text-slate-600 hover:text-teal-700">
-            ← Home
-          </Link>
-        </div>
-      </header>
+      <CommercialHeader ctaLabel="Start free" ctaHref="/signup" />
 
       <main className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
-        <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: primary }}>
-          Receipt Cycle Blog
-        </p>
-        <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-          Practical guides on expense tracking, tax, and money leaks.
+        <h1 className="font-display text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">
+          Practical guides for cleaner business records
         </h1>
-        <p className="mt-6 text-lg text-slate-600">
-          Short, no-fluff articles written for freelancers, solo operators, and small teams.
+        <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-600">
+          Learn how to capture receipts, organize expenses, prepare for tax-time review, and spend less time reconstructing business activity.
         </p>
 
         <div className="mt-12 grid gap-6 sm:grid-cols-2">
           {BLOG_POSTS.map((post) => (
             <article
               key={post.slug}
-              className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"
+              className="group flex flex-col border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
               <Link
                 to={`/blog/${post.slug}`}
-                className="mb-4 block aspect-[1200/630] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100"
+                className="mb-4 block aspect-[16/9] w-full overflow-hidden bg-slate-100"
               >
                 <img
                   src={post.featuredImage}
@@ -109,19 +97,7 @@ export default function Blog() {
         </section>
       </main>
 
-      <footer className="border-t border-slate-100 py-10">
-        <div className="mx-auto max-w-4xl px-4 text-center text-sm text-slate-500 sm:px-6">
-          <Link to="/" className="hover:underline" style={{ color: primary }}>Home</Link>
-          <span className="mx-2">·</span>
-          <Link to="/about" className="hover:underline" style={{ color: primary }}>About</Link>
-          <span className="mx-2">·</span>
-          <Link to="/pricing" className="hover:underline" style={{ color: primary }}>Pricing</Link>
-          <span className="mx-2">·</span>
-          <Link to="/faq" className="hover:underline" style={{ color: primary }}>FAQ</Link>
-          <span className="mx-2">·</span>
-          <Link to="/contact" className="hover:underline" style={{ color: primary }}>Contact</Link>
-        </div>
-      </footer>
+      <CommercialFooter />
     </div>
   );
 }

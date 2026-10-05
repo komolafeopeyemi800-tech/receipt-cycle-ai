@@ -31,7 +31,7 @@ Release:
 
 - **UI:** Jetpack Compose + Navigation Compose (5 tabs + stack screens)
 - **Backend:** plain HTTPS/JSON to the API Worker via [`ApiClient.kt`](app/src/main/java/com/anonymous/receiptcyclemobile/data/ApiClient.kt) (OkHttp). Sign-in uses Better Auth (`/api/auth/*`) and Google (`/api/social/google`); the session token is sent as a bearer header.
-- **Live screens:** [`ApiClient.live`](app/src/main/java/com/anonymous/receiptcyclemobile/data/ApiClient.kt) re-fetches every 30 s and right after any change you make (the old Convex push updates are gone).
+- **Live screens:** [`ApiClient.live`](app/src/main/java/com/anonymous/receiptcyclemobile/data/ApiClient.kt) re-fetches every 5 minutes and right after any change you make (the old Convex push updates are gone).
 - **iOS:** continues to use Expo at [`apps/mobile`](../mobile)
 
 ## Feature parity status

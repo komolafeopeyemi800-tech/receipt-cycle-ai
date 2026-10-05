@@ -14,6 +14,11 @@ export type Env = {
   BETTER_AUTH_SECRET?: string;
   /** Extra browser origins allowed to call the auth endpoints, comma separated. */
   TRUSTED_ORIGINS?: string;
+  /**
+   * "true" turns on email + password sign-in. Off by default: password hashing is deliberately slow and
+   * does not fit the Workers free plan's CPU limit. Sign-in then uses Google and emailed one-time codes.
+   */
+  PASSWORD_AUTH_ENABLED?: string;
   GOOGLE_WEB_CLIENT_ID?: string;
   GOOGLE_IOS_CLIENT_ID?: string;
   GOOGLE_ANDROID_CLIENT_ID?: string;

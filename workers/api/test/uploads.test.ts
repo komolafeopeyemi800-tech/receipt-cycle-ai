@@ -1,30 +1,12 @@
 import { env } from "cloudflare:test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import app from "../src/index";
-import { AI_UPLOADS_PER_DAY } from "../src/routes/uploads";
+import { AI_CALLS_PER_DAY } from "../src/routes/uploads";
 import { api, makeUser } from "./helpers";
-import { makeImageOnlyPdf, makeTextPdf, makeXlsx } from "./fixtures";
 
 afterEach(() => vi.unstubAllGlobals());
 
 const withKey = { ...env, OPENAI_API_KEY: "sk-test" };
-
-async function upload(token: string | undefined, name: string, bytes: Uint8Array, type = "application/octet-stream", opts: { path?: string; e?: typeof env } = {}) {
-  const form = new FormData();
-  form.append("file", new File([bytes], name, { type }));
-  const res = await app.request(
-    opts.path ?? "/api/uploads/statement",
-    { method: "POST", headers: token ? { authorization: `Bearer ${token}` } : {}, body: form },
-    opts.e ?? env,
-  );
-  const text = await res.text();
-  return { status: res.status, json: text ? JSON.parse(text) : null };
-}
-
-const csv = (rows = 2) =>
-  new TextEncoder().encode(
-    ["Date,Description,Amount", ...Array.from({ length: rows }, (_, i) => `2026-10-0${(i % 9) + 1},Item ${i},-${i + 1}.00`)].join("\n"),
-  );
 
 function stubAi(answer: unknown) {
   const spy = vi.fn(async () => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(answer) } }] }), { status: 200 }));
@@ -32,98 +14,106 @@ function stubAi(answer: unknown) {
   return spy;
 }
 
-describe("POST /api/uploads/statement", () => {
-  it("needs a session and a file", async () => {
-    expect((await upload(undefined, "a.csv", csv())).status).toBe(401);
+const grid = [["Tarikh", "Bayani", "Kudi"], ["01-10-2026", "Siyayya", "-2,000"], ["02-10-2026", "Albashi", "50000"]];
+const HASH = "a".repeat(64);
+const aiRow = { date: "2026-10-01", amount: 5, type: "expense", category: "Other", merchant: "Scanned" };
+const cacheResult = { status: "ok", source: "ai", fileType: "pdf", rows: [aiRow], warnings: [], aiCalls: 1 };
+
+async function post(token: string | undefined, path: string, body: unknown, e: typeof env = withKey) {
+  const res = await app.request(
+    path,
+    { method: "POST", headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body) },
+    e,
+  );
+  const text = await res.text();
+  return { status: res.status, json: text ? JSON.parse(text) : null };
+}
+
+describe("AI helper routes", () => {
+  it("need a session", async () => {
+    expect((await post(undefined, "/api/uploads/ai/map-columns", { grid })).status).toBe(401);
+  });
+
+  it("map columns from a small sample", async () => {
     const { token } = await makeUser();
-    const res = await app.request("/api/uploads/statement", { method: "POST", headers: { authorization: `Bearer ${token}` }, body: new FormData() }, env);
-    expect(res.status).toBe(400);
-  });
-
-  it("reads a spreadsheet and returns a preview without importing anything", async () => {
-    const { token } = await makeUser();
-    const r = await upload(token, "march.xlsx", makeXlsx([{ name: "March", rows: [["Date", "Description", "Amount"], ["2026-03-01", "Coffee", -4.5]] }]));
-    expect(r.status).toBe(200);
-    expect(r.json).toMatchObject({ status: "ok", fileType: "xlsx", source: "heuristic", cached: false, fileName: "march.xlsx" });
-    expect(r.json.fileHash).toMatch(/^[0-9a-f]{64}$/);
-    expect((await api("GET", "/api/transactions", { token })).json).toEqual([]);
-  });
-
-  it("remembers a file: the second upload is served from the saved result and costs nothing", async () => {
-    const { token } = await makeUser();
-    const bytes = csv(3);
-    const first = await upload(token, "s.csv", bytes);
-    expect(first.json.cached).toBe(false);
-    const parseSpy = vi.fn();
-    vi.stubGlobal("fetch", parseSpy);
-    const second = await upload(token, "renamed.csv", bytes);
-    expect(second.json).toMatchObject({ cached: true, status: "ok", fileName: "renamed.csv" });
-    expect(second.json.rows).toEqual(first.json.rows);
-    expect(parseSpy).not.toHaveBeenCalled();
-    const fresh = await upload(token, "s.csv", bytes, "text/csv", { path: "/api/uploads/statement?refresh=1" });
-    expect(fresh.json.cached).toBe(false);
-  });
-
-  it("keeps each user's saved results separate", async () => {
-    const a = await makeUser();
-    const b = await makeUser();
-    const bytes = csv();
-    await upload(a.token, "s.csv", bytes);
-    expect((await upload(b.token, "s.csv", bytes)).json.cached).toBe(false);
-  });
-
-  it("tells an expired trial why the AI helper is off, but still reads simple files", async () => {
-    const { token } = await makeUser({ createdAt: Date.now() - 9 * 24 * 60 * 60 * 1000 });
-    const scanned = await upload(token, "scan.pdf", makeImageOnlyPdf(), "application/pdf", { e: withKey });
-    expect(scanned.json.status).toBe("needs_ocr");
-    expect(scanned.json.warnings.join(" ")).toMatch(/7-day trial ended/);
-    expect((await upload(token, "ok.csv", csv())).json.status).toBe("ok");
-  });
-
-  it("spends AI only when a file needs it, and stops at the daily cap", async () => {
-    const { token, id } = await makeUser({ pro: true });
-    const spy = stubAi({ transactions: [{ date: "2026-10-01", description: "Scanned", amount: 5, type: "expense" }] });
-    const first = await upload(token, "scan.pdf", makeImageOnlyPdf(), "application/pdf", { e: withKey });
-    expect(first.json).toMatchObject({ status: "ok", source: "ai" });
+    const spy = stubAi({ headerRow: 0, date: 0, description: 1, amount: 2 });
+    const r = await post(token, "/api/uploads/ai/map-columns", { grid });
+    expect(r.json.mapping).toMatchObject({ headerRow: 0, date: 0, description: 1, amount: 2 });
     expect(spy).toHaveBeenCalledTimes(1);
-
-    const now = Date.now();
-    for (let i = 0; i < AI_UPLOADS_PER_DAY; i++) {
-      await env.DB.prepare("INSERT INTO upload_parses (id, user_id, file_hash, file_name, source, row_count, result, created_at) VALUES (?, ?, ?, 'x', 'ai', 1, '{}', ?)")
-        .bind(`fill-${i}`, id, `hash-${i}`, now)
-        .run();
-    }
-    const blocked = await upload(token, "scan2.pdf", new Uint8Array([...makeImageOnlyPdf(), 10]), "application/pdf", { e: withKey });
-    expect(blocked.json.status).toBe("needs_ocr");
-    expect(blocked.json.warnings.join(" ")).toMatch(/Daily limit reached/);
-    expect(spy).toHaveBeenCalledTimes(1);
-    // A file that needs no AI is unaffected by the cap.
-    expect((await upload(token, "plain.csv", csv(4))).json.status).toBe("ok");
   });
 
-  it("reads a text PDF with no AI even for Pro users", async () => {
-    const { token } = await makeUser({ pro: true });
-    const spy = vi.fn();
-    vi.stubGlobal("fetch", spy);
-    const pdf = makeTextPdf(["Date Description Amount Balance", "2026-10-02 Shoprite 12,500.00 87,500.00", "2026-10-03 Salary 50,000.00 137,500.00"]);
-    const r = await upload(token, "s.pdf", pdf, "application/pdf", { e: withKey });
-    expect(r.json).toMatchObject({ status: "ok", source: "heuristic", aiCalls: 0 });
+  it("extract rows from text and read a scanned PDF", async () => {
+    const { token } = await makeUser();
+    stubAi({ transactions: [{ date: "2026-10-01", description: "Scanned", amount: 5, type: "expense" }] });
+    const text = await post(token, "/api/uploads/ai/extract", { text: "2026-10-01 Scanned 5.00" });
+    expect(text.json.rows).toEqual([aiRow]);
+    const pdf = await post(token, "/api/uploads/ai/ocr-pdf", { pdfBase64: "A".repeat(200) });
+    expect(pdf.json.rows).toEqual([aiRow]);
+  });
+
+  it("reject bad input without calling the AI", async () => {
+    const { token } = await makeUser();
+    const spy = stubAi({});
+    expect((await post(token, "/api/uploads/ai/map-columns", { grid: [["only one row"]] })).status).toBe(400);
+    expect((await post(token, "/api/uploads/ai/extract", { text: "x".repeat(15_001) })).status).toBe(400);
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it("honours the admin switch and maintenance mode", async () => {
+  it("explain an expired trial, a missing key and a disabled switch", async () => {
+    const expired = await makeUser({ createdAt: Date.now() - 9 * 24 * 60 * 60 * 1000 });
+    const blocked = await post(expired.token, "/api/uploads/ai/extract", { text: "2026-10-01 Coffee 4.50" });
+    expect(blocked.status).toBe(402);
+    expect(blocked.json.error).toMatch(/7-day trial ended/);
+
     const { token } = await makeUser();
+    expect((await post(token, "/api/uploads/ai/extract", { text: "2026-10-01 Coffee 4.50" }, env)).status).toBe(503);
+
     await env.DB.prepare("INSERT INTO app_config (key, upload_enabled) VALUES ('global', 0)").run();
-    expect((await upload(token, "a.csv", csv())).status).toBe(403);
-    await env.DB.prepare("UPDATE app_config SET upload_enabled = 1, maintenance_mode = 1").run();
-    expect((await upload(token, "a.csv", csv())).status).toBe(503);
+    expect((await post(token, "/api/uploads/ai/extract", { text: "2026-10-01 Coffee 4.50" })).status).toBe(403);
   });
 
-  it("imports the previewed rows through the existing bulk endpoint", async () => {
-    const { token } = await makeUser({ pro: true });
-    const preview = await upload(token, "s.csv", csv(5));
-    const imported = await api("POST", "/api/transactions/bulk-import", { token, body: { workspace: "personal", rows: preview.json.rows } });
-    expect(imported.json).toEqual({ inserted: 5, truncated: false });
+  it("stop at the daily budget", async () => {
+    const { token, id } = await makeUser({ pro: true });
+    const spy = stubAi({ transactions: [] });
+    await env.DB.prepare("INSERT INTO rate_limits (key, window_start, count) VALUES (?, ?, ?)").bind(`ai:${id}`, Date.now(), AI_CALLS_PER_DAY).run();
+    const r = await post(token, "/api/uploads/ai/extract", { text: "2026-10-01 Coffee 4.50" });
+    expect(r.status).toBe(429);
+    expect(r.json.error).toMatch(/Daily limit reached/);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("do not leak provider errors", async () => {
+    const { token } = await makeUser();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("secret provider detail", { status: 500 })));
+    const r = await post(token, "/api/uploads/ai/extract", { text: "2026-10-01 Coffee 4.50" });
+    expect(r.status).toBe(503);
+    expect(JSON.stringify(r.json)).not.toContain("secret provider detail");
+  });
+});
+
+describe("result cache", () => {
+  const put = (token: string, body: unknown) => app.request("/api/uploads/cache", { method: "PUT", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify(body) }, env);
+  const get = (token: string, hash: string) => app.request(`/api/uploads/cache?hash=${hash}`, { headers: { authorization: `Bearer ${token}` } }, env);
+
+  it("stores an AI-assisted result and returns it", async () => {
+    const { token } = await makeUser();
+    expect((await get(token, HASH)).status).toBe(404);
+    expect((await put(token, { hash: HASH, fileName: "s.pdf", result: cacheResult })).status).toBe(200);
+    const hit = (await (await get(token, HASH)).json()) as any;
+    expect(hit.result.rows).toEqual([aiRow]);
+    expect((await put(token, { hash: HASH, fileName: "s.pdf", result: { ...cacheResult, rows: [{ ...aiRow, amount: 9 }] } })).status).toBe(200);
+    expect(((await (await get(token, HASH)).json()) as any).result.rows[0].amount).toBe(9);
+  });
+
+  it("is private to each account and validates input", async () => {
+    const a = await makeUser();
+    const b = await makeUser();
+    await put(a.token, { hash: HASH, fileName: "s.pdf", result: cacheResult });
+    expect((await get(b.token, HASH)).status).toBe(404);
+    expect((await put(a.token, { hash: "short", fileName: "x", result: cacheResult })).status).toBe(400);
+    expect((await put(a.token, { hash: HASH, fileName: "x", result: { ...cacheResult, source: "heuristic" } })).status).toBe(400);
+    expect((await put(a.token, { hash: HASH, fileName: "x", result: { ...cacheResult, rows: [] } })).status).toBe(400);
+    expect((await get(a.token, "nothex")).status).toBe(400);
   });
 });
 

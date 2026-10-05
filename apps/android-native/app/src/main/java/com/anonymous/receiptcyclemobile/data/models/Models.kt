@@ -110,6 +110,8 @@ data class PublicConfig(
     val manualAddEnabled: Boolean? = true,
     val exportEnabled: Boolean? = true,
     val maintenanceMode: Boolean? = false,
+    /** False on the free-plan deployment: sign in with Google or an emailed code instead. */
+    val passwordAuthEnabled: Boolean? = false,
 )
 
 @Serializable

@@ -5,6 +5,7 @@ import com.anonymous.receiptcyclemobile.data.SessionStorage
 import com.anonymous.receiptcyclemobile.data.models.AuthResult
 import com.anonymous.receiptcyclemobile.data.models.AuthUser
 import com.anonymous.receiptcyclemobile.data.models.PasswordResetRequestResult
+import com.anonymous.receiptcyclemobile.data.models.PublicConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
@@ -45,6 +46,29 @@ class AuthRepository(
         val res = api.send<AuthResult>(
             "POST", "/api/auth/sign-up/email",
             mapOf("email" to email.trim(), "password" to password, "name" to (name?.trim() ?: "")),
+            anonymous = true,
+        ) ?: error("Authentication failed")
+        persistSession(res)
+    }
+
+    /** Whether the server has email + password sign-in turned on (off on the free plan). */
+    suspend fun passwordsEnabled(): Boolean =
+        runCatching { api.get<PublicConfig>("/api/config", anonymous = true)?.passwordAuthEnabled == true }.getOrDefault(false)
+
+    /** Passwordless sign-in, step 1: email a 6-digit code. */
+    suspend fun sendEmailCode(email: String): Result<Unit> = runAuth {
+        api.sendUnit(
+            "POST", "/api/auth/email-otp/send-verification-otp",
+            mapOf("email" to email.trim(), "type" to "sign-in"),
+            anonymous = true,
+        )
+    }
+
+    /** Step 2: trade the code for a session. A new email gets an account on its first code. */
+    suspend fun signInWithEmailCode(email: String, otp: String): Result<Unit> = runAuth {
+        val res = api.send<AuthResult>(
+            "POST", "/api/auth/sign-in/email-otp",
+            mapOf("email" to email.trim(), "otp" to otp.trim()),
             anonymous = true,
         ) ?: error("Authentication failed")
         persistSession(res)

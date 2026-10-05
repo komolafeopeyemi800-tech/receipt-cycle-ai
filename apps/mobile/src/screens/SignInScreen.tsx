@@ -18,6 +18,8 @@ import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../contexts/AuthContext";
 import { GoogleSignInButton } from "../components/GoogleSignInButton";
+import { EmailCodeForm } from "../components/EmailCodeForm";
+import { api, useQuery } from "../lib/api";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
 import { getRememberedEmailAsync } from "../lib/rememberedEmail";
@@ -29,6 +31,7 @@ export function SignInScreen() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const passwordsOn = useQuery(api.admin.publicConfig, {})?.passwordAuthEnabled === true;
 
   useEffect(() => {
     void (async () => {
@@ -74,10 +77,21 @@ export function SignInScreen() {
 
             <View style={styles.card}>
               <GoogleSignInButton onError={onGoogleError} />
+              {err && !passwordsOn ? <Text style={styles.err}>{err}</Text> : null}
 
               <View style={styles.orRow}>
                 <View style={styles.orLine} />
-                <Text style={styles.orTxt}>or email</Text>
+                <Text style={styles.orTxt}>or with your email</Text>
+                <View style={styles.orLine} />
+              </View>
+
+              <EmailCodeForm mode="signin" initialEmail={email} />
+
+              {passwordsOn ? (
+              <>
+              <View style={styles.orRow}>
+                <View style={styles.orLine} />
+                <Text style={styles.orTxt}>or password</Text>
                 <View style={styles.orLine} />
               </View>
 
@@ -114,6 +128,8 @@ export function SignInScreen() {
               <Pressable style={styles.forgotRow} onPress={() => navigation.navigate("ForgotPassword")}>
                 <Text style={styles.forgot}>Forgot password?</Text>
               </Pressable>
+              </>
+              ) : null}
             </View>
 
             <Pressable style={styles.linkRow} onPress={() => navigation.navigate("SignUp")}>

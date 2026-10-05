@@ -1,7 +1,8 @@
 /**
  * React bindings. `useQuery` / `useMutation` / `useAction` have the same shape as Convex's hooks so
  * screens barely changed, but they run on TanStack Query over plain HTTP:
- *  - queries refetch on window focus / reconnect, every minute, and after any mutation
+ *  - queries refetch on window focus / reconnect and after any mutation (no background polling: each
+ *    poll is a request, and the Workers free plan allows 100,000 a day)
  *  - the whole cache is dropped when the signed-in user changes
  */
 import { onlineManager, useQuery as useRQ, useQueryClient } from "@tanstack/react-query";
@@ -42,8 +43,7 @@ export function useQuery<A, R>(ref: FnRef<A, R>, args: A | "skip"): R | undefine
     queryKey: ["api", ref.name, skip ? null : stableStringify(args)],
     queryFn: async () => (await ref.run(client, args as A)) ?? null,
     enabled: !skip,
-    staleTime: 10_000,
-    refetchInterval: 60_000,
+    staleTime: 30_000,
     retry: (count, err) => count < 1 && !isClientError(err),
   });
   return skip ? undefined : (q.data as R | undefined);

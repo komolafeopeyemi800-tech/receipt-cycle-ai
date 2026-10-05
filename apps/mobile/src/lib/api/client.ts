@@ -50,6 +50,9 @@ const AUTH_MESSAGES: Record<string, string> = {
   INVALID_PASSWORD: "Current password is incorrect.",
   INVALID_TOKEN: "This reset link has expired. Request a new password reset.",
   SESSION_EXPIRED: "Session expired. Sign in again.",
+  INVALID_OTP: "That code is not right. Check it and try again.",
+  OTP_EXPIRED: "That code has expired. Request a new one.",
+  TOO_MANY_ATTEMPTS: "Too many wrong tries. Request a new code.",
 };
 
 export class ApiClient {

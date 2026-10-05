@@ -2,6 +2,7 @@ import { applyD1Migrations, env } from "cloudflare:test";
 import { beforeEach } from "vitest";
 
 const TABLES = [
+  "rate_limits",
   "upload_parses",
   "admin_audit_logs",
   "whop_entitlements",

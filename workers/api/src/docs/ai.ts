@@ -1,18 +1,19 @@
 /**
- * The only places a statement upload can spend AI money. Both are small and last-resort:
- *  - aiMapColumns: a spreadsheet whose headers could not be understood (about 12 rows of text)
- *  - aiExtractRows: free text the splitter could not read confidently (chunked, text model)
- *  - aiOcrPdf: a scanned PDF (page-capped; the one path that is not text-only)
+ * The only places a statement upload can spend AI money. The browser reads the file; it calls these
+ * (through the API, which enforces plan and daily budget) only when code could not solve it:
+ *  - aiMapColumns: a spreadsheet whose headers could not be understood (about 14 rows of text)
+ *  - aiExtractChunk: free text the splitter could not read confidently (one chunk per call)
+ *  - aiOcrPdf: a scanned PDF (page-capped by the client; the one path that is not text-only)
  */
+import { parseAmount, parseDate, round2 } from "../../../../apps/mobile/src/lib/statementParse/normalize";
+import type { ColumnMapping, Grid, ParsedRow } from "../../../../apps/mobile/src/lib/statementParse/statement";
 import type { Env } from "../types";
-import { parseAmount, parseDate, round2 } from "./normalize";
-import type { ColumnMapping, Grid, ParsedRow } from "./statement";
 
 const model = (env: Env) => env.OPENAI_VISION_MODEL?.trim() || "gpt-4o-mini";
 
 async function chatJson(env: Env, messages: unknown[], maxTokens = 4096): Promise<Record<string, unknown>> {
   const key = env.OPENAI_API_KEY?.trim();
-  if (!key) throw new Error("Add OPENAI_API_KEY to the API Worker for the AI helper.");
+  if (!key) throw new Error("The AI helper is not configured on the server.");
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
@@ -91,39 +92,18 @@ const EXTRACT_SYSTEM =
   'Reply with JSON: {"transactions":[{"date":"YYYY-MM-DD","description":string,"amount":positive number,"type":"expense"|"income"}]}. ' +
   "Money leaving the account is an expense; money arriving is income. Ignore opening/closing balances, totals and page headers. Never invent rows.";
 
-export const TEXT_CHUNK_CHARS = 12_000;
-export const MAX_AI_CHUNKS = 15;
-
-/** Free text to rows, chunked so a long statement is several small calls. */
-export async function aiExtractRows(env: Env, text: string): Promise<{ rows: ParsedRow[]; calls: number; truncated: boolean }> {
-  const flat = text.replace(/\s+/g, " ").trim();
-  const chunks: string[] = [];
-  let start = 0;
-  while (start < flat.length && chunks.length < MAX_AI_CHUNKS) {
-    let end = Math.min(flat.length, start + TEXT_CHUNK_CHARS);
-    if (end < flat.length) {
-      // Cut on a space so a row is not split mid-word.
-      const space = flat.lastIndexOf(" ", end);
-      if (space > start) end = space;
-    }
-    chunks.push(flat.slice(start, end).trim());
-    start = end;
-  }
-  const rows: ParsedRow[] = [];
-  for (const chunk of chunks) {
-    const out = await chatJson(env, [{ role: "system", content: EXTRACT_SYSTEM }, { role: "user", content: chunk }], 8192);
-    rows.push(...validateRows(out.transactions));
-  }
-  return { rows, calls: chunks.length, truncated: start < flat.length };
+/** One piece of statement text to rows. The browser splits long text and calls this per piece. */
+export async function aiExtractChunk(env: Env, text: string): Promise<ParsedRow[]> {
+  const out = await chatJson(env, [{ role: "system", content: EXTRACT_SYSTEM }, { role: "user", content: text }], 8192);
+  return validateRows(out.transactions);
 }
 
 /**
  * Scanned PDF to rows using the model's PDF file input. NOTE: written from OpenAI's documented
  * `file` content part; not exercised against the live API in tests (a stub is used).
+ * The browser sends the PDF already base64-encoded, so the Worker only forwards it (no CPU spent encoding).
  */
-export async function aiOcrPdf(env: Env, bytes: Uint8Array): Promise<ParsedRow[]> {
-  let bin = "";
-  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+export async function aiOcrPdf(env: Env, pdfBase64: string): Promise<ParsedRow[]> {
   const out = await chatJson(
     env,
     [
@@ -131,7 +111,7 @@ export async function aiOcrPdf(env: Env, bytes: Uint8Array): Promise<ParsedRow[]
       {
         role: "user",
         content: [
-          { type: "file", file: { filename: "statement.pdf", file_data: `data:application/pdf;base64,${btoa(bin)}` } },
+          { type: "file", file: { filename: "statement.pdf", file_data: `data:application/pdf;base64,${pdfBase64}` } },
           { type: "text", text: "Extract every transaction from this scanned statement." },
         ],
       },

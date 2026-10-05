@@ -11,6 +11,8 @@ import { accountRoutes, budgetRoutes, categoryRoutes } from "./routes/money";
 import { transactionRoutes } from "./routes/transactions";
 import { webhookRoutes } from "./routes/webhooks";
 import { meRoutes, socialRoutes } from "./routes/session";
+import { receiptRoutes } from "./routes/receipts";
+import { uploadRoutes } from "./routes/uploads";
 import { workspaceRoutes } from "./routes/workspaces";
 import type { AppEnv } from "./types";
 
@@ -41,6 +43,8 @@ app.route("/api/subscription", subscriptionRoutes);
 app.route("/api/admin", adminRoutes);
 app.route("/api/ai", aiRoutes);
 app.route("/api/contact", contactRoutes);
+app.route("/api/uploads", uploadRoutes);
+app.route("/api/receipts", receiptRoutes);
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 

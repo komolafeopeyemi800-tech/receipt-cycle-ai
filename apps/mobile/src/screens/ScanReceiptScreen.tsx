@@ -92,7 +92,7 @@ export function ScanReceiptScreen() {
         : "Position the receipt within the frame";
 
   const processBase64 = useCallback(
-    async (base64: string, mime: string) => {
+    async (base64: string, mime: string, receiptUri?: string) => {
       try {
         if (!token) {
           Alert.alert("Sign in", "Sign in to scan receipts.");
@@ -118,7 +118,7 @@ export function ScanReceiptScreen() {
           );
           return;
         }
-        navigation.navigate("ScanReview", { scannedData: extracted as ScannedExtracted, source: "camera" });
+        navigation.navigate("ScanReview", { scannedData: extracted as ScannedExtracted, source: "camera", receiptUri });
       } catch (e) {
         Alert.alert("Scan failed", userFacingErrorFromUnknown(e));
       }
@@ -149,7 +149,7 @@ export function ScanReceiptScreen() {
         return;
       }
       setProcessingUri(photo.uri);
-      await processBase64(photo.base64, "image/jpeg");
+      await processBase64(photo.base64, "image/jpeg", photo.uri);
     } catch (e) {
       Alert.alert("Camera", userFacingErrorFromUnknown(e));
     } finally {
@@ -253,7 +253,7 @@ export function ScanReceiptScreen() {
         reader.onerror = () => reject(reader.error);
         reader.readAsDataURL(blob);
       });
-      await processBase64(base64, mime);
+      await processBase64(base64, mime, uri);
     } finally {
       busyRef.current = false;
       setBusy(false);

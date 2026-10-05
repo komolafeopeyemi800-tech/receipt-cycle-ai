@@ -58,7 +58,7 @@ export function ScanReviewScreen() {
     navigation.dispatch(
       CommonActions.reset({
         index: 1,
-        routes: [{ name: "Main" }, { name: "AddTransaction", params: { scannedData: merged, source: route.params.source } }],
+        routes: [{ name: "Main" }, { name: "AddTransaction", params: { scannedData: merged, source: route.params.source, receiptUri: route.params.receiptUri } }],
       }),
     );
   };
@@ -73,21 +73,16 @@ export function ScanReviewScreen() {
         <Pressable onPress={onRetake} hitSlop={12}>
           <Ionicons name="chevron-back" size={20} color={colors.gray900} />
         </Pressable>
-        <Text style={styles.title}>Review scan</Text>
+        <Text style={styles.title}>Review Receipt</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.pad} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <View style={styles.syncNote}>
-          <Ionicons name="cloud-upload-outline" size={16} color={colors.primary} style={{ marginRight: 8, marginTop: 2 }} />
-          <Text style={styles.syncNoteTxt}>
-            Your edits apply here first. The transaction syncs to Convex after you tap Save on the next screen.
-          </Text>
+        <View style={styles.reviewSuccess}><Ionicons name="sparkles-outline" size={19} color={colors.primary} /><View style={{ flex: 1 }}><Text style={styles.reviewSuccessTitle}>AI extracted this information</Text><Text style={styles.reviewSuccessSub}>Review and edit before saving</Text></View><Ionicons name="checkmark-circle" size={20} color={colors.success} /></View>
+        <View style={styles.previewRow}>
+          <View style={styles.receiptPreview}><Text style={styles.receiptPreviewText} numberOfLines={8}>{draft.formatted_receipt_text?.trim() || `${draft.merchant_name || "Receipt"}\n${draft.date || ""}\n${amountStr || ""}`}</Text></View>
+          <View style={styles.receiptPreview}><Ionicons name="receipt-outline" size={25} color={colors.gray500} /><Text style={styles.receiptPreviewLabel}>Extracted text</Text></View>
         </View>
-
-        <Text style={styles.lead}>
-          Fix any OCR mistakes below. The receipt-style text is saved with your transaction as reference.
-        </Text>
 
         <View style={styles.metaRow}>
           <View style={styles.badge}>
@@ -206,8 +201,10 @@ export function ScanReviewScreen() {
           </View>
         ) : null}
 
+        <View style={styles.syncNote}><Ionicons name="cloud-upload-outline" size={16} color={colors.primary} style={{ marginRight: 8, marginTop: 2 }} /><Text style={styles.syncNoteTxt}>Your changes are saved with the transaction on the next screen.</Text></View>
+
         <Pressable style={styles.primary} onPress={onSave}>
-          <Text style={styles.primaryTxt}>Looks good — save transaction</Text>
+          <Text style={styles.primaryTxt}>Continue to save expense</Text>
         </Pressable>
         <Pressable style={styles.secondary} onPress={onRetake}>
           <Ionicons name="camera-outline" size={16} color={colors.primary} />
@@ -227,8 +224,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingBottom: 6,
   },
-  title: { fontSize: typeScale.title, fontWeight: "700", color: colors.gray900 },
-  pad: { paddingHorizontal: 14, paddingBottom: 28 },
+  title: { fontSize: 17, fontWeight: "800", color: colors.textPrimary },
+  pad: { paddingHorizontal: 16, paddingBottom: 28, paddingTop: 8 },
+  reviewSuccess: { flexDirection: "row", alignItems: "center", gap: 9, backgroundColor: colors.mintSoft, borderColor: "#c9eee2", borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 12 },
+  reviewSuccessTitle: { color: colors.primaryDark, fontSize: 12, fontWeight: "800" },
+  reviewSuccessSub: { color: colors.gray600, fontSize: 11, marginTop: 2 },
+  previewRow: { flexDirection: "row", gap: 8, marginBottom: 14 },
+  receiptPreview: { flex: 1, minHeight: 100, maxHeight: 120, borderRadius: 10, borderColor: colors.border, borderWidth: 1, backgroundColor: "#f7f9fa", padding: 8, alignItems: "center", justifyContent: "center" },
+  receiptPreviewText: { color: colors.gray700, fontSize: 9, lineHeight: 12, textAlign: "center", fontFamily: Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" }) },
+  receiptPreviewLabel: { color: colors.gray500, fontSize: 11, marginTop: 4 },
   syncNote: {
     flexDirection: "row",
     alignItems: "flex-start",

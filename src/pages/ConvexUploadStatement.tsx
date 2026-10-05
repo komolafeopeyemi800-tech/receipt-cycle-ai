@@ -1,8 +1,9 @@
 import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
-import { useMutation, useQuery } from "@mobile-lib/api";
-import { api } from "@mobile-lib/api";
+import { useAction, useMutation, useQuery } from "@mobile-lib/api";
+import { api, type StatementRow } from "@mobile-lib/api";
 import { parseStatementCsv } from "@mobile-lib/statementCsv";
+import { describeParse, importInChunks } from "@mobile-lib/statementUpload";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { AppChrome } from "@/components/layout/AppChrome";
@@ -13,7 +14,7 @@ function defaultCategory(type: "expense" | "income") {
   return type === "expense" ? "Other" : "Salary";
 }
 
-/** Web: CSV statement import into the shared ledger (aligned with mobile: CSV or image for scans — no PDF). */
+/** Web: statement import (CSV, Excel, PDF, Word). CSV is read in the browser first; everything else is read by the API. */
 function ConvexUploadStatementInner() {
   const { workspace, ready } = useWorkspace();
   const { user, token } = useWebAuth();
@@ -21,6 +22,7 @@ function ConvexUploadStatementInner() {
   const runtime = useQuery(api.admin.publicConfig, {});
   const bulkImport = useMutation(api.transactions.bulkImport);
   const ensureCats = useMutation(api.categories.ensureSeed);
+  const parseOnServer = useAction(api.uploads.parseStatement);
 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -48,36 +50,45 @@ function ConvexUploadStatementInner() {
       try {
         await ensureCats({ workspace });
         const name = file.name.toLowerCase();
-        const isPdf = name.endsWith(".pdf") || file.type === "application/pdf";
-        if (isPdf) {
-          setMsg("PDF is not supported. Export a CSV from your bank and upload that file instead.");
-          return;
+        let rows: StatementRow[] | null = null;
+        let note = "";
+
+        // CSV: try the fast in-browser reader first (works offline, tuned for bank exports).
+        if (name.endsWith(".csv") || file.type.includes("csv")) {
+          const local = parseStatementCsv(await file.text());
+          if (local.ok) {
+            rows = local.rows.map((r) => ({
+              amount: r.amount,
+              type: r.type,
+              category: defaultCategory(r.type),
+              date: r.date,
+              merchant: r.merchant,
+              description: r.description,
+            }));
+            note = local.warnings.join(" ");
+          }
         }
 
-        const text = await file.text();
-        const parsed = parseStatementCsv(text);
-
-        if (!parsed.ok) {
-          setMsg(parsed.error);
-          return;
+        // Excel, PDF, Word (or a CSV the local reader could not understand): the API reads the file.
+        if (!rows) {
+          setMsg("Reading your file…");
+          const parsed = await parseOnServer({ file, fileName: file.name });
+          if (parsed.status !== "ok") {
+            setMsg(parsed.message ?? "Could not read this file.");
+            return;
+          }
+          rows = parsed.rows;
+          note = describeParse(parsed);
         }
 
-        const rows = parsed.rows.map((r) => ({
-          amount: r.amount,
-          type: r.type,
-          category: defaultCategory(r.type),
-          date: r.date,
-          merchant: r.merchant,
-          description: r.description,
-          payment_method: "Import",
-        }));
-
-        const res = await bulkImport({ workspace, userId, token, rows });
-
-        const w = parsed.warnings.join(" ");
-        setMsg(
-          `Imported ${res.inserted} transaction(s).${res.truncated ? " (file was truncated to limit)" : ""}${w ? ` ${w}` : ""}`,
+        const total = rows.length;
+        const res = await importInChunks(
+          rows,
+          (chunk) =>
+            bulkImport({ workspace, userId, token, rows: chunk.map((r) => ({ ...r, payment_method: "Import" })) }),
+          (done) => setMsg(`Importing… ${done} of ${total}`),
         );
+        setMsg(`Imported ${res.inserted} transaction(s).${note ? ` ${note}` : ""}`);
       } catch (e) {
         setMsg(e instanceof Error ? e.message : "Import failed");
       } finally {
@@ -90,7 +101,7 @@ function ConvexUploadStatementInner() {
   const onPick = () => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".csv,text/csv,application/csv";
+    input.accept = ".csv,.xlsx,.ods,.pdf,.docx,.odt,text/csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     input.onchange = () => {
       const f = input.files?.[0];
       if (f) void runImport(f);
@@ -111,8 +122,8 @@ function ConvexUploadStatementInner() {
         </div>
         <h1 style={{ fontSize: 17, fontWeight: 700, margin: "0 0 8px" }}>Upload statement</h1>
         <p style={{ fontSize: 12, color: "#64748b", marginBottom: 16, lineHeight: 1.45 }}>
-          Upload a CSV export from your bank (columns: Date, Amount or Debit/Credit, Description). PDF is not supported —
-          use CSV for reliable imports.
+          Upload a bank statement or sales report as Excel (.xlsx), CSV or PDF. Files with Date, Description and
+          Amount (or Debit/Credit) columns are read instantly and free. Scanned PDFs need the AI helper.
         </p>
         <div
           style={{

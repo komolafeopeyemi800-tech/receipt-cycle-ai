@@ -51,6 +51,7 @@ export function AddTransactionScreen() {
   const insets = useSafeAreaInsets();
   const route = useRoute<RouteProp<RootStackParamList, "AddTransaction">>();
   const createTx = useMutation(api.transactions.create);
+  const uploadReceipt = useAction(api.receipts.upload);
   const updateTx = useMutation(api.transactions.update);
   const ensureCats = useMutation(api.categories.ensureSeed);
   const ensureAcc = useMutation(api.accounts.ensureSeed);
@@ -510,6 +511,22 @@ export function AddTransactionScreen() {
           receipt_data: rd,
         });
       } else {
+        // Keep the original picture with the entry. A failed upload must never block saving the transaction.
+        let receiptKey: string | undefined;
+        const receiptUri = route.params?.receiptUri;
+        if (receiptUri) {
+          try {
+            const lower = receiptUri.toLowerCase();
+            const type = lower.endsWith(".png") ? "image/png" : lower.endsWith(".webp") ? "image/webp" : lower.endsWith(".heic") ? "image/heic" : "image/jpeg";
+            const file =
+              Platform.OS === "web"
+                ? await (await fetch(receiptUri)).blob()
+                : { uri: receiptUri, name: `receipt.${type.split("/")[1]}`, type };
+            receiptKey = (await uploadReceipt({ file })).key;
+          } catch {
+            receiptKey = undefined;
+          }
+        }
         await createTx({
           workspace,
           userId: user?.id,
@@ -531,6 +548,7 @@ export function AddTransactionScreen() {
               }
             : undefined,
           entrySource,
+          receipt_url: receiptKey,
         });
       }
       navigation.goBack();

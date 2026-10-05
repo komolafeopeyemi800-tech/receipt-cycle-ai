@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import app from "../src/index";
 import { ApiClient, ApiRequestError } from "../../../apps/mobile/src/lib/api/client";
 import { api } from "../../../apps/mobile/src/lib/api/registry";
+import { describeParse, importInChunks } from "../../../apps/mobile/src/lib/statementUpload";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -202,5 +203,53 @@ describe("admin calls", () => {
     await client.mutation(api.admin.updateUserManagement, { secret, userId: users[0]!.id, name: "Boss" });
     expect((await client.query(api.admin.recentAuditLogs, { secret })).length).toBeGreaterThan(0);
     expect(await client.query(api.admin.recentUsers, { secret })).toMatchObject([{ proSubscriptionActive: true, name: "Boss" }]);
+  });
+});
+
+describe("uploads and receipts", () => {
+  it("reads a statement file, remembers it, and imports the rows in chunks", async () => {
+    const { client } = await signedIn("pro@example.com");
+    await env.DB.prepare("UPDATE profile SET pro_subscription_active = 1").run();
+    const lines = ["Date,Description,Amount", ...Array.from({ length: 1200 }, (_, i) => `2026-10-01,Item ${i},-${(i % 9) + 1}.00`)];
+    const file = new File([lines.join(String.fromCharCode(10))], "big.csv", { type: "text/csv" });
+
+    const first = await client.action(api.uploads.parseStatement, { file });
+    expect(first).toMatchObject({ status: "ok", source: "heuristic", cached: false, totalRows: 1200, fileName: "big.csv" });
+    expect(describeParse(first)).toBe("");
+
+    const again = await client.action(api.uploads.parseStatement, { file, fileName: "copy.csv" });
+    expect(again).toMatchObject({ cached: true, fileName: "copy.csv" });
+    expect(describeParse(again)).toMatch(/earlier upload/);
+
+    const progress: number[] = [];
+    const res = await importInChunks(
+      first.rows,
+      (rows) => client.mutation(api.transactions.bulkImport, { workspace: "personal", rows }),
+      (done) => progress.push(done),
+    );
+    expect(res.inserted).toBe(1200);
+    expect(progress).toEqual([500, 1000, 1200]);
+    expect((await client.query(api.transactions.list, { workspace: "personal" })).length).toBe(1200);
+  });
+
+  it("explains an unsupported file instead of failing", async () => {
+    const { client } = await signedIn();
+    const r = await client.action(api.uploads.parseStatement, { file: new File([new Uint8Array([1, 2, 3])], "old.xls") });
+    expect(r.status).toBe("unsupported");
+    expect(r.message).toMatch(/\.xlsx/);
+  });
+
+  it("stores, downloads and deletes a receipt", async () => {
+    const { client } = await signedIn();
+    const stored = await client.action(api.receipts.upload, { file: new File([new Uint8Array([9, 8, 7])], "r.jpg", { type: "image/jpeg" }) });
+    expect(stored).toMatchObject({ size: 3, contentType: "image/jpeg" });
+    const id = await client.mutation(api.transactions.create, {
+      workspace: "personal", amount: 3, type: "expense", category: "Other", date: "2026-10-01", receipt_url: stored.key,
+    });
+    expect((await client.query(api.transactions.get, { id }))!.receipt_url).toBe(stored.key);
+    const blob = await client.action(api.receipts.download, { key: stored.key });
+    expect(new Uint8Array(await blob.arrayBuffer())).toEqual(new Uint8Array([9, 8, 7]));
+    await client.mutation(api.receipts.remove, { key: stored.key });
+    await expect(client.action(api.receipts.download, { key: stored.key })).rejects.toThrow("Receipt not found");
   });
 });

@@ -27,6 +27,9 @@ import type {
   TxDraft,
   VoiceHints,
   WorkspaceSummary,
+  StatementParseResult,
+  StoredReceipt,
+  UploadFile,
   BulkRow,
   DateFormat,
 } from "./types";
@@ -66,6 +69,11 @@ type UserPatch = AdminArgs & {
   plan?: string;
   proSubscriptionActive?: boolean;
 };
+
+function appendFile(form: FormData, file: UploadFile, fileName?: string) {
+  if (typeof Blob !== "undefined" && file instanceof Blob) form.append("file", file, fileName ?? (file as File).name ?? "upload");
+  else form.append("file", file as unknown as Blob); // React Native: { uri, name, type }
+}
 
 export const api = {
   // ---- sign-in, sessions ----------------------------------------------------
@@ -367,6 +375,32 @@ export const api = {
         token: tok(a),
         body: { periodLabel: a.periodLabel, rows: a.rows, messages: a.messages },
       }),
+    ),
+  },
+  uploads: {
+    /** Reads an Excel/CSV/PDF/Word statement into rows (no import yet). Repeat uploads of the same file are free. */
+    parseStatement: fn<{ file: UploadFile; fileName?: string; refresh?: boolean }, StatementParseResult>(
+      "action",
+      "uploads.parseStatement",
+      (c, a) => {
+        const form = new FormData();
+        appendFile(form, a.file, a.fileName);
+        return c.request("POST", "/api/uploads/statement", { form, query: { refresh: a.refresh ? "1" : undefined } });
+      },
+    ),
+  },
+  receipts: {
+    /** Stores a receipt image/PDF in your private storage; put the returned `key` in `receipt_url`. */
+    upload: fn<{ file: UploadFile; fileName?: string }, StoredReceipt>("action", "receipts.upload", (c, a) => {
+      const form = new FormData();
+      appendFile(form, a.file, a.fileName);
+      return c.request("POST", "/api/receipts", { form });
+    }),
+    remove: fn<{ key: string }, void>("mutation", "receipts.remove", async (c, a) => {
+      await c.request("DELETE", "/api/receipts", { query: { key: a.key } });
+    }),
+    download: fn<{ key: string }, Blob>("action", "receipts.download", (c, a) =>
+      c.requestBlob("/api/receipts/file", { query: { key: a.key } }),
     ),
   },
   email: {

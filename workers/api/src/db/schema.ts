@@ -296,3 +296,27 @@ export const whopEntitlements = sqliteTable(
   },
   (t) => [index("whop_ent_user_idx").on(t.whopUserId), index("whop_ent_email_idx").on(t.email)],
 );
+
+/**
+ * One row per file a user has uploaded for import, keyed by the file's SHA-256. Uploading the same
+ * file again returns this result instead of reading (and possibly paying to read) it twice.
+ */
+export const uploadParses = sqliteTable(
+  "upload_parses",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    fileHash: text("file_hash").notNull(),
+    fileName: text("file_name").notNull(),
+    fileType: text("file_type"),
+    /** "heuristic" (no AI) or "ai" */
+    source: text("source", { enum: ["heuristic", "ai"] }).notNull(),
+    rowCount: integer("row_count").notNull(),
+    /** JSON of the ParseResult returned to the client */
+    result: text("result").notNull(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [uniqueIndex("upload_parses_user_hash_idx").on(t.userId, t.fileHash), index("upload_parses_user_created_idx").on(t.userId, t.createdAt)],
+);

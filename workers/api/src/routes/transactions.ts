@@ -14,6 +14,7 @@ import {
   computeSubscriptionState,
 } from "../lib/subscription";
 import { requireUser } from "../middleware/auth";
+import { deleteReceiptQuietly, ownsReceipt } from "./receipts";
 import type { AppEnv, AuthedUser, Db } from "../types";
 
 const MAX_BULK_IMPORT = 500;
@@ -169,6 +170,7 @@ transactionRoutes.post("/", async (c) => {
   if (source === "upload" && !cfg.uploadEnabled) throw new ApiError(403, "Upload flow is currently disabled by admin.");
   if (source === "manual" && !cfg.manualAddEnabled) throw new ApiError(403, "Manual add is currently disabled by admin.");
   assertCanCreateTransaction(subscriptionOf(u));
+  if (body.receipt_url && !ownsReceipt(u.id, body.receipt_url)) throw new ApiError(400, "That receipt does not belong to this account.");
 
   const scope = await resolveScope(db, u.id, body.workspace);
   const id = newId();
@@ -260,6 +262,7 @@ transactionRoutes.delete("/:id", async (c) => {
   const reverse = balanceDelta(row.type, row.amount);
   if (row.accountId && reverse !== 0) stmts.push(adjustBalance(db, row.accountId, scope, -reverse));
   await runBatch(db, stmts);
+  await deleteReceiptQuietly(c.env.FILES, u.id, row.receiptUrl);
   return c.json({ ok: true });
 });
 

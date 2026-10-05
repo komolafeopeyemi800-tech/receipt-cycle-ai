@@ -25,6 +25,8 @@ import { useWorkspace } from "../contexts/WorkspaceContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useSubscriptionState } from "../hooks/useSubscriptionState";
 import { parseStatementCsv } from "../lib/statementCsv";
+import { describeParse, importInChunks } from "../lib/statementUpload";
+import type { StatementRow, UploadFile } from "../lib/api";
 import { userFacingError, userFacingErrorFromUnknown } from "../lib/userFacingErrors";
 import type { ScannedExtracted } from "../types/transaction";
 
@@ -34,18 +36,22 @@ type Picked = {
   uri: string;
   name: string;
   mime: string;
-  kind: "image" | "csv";
+  /** "statement" = Excel, PDF or Word, read by the API. */
+  kind: "image" | "csv" | "statement";
 };
 
 function defaultCategory(type: "expense" | "income") {
   return type === "expense" ? "Other" : "Salary";
 }
 
-/** Only image or CSV — PDF removed (unreliable on device). */
-function classify(name: string, mime: string): "image" | "csv" | null {
+/** Images are scanned; CSV, Excel, PDF and Word are read as statements. */
+function classify(name: string, mime: string): "image" | "csv" | "statement" | null {
   const n = name.toLowerCase();
   if (n.match(/\.(jpg|jpeg|png|webp|heic)$/i) || mime.startsWith("image/")) return "image";
   if (n.endsWith(".csv") || mime.includes("csv")) return "csv";
+  if (n.match(/\.(xlsx|xls|xlsb|ods|pdf|docx|odt)$/i) || mime === "application/pdf" || mime.includes("spreadsheet") || mime.includes("wordprocessing")) {
+    return "statement";
+  }
   return null;
 }
 
@@ -61,6 +67,7 @@ export function UploadStatementScreen() {
   const ensureCats = useMutation(api.categories.ensureSeed);
   const scanImage = useAction(api.scanReceipt.scanFromBase64);
   const scanText = useAction(api.scanReceipt.scanFromDocumentText);
+  const parseOnServer = useAction(api.uploads.parseStatement);
   const runtime = useQuery(api.admin.publicConfig, {});
 
   const [picked, setPicked] = useState<Picked | null>(null);
@@ -76,7 +83,7 @@ export function UploadStatementScreen() {
 
   const loadPreview = useCallback(async (p: Picked) => {
     setPreviewText(null);
-    if (p.kind === "image") return;
+    if (p.kind !== "csv") return;
     try {
       const res = await fetch(p.uri);
       const txt = await res.text();
@@ -88,7 +95,7 @@ export function UploadStatementScreen() {
 
   const onPickNative = useCallback(async () => {
     const res = await DocumentPicker.getDocumentAsync({
-      type: ["image/*", "text/csv", "text/comma-separated-values", "application/csv"],
+      type: ["*/*"], // any file; unsupported types are explained after picking
       copyToCacheDirectory: true,
       multiple: false,
     });
@@ -98,7 +105,7 @@ export function UploadStatementScreen() {
     const mime = asset.mimeType ?? "application/octet-stream";
     const kind = classify(name, mime);
     if (!kind) {
-      Alert.alert("Unsupported file", "Choose an image (JPG, PNG, …) or a CSV file. PDF is not supported.");
+      Alert.alert("Unsupported file", "Choose an image (JPG, PNG, …), a CSV, an Excel (.xlsx) file or a PDF.");
       return;
     }
     const p: Picked = { uri: asset.uri, name, mime, kind };
@@ -111,14 +118,14 @@ export function UploadStatementScreen() {
     if (typeof document === "undefined") return;
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = "image/*,.csv,text/csv";
+    input.accept = "image/*,.csv,.xlsx,.ods,.pdf,.docx,.odt,text/csv,application/pdf";
     input.onchange = () => {
       const f = input.files?.[0];
       if (!f) return;
       void (async () => {
         const kind = classify(f.name, f.type);
         if (!kind) {
-          Alert.alert("Unsupported file", "Choose an image or a CSV file. PDF is not supported.");
+          Alert.alert("Unsupported file", "Choose an image, a CSV, an Excel (.xlsx) file or a PDF.");
           return;
         }
         const uri = URL.createObjectURL(f);
@@ -171,7 +178,7 @@ export function UploadStatementScreen() {
           Alert.alert("Scan", r.error ?? "Could not read document.");
           return;
         }
-        navigation.navigate("ScanReview", { scannedData: extracted as ScannedExtracted, source: "upload" });
+        navigation.navigate("ScanReview", { scannedData: extracted as ScannedExtracted, source: "upload", receiptUri: picked.uri });
         reset();
         return;
       }
@@ -202,7 +209,7 @@ export function UploadStatementScreen() {
   }, [picked, ready, scanImage, scanText, navigation, reset, token, sub]);
 
   const importTable = useCallback(async () => {
-    if (!picked || !ready || picked.kind !== "csv") return;
+    if (!picked || !ready || picked.kind === "image") return;
     if (!user?.id || !token) {
       Alert.alert("Sign in required", "Sign in to import transactions into your account.");
       return;
@@ -215,28 +222,55 @@ export function UploadStatementScreen() {
     setStatus(null);
     try {
       await ensureCats({ workspace });
-      const res = await fetch(picked.uri);
-      const text = await res.text();
-      const parsed = parseStatementCsv(text);
+      let rows: StatementRow[] | null = null;
+      const w: string[] = [];
 
-      if (!parsed.ok) {
-        Alert.alert("Import", userFacingError(parsed.error));
-        return;
+      // CSV: the fast on-device reader first.
+      if (picked.kind === "csv") {
+        const res = await fetch(picked.uri);
+        const parsed = parseStatementCsv(await res.text());
+        if (parsed.ok) {
+          rows = parsed.rows.map((r) => ({
+            amount: r.amount,
+            type: r.type,
+            category: defaultCategory(r.type),
+            date: r.date,
+            merchant: r.merchant,
+            description: r.description,
+          }));
+          w.push(...parsed.warnings);
+        }
       }
 
-      const rows = parsed.rows.map((r) => ({
-        amount: r.amount,
-        type: r.type,
-        category: defaultCategory(r.type),
-        date: r.date,
-        merchant: r.merchant,
-        description: r.description,
-        payment_method: "Import",
-      }));
+      // Excel, PDF, Word (or a CSV the on-device reader could not understand): the API reads the file.
+      if (!rows) {
+        setStatus("Reading your file…");
+        const file: UploadFile =
+          Platform.OS === "web"
+            ? await (await fetch(picked.uri)).blob()
+            : { uri: picked.uri, name: picked.name, type: picked.mime || "application/octet-stream" };
+        const parsed = await parseOnServer({ file, fileName: picked.name });
+        if (parsed.status !== "ok") {
+          Alert.alert("Import", userFacingError(parsed.message ?? "Could not read this file."));
+          return;
+        }
+        rows = parsed.rows;
+        const note = describeParse(parsed);
+        if (note) w.push(note);
+      }
 
-      const out = await bulkImport({ workspace, userId: user.id, token: token!, rows });
-      const w = [...parsed.warnings];
-      if (out.truncated) w.push(`Import capped — only ${out.inserted} rows saved.`);
+      const total = rows.length;
+      const out = await importInChunks(
+        rows,
+        (chunk) =>
+          bulkImport({
+            workspace,
+            userId: user.id,
+            token: token!,
+            rows: chunk.map((r) => ({ ...r, payment_method: "Import" })),
+          }),
+        (done) => setStatus(`Importing… ${done} of ${total}`),
+      );
       setStatus(`Imported ${out.inserted} row(s).`);
       Alert.alert(
         "Import complete",
@@ -249,7 +283,7 @@ export function UploadStatementScreen() {
     } finally {
       setBusy(false);
     }
-  }, [picked, ready, workspace, user?.id, token, ensureCats, bulkImport, navigation, reset, sub]);
+  }, [picked, ready, workspace, user?.id, token, ensureCats, bulkImport, parseOnServer, navigation, reset, sub]);
 
   const canPick = () => {
     if (!ready || busy) return false;
@@ -305,16 +339,16 @@ export function UploadStatementScreen() {
           <View style={styles.dropZone}>
             <Ionicons name="cloud-upload-outline" size={42} color={colors.primary} />
             <Text style={styles.title}>Upload a document</Text>
-            <Text style={styles.sub}>Choose a receipt image or CSV document</Text>
+            <Text style={styles.sub}>Choose a receipt image, or a statement as Excel, CSV or PDF</Text>
             <Pressable style={styles.chooseButton} onPress={onPick} disabled={busy || !ready}><Text style={styles.chooseText}>Choose files</Text></Pressable>
           </View>
           <View style={styles.tileGrid}>
             <Pressable style={[styles.tile, { backgroundColor: colors.blueSoft }]} onPress={() => void onPickGallery()}><Ionicons name="images-outline" size={27} color={colors.blue600} /><Text style={styles.tileText}>Gallery</Text></Pressable>
             <Pressable style={[styles.tile, { backgroundColor: "#f3f7ff" }]} onPress={onPick}><Ionicons name="document-outline" size={27} color={colors.blue600} /><Text style={styles.tileText}>Files</Text></Pressable>
-            <Pressable style={[styles.tile, { backgroundColor: colors.roseSoft, opacity: 0.65 }]} onPress={() => Alert.alert("PDF unavailable", "PDF upload is not supported on this device yet. Choose a JPG or PNG image instead.")}><Ionicons name="document-text-outline" size={27} color={colors.rose600} /><Text style={styles.tileText}>PDF</Text><Text style={styles.tileHint}>Coming soon</Text></Pressable>
+            <Pressable style={[styles.tile, { backgroundColor: colors.roseSoft }]} onPress={onPick}><Ionicons name="document-text-outline" size={27} color={colors.rose600} /><Text style={styles.tileText}>PDF / Excel</Text></Pressable>
             <Pressable style={[styles.tile, { backgroundColor: colors.mintSoft }]} onPress={() => void onPickGallery()}><Ionicons name="image-outline" size={27} color={colors.primary} /><Text style={styles.tileText}>Image</Text></Pressable>
           </View>
-          <View style={styles.infoCard}><Ionicons name="bulb-outline" size={19} color={colors.amber600} /><Text style={styles.infoText}>AI extracts key details from JPG, PNG and other supported images. CSV files can also be imported as transaction rows.</Text></View>
+          <View style={styles.infoCard}><Ionicons name="bulb-outline" size={19} color={colors.amber600} /><Text style={styles.infoText}>AI extracts key details from receipt images. Bank statements and sales reports (Excel, CSV, PDF) are read into transaction rows, usually without any AI, so large files import quickly.</Text></View>
         </View>
       ) : (
         <View style={styles.card}>
@@ -328,6 +362,10 @@ export function UploadStatementScreen() {
 
           {picked.kind === "image" ? (
             <Image source={{ uri: picked.uri }} style={styles.previewImg} resizeMode="contain" />
+          ) : picked.kind === "statement" ? (
+            <Text style={styles.previewTxt}>
+              This file is read when you import it. Large Excel and PDF statements are fine.
+            </Text>
           ) : (
             <ScrollView style={styles.previewBox} nestedScrollEnabled>
               <Text style={styles.previewTxt}>
@@ -336,6 +374,8 @@ export function UploadStatementScreen() {
             </ScrollView>
           )}
 
+          {picked.kind !== "statement" ? (
+            <>
           <Pressable
             style={[styles.btn, (busy || !ready || !aiScanOk) && { opacity: 0.55 }]}
             onPress={() => void processAiScan()}
@@ -351,14 +391,16 @@ export function UploadStatementScreen() {
             )}
           </Pressable>
           <Text style={styles.scanHint}>Opens review screen — edit text, then save (same as camera receipts).</Text>
+            </>
+          ) : null}
 
-          {picked.kind === "csv" ? (
+          {picked.kind !== "image" ? (
             <Pressable
               style={[styles.btnSecondary, (busy || !ready || !canImportRows) && { opacity: 0.55 }]}
               onPress={() => void importTable()}
               disabled={busy || !ready || !canImportRows}
             >
-              <Text style={styles.btnSecondaryTxt}>Import as bank / CSV table</Text>
+              <Text style={styles.btnSecondaryTxt}>{picked.kind === "csv" ? "Import as bank / CSV table" : "Import transactions"}</Text>
             </Pressable>
           ) : null}
 

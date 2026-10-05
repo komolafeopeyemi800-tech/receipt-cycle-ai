@@ -19,6 +19,7 @@ import { ApiError } from "../lib/errors";
 import { googleVerifier } from "../lib/googleIdToken";
 import { parseBody } from "../lib/http";
 import { requireUser } from "../middleware/auth";
+import { deleteAllReceipts } from "./receipts";
 import type { AppEnv } from "../types";
 
 type GoogleProfile = { sub: string; email: string; name?: string };
@@ -121,6 +122,7 @@ meRoutes.post("/reset-data", async (c) => {
     db.delete(transactions).where(eq(transactions.userId, id)),
     db.delete(userPreferences).where(eq(userPreferences.userId, id)),
   ]);
+  await deleteAllReceipts(c.env.FILES, id);
   return c.json({ ok: true });
 });
 
@@ -150,5 +152,6 @@ meRoutes.delete("/", async (c) => {
   // Deleting the user cascades to sessions, credentials, profile, transactions, preferences and memberships.
   stmts.push(db.delete(user).where(eq(user.id, id)));
   await runBatch(db, stmts);
+  await deleteAllReceipts(c.env.FILES, id);
   return c.json({ ok: true });
 });

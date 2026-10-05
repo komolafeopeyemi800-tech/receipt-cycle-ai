@@ -27,6 +27,8 @@ export type ApiClientOptions = {
 export type RequestOptions = {
   query?: Record<string, string | number | boolean | undefined | null>;
   body?: unknown;
+  /** Multipart upload (files). Sent as-is; the runtime sets the multipart boundary. */
+  form?: FormData;
   /** Explicit token wins over the one stored on the client (call sites still pass `token`). */
   token?: string;
   /** Admin dashboard secret, sent as `x-admin-secret`. */
@@ -88,14 +90,14 @@ export class ApiClient {
     const token = opts.anonymous ? null : (opts.token?.trim() || this.token);
     if (token) headers.Authorization = `Bearer ${token}`;
     if (opts.adminSecret) headers["x-admin-secret"] = opts.adminSecret;
-    if (opts.body !== undefined) headers["Content-Type"] = "application/json";
+    if (opts.body !== undefined && !opts.form) headers["Content-Type"] = "application/json";
 
     let res: Response;
     try {
       res = await this.fetchImpl(url.toString(), {
         method,
         headers,
-        body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+        body: opts.form ?? (opts.body === undefined ? undefined : JSON.stringify(opts.body)),
       });
     } catch {
       throw new ApiRequestError(0, "Network error. Check your connection and try again.");
@@ -120,6 +122,21 @@ export class ApiClient {
       throw new ApiRequestError(res.status, message, code);
     }
     return json as T;
+  }
+
+  /** Download a protected file (a stored receipt) as a Blob so it can be shown with an object URL. */
+  async requestBlob(path: string, opts: Pick<RequestOptions, "query" | "token"> = {}): Promise<Blob> {
+    const url = new URL(`${this.baseUrl}${path}`);
+    for (const [k, v] of Object.entries(opts.query ?? {})) if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
+    const token = opts.token?.trim() || this.token;
+    let res: Response;
+    try {
+      res = await this.fetchImpl(url.toString(), { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    } catch {
+      throw new ApiRequestError(0, "Network error. Check your connection and try again.");
+    }
+    if (!res.ok) throw new ApiRequestError(res.status, res.status === 404 ? "Receipt not found" : `Request failed (${res.status}).`);
+    return res.blob();
   }
 
   /** Convex-style helpers so non-hook code (backups, contact form) reads the same as before. */

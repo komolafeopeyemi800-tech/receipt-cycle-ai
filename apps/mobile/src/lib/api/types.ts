@@ -224,3 +224,39 @@ export type TxDraft = {
 };
 
 export type Finding = { title: string; detail: string; severity: "low" | "medium" | "high" };
+
+// ---- Uploads and receipts --------------------------------------------------
+
+/** A file to upload: a Blob/File in the browser, or the `{ uri, name, type }` object React Native uses. */
+export type UploadFile = Blob | { uri: string; name: string; type: string };
+
+export type StatementRow = {
+  date: string;
+  amount: number;
+  type: "expense" | "income";
+  category: string;
+  merchant?: string;
+  description?: string;
+  payment_method?: string;
+};
+
+export type StatementParseResult = {
+  status: "ok" | "needs_ocr" | "unreadable" | "unsupported" | "too_large";
+  fileType: string | null;
+  rows: StatementRow[];
+  totalRows: number;
+  truncated: boolean;
+  /** "heuristic" means no AI was used. */
+  source: "heuristic" | "ai";
+  aiCalls: number;
+  warnings: string[];
+  message?: string;
+  needsOcr?: { pages: number[]; pageCount: number };
+  sheets?: { name: string; rows: number }[];
+  fileHash: string;
+  fileName: string;
+  /** True when this exact file was read before and the saved result was returned. */
+  cached: boolean;
+};
+
+export type StoredReceipt = { key: string; size: number; contentType: string };

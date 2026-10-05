@@ -2,7 +2,7 @@
  * Mirrors `apps/mobile/src/contexts/PreferencesContext.tsx` using localStorage + Convex `userPreferences`
  * so web and mobile stay in sync for the same signed-in user.
  */
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "@mobile-lib/api";
 import {
   createContext,
   useCallback,
@@ -13,7 +13,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { api } from "@convex/_generated/api";
+import { api } from "@mobile-lib/api";
 import {
   PREF_KEYS,
   SETTINGS_STORAGE_KEYS,

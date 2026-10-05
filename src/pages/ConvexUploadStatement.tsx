@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
+import { useMutation, useQuery } from "@mobile-lib/api";
+import { api } from "@mobile-lib/api";
 import { parseStatementCsv } from "@mobile-lib/statementCsv";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useWebAuth } from "@/contexts/WebAuthContext";

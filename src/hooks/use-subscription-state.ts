@@ -1,5 +1,5 @@
-import { useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
+import { useQuery } from "@mobile-lib/api";
+import { api } from "@mobile-lib/api";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 
 /** Server-authoritative trial / Pro flags (7-day trial, 25 tx cap, export = Pro only). */

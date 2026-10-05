@@ -1,5 +1,5 @@
-import { useAction, useMutation, useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
+import { useAction, useMutation, useQuery } from "@mobile-lib/api";
+import { api, useApiClient } from "@mobile-lib/api";
 import { formatAuthError } from "@mobile-lib/authErrors";
 import {
   createContext,
@@ -36,11 +36,11 @@ type WebAuthCtx = {
   user: WebAuthUser | null;
   token: string | null;
   loading: boolean;
-  /** Clears the stored session without calling Convex (use when stuck loading or backend is unreachable). */
+  /** Clears the stored session without calling the server (use when stuck loading or backend is unreachable). */
   clearLocalSession: () => void;
   signIn: (email: string, password: string) => Promise<WebAuthActionResult>;
   signUp: (email: string, password: string, name?: string) => Promise<WebAuthActionResult>;
-  signInWithWhop: (code: string, redirectUri: string, codeVerifier: string) => Promise<WebAuthActionResult>;
+  signInWithGoogle: (idToken: string) => Promise<WebAuthActionResult>;
   signOut: () => Promise<void>;
 };
 
@@ -51,9 +51,10 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
   const [cachedUser, setCachedUser] = useState<WebAuthUser | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
+  const apiClient = useApiClient();
   const signInAction = useAction(api.authNode.signIn);
   const signUpAction = useAction(api.authNode.signUp);
-  const signInWithWhopAction = useAction(api.authNode.signInWithWhop);
+  const signInWithGoogleAction = useAction(api.authNode.signInWithGoogle);
   const signOutMutation = useMutation(api.auth.signOut);
   const bootstrapSubscription = useMutation(api.subscription.bootstrapSubscription);
 
@@ -62,6 +63,10 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
     setCachedUser(getWebSessionUser());
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    apiClient.setToken(token);
+  }, [apiClient, token]);
 
   const me = useQuery(api.auth.me, token ? { token } : "skip");
 
@@ -75,7 +80,7 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [hydrated, token, me]);
 
-  /** Stale token or unreachable Convex leaves `me` stuck as `undefined` → AppChrome spins forever. */
+  /** Stale token or an unreachable server leaves `me` stuck as `undefined` → AppChrome spins forever. */
   useEffect(() => {
     if (!hydrated || !token) return;
     if (me !== undefined) return;
@@ -187,10 +192,10 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
     [signUpAction],
   );
 
-  const signInWithWhop = useCallback(
-    async (code: string, redirectUri: string, codeVerifier: string) => {
+  const signInWithGoogle = useCallback(
+    async (idToken: string) => {
       try {
-        const res = await signInWithWhopAction({ code, redirectUri, codeVerifier });
+        const res = await signInWithGoogleAction({ idToken });
         setWebSessionToken(res.token);
         setWebSessionUser({
           id: res.user.id,
@@ -209,7 +214,7 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
         return { error: new Error(formatAuthError(e)) };
       }
     },
-    [signInWithWhopAction],
+    [signInWithGoogleAction],
   );
 
   const clearLocalSession = useCallback(() => {
@@ -250,10 +255,10 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
       clearLocalSession,
       signIn,
       signUp,
-      signInWithWhop,
+      signInWithGoogle,
       signOut,
     }),
-    [user, token, loading, clearLocalSession, signIn, signUp, signInWithWhop, signOut],
+    [user, token, loading, clearLocalSession, signIn, signUp, signInWithGoogle, signOut],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "../lib/api";
 import {
   createContext,
   useCallback,
@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../lib/api";
 import {
   PREF_KEYS,
   SETTINGS_STORAGE_KEYS,

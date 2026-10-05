@@ -18,7 +18,6 @@ import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../contexts/AuthContext";
 import { GoogleSignInButton } from "../components/GoogleSignInButton";
-import { WhopSignInButton } from "../components/WhopSignInButton";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
 import { getRememberedEmailAsync } from "../lib/rememberedEmail";
@@ -74,14 +73,6 @@ export function SignInScreen() {
             </View>
 
             <View style={styles.card}>
-              <WhopSignInButton onError={(m) => setErr(m)} disabled={busy} />
-
-              <View style={styles.orRow}>
-                <View style={styles.orLine} />
-                <Text style={styles.orTxt}>or</Text>
-                <View style={styles.orLine} />
-              </View>
-
               <GoogleSignInButton onError={onGoogleError} />
 
               <View style={styles.orRow}>

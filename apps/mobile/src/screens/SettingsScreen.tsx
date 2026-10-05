@@ -7,8 +7,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { useQuery } from "../lib/api";
+import { api } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { useSubscriptionState } from "../hooks/useSubscriptionState";
@@ -57,7 +57,7 @@ export function SettingsScreen() {
   function buildCsv(rows: NonNullable<typeof backupRows>) {
     const header = ["date", "type", "category", "amount", "merchant", "description", "payment_method", "workspace"].join(",");
     const body = rows
-      .map((t) =>
+      .map((t: (typeof rows)[number]) =>
         [
           csvValue(t.date),
           csvValue(t.type),
@@ -159,41 +159,63 @@ export function SettingsScreen() {
           <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
             <Ionicons name="chevron-back" size={22} color={colors.gray900} />
           </Pressable>
-          <Text style={styles.screenTitle}>Settings</Text>
+          <Text style={styles.screenTitle}>Profile & Account</Text>
           <View style={{ width: 28 }} />
         </View>
 
         {user && (
           <View style={styles.profile}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarTxt}>{(user.email ?? "?").slice(0, 1).toUpperCase()}</Text>
+              <Text style={styles.avatarTxt}>{(user.name || user.email || "?").slice(0, 1).toUpperCase()}</Text>
             </View>
             <View style={{ flex: 1 }}>
+              <Text style={styles.profileName}>{user.name || "Receipt Cycle user"}</Text>
               <Text style={styles.email}>{user.email}</Text>
-              <Text style={styles.caption}>Signed in</Text>
+              <Text style={styles.ownerLabel}>Business Owner</Text>
             </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
           </View>
         )}
 
-        <Text style={styles.section}>PROFILE</Text>
+        <Text style={styles.section}>ACCOUNT</Text>
         <View style={styles.card}>
           <RowNav
-            icon="sparkles-outline"
-            title="Upgrade to Premium"
-            sub="View plans"
-            onPress={() => navigation.navigate("Pricing")}
-            compact
+            icon="business-outline"
+            title="Business"
+            sub="Business profile and invoice identity"
+            onPress={() => navigation.navigate("BusinessProfile")}
           />
           <Divider />
           <RowNav
-            icon="person-outline"
-            title="Account settings"
-            sub="Password and sign-in"
+            icon="shield-checkmark-outline"
+            title="Security"
+            sub="Password and account controls"
             onPress={() => navigation.navigate("AccountSettings")}
+          />
+          <Divider />
+          <RowNav
+            icon="download-outline"
+            title="Export Data"
+            sub={runtime?.exportEnabled === false ? "Disabled by admin" : sub && !sub.canExportCsv ? "Pro only — upgrade to export CSV" : "Download your transaction spreadsheet"}
+            onPress={() => void exportCsvDownload()}
+          />
+          <Divider />
+          <RowNav
+            icon="diamond-outline"
+            title="Manage Subscription"
+            sub={sub?.pro ? "Pro plan active" : "View plans and billing"}
+            onPress={() => navigation.navigate("Pricing")}
+          />
+          <Divider />
+          <RowNav
+            icon="globe-outline"
+            title="Language & Region"
+            sub="Currency, language and date format"
+            onPress={() => navigation.navigate("RegionalPreferences")}
           />
         </View>
 
-        <Text style={styles.section}>ENABLE FEATURES</Text>
+        <Text style={styles.section}>APP PREFERENCES</Text>
         <Text style={styles.sectionHint}>
           {runtime?.adminManagedPreferences
             ? "These preference toggles are centrally managed by admin."
@@ -269,14 +291,14 @@ export function SettingsScreen() {
             icon="pricetags-outline"
             title="Categories"
             sub="Edit expense categories"
-            onPress={() => navigation.navigate("Main", { screen: "Categories" })}
+            onPress={() => navigation.navigate("Main", { screen: "More", params: { screen: "Categories" } })}
           />
           <Divider />
           <RowNav
             icon="wallet-outline"
             title="Accounts"
             sub="Cash, card, savings"
-            onPress={() => navigation.navigate("Main", { screen: "Accounts" })}
+            onPress={() => navigation.navigate("Main", { screen: "More", params: { screen: "Accounts" } })}
           />
           <Divider />
           <RowNav
@@ -284,22 +306,6 @@ export function SettingsScreen() {
             title="Analysis"
             sub="Spending overview"
             onPress={() => navigation.navigate("Main", { screen: "Analysis" })}
-          />
-        </View>
-
-        <Text style={styles.section}>MANAGEMENT</Text>
-        <View style={styles.card}>
-          <RowNav
-            icon="download-outline"
-            title="Export records"
-            sub={
-              runtime?.exportEnabled === false
-                ? "Disabled by admin"
-                : sub && !sub.canExportCsv
-                  ? "Pro only — upgrade to export CSV"
-                  : "Download spreadsheet with all your transactions"
-            }
-            onPress={() => void exportCsvDownload()}
           />
         </View>
 
@@ -312,7 +318,7 @@ export function SettingsScreen() {
             }}
           >
             <Ionicons name="log-out-outline" size={18} color={colors.rose600} />
-            <Text style={styles.signOutTxt}>Sign out</Text>
+            <Text style={styles.signOutTxt}>Sign Out</Text>
           </Pressable>
         )}
 
@@ -402,7 +408,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarTxt: { color: "#fff", fontWeight: "700", fontSize: typeScale.title },
-  email: { fontSize: typeScale.bodyStrong, fontWeight: "600", color: colors.gray900 },
+  profileName: { fontSize: typeScale.bodyStrong, fontWeight: "800", color: colors.gray900 },
+  email: { fontSize: typeScale.sm, fontWeight: "500", color: colors.gray500, marginTop: 2 },
+  ownerLabel: { fontSize: typeScale.sm, color: colors.primary, fontWeight: "700", marginTop: 2 },
   caption: { fontSize: typeScale.md, color: colors.gray500, marginTop: 2 },
   section: {
     fontSize: typeScale.xs,

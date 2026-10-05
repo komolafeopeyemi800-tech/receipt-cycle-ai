@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
-import { useAction, useQuery } from "convex/react";
+import { useAction, useQuery } from "@mobile-lib/api";
 import { Link } from "react-router-dom";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { api } from "@convex/_generated/api";
+import { api } from "@mobile-lib/api";
 import { AppChrome } from "@/components/layout/AppChrome";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import { useWorkspace } from "@/contexts/WorkspaceContext";

@@ -1,18 +1,20 @@
 import type { ComponentProps } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useMutation, useQuery } from "convex/react";
-import type { Id } from "../../convex/_generated/dataModel";
-import { api } from "../../convex/_generated/api";
+import { useMutation, useQuery } from "../lib/api";
+import type { Id } from "../lib/api";
+import { api } from "../lib/api";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import { useAuth } from "../contexts/AuthContext";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AppButton } from "../components/ui/FinanceUI";
+import type { DocTx } from "../types/transaction";
 
 export function TransactionDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -24,8 +26,8 @@ export function TransactionDetailScreen() {
   const removeTx = useMutation(api.transactions.remove);
 
   const id = route.params.transactionId as Id<"transactions">;
-  const tx = useQuery(api.transactions.get, ready && user?.id ? { id, userId: user.id } : "skip");
-  const accounts = useQuery(api.accounts.list, ready ? { workspace } : "skip");
+  const tx = useQuery(api.transactions.get, ready && user?.id ? { id, userId: user.id } : "skip") as DocTx | null | undefined;
+  const accounts = useQuery(api.accounts.list, ready ? { workspace } : "skip") as Array<{ id: string; name: string }> | undefined;
 
   const accountName =
     tx?.accountId && accounts ? accounts.find((a) => String(a.id) === String(tx.accountId))?.name : null;
@@ -72,7 +74,8 @@ export function TransactionDetailScreen() {
   }
 
   const created = new Date(tx.created_at);
-  const typeLabel = tx.type === "income" ? "Income" : "Expense";
+  const receiptData = tx.receipt_data && typeof tx.receipt_data === "object" ? tx.receipt_data as { formatted_receipt_text?: string } : null;
+  const receiptPreview = receiptData?.formatted_receipt_text?.trim();
 
   return (
     <LinearGradient colors={[...gradients.page]} style={styles.flex}>
@@ -80,22 +83,14 @@ export function TransactionDetailScreen() {
         <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
           <Ionicons name="chevron-back" size={24} color={colors.gray900} />
         </Pressable>
-        <Text style={styles.headerTitle}>Transaction</Text>
-        <Pressable onPress={onEdit} hitSlop={12}>
-          <Text style={styles.headerLink}>Edit</Text>
-        </Pressable>
+        <Text style={styles.headerTitle}>Transaction Detail</Text>
+        <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.pad} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <View style={[styles.typePill, tx.type === "income" ? styles.pillIn : styles.pillOut]}>
-            <Text style={styles.typePillTxt}>{typeLabel}</Text>
-          </View>
-          <Text style={[styles.amount, tx.type === "expense" ? styles.amtExp : styles.amtInc]}>
-            {tx.type === "expense" ? "-" : "+"}
-            {formatMoney(tx.amount)}
-          </Text>
-          <Text style={styles.merchant}>{tx.merchant || tx.category}</Text>
+          <View style={styles.merchantAvatar}><Text style={styles.avatarText}>{(tx.merchant || tx.category).slice(0, 2).toUpperCase()}</Text></View>
+          <View style={{ flex: 1 }}><Text style={styles.merchant}>{tx.merchant || tx.category}</Text><Text style={styles.heroCategory}>{tx.category}</Text><Text style={[styles.amount, tx.type === "expense" ? styles.amtExp : styles.amtInc]}>{tx.type === "expense" ? "-" : "+"}{formatMoney(tx.amount)}</Text><Text style={styles.heroDate}>{formatDate(tx.date)} · {created.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</Text></View>
         </View>
 
         <View style={styles.card}>
@@ -123,10 +118,8 @@ export function TransactionDetailScreen() {
           </View>
         ) : null}
 
-        <Pressable style={styles.danger} onPress={onDelete}>
-          <Ionicons name="trash-outline" size={18} color={colors.rose600} />
-          <Text style={styles.dangerTxt}>Delete transaction</Text>
-        </Pressable>
+        {receiptPreview || tx.receipt_url ? <View style={styles.receiptCard}><Text style={styles.receiptHeader}>Receipt</Text>{tx.receipt_url ? <Image source={{ uri: tx.receipt_url }} style={styles.receiptImage} resizeMode="contain" /> : <View style={styles.receiptTextBox}><Text style={styles.receiptText}>{receiptPreview}</Text></View>}</View> : null}
+        <View style={styles.actions}><AppButton label="Edit" icon="create-outline" onPress={onEdit} style={{ flex: 1 }} /><Pressable style={styles.danger} onPress={onDelete}><Ionicons name="trash-outline" size={18} color={colors.rose600} /><Text style={styles.dangerTxt}>Delete</Text></Pressable></View>
         <View style={{ height: 40 }} />
       </ScrollView>
     </LinearGradient>
@@ -162,7 +155,11 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 18, fontWeight: "700", color: colors.gray900 },
   headerLink: { fontSize: 16, fontWeight: "700", color: colors.primary },
   pad: { padding: 16 },
-  hero: { alignItems: "center", marginBottom: 20 },
+  hero: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 12, marginBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.divider },
+  merchantAvatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  avatarText: { color: "#fff", fontSize: 18, fontWeight: "800" },
+  heroCategory: { fontSize: 12, color: colors.gray600, marginTop: 2 },
+  heroDate: { fontSize: 11, color: colors.gray500, marginTop: 2 },
   typePill: {
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -172,10 +169,10 @@ const styles = StyleSheet.create({
   pillIn: { backgroundColor: "#d1fae5" },
   pillOut: { backgroundColor: "#ffe4e6" },
   typePillTxt: { fontSize: typeScale.xs, fontWeight: "800", color: colors.gray800 },
-  amount: { fontSize: 36, fontWeight: "800" },
+  amount: { fontSize: 29, fontWeight: "800", marginTop: 5 },
   amtExp: { color: colors.rose600 },
   amtInc: { color: colors.primary },
-  merchant: { fontSize: typeScale.body, color: colors.gray600, marginTop: 6, textAlign: "center" },
+  merchant: { fontSize: 16, color: colors.textPrimary, fontWeight: "800" },
   card: {
     backgroundColor: colors.surface,
     borderRadius: 14,
@@ -207,7 +204,14 @@ const styles = StyleSheet.create({
     borderColor: colors.gray200,
   },
   tagTxt: { fontSize: typeScale.sm, fontWeight: "600", color: colors.gray800 },
+  receiptCard: { backgroundColor: colors.surface, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 12, marginBottom: 16 },
+  receiptHeader: { color: colors.textPrimary, fontSize: 14, fontWeight: "700", marginBottom: 9 },
+  receiptImage: { width: "100%", height: 225, backgroundColor: colors.gray100, borderRadius: 10 },
+  receiptTextBox: { backgroundColor: colors.gray100, padding: 14, borderRadius: 10, maxHeight: 240 },
+  receiptText: { fontSize: 11, color: colors.textPrimary, fontFamily: "monospace", lineHeight: 16 },
+  actions: { flexDirection: "row", gap: 10 },
   danger: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

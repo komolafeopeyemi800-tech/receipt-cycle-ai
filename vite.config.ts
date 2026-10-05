@@ -10,16 +10,6 @@ const repoRoot = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig(({ mode }) => {
   /** Same directory as this file — avoids missing Whop keys when `process.cwd()` is not the repo root. */
   const env = loadEnv(mode, repoRoot, ["VITE_", "WHOP_"]);
-  /** Public OAuth app id only — same value as Convex WHOP_OAUTH_CLIENT_ID; never use client_secret here. */
-  const whopPublicClientId = [
-    env.VITE_WHOP_OAUTH_CLIENT_ID,
-    env.VITE_WHOP_CLIENT_ID,
-    env.WHOP_OAUTH_CLIENT_ID,
-    env.WHOP_CLIENT_ID,
-  ]
-    .map((s) => s?.trim())
-    .find(Boolean);
-
   /** Public Whop checkout links — copy plan checkout URLs from your Whop dashboard. */
   const checkoutFree =
     env.VITE_WHOP_CHECKOUT_FREE_URL?.trim() || env.WHOP_CHECKOUT_FREE_URL?.trim();
@@ -30,9 +20,6 @@ export default defineConfig(({ mode }) => {
   const manageUrl = env.VITE_WHOP_MANAGE_URL?.trim() || env.WHOP_MANAGE_URL?.trim();
 
   const define: Record<string, string> = {};
-  if (whopPublicClientId) {
-    define["import.meta.env.VITE_WHOP_OAUTH_CLIENT_ID"] = JSON.stringify(whopPublicClientId);
-  }
   if (checkoutFree) {
     define["import.meta.env.VITE_WHOP_CHECKOUT_FREE_URL"] = JSON.stringify(checkoutFree);
   }
@@ -59,8 +46,6 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(repoRoot, "./src"),
-        // Shared Convex backend (lives under apps/mobile per monorepo layout)
-        "@convex": path.resolve(repoRoot, "./apps/mobile/convex"),
         "@mobile-lib": path.resolve(repoRoot, "./apps/mobile/src/lib"),
       },
     },

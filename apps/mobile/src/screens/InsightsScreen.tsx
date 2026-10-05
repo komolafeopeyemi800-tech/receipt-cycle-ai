@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { useAction, useQuery } from "convex/react";
+import { useAction, useQuery } from "../lib/api";
 import {
   ActivityIndicator,
   Modal,
@@ -15,7 +15,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { CompositeNavigationProp } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { api } from "../../convex/_generated/api";
+import { api } from "../lib/api";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -34,6 +34,7 @@ import { ExpensePieChart } from "../components/ExpensePieChart";
 import { MOBILE_NOT_ADVICE_DISCLAIMER } from "../lib/playStoreUiCopy";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { FinancialPeriodSummary } from "../components/FinancialPeriodSummary";
+import { IncomeExpenseBars } from "../components/IncomeExpenseBars";
 import type { MainTabParamList, RootStackParamList } from "../navigation/types";
 
 type Nav = CompositeNavigationProp<
@@ -176,6 +177,7 @@ export function InsightsScreen() {
           income={income}
           total={net}
           formatCompact={formatMoneyCompact}
+          variant="analysis"
         />
       </View>
       <ScrollView contentContainerStyle={styles.pad}>
@@ -194,6 +196,11 @@ export function InsightsScreen() {
               formatMoney={formatMoney}
             />
           )}
+        </View>
+
+        <View style={[styles.card, { marginTop: 12 }]}>
+          <Text style={styles.cardHdr}>Income vs Expense</Text>
+          <IncomeExpenseBars transactions={(all ?? []) as DocTx[]} />
         </View>
 
         <View style={[styles.card, { marginTop: 12 }]}>
@@ -348,19 +355,17 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   pad: { paddingHorizontal: 16, paddingTop: 8 },
   card: {
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.gray200,
+    borderColor: colors.border,
     backgroundColor: colors.surface,
-    padding: 12,
+    padding: 14,
   },
   cardHdr: {
-    fontSize: typeScale.sm,
-    fontWeight: "700",
-    color: colors.gray700,
+    fontSize: 15,
+    fontWeight: "800",
+    color: colors.textPrimary,
     marginBottom: 6,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
   },
   sectionStandalone: {
     fontSize: typeScale.sm,

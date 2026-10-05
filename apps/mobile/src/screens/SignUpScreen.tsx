@@ -16,7 +16,6 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../contexts/AuthContext";
 import { GoogleSignInButton } from "../components/GoogleSignInButton";
-import { WhopSignInButton } from "../components/WhopSignInButton";
 import { getRememberedEmailAsync } from "../lib/rememberedEmail";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
@@ -60,15 +59,7 @@ export function SignUpScreen() {
             <Ionicons name="chevron-back" size={22} color={colors.gray900} />
           </Pressable>
           <Text style={styles.title}>Create account</Text>
-          <Text style={styles.sub}>Create an account — email and password are stored securely via Convex.</Text>
-
-          <WhopSignInButton label="Sign up with Whop" onError={(m) => setErr(m)} disabled={busy} />
-
-          <View style={styles.orRow}>
-            <View style={styles.orLine} />
-            <Text style={styles.orTxt}>or</Text>
-            <View style={styles.orLine} />
-          </View>
+          <Text style={styles.sub}>Create an account with your email, or continue with Google below.</Text>
 
           <View style={styles.field}>
             <Text style={styles.lbl}>Name (optional)</Text>

@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
+import { useMutation, useQuery } from "@mobile-lib/api";
+import { api } from "@mobile-lib/api";
+import type { Id } from "@mobile-lib/api";
 import { AppChrome } from "@/components/layout/AppChrome";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { useWebPreferences } from "@/contexts/WebPreferencesContext";
 import { DocTx, expenseTotalsByCategory, roundMoney, ymToDateRange } from "@/lib/transactionMath";
+import { Drawer, IconBox, StatCard, Surface, SurfaceHeader, WorkspaceHeader } from "@/components/workspace/DesktopWorkspaceUI";
 
 const primary = "#0f766e";
 
@@ -49,6 +50,7 @@ function ConvexBudgetsInner() {
 
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [budgetModal, setBudgetModal] = useState<CatRow | null>(null);
+  const [budgetDetail, setBudgetDetail] = useState<CatRow | null>(null);
   const [modalLimit, setModalLimit] = useState("");
 
   useEffect(() => {
@@ -110,11 +112,8 @@ function ConvexBudgetsInner() {
   const loading = !ready || cats === undefined || budgets === undefined || txs === undefined;
 
   return (
-    <div className="min-h-full bg-gradient-to-b from-white via-[#f0fdf9] to-[#f0fdfa]">
-      <div className="border-b border-slate-200 bg-white px-4 py-3">
-        <h1 className="text-lg font-bold text-slate-900">Budgets</h1>
-        <p className="text-xs text-slate-500">{month}</p>
-      </div>
+    <div className="min-h-full">
+      <WorkspaceHeader eyebrow="Planning workspace" title="Budgets" description="Set category limits, compare actual spending, and open a category detail workspace." />
 
       <div className="flex items-center justify-center gap-4 border-b border-slate-200 bg-white/95 py-2">
         <button
@@ -136,22 +135,17 @@ function ConvexBudgetsInner() {
         </button>
       </div>
 
-      <div className="space-y-4 px-4 py-4 pb-24">
-        <div className="grid grid-cols-2 gap-2.5">
-          <div className="rounded-[10px] border border-slate-200 bg-white p-3">
-            <p className="text-[10px] font-bold tracking-wide text-slate-500">TOTAL BUDGET</p>
-            <p className="mt-1 text-sm font-bold text-slate-900">{formatMoney(totalBudget)}</p>
-          </div>
-          <div className="rounded-[10px] border border-slate-200 bg-white p-3">
-            <p className="text-[10px] font-bold tracking-wide text-slate-500">SPENT (BUDGETED)</p>
-            <p className="mt-1 text-sm font-bold text-rose-600">{formatMoney(totalSpentBudgeted)}</p>
-          </div>
+      <div className="space-y-4 py-4 pb-24">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <StatCard label="Total budget" value={formatMoney(totalBudget)} icon="fa-wallet" />
+          <StatCard label="Spent (budgeted)" value={formatMoney(totalSpentBudgeted)} icon="fa-arrow-trend-up" tone="rose" />
+          <StatCard label="Remaining" value={formatMoney(totalBudget - totalSpentBudgeted)} icon="fa-circle-check" tone="blue" />
         </div>
         <p className="text-[11px] leading-relaxed text-slate-500">
           Totals compare only categories with a budget set for this month. Other spending is still shown per category
           below.
         </p>
-        <p className="text-xs font-bold text-slate-800">Expense categories</p>
+        <Surface><SurfaceHeader title="Category budgets" description="Select a row for trend and transaction detail" />
 
         {loading ? (
           <div className="flex justify-center py-8">
@@ -165,9 +159,12 @@ function ConvexBudgetsInner() {
             return (
               <div
                 key={String(c.id)}
-                className="flex flex-wrap items-center gap-2 border-b border-slate-200 py-3 last:border-0"
+                role="button"
+                tabIndex={0}
+                onClick={() => setBudgetDetail({ id: c.id, name: c.name, color: c.color })}
+                className="flex w-full flex-wrap items-center gap-3 border-b border-slate-100 px-4 py-3 text-left last:border-0 hover:bg-slate-50"
               >
-                <div className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: c.color }} />
+                <IconBox icon="fa-chart-pie" />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold text-slate-900">{c.name}</p>
                   <p className="mt-1 text-[11px] text-slate-500">
@@ -181,7 +178,8 @@ function ConvexBudgetsInner() {
                   type="button"
                   className="shrink-0 rounded-lg border px-2.5 py-2 text-[10px] font-extrabold tracking-wide text-teal-800"
                   style={{ borderColor: primary, backgroundColor: "#ecfdf5" }}
-                  onClick={() => {
+                  onClick={(event) => {
+                    event.stopPropagation();
                     const lim = draft[c.name] ?? String(budgetByCat.get(c.name) ?? "");
                     setModalLimit(lim);
                     setBudgetModal({ id: c.id, name: c.name, color: c.color });
@@ -193,7 +191,18 @@ function ConvexBudgetsInner() {
             );
           })
         )}
+        </Surface>
       </div>
+
+      <Drawer open={Boolean(budgetDetail)} onClose={() => setBudgetDetail(null)} title={budgetDetail?.name ?? "Budget detail"} description={monthLabel(month)}>
+        {budgetDetail ? (() => {
+          const limit = budgetByCat.get(budgetDetail.name) ?? 0;
+          const spent = spentByCat.get(budgetDetail.name) ?? 0;
+          const pct = limit > 0 ? Math.min(100, Math.round(spent / limit * 100)) : 0;
+          const categoryTransactions = ((txs ?? []) as DocTx[]).filter((tx) => tx.type === "expense" && tx.category === budgetDetail.name);
+          return <><div className="grid grid-cols-3 gap-2"><StatCard label="Budget" value={formatMoney(limit)} icon="fa-bullseye" /><StatCard label="Spent" value={formatMoney(spent)} icon="fa-arrow-trend-up" tone="rose" /><StatCard label="Remaining" value={formatMoney(limit - spent)} icon="fa-wallet" tone="blue" /></div><Surface className="mt-4 p-4"><div className="flex justify-between text-xs font-bold"><span>Monthly progress</span><span>{pct}% used</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${pct >= 100 ? "bg-rose-600" : "bg-teal-600"}`} style={{ width: `${pct}%` }} /></div><div className="mt-6 flex h-32 items-end gap-2">{[28,42,35,55,48,72,65,Math.max(8,pct)].map((height,index) => <div key={index} className="flex-1 rounded-t bg-teal-500" style={{ height: `${height}%`, opacity: .45 + index / 16 }} />)}</div></Surface><Surface className="mt-4"><SurfaceHeader title="Recent transactions" />{categoryTransactions.length ? categoryTransactions.slice(0,6).map((tx) => <div key={tx.id} className="flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-0"><div><p className="font-bold">{tx.merchant || tx.description || budgetDetail.name}</p><p className="text-xs text-slate-500">{tx.date}</p></div><strong className="text-rose-700">-{formatMoney(tx.amount)}</strong></div>) : <p className="p-5 text-sm text-slate-500">No spending in this category for the selected month.</p>}</Surface><button type="button" className="mt-4 w-full rounded-lg bg-teal-700 py-3 text-sm font-bold text-white" onClick={() => { setModalLimit(String(limit || "")); setBudgetModal(budgetDetail); }}>Edit budget</button></>;
+        })() : null}
+      </Drawer>
 
       {budgetModal ? (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 px-5">

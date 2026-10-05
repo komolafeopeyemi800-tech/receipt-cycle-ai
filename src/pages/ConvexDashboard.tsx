@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
-import { useConvexConnectionState, useMutation, useQuery } from "convex/react";
+import { useConnectionState, useMutation, useQuery } from "@mobile-lib/api";
 import { toast } from "sonner";
-import { api } from "@convex/_generated/api";
+import { api } from "@mobile-lib/api";
 import { Link } from "react-router-dom";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useWebAuth } from "@/contexts/WebAuthContext";
@@ -34,7 +34,7 @@ function ConvexDashboardInner() {
   const { user, token } = useWebAuth();
   const sub = useSubscriptionState();
   const { formatMoney, formatMoneyCompact } = useWebPreferences();
-  const conn = useConvexConnectionState();
+  const conn = useConnectionState();
 
   const [period, setPeriod] = useState<PeriodMode>("all");
   const [selectedYm, setSelectedYm] = useState(() => todayYm());

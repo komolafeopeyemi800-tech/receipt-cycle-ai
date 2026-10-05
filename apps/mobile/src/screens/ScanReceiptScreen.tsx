@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Platform,
   Pressable,
   StyleSheet,
@@ -12,12 +13,12 @@ import {
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Accelerometer } from "expo-sensors";
 import * as ImagePicker from "expo-image-picker";
-import { useAction, useQuery } from "convex/react";
+import { useAction, useQuery } from "../lib/api";
 import { useIsFocused, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { api } from "../../convex/_generated/api";
+import { api } from "../lib/api";
 import { colors, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
 import { useAuth } from "../contexts/AuthContext";
@@ -25,10 +26,10 @@ import { useSubscriptionState } from "../hooks/useSubscriptionState";
 import type { ScannedExtracted } from "../types/transaction";
 import { userFacingError, userFacingErrorFromUnknown } from "../lib/userFacingErrors";
 
-const bannerBlue = "rgba(37, 99, 235, 0.88)";
+const bannerBlue = "rgba(15, 23, 42, 0.84)";
 const DIM = "rgba(0,0,0,0.58)";
-const FRAME_BORDER = "#facc15";
-const FRAME_FILL = "rgba(250, 204, 21, 0.14)";
+const FRAME_BORDER = "#21b89a";
+const FRAME_FILL = "rgba(33, 184, 154, 0.04)";
 /** Movement between accelerometer samples; above = not steady */
 const JERK_THRESHOLD = 0.13;
 /** Hold still this long (ms) before auto shutter */
@@ -67,6 +68,7 @@ export function ScanReceiptScreen() {
   /** Smoothed vertical offset so the guide frame subtly follows tilt (focus cue). */
   const frameNudgeSmoothRef = useRef(0);
   const [frameNudgeY, setFrameNudgeY] = useState(0);
+  const [processingUri, setProcessingUri] = useState<string | null>(null);
 
   /** Reserve space for close/sync row + bottom shutter bar — center the guide in the remaining area */
   const topBarH = insets.top + 44;
@@ -79,15 +81,15 @@ export function ScanReceiptScreen() {
   const frameTop = frameTopBase + frameNudgeY;
   const frameBottom = frameTop + frameH;
   const bottomDimH = Math.max(0, winH - frameBottom - bottomReserved);
-  /** Yellow frame only when device is steady (best shot) or capturing — not while searching for alignment */
-  const showFocusFrame = guidePhase !== "align";
+  /** Keep the framing guide visible while capture timing follows the live sensor state. */
+  const showFocusFrame = true;
 
   const guideText =
     guidePhase === "capturing"
       ? "Scanning — hold steady"
       : guidePhase === "steady"
         ? "Hold steady"
-        : "Center the receipt";
+        : "Position the receipt within the frame";
 
   const processBase64 = useCallback(
     async (base64: string, mime: string) => {
@@ -111,7 +113,7 @@ export function ScanReceiptScreen() {
             "Couldn't read document",
             userFacingError(
               r.error ??
-                "No data returned. Check Convex OPENAI_API_KEY (or OpenRouter/Gemini) and EXPO_PUBLIC_CONVEX_URL. Stay on Wi‑Fi and try again.",
+                "No data returned. Check the API Worker OPENAI_API_KEY (or OpenRouter/Gemini) and EXPO_PUBLIC_API_URL. Stay on Wi‑Fi and try again.",
             ),
           );
           return;
@@ -146,6 +148,7 @@ export function ScanReceiptScreen() {
         Alert.alert("Camera", "Could not capture image.");
         return;
       }
+      setProcessingUri(photo.uri);
       await processBase64(photo.base64, "image/jpeg");
     } catch (e) {
       Alert.alert("Camera", userFacingErrorFromUnknown(e));
@@ -153,6 +156,7 @@ export function ScanReceiptScreen() {
       busyRef.current = false;
       setBusy(false);
       setGuidePhase("align");
+      setProcessingUri(null);
       steadyMsRef.current = 0;
     }
   }, [processBase64, token, subscriptionState]);
@@ -232,6 +236,7 @@ export function ScanReceiptScreen() {
     });
     if (lib.canceled || !lib.assets[0]) return;
     const uri = lib.assets[0].uri;
+    setProcessingUri(uri);
     const mime = lib.assets[0].mimeType ?? "image/jpeg";
     busyRef.current = true;
     setBusy(true);
@@ -253,6 +258,7 @@ export function ScanReceiptScreen() {
       busyRef.current = false;
       setBusy(false);
       setGuidePhase("align");
+      setProcessingUri(null);
     }
   }, [processBase64, token, subscriptionState]);
 
@@ -310,7 +316,7 @@ export function ScanReceiptScreen() {
     );
   }
 
-  const guidePillTop = showFocusFrame ? Math.max(insets.top + 6, frameTop - 40) : insets.top + 88;
+  const guidePillTop = Math.min(frameBottom + 14, winH - bottomReserved - 48);
 
   return (
     <View style={styles.root}>
@@ -378,35 +384,39 @@ export function ScanReceiptScreen() {
         }}
         hitSlop={16}
       >
-        <Ionicons name="close" size={22} color="#111" />
+        <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
 
+      <View style={[styles.cameraTitleWrap, { top: insets.top + 12 }]} pointerEvents="none"><Text style={styles.cameraTitle}>Scan Receipt</Text></View>
+
       <View style={[styles.topRight, { top: insets.top + 8 }]}>
-        <View style={styles.pillSynced}>
-          <Ionicons name="cloud-done-outline" size={12} color={colors.green600} />
-          <Text style={styles.pillSyncedTxt}>Synced</Text>
-        </View>
-        <Pressable style={styles.pillAuto} onPress={() => setAutoCapture((v) => !v)}>
-          <Text style={styles.pillAutoTxt}>Auto Capture: {autoCapture ? "On" : "Off"}</Text>
-        </Pressable>
+        <Pressable style={styles.pillAuto} onPress={() => setTorch((value) => !value)} accessibilityLabel={torch ? "Turn flash off" : "Turn flash on"}><Ionicons name={torch ? "flash" : "flash-outline"} size={20} color="#fff" /></Pressable>
       </View>
 
-      {busy && (
-        <View style={styles.busy}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.busyTxt}>Processing document…</Text>
+      {busy && <View style={[styles.processing, { paddingTop: insets.top + 14, paddingBottom: insets.bottom + 18 }]}>
+        <View style={styles.processingHeader}><Text style={styles.processingTitle}>Processing Receipt</Text></View>
+        <View style={styles.processingBody}>
+          {processingUri ? <Image source={{ uri: processingUri }} style={styles.processingImage} resizeMode="contain" /> : <View style={styles.processingImagePlaceholder}><Ionicons name="camera-outline" size={40} color={colors.gray400} /></View>}
+          <View style={styles.processingSteps}>
+            <View style={styles.processingStep}><ActivityIndicator size="small" color={colors.primary} /><Text style={styles.processingStepText}>Analyzing image and text</Text></View>
+            <View style={styles.processingStep}><Ionicons name="ellipse-outline" size={20} color={colors.gray400} /><Text style={styles.processingStepText}>Extracting transaction fields</Text></View>
+            <View style={styles.processingStep}><Ionicons name="ellipse-outline" size={20} color={colors.gray400} /><Text style={styles.processingStepText}>Preparing your review</Text></View>
+          </View>
         </View>
-      )}
+        <View style={styles.processingMessage}><Text style={styles.processingMessageTitle}>AI is working its magic…</Text><Text style={styles.processingMessageText}>We’re extracting key details from your receipt. This usually takes a few seconds.</Text></View>
+      </View>}
 
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-        <Pressable style={styles.circleBtn} onPress={openGallery} disabled={busy || scanBlocked}>
-          <Ionicons name="images-outline" size={20} color="#111" />
+        <Pressable style={styles.circleBtn} onPress={openGallery} disabled={busy || scanBlocked} accessibilityLabel="Choose from gallery">
+          <Ionicons name="images-outline" size={22} color="#fff" />
+          <Text style={styles.bottomLabel}>Gallery</Text>
         </Pressable>
         <Pressable style={styles.shutterOuter} onPress={takePictureManual} disabled={busy || scanBlocked}>
           <View style={styles.shutterInner} />
         </Pressable>
-        <Pressable style={styles.circleBtn} onPress={() => setTorch((t) => !t)} disabled={busy || scanBlocked}>
-          <Ionicons name="flashlight-outline" size={20} color="#111" />
+        <Pressable style={styles.circleBtn} onPress={() => setAutoCapture((value) => !value)} disabled={busy || scanBlocked} accessibilityLabel={autoCapture ? "Turn auto capture off" : "Turn auto capture on"}>
+          <Ionicons name="scan-outline" size={22} color="#fff" />
+          <Text style={styles.bottomLabel}>{autoCapture ? "Auto" : "Manual"}</Text>
         </Pressable>
       </View>
     </View>
@@ -471,14 +481,14 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(0,0,0,0.15)",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 12,
+    shadowOpacity: 0,
+    elevation: 0,
   },
+  cameraTitleWrap: { position: "absolute", left: 66, right: 66, alignItems: "center", zIndex: 101 },
+  cameraTitle: { color: "#fff", fontSize: 17, fontWeight: "700" },
   topRight: {
     position: "absolute",
     right: 10,
@@ -499,10 +509,12 @@ const styles = StyleSheet.create({
   },
   pillSyncedTxt: { fontSize: typeScale.xs, fontWeight: "600", color: colors.green600 },
   pillAuto: {
-    backgroundColor: "rgba(255,255,255,0.94)",
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 999,
+    backgroundColor: "rgba(0,0,0,0.24)",
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 22,
   },
   pillAutoTxt: { fontSize: typeScale.xs, fontWeight: "700", color: colors.blue600 },
   bottomBar: {
@@ -514,38 +526,39 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 36,
-    paddingTop: 12,
+    paddingTop: 16,
+    backgroundColor: "rgba(17, 19, 20, 0.35)",
     zIndex: 100,
   },
   circleBtn: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#fff",
+    backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowOpacity: 0,
+    elevation: 0,
+    gap: 4,
   },
+  bottomLabel: { color: "#fff", fontSize: 11, fontWeight: "600" },
   shutterOuter: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: "rgba(0,0,0,0.3)",
+    borderColor: colors.primary,
   },
   shutterInner: {
     width: 56,
     height: 56,
     borderRadius: 28,
     borderWidth: 2,
-    borderColor: "#111",
-    backgroundColor: "transparent",
+    borderColor: "#fff",
+    backgroundColor: colors.primary,
   },
   busy: {
     ...StyleSheet.absoluteFillObject,
@@ -555,6 +568,18 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   busyTxt: { fontSize: typeScale.body, color: "#fff", marginTop: 12, fontWeight: "600" },
+  processing: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.background, zIndex: 200, paddingHorizontal: 18 },
+  processingHeader: { alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.divider },
+  processingTitle: { fontSize: 16, color: colors.textPrimary, fontWeight: "700" },
+  processingBody: { flex: 1, flexDirection: "row", alignItems: "center", gap: 14 },
+  processingImage: { width: "49%", height: "70%", borderRadius: 10, backgroundColor: colors.surface },
+  processingImagePlaceholder: { width: "49%", height: "70%", borderRadius: 10, backgroundColor: colors.gray100, alignItems: "center", justifyContent: "center" },
+  processingSteps: { flex: 1, gap: 22 },
+  processingStep: { flexDirection: "row", alignItems: "center", gap: 8 },
+  processingStepText: { flex: 1, color: colors.gray700, fontSize: 11, lineHeight: 16 },
+  processingMessage: { backgroundColor: colors.blueSoft, borderRadius: 14, padding: 16 },
+  processingMessageTitle: { fontSize: 14, fontWeight: "700", color: colors.textPrimary },
+  processingMessageText: { fontSize: 12, color: colors.gray600, lineHeight: 17, marginTop: 5 },
   fallback: { flex: 1, backgroundColor: "#fff", alignItems: "center", justifyContent: "center", padding: 24, gap: 12 },
   fallbackTxt: { fontSize: typeScale.body, color: colors.gray600, textAlign: "center" },
   permTitle: { fontSize: typeScale.title, fontWeight: "700", color: colors.gray900 },

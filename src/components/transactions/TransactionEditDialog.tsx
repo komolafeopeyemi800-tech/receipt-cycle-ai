@@ -1,7 +1,7 @@
-import { useMutation } from "convex/react";
+import { useMutation } from "@mobile-lib/api";
 import { useEffect, useState } from "react";
-import { api } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
+import { api } from "@mobile-lib/api";
+import type { Id } from "@mobile-lib/api";
 import type { Transaction } from "@/types/transaction";
 import type { WorkspaceId } from "@/contexts/WorkspaceContext";
 import { cn } from "@/lib/utils";

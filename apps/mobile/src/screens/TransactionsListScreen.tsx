@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { useQuery } from "../lib/api";
+import { api } from "../lib/api";
 import {
   ActivityIndicator,
   Pressable,
@@ -32,6 +32,8 @@ import { ScreenHeader } from "../components/ScreenHeader";
 import { FinancialPeriodSummary } from "../components/FinancialPeriodSummary";
 import { AnimatedPressable } from "../components/AnimatedPressable";
 import { useSubscriptionState } from "../hooks/useSubscriptionState";
+import { AppButton, IconTile, SectionHeader } from "../components/ui/FinanceUI";
+import { useRecordsFilters } from "../contexts/RecordsFilterContext";
 import type { MainTabParamList, RootStackParamList } from "../navigation/types";
 
 type Nav = CompositeNavigationProp<
@@ -45,9 +47,9 @@ export function TransactionsListScreen() {
   const { user } = useAuth();
   const sub = useSubscriptionState();
   const { formatMoney, formatMoneyCompact, formatDate } = usePreferences();
+  const { filters, setFilters } = useRecordsFilters();
   const [period, setPeriod] = useState<"month" | "all">("all");
   const [selectedYm, setSelectedYm] = useState(() => todayYm());
-  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const range =
     period === "month"
       ? (() => {
@@ -66,7 +68,8 @@ export function TransactionsListScreen() {
         }
       : "skip",
   );
-  const [filter, setFilter] = useState<"all" | "expense" | "income">("all");
+  const filter = filters.type;
+  const setFilter = (type: "all" | "expense" | "income") => setFilters({ ...filters, type, category: null });
 
   const summary = useMemo(() => buildSummary((all ?? []) as DocTx[]), [all]);
 
@@ -75,33 +78,38 @@ export function TransactionsListScreen() {
     return filter === "all" ? raw : raw.filter((t) => t.type === filter);
   }, [all, filter]);
 
-  const categoriesWithCounts = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const t of baseFiltered) {
-      const c = t.category?.trim() || "Uncategorized";
-      m.set(c, (m.get(c) ?? 0) + 1);
-    }
-    return Array.from(m.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  }, [baseFiltered]);
-
   const list = useMemo(() => {
-    if (!categoryFilter) return baseFiltered;
-    return baseFiltered.filter((t) => (t.category?.trim() || "Uncategorized") === categoryFilter);
-  }, [baseFiltered, categoryFilter]);
+    const search = filters.search.trim().toLowerCase();
+    const result = baseFiltered.filter((t) => {
+      if (filters.category && (t.category?.trim() || "Uncategorized") !== filters.category) return false;
+      if (filters.accountId && String(t.accountId) !== filters.accountId) return false;
+      if (filters.startDate && t.date < filters.startDate) return false;
+      if (filters.endDate && t.date > filters.endDate) return false;
+      if (search && ![t.merchant, t.category, t.description, String(t.amount)].some((value) => value?.toLowerCase().includes(search))) return false;
+      return true;
+    });
+    return result.sort((a, b) => {
+      if (filters.sort === "oldest") return a.date.localeCompare(b.date);
+      if (filters.sort === "amount_high") return b.amount - a.amount;
+      if (filters.sort === "amount_low") return a.amount - b.amount;
+      return b.date.localeCompare(a.date);
+    });
+  }, [baseFiltered, filters]);
 
   const groupedByDate = useMemo(() => {
+    if (filters.sort === "amount_high" || filters.sort === "amount_low") return list.map((tx): [string, DocTx[]] => [tx.date, [tx]]);
     const map = new Map<string, DocTx[]>();
     for (const tx of list) {
       const d = tx.date;
       if (!map.has(d)) map.set(d, []);
       map.get(d)!.push(tx);
     }
-    return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
-  }, [list]);
+    return Array.from(map.entries()).sort((a, b) => filters.sort === "oldest" ? a[0].localeCompare(b[0]) : b[0].localeCompare(a[0]));
+  }, [list, filters.sort]);
 
   useEffect(() => {
-    setCategoryFilter(null);
-  }, [period, selectedYm, filter]);
+    if (filters.startDate || filters.endDate) setPeriod("all");
+  }, [filters.startDate, filters.endDate]);
 
   const loading = !ready || all === undefined;
 
@@ -113,26 +121,12 @@ export function TransactionsListScreen() {
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled
       >
-        <View style={styles.statusPill}>
-          <Ionicons name="id-card-outline" size={13} color={colors.gray600} />
-          <Text style={styles.statusPillTxt}>
-            Status:{" "}
-            {sub
-              ? sub.pro
-                ? "Pro"
-                : sub.phase === "trial"
-                  ? "Free trial"
-                  : sub.phase === "trial_exhausted"
-                    ? "Free (limit reached)"
-                    : "Free"
-              : "Loading..."}
-          </Text>
-        </View>
         <FinancialPeriodSummary
           mode={period}
           onModeChange={(m) => {
             setPeriod(m);
             if (m === "month") setSelectedYm(todayYm());
+            if (m === "month" && (filters.startDate || filters.endDate)) setFilters({ ...filters, startDate: null, endDate: null });
           }}
           monthLabel={formatMonthYearLabel(selectedYm)}
           onPrevMonth={() => setSelectedYm((ym) => addMonthsYm(ym, -1))}
@@ -145,41 +139,12 @@ export function TransactionsListScreen() {
           onFilterChange={setFilter}
         />
 
-        <Text style={styles.sectionLbl}>Quick actions</Text>
+        <SectionHeader title="Quick Actions" />
         <QuickActionsRow />
 
-        <AnimatedPressable
-          style={styles.addBtn}
-          onPress={() => navigation.getParent()?.navigate("AddTransaction" as never)}
-        >
-          <Ionicons name="add" size={18} color="#fff" />
-          <Text style={styles.addBtnTxt}>Add transaction</Text>
-        </AnimatedPressable>
-
-        {!loading && categoriesWithCounts.length > 0 ? (
-          <View style={styles.catBlock}>
-            <Text style={styles.sectionLbl}>Categories in this view</Text>
-            <View style={styles.chipWrap}>
-              <Pressable
-                style={[styles.chip, categoryFilter === null && styles.chipOn]}
-                onPress={() => setCategoryFilter(null)}
-              >
-                <Text style={[styles.chipTxt, categoryFilter === null && styles.chipTxtOn]}>All</Text>
-              </Pressable>
-              {categoriesWithCounts.map(([cat, n]) => (
-                <Pressable
-                  key={cat}
-                  style={[styles.chip, categoryFilter === cat && styles.chipOn]}
-                  onPress={() => setCategoryFilter((prev) => (prev === cat ? null : cat))}
-                >
-                  <Text style={[styles.chipTxt, categoryFilter === cat && styles.chipTxtOn]} numberOfLines={1}>
-                    {cat} ({n})
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        ) : null}
+        <AppButton label="Add transaction" icon="add" onPress={() => navigation.getParent()?.navigate("AddTransaction" as never)} style={{ marginBottom: 18 }} />
+        <SectionHeader title="Recent Transactions" actionLabel="Filters" onAction={() => navigation.navigate("RecordsFilters")} />
+        {filters.search || filters.category || filters.startDate || filters.endDate || filters.accountId || filters.sort !== "newest" ? <Pressable style={styles.activeFilter} onPress={() => navigation.navigate("RecordsFilters")}><Ionicons name="funnel-outline" size={15} color={colors.primary} /><Text style={styles.activeFilterText}>Filters applied · Edit filters</Text></Pressable> : null}
 
         {loading ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
@@ -192,8 +157,8 @@ export function TransactionsListScreen() {
         ) : list.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="funnel-outline" size={36} color={colors.gray400} />
-            <Text style={styles.emptyTitle}>Nothing in this category</Text>
-            <Text style={styles.emptySub}>Clear the category chip or pick another.</Text>
+            <Text style={styles.emptyTitle}>No matching records</Text>
+            <Text style={styles.emptySub}>Change your search or filters.</Text>
           </View>
         ) : (
           groupedByDate.map(([day, txs]) => (
@@ -208,9 +173,7 @@ export function TransactionsListScreen() {
                   pressedScale={0.985}
                 >
                   <View style={styles.row}>
-                    <View style={styles.rowIcon}>
-                      <Ionicons name="receipt-outline" size={16} color={colors.primary} />
-                    </View>
+                    <IconTile icon={tx.type === "income" ? "cash-outline" : "receipt-outline"} tone={tx.type === "income" ? "mint" : "amber"} size={36} />
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={styles.merchant} numberOfLines={1}>
                         {tx.merchant || tx.category}
@@ -240,6 +203,12 @@ export function TransactionsListScreen() {
             </Text>
           </View>
         ) : null}
+        <View style={styles.statusPill}>
+          <Ionicons name="id-card-outline" size={13} color={colors.gray600} />
+          <Text style={styles.statusPillTxt}>
+            {sub ? sub.pro ? "Receipt Cycle Pro" : sub.phase === "trial" ? "Free trial" : "Receipt Cycle Free" : "Loading plan..."}
+          </Text>
+        </View>
         <View style={{ height: 100 }} />
       </ScrollView>
     </LinearGradient>
@@ -248,7 +217,9 @@ export function TransactionsListScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  pad: { padding: 14 },
+  pad: { padding: 16 },
+  activeFilter: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", backgroundColor: colors.mintSoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7, marginBottom: 10 },
+  activeFilterText: { color: colors.primary, fontSize: typeScale.sm, fontWeight: "700" },
   sectionLbl: {
     fontSize: typeScale.sm,
     fontWeight: "700",
@@ -269,6 +240,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 6,
+    marginTop: 20,
     marginBottom: 10,
   },
   statusPillTxt: { fontSize: typeScale.sm, fontWeight: "600", color: colors.gray700 },
@@ -297,7 +269,7 @@ const styles = StyleSheet.create({
   chipOn: { borderColor: colors.primary, backgroundColor: colors.emerald50 },
   chipTxt: { fontSize: typeScale.sm, fontWeight: "600", color: colors.gray700 },
   chipTxtOn: { color: colors.primary },
-  dayGroup: { marginBottom: 14 },
+  dayGroup: { marginBottom: 10 },
   dayHeader: {
     fontSize: typeScale.xs,
     fontWeight: "800",
@@ -311,11 +283,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "rgba(255,255,255,0.95)",
-    padding: 12,
-    borderRadius: 10,
+    backgroundColor: colors.surface,
+    padding: 10,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.gray200,
+    borderColor: colors.border,
   },
   rowPressTarget: { borderRadius: 10 },
   rowWrap: { marginBottom: 6 },

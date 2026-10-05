@@ -1,8 +1,8 @@
-import { ConvexHttpClient } from "convex/browser";
+import { apiClient } from "./apiClient";
 import { exchangeCodeAsync, refreshAsync, type DiscoveryDocument } from "expo-auth-session";
-import { api } from "../../convex/_generated/api";
+import { api } from "./api";
 import { getSessionTokenAsync } from "./sessionStorage";
-import { getConvexUrl, getGoogleOAuthClientId } from "./googleDriveEnv";
+import { getGoogleOAuthClientId } from "./googleDriveEnv";
 import { uploadJsonToDrive } from "./googleDriveUpload";
 import {
   getDriveWeeklyEnabled,
@@ -63,7 +63,7 @@ export async function runScheduledDriveBackupIfDue(): Promise<{ ran: boolean; er
   }
 }
 
-/** Immediate backup using stored Google refresh + Convex session (foreground or background). */
+/** Immediate backup using stored Google refresh + API session (foreground or background). */
 export async function runDriveBackupWithStoredCredentials(): Promise<void> {
   const refresh = await getStoredRefreshToken();
   const userId = await getStoredConvexUserId();
@@ -72,8 +72,8 @@ export async function runDriveBackupWithStoredCredentials(): Promise<void> {
   if (!session) throw new Error("Sign in to Receipt Cycle to back up.");
 
   const access = await getAccessTokenFromRefresh(refresh);
-  const url = getConvexUrl();
-  const client = new ConvexHttpClient(url);
+  apiClient.setToken(session);
+  const client = apiClient;
   const me = await client.query(api.auth.me, { token: session });
   if (!me || me.id !== userId) throw new Error("Session mismatch. Sign in again.");
 

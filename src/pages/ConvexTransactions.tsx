@@ -1,6 +1,6 @@
-import { useMutation, useQuery, useAction } from "convex/react";
-import { api } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
+import { useMutation, useQuery, useAction } from "@mobile-lib/api";
+import { api } from "@mobile-lib/api";
+import type { Id } from "@mobile-lib/api";
 import { useState, useCallback, useEffect, type FormEvent, type ChangeEvent, type CSSProperties } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { TransactionList } from "@/components/transactions/TransactionList";

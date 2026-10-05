@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
+import { useQuery } from "@mobile-lib/api";
+import { api } from "@mobile-lib/api";
 import { Link, useNavigate } from "react-router-dom";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { useSubscriptionState } from "@/hooks/use-subscription-state";

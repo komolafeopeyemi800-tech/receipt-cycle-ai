@@ -1,6 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
+import { useQuery } from "@mobile-lib/api";
+import { api } from "@mobile-lib/api";
 import { useConvexMonthlySummary } from "@/hooks/use-convex-monthly-summary";
 import { useWebPreferences } from "@/contexts/WebPreferencesContext";
 import { useWebAuth } from "@/contexts/WebAuthContext";
@@ -36,14 +36,20 @@ const DesktopSidebar = ({ drawerMode = false, drawerOpen = true, onNavigate }: D
 
   const mainNav = [
     { path: inAdmin ? "/admin" : "/dashboard", icon: "fa-gauge-high", label: "Dashboard" },
-    { path: inAdmin ? "/admin" : "/transactions#add-transaction", icon: "fa-plus", label: "Add record" },
-    { path: inAdmin ? "/admin" : "/transactions", icon: "fa-file-lines", label: "Records" },
+    { path: inAdmin ? "/admin" : "/transactions", icon: "fa-file-lines", label: "Transactions" },
     { path: inAdmin ? "/admin" : "/insights", icon: "fa-chart-line", label: "Analysis" },
+    { path: inAdmin ? "/admin" : "/sales", icon: "fa-chart-column", label: "Sales" },
+    { path: inAdmin ? "/admin" : "/invoices", icon: "fa-file-invoice-dollar", label: "Invoices" },
+    { path: inAdmin ? "/admin" : "/estimates", icon: "fa-file-signature", label: "Estimates" },
+    { path: inAdmin ? "/admin" : "/payments", icon: "fa-money-check-dollar", label: "Payments" },
+    { path: inAdmin ? "/admin" : "/customers", icon: "fa-users", label: "Customers" },
+    { path: inAdmin ? "/admin" : "/items-services", icon: "fa-box-open", label: "Items & services" },
     { path: inAdmin ? "/admin" : "/budgets", icon: "fa-chart-pie", label: "Budgets" },
     { path: inAdmin ? "/admin" : "/accounts", icon: "fa-wallet", label: "Accounts" },
     { path: inAdmin ? "/admin" : "/categories", icon: "fa-tags", label: "Categories" },
-    { path: inAdmin ? "/admin" : "/upload-statement", icon: "fa-cloud-arrow-up", label: "Upload statement" },
-    { path: inAdmin ? "/admin" : "/settings", icon: "fa-gear", label: "Settings" },
+    { path: inAdmin ? "/admin" : "/reports", icon: "fa-chart-simple", label: "Reports" },
+    { path: inAdmin ? "/admin" : "/ai-assistant", icon: "fa-wand-magic-sparkles", label: "AI assistant" },
+    { path: inAdmin ? "/admin" : "/more", icon: "fa-ellipsis", label: "More & settings" },
   ];
 
   return (
@@ -98,7 +104,7 @@ const DesktopSidebar = ({ drawerMode = false, drawerOpen = true, onNavigate }: D
           <p className="mb-3 text-xs text-slate-400">Unlimited scans, AI analysis &amp; more</p>
           <button
             type="button"
-            onClick={() => navigate("/pricing")}
+            onClick={() => navigate(inAdmin ? "/admin" : "/subscription")}
             className="h-9 w-full rounded-lg bg-white text-xs font-semibold text-slate-900 hover:bg-slate-100"
           >
             View plans

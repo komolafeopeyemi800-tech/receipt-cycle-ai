@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { api } from "@convex/_generated/api";
-import { convex } from "@/lib/convex";
+import { api } from "@mobile-lib/api";
+import { apiClient } from "@/lib/api";
 import { LegalLayout } from "./LegalLayout";
 import { SUPPORT_EMAIL, INSTAGRAM_URL, TWITTER_URL } from "@/content/site";
 import { Seo } from "@/components/Seo";
@@ -27,7 +27,7 @@ export default function Contact() {
     if (status.kind === "sending") return;
     setStatus({ kind: "sending" });
     try {
-      const result = await convex.action(api.email.sendContactMessage, {
+      const result = await apiClient.action(api.email.sendContactMessage, {
         name: name.trim(),
         email: email.trim(),
         subject: subject.trim() || undefined,

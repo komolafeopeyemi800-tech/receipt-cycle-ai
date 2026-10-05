@@ -1,0 +1,12 @@
+## Copy to local.properties (gitignored) and set your Android SDK path.
+sdk.dir=C\:\\Users\\YOUR_USER\\AppData\\Local\\Android\\Sdk
+
+## API Worker (workers/api). Emulator default is http://10.0.2.2:8787 (your computer running `wrangler dev`).
+## A real phone needs your computer's LAN address (e.g. http://192.168.1.20:8787), or the deployed API origin.
+API_URL=https://api.receiptcycle.com
+## Public website origin (used in password-reset links)
+WEB_APP_URL=https://receiptcycle.com
+
+## Optional OAuth (match apps/mobile/.env.local)
+## Same OAuth client as Expo; add redirect URI receiptcycle://google-drive-oauth in Google Cloud Console
+GOOGLE_ANDROID_CLIENT_ID=

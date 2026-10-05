@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAction, useQuery } from "convex/react";
+import { useAction, useQuery } from "../lib/api";
 import {
   ActivityIndicator,
   FlatList,
@@ -19,7 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { api } from "../../convex/_generated/api";
+import { api } from "../lib/api";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -75,7 +75,7 @@ export function FinanceCoachScreen() {
     {
       role: "assistant",
       content:
-        "What should we do with your saved entries this period? For example: list totals by category, rephrase a label, or turn your log into a short recap. This tool organizes what you already saved—it is not financial, investment, tax, or legal advice. Use voice or type.",
+        "Ask about totals, categories, merchants, or trends in the saved entries for the selected period. You can type or use your voice.",
     },
   ]);
   const [input, setInput] = useState("");

@@ -1,7 +1,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useAction } from "convex/react";
-import { api } from "@convex/_generated/api";
+import { useAction } from "@mobile-lib/api";
+import { api } from "@mobile-lib/api";
 import { formatAuthError } from "@mobile-lib/authErrors";
 
 export default function WebResetPassword() {

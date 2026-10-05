@@ -1,0 +1,206 @@
+/**
+ * Contract test: the REAL client library used by the web and mobile apps, talking to the REAL Worker.
+ * If a route, a field name or an error message changes on either side, this fails.
+ */
+import { env } from "cloudflare:test";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import app from "../src/index";
+import { ApiClient, ApiRequestError } from "../../../apps/mobile/src/lib/api/client";
+import { api } from "../../../apps/mobile/src/lib/api/registry";
+
+afterEach(() => vi.unstubAllGlobals());
+
+function makeClient() {
+  return new ApiClient({
+    baseUrl: "http://localhost",
+    webAppUrl: "http://localhost",
+    fetch: ((url: string, init?: RequestInit) => {
+      const u = new URL(url);
+      return app.request(`${u.pathname}${u.search}`, init, env);
+    }) as typeof fetch,
+  });
+}
+
+async function signedIn(email = "ada@example.com") {
+  const client = makeClient();
+  const res = await client.action(api.authNode.signUp, { email, password: "secret123", name: "Ada" });
+  client.setToken(res.token);
+  return { client, res };
+}
+
+describe("sign-in calls", () => {
+  it("signUp / signIn return the shape the screens expect", async () => {
+    const { res } = await signedIn();
+    expect(res).toMatchObject({ user: { email: "ada@example.com", name: "Ada" }, isNewRegistration: true });
+    const again = await makeClient().action(api.authNode.signIn, { email: "ada@example.com", password: "secret123" });
+    expect(again).toMatchObject({ isNewRegistration: false, user: { id: res.user.id } });
+  });
+
+  it("keeps the old, friendly error messages", async () => {
+    await signedIn();
+    const c = makeClient();
+    await expect(c.action(api.authNode.signIn, { email: "ada@example.com", password: "nope" })).rejects.toThrow("Invalid email or password.");
+    await expect(c.action(api.authNode.signUp, { email: "ada@example.com", password: "secret123" })).rejects.toThrow("Email already registered.");
+    await expect(c.action(api.authNode.signUp, { email: "new@example.com", password: "123" })).rejects.toThrow("Password must be at least 6 characters.");
+  });
+
+  it("me / subscription / signOut", async () => {
+    const { client, res } = await signedIn();
+    expect(await client.query(api.auth.me, {})).toEqual({ id: res.user.id, email: "ada@example.com", name: "Ada" });
+    expect(await client.query(api.subscription.getSubscriptionState, {})).toMatchObject({ phase: "trial", pro: false });
+    expect(await client.mutation(api.subscription.bootstrapSubscription, {})).toEqual({ ok: true });
+    await client.mutation(api.auth.signOut, { token: res.token });
+    expect(await client.query(api.auth.me, { token: res.token })).toBeNull();
+  });
+
+  it("returns null / empty instead of throwing when signed out", async () => {
+    const c = makeClient();
+    expect(await c.query(api.auth.me, {})).toBeNull();
+    expect(await c.query(api.subscription.getSubscriptionState, {})).toBeNull();
+    expect(await c.query(api.transactions.list, { workspace: "personal" })).toEqual([]);
+    expect(await c.query(api.accounts.list, { workspace: "personal" })).toEqual([]);
+    expect(await c.query(api.workspaces.listAll, {})).toEqual([{ id: "personal", name: "Personal", sub: "INDIVIDUAL" }]);
+    expect(await c.query(api.userPreferences.get, {})).toBeNull();
+    expect(await c.query(api.admin.isCurrentUserAdmin, {})).toBe(false);
+    expect((await c.query(api.admin.publicConfig, {})).scannerEnabled).toBe(true);
+  });
+
+  it("password reset round trip", async () => {
+    await signedIn("reset@example.com");
+    let html = "";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_u: string, init: RequestInit) => {
+        html = JSON.parse(String(init.body)).html;
+        return new Response("{}", { status: 200 });
+      }),
+    );
+    const c = makeClient();
+    // The client's own fetch goes to the Worker; the Worker's outbound email call hits the stub.
+    expect(await c.action(api.authNode.requestPasswordReset, { email: "reset@example.com" })).toMatchObject({ ok: true });
+    const token = /font-family:monospace">([^<]+)</.exec(html)![1];
+    await c.action(api.authNode.resetPasswordWithToken, { token, newPassword: "brand-new-1" });
+    await expect(c.action(api.authNode.resetPasswordWithToken, { token, newPassword: "again-pass-2" })).rejects.toBeInstanceOf(ApiRequestError);
+    expect(await c.action(api.authNode.signIn, { email: "reset@example.com", password: "brand-new-1" })).toMatchObject({ isNewRegistration: false });
+  });
+
+  it("changePassword", async () => {
+    const { client, res } = await signedIn();
+    await expect(client.action(api.authNode.changePassword, { token: res.token, currentPassword: "wrong!!", newPassword: "next-pass-1" })).rejects.toThrow("Current password is incorrect.");
+    await client.action(api.authNode.changePassword, { token: res.token, currentPassword: "secret123", newPassword: "next-pass-1" });
+    await client.action(api.authNode.signIn, { email: "ada@example.com", password: "next-pass-1" });
+  });
+});
+
+describe("money data calls", () => {
+  it("accounts, categories, transactions and budgets work end to end", async () => {
+    const { client } = await signedIn();
+    const ws = "personal";
+    await client.mutation(api.accounts.ensureSeed, { workspace: ws });
+    await client.mutation(api.categories.ensureSeed, { workspace: ws });
+    const accounts = await client.query(api.accounts.list, { workspace: ws });
+    expect(accounts.map((a) => a.name)).toEqual(["Card", "Cash", "Savings"]);
+    expect(accounts[0]).toMatchObject({ balance: 0, iconKey: "credit-card" });
+    expect((await client.query(api.categories.list, { workspace: ws })).length).toBe(10);
+
+    const acc = accounts[0]!;
+    expect(await client.query(api.accounts.get, { id: acc.id, workspace: ws })).toMatchObject({ name: "Card" });
+    expect(await client.query(api.accounts.get, { id: "missing", workspace: ws })).toBeNull();
+    await client.mutation(api.accounts.update, { id: acc.id, name: "Main card" });
+    const newAcc = await client.mutation(api.accounts.create, { workspace: ws, name: "Petty cash" });
+    expect(typeof newAcc).toBe("string");
+
+    const id = await client.mutation(api.transactions.create, {
+      workspace: ws, amount: 30, type: "expense", category: "Bills", date: "2026-10-01", accountId: acc.id, merchant: "Power Co", tags: ["x"],
+    });
+    expect(typeof id).toBe("string");
+    const list = await client.query(api.transactions.list, { workspace: ws, startDate: "2026-10-01" });
+    expect(list[0]).toMatchObject({ id, amount: 30, merchant: "Power Co", accountId: acc.id });
+    expect((await client.query(api.accounts.get, { id: acc.id, workspace: ws }))!.balance).toBe(-30);
+    expect(await client.query(api.transactions.get, { id })).toMatchObject({ category: "Bills" });
+    expect(await client.query(api.transactions.get, { id: "nope" })).toBeNull();
+
+    await client.mutation(api.transactions.update, { id, workspace: ws, amount: 10, type: "expense", category: "Bills", date: "2026-10-01", accountId: acc.id });
+    expect((await client.query(api.accounts.get, { id: acc.id, workspace: ws }))!.balance).toBe(-10);
+
+    const bulk = await client.mutation(api.transactions.bulkImport, {
+      workspace: ws, rows: [{ amount: 1, type: "expense", category: "Other", date: "2026-10-02" }],
+    });
+    expect(bulk).toEqual({ inserted: 1, truncated: false });
+    await client.mutation(api.transactions.seedDemo, { workspace: ws });
+    await client.mutation(api.transactions.remove, { id });
+    expect((await client.query(api.transactions.list, { workspace: ws })).length).toBe(2);
+
+    const catId = await client.mutation(api.categories.create, { workspace: ws, name: "Pets", kind: "expense", color: "#abc" });
+    await client.mutation(api.categories.update, { id: catId, name: "Pet care" });
+    await client.mutation(api.categories.remove, { id: catId });
+
+    const budgetId = await client.mutation(api.budgets.upsert, { workspace: ws, category: "Bills", month: "2026-10", limitAmount: 90 });
+    expect(await client.query(api.budgets.listForMonth, { workspace: ws, month: "2026-10" })).toEqual([
+      { id: budgetId, category: "Bills", month: "2026-10", limitAmount: 90 },
+    ]);
+  });
+
+  it("export is Pro only and says so", async () => {
+    const { client } = await signedIn();
+    await expect(client.query(api.transactions.exportForBackup, {})).rejects.toThrow(/CSV export is available for Pro/);
+  });
+
+  it("preferences and workspaces", async () => {
+    const { client } = await signedIn();
+    await client.mutation(api.userPreferences.upsert, {
+      userId: "ignored", currency: "NGN", dateFormat: "eu", merchants: ["Shoprite"], locations: [], voiceInputLanguage: "en",
+    });
+    expect(await client.query(api.userPreferences.get, {})).toMatchObject({ currency: "NGN", voiceInputLanguage: "en" });
+
+    const slug = await client.mutation(api.workspaces.create, { name: "Team" });
+    expect((await client.query(api.workspaces.listAll, {})).map((w) => w.id)).toEqual(["personal", slug]);
+    const invite = await client.mutation(api.workspaces.createInvite, { workspaceKey: slug, email: "m@example.com" });
+    const { client: member } = await signedIn("member@example.com");
+    expect(await member.mutation(api.workspaces.acceptInvite, { token: invite })).toEqual({ workspaceKey: slug });
+    await client.mutation(api.workspaces.removeTeamWorkspace, { slug });
+  });
+
+  it("reset data and delete account", async () => {
+    const { client, res } = await signedIn();
+    await client.mutation(api.transactions.seedDemo, {});
+    await client.mutation(api.auth.resetMyData, { token: res.token });
+    expect(await client.query(api.transactions.list, { workspace: "personal" })).toEqual([]);
+    await client.mutation(api.auth.deleteMyAccount, { token: res.token });
+    expect(await client.query(api.auth.me, {})).toBeNull();
+  });
+});
+
+describe("AI + contact calls", () => {
+  it("are gated for expired trials and the contact form works anonymously", async () => {
+    const { client } = await signedIn();
+    // Fresh trial with no keys configured: a clean "no keys" answer, not a crash.
+    const scan = await client.action(api.scanReceipt.scanFromBase64, { imageBase64: "aGk=", mimeType: "image/jpeg" });
+    expect(scan).toMatchObject({ success: true, extracted_data: null });
+    const coach = await client.action(api.voiceFinance.financeCoachChat, { periodLabel: "x", rows: [], messages: [{ role: "user", content: "hi" }] });
+    expect(coach).toMatchObject({ ok: false, reply: "" });
+
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 200 })));
+    const sent = await makeClient().action(api.email.sendContactMessage, { name: "A", email: "a@b.com", message: "hello there" });
+    expect(sent).toEqual({ ok: true, delivered: true });
+  });
+});
+
+describe("admin calls", () => {
+  it("use the secret header and the signed-in admin email", async () => {
+    const { client } = await signedIn("boss@example.com");
+    const secret = "admin-secret";
+    expect(await client.query(api.admin.isCurrentUserAdmin, {})).toBe(true);
+    await expect(client.action(api.admin.validateAccess, { secret: "wrong" })).rejects.toThrow("Unauthorized admin access.");
+    expect(await client.action(api.admin.validateAccess, { secret })).toEqual({ ok: true });
+    await client.mutation(api.admin.updateConfig, { secret, adminEmail: "ignored", maintenanceMode: false, freeManualLimit: 75 });
+    expect((await client.query(api.admin.adminConfig, { secret })).freeManualLimit).toBe(75);
+    expect((await client.query(api.admin.dashboardStats, { secret })).totals.users).toBe(1);
+    const users = await client.query(api.admin.recentUsers, { secret, limit: 10 });
+    expect(users[0]).toMatchObject({ email: "boss@example.com", plan: "free" });
+    await client.mutation(api.admin.setUserProSubscription, { secret, userId: users[0]!.id, proSubscriptionActive: true });
+    await client.mutation(api.admin.updateUserManagement, { secret, userId: users[0]!.id, name: "Boss" });
+    expect((await client.query(api.admin.recentAuditLogs, { secret })).length).toBeGreaterThan(0);
+    expect(await client.query(api.admin.recentUsers, { secret })).toMatchObject([{ proSubscriptionActive: true, name: "Boss" }]);
+  });
+});

@@ -1,7 +1,7 @@
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useAction, useApiClient, useMutation, useQuery } from "../lib/api";
 import * as Linking from "expo-linking";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../lib/api";
 import { formatAuthError } from "../lib/authErrors";
 import { clearSessionTokenAsync, getSessionTokenAsync, setSessionTokenAsync } from "../lib/sessionStorage";
 import { setRememberedEmailAsync } from "../lib/rememberedEmail";
@@ -19,7 +19,6 @@ type AuthCtx = {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, name?: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: (idToken: string) => Promise<{ error: Error | null }>;
-  signInWithWhop: (code: string, redirectUri: string, codeVerifier: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: Error | null }>;
   requestPasswordReset: (email: string) => Promise<
@@ -37,10 +36,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
+  const apiClient = useApiClient();
   const signInAction = useAction(api.authNode.signIn);
   const signUpAction = useAction(api.authNode.signUp);
   const signInWithGoogleAction = useAction(api.authNode.signInWithGoogle);
-  const signInWithWhopAction = useAction(api.authNode.signInWithWhop);
   const changePasswordAction = useAction(api.authNode.changePassword);
   const requestPasswordResetAction = useAction(api.authNode.requestPasswordReset);
   const resetPasswordWithTokenAction = useAction(api.authNode.resetPasswordWithToken);
@@ -61,6 +60,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })();
   }, []);
+
+  // The API client sends this token on every request.
+  useEffect(() => {
+    apiClient.setToken(token);
+  }, [apiClient, token]);
 
   const me = useQuery(api.auth.me, token ? { token } : "skip");
 
@@ -167,21 +171,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [signInWithGoogleAction],
   );
 
-  const signInWithWhop = useCallback(
-    async (code: string, redirectUri: string, codeVerifier: string) => {
-      try {
-        const res = await signInWithWhopAction({ code, redirectUri, codeVerifier });
-        await setSessionTokenAsync(res.token);
-        setToken(res.token);
-        await setRememberedEmailAsync(res.user.email);
-        return { error: null };
-      } catch (e) {
-        return { error: new Error(formatAuthError(e)) };
-      }
-    },
-    [signInWithWhopAction],
-  );
-
   const signOut = useCallback(async () => {
     const t = token ?? (await getSessionTokenAsync());
     if (t) {
@@ -267,7 +256,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signInWithGoogle,
-      signInWithWhop,
       signOut,
       changePassword,
       requestPasswordReset,
@@ -282,7 +270,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signInWithGoogle,
-      signInWithWhop,
       signOut,
       changePassword,
       requestPasswordReset,

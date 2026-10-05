@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "../lib/api";
 import { Audio } from "expo-av";
+import * as ImagePicker from "expo-image-picker";
 import { readAsStringAsync } from "expo-file-system/legacy";
-import type { Doc, Id } from "../../convex/_generated/dataModel";
-import { api } from "../../convex/_generated/api";
+import type { Id } from "../lib/api";
+import { api } from "../lib/api";
 import {
   ActivityIndicator,
   Animated,
@@ -21,6 +22,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { colors, gradients } from "../theme/tokens";
@@ -28,12 +30,17 @@ import type { RootStackParamList } from "../navigation/types";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import { useAuth } from "../contexts/AuthContext";
 import { usePreferences } from "../contexts/PreferencesContext";
+import { useMoneyAppearance } from "../contexts/MoneyAppearanceContext";
 import { useSubscriptionState } from "../hooks/useSubscriptionState";
 import { AnimatedPressable } from "../components/AnimatedPressable";
 import { todayYm } from "../utils/transactionMath";
 import { userFacingError, userFacingErrorFromUnknown } from "../lib/userFacingErrors";
+import { FormField, SelectField, SegmentedTabs } from "../components/ui/FinanceUI";
+import type { ScannedExtracted } from "../types/transaction";
 
 const CAT_COLORS = ["#0f766e", "#2563eb", "#7c3aed", "#ea580c", "#db2777", "#64748b"];
+type CategoryRow = { id: Id<"categories">; name: string; kind: "expense" | "income"; color: string };
+type AccountRow = { id: Id<"accounts">; name: string; balance: number; iconKey: string };
 
 function formatYmd(d: Date) {
   return d.toISOString().split("T")[0]!;
@@ -41,6 +48,7 @@ function formatYmd(d: Date) {
 
 export function AddTransactionScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const insets = useSafeAreaInsets();
   const route = useRoute<RouteProp<RootStackParamList, "AddTransaction">>();
   const createTx = useMutation(api.transactions.create);
   const updateTx = useMutation(api.transactions.update);
@@ -51,9 +59,11 @@ export function AddTransactionScreen() {
   const budgetUpsert = useMutation(api.budgets.upsert);
   const voiceFromAudio = useAction(api.voiceFinance.voiceTransactionFromAudio);
   const parseFromText = useAction(api.voiceFinance.parseTransactionFromSpeech);
+  const scanImage = useAction(api.scanReceipt.scanFromBase64);
   const { workspace, ready } = useWorkspace();
   const { user, token } = useAuth();
-  const { voiceInputLanguage } = usePreferences();
+  const { voiceInputLanguage, currency } = usePreferences();
+  const { appearance } = useMoneyAppearance();
   const sub = useSubscriptionState();
 
   const voiceAiOk = !sub || sub.canUseAiFeatures;
@@ -67,7 +77,7 @@ export function AddTransactionScreen() {
   );
   const runtime = useQuery(api.admin.publicConfig, {});
 
-  const [transactionType, setTransactionType] = useState<"expense" | "income">("expense");
+  const [transactionType, setTransactionType] = useState<"expense" | "income">(route.params?.initialType ?? "expense");
   const [amount, setAmount] = useState("");
   const [merchant, setMerchant] = useState("");
   const [category, setCategory] = useState("Food & Dining");
@@ -78,6 +88,10 @@ export function AddTransactionScreen() {
   const [accountId, setAccountId] = useState<Id<"accounts"> | null>(null);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [attachmentBusy, setAttachmentBusy] = useState(false);
+  const [attachedScan, setAttachedScan] = useState<ScannedExtracted | null>(null);
+  const [aiCapture, setAiCapture] = useState(route.params?.initialMode === "ai");
+  const [aiMode, setAiMode] = useState<"Voice" | "Quick Text">("Voice");
 
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [voiceRecording, setVoiceRecording] = useState(false);
@@ -90,18 +104,18 @@ export function AddTransactionScreen() {
   const [newAccName, setNewAccName] = useState("");
   const keyboardLift = useMemo(() => new Animated.Value(0), []);
 
-  const cats = useQuery(api.categories.list, ready ? { workspace } : "skip");
-  const accounts = useQuery(api.accounts.list, ready ? { workspace } : "skip");
+  const cats = useQuery(api.categories.list, ready ? { workspace } : "skip") as CategoryRow[] | undefined;
+  const accounts = useQuery(api.accounts.list, ready ? { workspace } : "skip") as AccountRow[] | undefined;
 
   const voiceHints = useMemo(() => {
-    const cRows = (cats ?? []) as Doc<"categories">[];
-    const aRows = (accounts ?? []) as Doc<"accounts">[];
+    const cRows = (cats ?? []).filter((row) => !appearance.archivedCategoryIds.includes(row.id));
+    const aRows = accounts ?? [];
     return {
       expenseCategories: cRows.filter((row) => row.kind === "expense").map((row) => row.name),
       incomeCategories: cRows.filter((row) => row.kind === "income").map((row) => row.name),
       accountNames: aRows.map((row) => row.name),
     };
-  }, [cats, accounts]);
+  }, [cats, accounts, appearance.archivedCategoryIds]);
 
   useEffect(() => {
     if (!ready) return;
@@ -111,8 +125,8 @@ export function AddTransactionScreen() {
 
   const filteredCats = useMemo(() => {
     const rows = cats ?? [];
-    return rows.filter((c) => c.kind === (transactionType === "expense" ? "expense" : "income"));
-  }, [cats, transactionType]);
+    return rows.filter((c) => c.kind === (transactionType === "expense" ? "expense" : "income") && (!appearance.archivedCategoryIds.includes(c.id) || Boolean(editId && c.name === category)));
+  }, [cats, transactionType, appearance.archivedCategoryIds, editId, category]);
 
   useEffect(() => {
     if (filteredCats.length === 0) return;
@@ -259,6 +273,7 @@ export function AddTransactionScreen() {
         limitAmount: draft.budgetLimit,
       });
       Alert.alert("Budget updated", `“${catRaw}” limit ${draft.budgetLimit} for ${month}.`);
+      setAiCapture(false);
       return;
     }
 
@@ -287,7 +302,7 @@ export function AddTransactionScreen() {
     }
 
     const catName = draft.category.trim();
-    if (!catName) return;
+    if (!catName) { setAiCapture(false); return; }
     const expKind = draft.type === "income" ? "income" : "expense";
     const list = cats ?? [];
     const has = list.some((c) => c.name === catName && c.kind === expKind);
@@ -296,6 +311,7 @@ export function AddTransactionScreen() {
       await createCat({ workspace, name: catName, kind: expKind, color });
     }
     setCategory(catName);
+    setAiCapture(false);
   }
 
   async function runParseFromText() {
@@ -394,6 +410,47 @@ export function AddTransactionScreen() {
     }
   }
 
+  async function closeAiCapture() {
+    if (voiceRecRef.current) {
+      try { await voiceRecRef.current.stopAndUnloadAsync(); } catch { /* recording may already have stopped */ }
+      voiceRecRef.current = null;
+      setVoiceRecording(false);
+    }
+    setAiCapture(false);
+  }
+
+  async function attachReceiptFromGallery() {
+    if (!token) { Alert.alert("Sign in", "Sign in to attach a receipt."); return; }
+    if (!voiceAiOk) { Alert.alert("Upgrade needed", sub?.blockReason ?? "Receipt extraction requires Pro or an active trial slot."); return; }
+    if (runtime?.maintenanceMode || runtime?.uploadEnabled === false) { Alert.alert("Unavailable", "Receipt upload is currently unavailable."); return; }
+    const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
+    if (picked.canceled || !picked.assets[0]) return;
+    setAttachmentBusy(true);
+    try {
+      const asset = picked.assets[0];
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+      const imageBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => { const data = String(reader.result ?? ""); resolve(data.includes(",") ? data.split(",")[1]! : data); };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+      const output = await scanImage({ imageBase64, mimeType: asset.mimeType ?? "image/jpeg", sessionToken: token });
+      const result = output as { extracted_data?: unknown; error?: string };
+      let extracted = result.extracted_data as Record<string, unknown> | null | undefined;
+      if (extracted && typeof extracted === "object" && "data" in extracted && (extracted as { data?: unknown }).data) extracted = (extracted as { data: Record<string, unknown> }).data;
+      if (result.error || !extracted || Object.keys(extracted).length === 0) { Alert.alert("Receipt", userFacingError(result.error ?? "Could not read this image.")); return; }
+      const receipt = extracted as ScannedExtracted;
+      setAttachedScan(receipt);
+      if (!amount.trim() && receipt.total_amount) setAmount(String(receipt.total_amount));
+      if (!merchant.trim() && receipt.merchant_name) setMerchant(receipt.merchant_name);
+      Alert.alert("Receipt attached", "Review the fields, then save the transaction.");
+    } catch (error) {
+      Alert.alert("Receipt", userFacingErrorFromUnknown(error));
+    } finally { setAttachmentBusy(false); }
+  }
+
   async function save() {
     if (!user?.id || !token) {
       Alert.alert("Sign in required", "Sign in to save transactions to your account.");
@@ -407,12 +464,15 @@ export function AddTransactionScreen() {
       );
       return;
     }
-    const n = parseFloat(amount);
-    if (!Number.isFinite(n) || n <= 0) return;
+    const n = Number(amount.replace(/,/g, "").trim());
+    if (!Number.isFinite(n) || n <= 0) {
+      Alert.alert("Amount required", "Enter an amount greater than zero.");
+      return;
+    }
     setSaving(true);
     try {
-      const scanned = route.params?.scannedData;
-      const entrySource = route.params?.source ?? (scanned ? "upload" : "manual");
+      const scanned = attachedScan ?? route.params?.scannedData;
+      const entrySource = attachedScan ? "upload" : route.params?.source ?? (scanned ? "upload" : "manual");
       if (runtime?.maintenanceMode) {
         Alert.alert("Unavailable", "System is in maintenance mode.");
         return;
@@ -426,7 +486,7 @@ export function AddTransactionScreen() {
         return;
       }
       const scanTags = scanned?.tags?.filter((t) => t.length > 0 && t.length < 48) ?? [];
-      const mergedTags = [...new Set([...scanTags, "scan"])].slice(0, 16);
+      const mergedTags = [...new Set(scanned ? [...scanTags, "scan"] : scanTags)].slice(0, 16);
 
       if (editId) {
         const rd = scanned
@@ -544,14 +604,44 @@ export function AddTransactionScreen() {
     );
   }
 
+  if (aiCapture && !editId) {
+    return <LinearGradient colors={[...gradients.page]} style={styles.flex}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <Pressable onPress={() => void closeAiCapture()} hitSlop={12} accessibilityLabel="Back to transaction"><Ionicons name="arrow-back" size={22} color={colors.textPrimary} /></Pressable>
+        <Text style={styles.headerTitle}>AI Capture</Text>
+        <View style={{ width: 22 }} />
+      </View>
+      <ScrollView contentContainerStyle={styles.aiPad} keyboardShouldPersistTaps="handled">
+        <SegmentedTabs options={["Voice", "Quick Text"] as const} value={aiMode} onChange={(mode) => { if (voiceRecording) { Alert.alert("Recording", "Stop the recording before switching modes."); return; } setAiMode(mode); }} />
+        <View style={styles.aiHero}>
+          {aiMode === "Voice" ? <Pressable style={[styles.aiMicHalo, voiceRecording && { backgroundColor: colors.roseSoft }]} onPress={() => void toggleVoiceRecording()} disabled={voiceBusy || !voiceAiOk || !token} accessibilityLabel={voiceRecording ? "Stop recording" : "Start recording"}>
+            {voiceBusy && !voiceRecording ? <ActivityIndicator color={colors.primary} /> : <Ionicons name={voiceRecording ? "stop" : "mic"} size={40} color={voiceRecording ? colors.rose600 : colors.primary} />}
+          </Pressable> : <View style={styles.aiMicHalo}><Ionicons name="chatbubble-ellipses-outline" size={40} color={colors.primary} /></View>}
+          <Text style={styles.aiTitle}>{voiceRecording ? "Listening… tap to stop" : aiMode === "Voice" ? "Tap to start speaking" : "Describe a transaction"}</Text>
+          <Text style={styles.aiQuote}>“I just bought lunch at Starbucks for $6.45 yesterday”</Text>
+          {voiceRecording ? <View style={styles.waveform}>{[8, 16, 11, 25, 17, 30, 14, 22, 9, 18, 12, 27, 14].map((height, i) => <View key={i} style={[styles.waveBar, { height }]} />)}</View> : null}
+          {voiceBusy ? <Text style={styles.aiStatus}>Processing your entry…</Text> : voiceRecording ? <Text style={styles.aiStatus}>Listening…</Text> : null}
+        </View>
+        <Text style={styles.aiFieldTitle}>Or type a description</Text>
+        <View style={styles.aiTextBox}>
+          <TextInput style={styles.aiInput} value={voicePhrase} onChangeText={setVoicePhrase} placeholder="Starbucks coffee $6.45 yesterday" placeholderTextColor={colors.gray400} multiline editable={!voiceBusy && voiceAiOk && Boolean(token)} accessibilityLabel="Transaction description" />
+          <Pressable style={[styles.aiSend, (!voicePhrase.trim() || voiceBusy || !voiceAiOk || !token) && { opacity: 0.5 }]} onPress={() => void runParseFromText()} disabled={!voicePhrase.trim() || voiceBusy || !voiceAiOk || !token} accessibilityLabel="Parse description"><Ionicons name="arrow-forward" size={19} color="#fff" /></Pressable>
+        </View>
+        {!voiceAiOk || !token ? <Pressable onPress={() => navigation.navigate("Pricing")}><Text style={styles.aiLocked}>AI capture needs an active trial slot or Pro. View plans</Text></Pressable> : null}
+        <Text style={styles.aiExamplesTitle}>Try these examples</Text>
+        {["Lunch at Chipotle for $12.50", "Uber ride $18.20 on Apr 9", "Office supplies at Amazon $45"].map((example) => <Pressable key={example} style={styles.aiExample} onPress={() => { setVoicePhrase(example); setAiMode("Quick Text"); }}><Ionicons name="sparkles-outline" size={16} color={colors.primary} /><Text style={styles.aiExampleText}>{example}</Text></Pressable>)}
+      </ScrollView>
+    </LinearGradient>;
+  }
+
   return (
     <LinearGradient colors={[...gradients.page]} style={styles.flex}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
           <Ionicons name="chevron-back" size={24} color={colors.gray900} />
         </Pressable>
-        <Text style={styles.headerTitle}>{editId ? "Edit transaction" : "Add transaction"}</Text>
-        <View style={{ width: 24 }} />
+        <Text style={styles.headerTitle}>{editId ? "Edit Transaction" : transactionType === "income" ? "Add Income" : "Add Expense"}</Text>
+        {!editId ? <Pressable onPress={() => setAiCapture(true)} hitSlop={8} accessibilityLabel="Open AI capture"><Ionicons name="sparkles-outline" size={21} color={colors.primary} /></Pressable> : <View style={{ width: 24 }} />}
       </View>
       <ScrollView contentContainerStyle={styles.pad}>
         {sub && !sub.pro && sub.trialTimeActive && sub.canCreateTransaction ? (
@@ -587,85 +677,11 @@ export function AddTransactionScreen() {
           </Pressable>
         </View>
 
-        {!editId ? (
-          <View style={styles.voiceCard}>
-            <Text style={styles.voiceTitle}>Voice or quick text</Text>
-            {voiceAiOk ? (
-              <Text style={styles.voiceHint}>
-                Speak a purchase (e.g. &quot;spent eighteen fifty on tacos at Chipotle Friday&quot;) or type below, then parse.
-              </Text>
-            ) : (
-              <Text style={styles.voiceHint}>
-                Voice and optional smart fill need an active trial slot or Pro. {sub?.blockReason ?? ""}
-              </Text>
-            )}
-            <View style={styles.voiceRow}>
-              <Pressable
-                style={[styles.voiceMic, voiceRecording && styles.voiceMicOn, (!voiceAiOk || !token) && { opacity: 0.45 }]}
-                onPress={() => void toggleVoiceRecording()}
-                disabled={voiceBusy || !voiceAiOk || !token}
-              >
-                {voiceBusy && !voiceRecording ? (
-                  <ActivityIndicator color={colors.primary} />
-                ) : (
-                  <Ionicons name={voiceRecording ? "stop" : "mic"} size={22} color={voiceRecording ? "#fff" : colors.primary} />
-                )}
-              </Pressable>
-              <TextInput
-                style={styles.voiceInput}
-                placeholder="Type a purchase…"
-                placeholderTextColor={colors.gray400}
-                value={voicePhrase}
-                onChangeText={setVoicePhrase}
-                editable={!voiceBusy && voiceAiOk && Boolean(token)}
-              />
-              <Pressable
-                style={[styles.voiceApply, (voiceBusy || !voiceAiOk || !token) && { opacity: 0.6 }]}
-                onPress={() => void runParseFromText()}
-                disabled={voiceBusy || !voiceAiOk || !token}
-              >
-                <Text style={styles.voiceApplyTxt}>Parse</Text>
-              </Pressable>
-            </View>
-            {!voiceAiOk || !token ? (
-              <Pressable style={{ marginTop: 8 }} onPress={() => navigation.navigate("Pricing")}>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>View plans</Text>
-              </Pressable>
-            ) : null}
-            {voiceRecording ? <Text style={styles.voiceRecLabel}>Recording… tap mic again to stop</Text> : null}
-          </View>
-        ) : null}
-
-        <Text style={styles.label}>Amount</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="decimal-pad"
-          placeholder="0.00"
-          placeholderTextColor={colors.gray400}
-          value={amount}
-          onChangeText={setAmount}
-        />
-
-        <Text style={styles.label}>Merchant</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Store name"
-          placeholderTextColor={colors.gray400}
-          value={merchant}
-          onChangeText={setMerchant}
-        />
-
-        <Text style={styles.label}>Category</Text>
-        <Pressable style={styles.selectRow} onPress={() => setCatModal(true)}>
-          <Text style={styles.selectTxt}>{category}</Text>
-          <Ionicons name="chevron-down" size={20} color={colors.gray500} />
-        </Pressable>
-
-        <Text style={styles.label}>Date</Text>
-        <Pressable style={styles.selectRow} onPress={() => setShowDatePicker(true)}>
-          <Ionicons name="calendar-outline" size={20} color={colors.primary} />
-          <Text style={styles.selectTxt}>{date}</Text>
-        </Pressable>
+        {!editId ? <Pressable style={styles.aiEntry} onPress={() => setAiCapture(true)}><Ionicons name="sparkles-outline" size={19} color={colors.primary} /><View style={{ flex: 1 }}><Text style={styles.aiEntryTitle}>AI Capture</Text><Text style={styles.aiEntryText}>Speak or type to fill this form</Text></View><Ionicons name="chevron-forward" size={18} color={colors.gray500} /></Pressable> : null}
+        <FormField label="Amount" icon="cash-outline" prefix={currency === "USD" ? "$" : currency} value={amount} onChangeText={setAmount} placeholder="0.00" keyboardType="decimal-pad" required />
+        <FormField label={transactionType === "income" ? "Source" : "Merchant"} icon={transactionType === "income" ? "person-circle-outline" : "storefront-outline"} value={merchant} onChangeText={setMerchant} placeholder={transactionType === "income" ? "Income source" : "Store name"} />
+        <SelectField label="Category" icon="pricetag-outline" value={category} onPress={() => setCatModal(true)} />
+        <SelectField label="Date" icon="calendar-outline" value={date} onPress={() => setShowDatePicker(true)} />
         {showDatePicker && (
           <DateTimePicker value={dateObj} mode="date" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onDateChange} />
         )}
@@ -675,36 +691,24 @@ export function AddTransactionScreen() {
           </Pressable>
         )}
 
-        <Text style={styles.label}>Paid from / account</Text>
-        <Pressable style={styles.selectRow} onPress={() => setAccModal(true)}>
-          <Text style={styles.selectTxt}>{paymentMethod}</Text>
-          <Ionicons name="chevron-down" size={20} color={colors.gray500} />
-        </Pressable>
-
-        <Text style={styles.label}>Notes</Text>
-        <TextInput
-          style={[styles.input, { minHeight: 80 }]}
-          multiline
-          value={notes}
-          onChangeText={setNotes}
-          placeholder="Optional"
-          placeholderTextColor={colors.gray400}
-        />
+        <SelectField label={transactionType === "income" ? "Receive into account" : "Paid from / account"} icon="card-outline" value={paymentMethod} onPress={() => setAccModal(true)} />
+        <FormField label="Notes (optional)" icon="document-text-outline" value={notes} onChangeText={setNotes} placeholder="Add a note..." multiline />
+        {attachedScan || route.params?.scannedData || (editId && existing?.receipt_data) ? <View style={styles.attached}><Ionicons name="receipt-outline" size={18} color={colors.primary} /><Text style={styles.attachedText}>Receipt details attached</Text><Ionicons name="checkmark-circle" size={18} color={colors.success} /></View> : !editId ? <Pressable style={styles.attachLink} onPress={() => void attachReceiptFromGallery()} disabled={attachmentBusy}>{attachmentBusy ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="attach-outline" size={18} color={colors.primary} />}<Text style={styles.attachLinkText}>{attachmentBusy ? "Reading receipt…" : "Attach receipt image (optional)"}</Text></Pressable> : null}
 
         <Animated.View style={{ transform: [{ translateY: keyboardLift }] }}>
           <AnimatedPressable
             style={[
               styles.saveBtn,
-              (saving || (editId ? !canSaveEdit : !canSaveNew)) && { opacity: 0.55 },
+              (saving || attachmentBusy || (editId ? !canSaveEdit : !canSaveNew)) && { opacity: 0.55 },
             ]}
             onPress={save}
-            disabled={saving || (editId ? !canSaveEdit : !canSaveNew)}
+            disabled={saving || attachmentBusy || (editId ? !canSaveEdit : !canSaveNew)}
             pressedScale={0.985}
           >
           {saving ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.saveTxt}>{editId ? "Save changes" : "Save transaction"}</Text>
+            <Text style={styles.saveTxt}>{editId ? "Save changes" : transactionType === "income" ? "Save income" : "Save expense"}</Text>
           )}
           </AnimatedPressable>
         </Animated.View>
@@ -793,7 +797,7 @@ export function AddTransactionScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   header: {
-    paddingTop: 52,
+    paddingTop: 8,
     paddingHorizontal: 16,
     paddingBottom: 12,
     flexDirection: "row",
@@ -805,6 +809,29 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 18, fontWeight: "700", color: colors.gray900 },
   pad: { padding: 16, paddingBottom: 48 },
+  aiEntry: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.purpleSoft, padding: 12, marginBottom: 16 },
+  aiEntryTitle: { color: colors.textPrimary, fontSize: 13, fontWeight: "700" },
+  aiEntryText: { color: colors.gray600, fontSize: 11, marginTop: 2 },
+  aiPad: { padding: 16, paddingBottom: 36 },
+  aiHero: { alignItems: "center", paddingTop: 34, paddingBottom: 28 },
+  aiMicHalo: { width: 106, height: 106, borderRadius: 53, backgroundColor: colors.mintSoft, borderWidth: 9, borderColor: "#d5f4ef", alignItems: "center", justifyContent: "center" },
+  aiTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: "700", marginTop: 14 },
+  aiQuote: { color: colors.gray600, fontSize: 13, fontStyle: "italic", textAlign: "center", lineHeight: 19, marginTop: 8, maxWidth: 230 },
+  waveform: { height: 36, flexDirection: "row", alignItems: "center", gap: 4, marginTop: 18 },
+  waveBar: { width: 3, borderRadius: 3, backgroundColor: colors.primary },
+  aiStatus: { color: colors.primary, backgroundColor: colors.mintSoft, borderRadius: 99, paddingHorizontal: 16, paddingVertical: 7, marginTop: 14, fontSize: 12, fontWeight: "700" },
+  aiFieldTitle: { color: colors.textPrimary, fontSize: 13, fontWeight: "700", marginBottom: 7 },
+  aiTextBox: { flexDirection: "row", borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, padding: 7, alignItems: "center", minHeight: 76 },
+  aiInput: { flex: 1, minHeight: 56, paddingHorizontal: 8, color: colors.textPrimary, fontSize: 13, textAlignVertical: "top" },
+  aiSend: { width: 33, height: 33, borderRadius: 17, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  aiLocked: { color: colors.primary, fontSize: 12, fontWeight: "600", marginTop: 10 },
+  aiExamplesTitle: { color: colors.textPrimary, fontSize: 12, fontWeight: "700", marginTop: 18, marginBottom: 5 },
+  aiExample: { flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "flex-start", backgroundColor: colors.surface, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 9, marginTop: 8, borderWidth: 1, borderColor: colors.border },
+  aiExampleText: { color: colors.gray700, fontSize: 12 },
+  attached: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, padding: 12, backgroundColor: colors.mintSoft, marginBottom: 14 },
+  attachedText: { color: colors.textPrimary, fontSize: 12, flex: 1, fontWeight: "600" },
+  attachLink: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 12, paddingVertical: 8 },
+  attachLinkText: { color: colors.primary, fontSize: 12, fontWeight: "700" },
   subBannerTrial: {
     borderRadius: 12,
     borderWidth: 1,
@@ -825,56 +852,14 @@ const styles = StyleSheet.create({
   subBannerTxt: { fontSize: 12, color: colors.gray700, marginTop: 4, lineHeight: 17 },
   subBannerBtn: { marginTop: 10, alignSelf: "flex-start" },
   subBannerBtnTxt: { fontSize: 13, fontWeight: "700", color: colors.primary },
-  typeRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
-  voiceCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.primary + "44",
-    backgroundColor: colors.teal50,
-    padding: 12,
-    marginBottom: 18,
-  },
-  voiceTitle: { fontSize: 13, fontWeight: "800", color: colors.gray800, marginBottom: 6 },
-  voiceHint: { fontSize: 11, color: colors.gray600, lineHeight: 15, marginBottom: 10 },
-  voiceRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  voiceMic: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-  },
-  voiceMicOn: { backgroundColor: colors.rose600, borderColor: colors.rose600 },
-  voiceInput: {
-    flex: 1,
-    minHeight: 44,
-    borderWidth: 1,
-    borderColor: colors.gray200,
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    fontSize: 13,
-    color: colors.gray900,
-    backgroundColor: "#fff",
-  },
-  voiceApply: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
-  },
-  voiceApplyTxt: { color: "#fff", fontWeight: "700", fontSize: 12 },
-  voiceRecLabel: { fontSize: 11, color: colors.rose600, marginTop: 8, fontWeight: "600" },
+  typeRow: { flexDirection: "row", gap: 3, marginBottom: 16, padding: 3, borderRadius: 999, backgroundColor: "#edf3f9" },
   typeChip: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.gray200,
+    borderRadius: 999,
+    borderWidth: 0,
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "transparent",
   },
   typeChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   typeTxt: { fontWeight: "700", color: colors.gray700 },

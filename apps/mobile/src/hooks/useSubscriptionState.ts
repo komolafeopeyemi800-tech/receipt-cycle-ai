@@ -1,5 +1,5 @@
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { useQuery } from "../lib/api";
+import { api } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 
 export function useSubscriptionState() {

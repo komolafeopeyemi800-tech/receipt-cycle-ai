@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { useAction, useMutation, useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
+import { useAction, useMutation, useQuery } from "@mobile-lib/api";
+import { api } from "@mobile-lib/api";
 
 const STORAGE_KEY = "receiptcycle_admin_secret";
 const ADMIN_EMAIL_KEY = "receiptcycle_admin_email";
@@ -450,7 +450,7 @@ export default function Admin() {
                 <h3 className="text-lg font-bold text-gray-900 mb-3">Recent Audit Logs</h3>
                 <div className="space-y-2 max-h-[520px] overflow-auto">
                   {(logs ?? []).map((l) => (
-                    <div key={String(l._id)} className="p-3 rounded-lg bg-gray-50 border-l-4 border-primary">
+                    <div key={String(l.id)} className="p-3 rounded-lg bg-gray-50 border-l-4 border-primary">
                       <div className="text-sm font-semibold">{l.action}</div>
                       <div className="text-xs text-gray-500">{l.actor} • {new Date(l.createdAt).toLocaleString()}</div>
                     </div>

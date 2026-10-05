@@ -1,250 +1,94 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
-import { api } from "../../convex/_generated/api";
-import { colors, gradients, type as typeScale } from "../theme/tokens";
-import { useWorkspace } from "../contexts/WorkspaceContext";
-import { useAuth } from "../contexts/AuthContext";
-import type { DocTx } from "../types/transaction";
-import { expenseTotalsByCategory, roundMoney, ymToDateRange } from "../utils/transactionMath";
+import { useMutation } from "../lib/api";
+import { useNavigation } from "@react-navigation/native";
+import type { CompositeNavigationProp } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { api } from "../lib/api";
 import { ScreenHeader } from "../components/ScreenHeader";
-import { SetBudgetModal } from "../components/SetBudgetModal";
+import { AppCard, EmptyState, SegmentedTabs } from "../components/ui/FinanceUI";
+import { BudgetDonut, BudgetProgress, CategoryGlyph, MoneySection } from "../components/ui/MoneyModuleUI";
+import { useMoneyAppearance } from "../contexts/MoneyAppearanceContext";
 import { usePreferences } from "../contexts/PreferencesContext";
-import type { Id } from "../../convex/_generated/dataModel";
-import { userFacingErrorFromUnknown } from "../lib/userFacingErrors";
+import { useMonthMoneyData } from "../features/money/useMoneyData";
+import { addMonthsYm, formatMonthYearLabel, roundMoney, todayYm } from "../utils/transactionMath";
+import { colors, radius, spacing, uiType } from "../theme/tokens";
+import type { MoreStackParamList, RootStackParamList } from "../navigation/types";
 
-function monthStr(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function shiftMonth(ym: string, delta: number) {
-  const [y, m] = ym.split("-").map((x) => parseInt(x, 10));
-  const d = new Date(y, m - 1 + delta, 1);
-  return monthStr(d);
-}
-
-type CatRow = { id: Id<"categories">; name: string; color: string };
+type Nav = CompositeNavigationProp<NativeStackNavigationProp<MoreStackParamList>, NativeStackNavigationProp<RootStackParamList>>;
 
 export function BudgetsScreen() {
-  const { workspace, ready } = useWorkspace();
-  const { user } = useAuth();
+  const navigation = useNavigation<Nav>();
   const { formatMoney } = usePreferences();
-  const [month, setMonth] = useState(() => monthStr(new Date()));
-  const range = useMemo(() => ymToDateRange(month), [month]);
-
-  const cats = useQuery(api.categories.list, ready ? { workspace } : "skip");
-  const budgets = useQuery(api.budgets.listForMonth, ready ? { workspace, month } : "skip");
-  const txs = useQuery(
-    api.transactions.list,
-    ready ? { workspace, userId: user?.id, startDate: range.start, endDate: range.end } : "skip",
-  );
-  const upsert = useMutation(api.budgets.upsert);
+  const { appearance } = useMoneyAppearance();
+  const [month, setMonth] = useState(todayYm);
+  const [showPicker, setShowPicker] = useState(false);
+  const [kind, setKind] = useState<"expense" | "income">("expense");
+  const { workspace, ready, categories, budgets, amountByCategory, loading } = useMonthMoneyData(month);
   const ensureCats = useMutation(api.categories.ensureSeed);
+  useEffect(() => { if (ready) void ensureCats({ workspace }); }, [ready, workspace, ensureCats]);
 
-  const [budgetModal, setBudgetModal] = useState<CatRow | null>(null);
+  const rows = useMemo(() => {
+    const visible = categories.filter((cat) => cat.kind === kind);
+    return visible.map((cat) => ({ ...cat, limit: budgets.find((budget) => budget.category === cat.name)?.limitAmount ?? 0, amount: amountByCategory[kind].get(cat.name) ?? 0 }));
+  }, [categories, budgets, amountByCategory, kind]);
+  const totalBudget = roundMoney(rows.reduce((sum, row) => sum + row.limit, 0));
+  const totalUsed = roundMoney(rows.reduce((sum, row) => sum + (row.limit > 0 ? row.amount : 0), 0));
+  const remaining = roundMoney(totalBudget - totalUsed);
+  const percent = totalBudget > 0 ? Math.round((totalUsed / totalBudget) * 100) : 0;
+  const label = kind === "expense" ? "Spent" : "Received";
 
-  useEffect(() => {
-    if (!ready) return;
-    void ensureCats({ workspace });
-  }, [ready, workspace, ensureCats]);
-
-  const expenseCats = useMemo(() => (cats ?? []).filter((c) => c.kind === "expense"), [cats]);
-
-  const budgetByCat = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const b of budgets ?? []) m.set(b.category, b.limitAmount);
-    return m;
-  }, [budgets]);
-
-  const spentByCat = useMemo(() => {
-    return expenseTotalsByCategory((txs ?? []) as DocTx[], range.start, range.end);
-  }, [txs, range.start, range.end]);
-
-  /** Sum of limits for categories that have a budget row this month */
-  const totalBudget = useMemo(
-    () => roundMoney((budgets ?? []).reduce((s, b) => s + b.limitAmount, 0)),
-    [budgets],
-  );
-
-  /** Spending only in categories that have a budget — matches total budget comparison */
-  const totalSpentBudgeted = useMemo(() => {
-    if (!budgets?.length) return 0;
-    let s = 0;
-    for (const b of budgets) {
-      s += spentByCat.get(b.category) ?? 0;
-    }
-    return roundMoney(s);
-  }, [budgets, spentByCat]);
-
-  const [draft, setDraft] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (!budgets) return;
-    setDraft((prev) => {
-      const next = { ...prev };
-      for (const b of budgets) {
-        if (next[b.category] === undefined) next[b.category] = String(b.limitAmount);
-      }
-      return next;
-    });
-  }, [budgets, month]);
-
-  const setBudget = async (category: string, raw?: string) => {
-    const r = raw ?? draft[category] ?? "";
-    const n = parseFloat(r.replace(/,/g, ""));
-    if (!Number.isFinite(n) || n <= 0) {
-      Alert.alert("Budget", "Enter a positive amount.");
-      return;
-    }
-    try {
-      await upsert({ workspace, userId: user!.id, category, month, limitAmount: roundMoney(n) });
-    } catch (e) {
-      Alert.alert("Budget", userFacingErrorFromUnknown(e));
-    }
-  };
-
-  const loading = !ready || cats === undefined || budgets === undefined || txs === undefined;
-
-  const modalInitialLimit = budgetModal
-    ? draft[budgetModal.name] ?? String(budgetByCat.get(budgetModal.name) ?? "")
-    : "";
-
-  return (
-    <LinearGradient colors={[...gradients.page]} style={styles.flex}>
-      <ScreenHeader title="Budgets" subtitle={month} />
-      <View style={styles.monthNav}>
-        <Pressable style={styles.monthBtn} onPress={() => setMonth((m) => shiftMonth(m, -1))}>
-          <Ionicons name="chevron-back" size={22} color={colors.gray800} />
-        </Pressable>
-        <Text style={styles.monthNavTxt}>{month}</Text>
-        <Pressable style={styles.monthBtn} onPress={() => setMonth((m) => shiftMonth(m, 1))}>
-          <Ionicons name="chevron-forward" size={22} color={colors.gray800} />
-        </Pressable>
+  return <View style={styles.root}>
+    <ScreenHeader title="Budgets" />
+    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <View style={styles.monthRow}>
+        <Pressable onPress={() => setMonth((value) => addMonthsYm(value, -1))} style={styles.monthArrow} accessibilityLabel="Previous month"><Ionicons name="chevron-back" size={20} color={colors.textPrimary} /></Pressable>
+        <Pressable onPress={() => setMonth((value) => addMonthsYm(value, 1))} style={styles.monthLabel} accessibilityLabel="Next month"><Text style={styles.monthText}>{formatMonthYearLabel(month)}</Text><Ionicons name="chevron-forward" size={15} color={colors.primary} /></Pressable>
+        <Pressable onPress={() => setShowPicker(true)} style={styles.monthArrow} accessibilityLabel="Choose month"><Ionicons name="calendar-outline" size={19} color={colors.primary} /></Pressable>
       </View>
-      <ScrollView contentContainerStyle={styles.pad}>
-        <View style={styles.summary}>
-          <View style={styles.sumCell}>
-            <Text style={styles.sumLbl}>TOTAL BUDGET</Text>
-            <Text style={styles.sumVal} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
-              {formatMoney(totalBudget)}
-            </Text>
-          </View>
-          <View style={styles.sumCell}>
-            <Text style={styles.sumLbl}>SPENT (BUDGETED)</Text>
-            <Text style={[styles.sumVal, { color: colors.rose600 }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
-              {formatMoney(totalSpentBudgeted)}
-            </Text>
-          </View>
-        </View>
-        <Text style={styles.sectionHint}>
-          Totals compare only categories with a budget set for this month. Other spending is still shown per category
-          below.
-        </Text>
-        <Text style={styles.section}>Expense categories</Text>
-        {loading ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: 16 }} />
-        ) : (
-          expenseCats.map((c) => {
-            const limit = budgetByCat.get(c.name) ?? 0;
-            const spent = spentByCat.get(c.name) ?? 0;
-            const left = roundMoney(limit - spent);
-            return (
-              <View key={String(c.id)} style={styles.row}>
-                <View style={[styles.dot, { backgroundColor: c.color }]} />
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.rowTitle} numberOfLines={2}>
-                    {c.name}
-                  </Text>
-                  <Text style={styles.rowMeta}>
-                    Spent {formatMoney(spent)} · Budget {formatMoney(limit)} ·{" "}
-                    <Text style={left >= 0 ? styles.leftOk : styles.leftBad}>{formatMoney(left)} left</Text>
-                  </Text>
-                </View>
-                <Pressable style={styles.setBudgetBtn} onPress={() => setBudgetModal(c as CatRow)}>
-                  <Text style={styles.setBudgetBtnTxt}>SET BUDGET</Text>
-                </Pressable>
-              </View>
-            );
-          })
-        )}
-        <View style={{ height: 120 }} />
-      </ScrollView>
+      {showPicker ? <><DateTimePicker value={new Date(`${month}-01T12:00:00`)} mode="date" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={(_, selected) => { if (Platform.OS === "android") setShowPicker(false); if (selected) setMonth(`${selected.getFullYear()}-${String(selected.getMonth() + 1).padStart(2, "0")}`); }} />{Platform.OS === "ios" ? <Pressable onPress={() => setShowPicker(false)}><Text style={styles.pickerDone}>Done</Text></Pressable> : null}</> : null}
 
-      <SetBudgetModal
-        visible={budgetModal !== null}
-        onClose={() => setBudgetModal(null)}
-        categoryName={budgetModal?.name ?? ""}
-        categoryColor={budgetModal?.color ?? colors.gray400}
-        monthYm={month}
-        initialLimit={modalInitialLimit || (budgetModal ? String(budgetByCat.get(budgetModal.name) ?? "") : "")}
-        onConfirm={async (n) => {
-          if (!budgetModal) return;
-          setDraft((d) => ({ ...d, [budgetModal.name]: String(n) }));
-          await setBudget(budgetModal.name, String(n));
-        }}
-      />
-    </LinearGradient>
-  );
+      <View style={styles.overview}>
+        <BudgetDonut value={totalUsed} max={totalBudget} size={124}>
+          <Text style={styles.donutValue} numberOfLines={1} adjustsFontSizeToFit>{formatMoney(totalBudget)}</Text>
+          <Text style={styles.donutLabel}>Total Budget</Text>
+        </BudgetDonut>
+        <View style={styles.overviewNumbers}>
+          <View style={styles.overviewStat}><Ionicons name="close-circle" size={17} color={colors.rose600} /><View><Text style={styles.statValue}>{formatMoney(totalUsed)}</Text><Text style={styles.statLabel}>{label}</Text></View></View>
+          <View style={styles.overviewStat}><Ionicons name="checkmark-circle" size={17} color={colors.success} /><View><Text style={[styles.statValue, remaining < 0 && { color: colors.danger }]}>{formatMoney(remaining)}</Text><Text style={styles.statLabel}>Remaining</Text></View></View>
+          <Text style={styles.percent}>{percent}% used</Text>
+        </View>
+      </View>
+
+      <SegmentedTabs options={["expense", "income"] as const} value={kind} onChange={setKind} />
+      <MoneySection title="Category Budgets" action="See all" onAction={() => navigation.navigate("Categories")} />
+      {loading ? <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} /> : rows.length === 0 ? <EmptyState icon="pie-chart-outline" title="No categories yet" description="Add a category to plan your money." /> : rows.map((row) => {
+        const used = row.limit > 0 ? Math.round((row.amount / row.limit) * 100) : 0;
+        return <Pressable key={row.id} style={styles.budgetRow} onPress={() => navigation.navigate(row.limit > 0 ? "BudgetDetail" : "BudgetSet", { category: row.name, month, kind })} accessibilityRole="button" accessibilityLabel={`${row.name} budget`}>
+          <CategoryGlyph name={row.name} color={row.color} icon={appearance.categoryIcons[row.id]} size={38} />
+          <View style={styles.rowMain}><Text style={styles.rowName} numberOfLines={1}>{row.name}</Text><Text style={styles.rowAmounts}>{formatMoney(row.amount)} / {row.limit > 0 ? formatMoney(row.limit) : "Set budget"}</Text><BudgetProgress value={row.amount} max={row.limit} color={row.amount > row.limit && row.limit > 0 ? colors.danger : colors.primary} /></View>
+          <Text style={styles.rowPct}>{row.limit > 0 ? `${used}%` : "Add"}</Text>
+        </Pressable>;
+      })}
+      <AppCard style={styles.helpCard}><Ionicons name="information-circle-outline" size={18} color={colors.primary} /><Text style={styles.helpText}>The total compares categories with a budget set for this month. Other transactions remain visible in Records.</Text></AppCard>
+    </ScrollView>
+  </View>;
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  monthNav: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
-    paddingVertical: 8,
-    backgroundColor: "rgba(255,255,255,0.97)",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.gray200,
-  },
-  monthBtn: { padding: 8 },
-  monthNavTxt: { fontSize: typeScale.bodyStrong, fontWeight: "700", color: colors.gray900 },
-  pad: { paddingHorizontal: 16, paddingTop: 8 },
-  summary: { flexDirection: "row", gap: 10, marginBottom: 8 },
-  sumCell: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.gray200,
-    backgroundColor: colors.surface,
-  },
-  sumLbl: { fontSize: typeScale.xs, fontWeight: "700", color: colors.gray500, letterSpacing: 0.5 },
-  sumVal: { fontSize: typeScale.md, fontWeight: "700", color: colors.gray900, marginTop: 4 },
-  sectionHint: { fontSize: typeScale.sm, color: colors.gray500, marginBottom: 12, lineHeight: 16 },
-  section: { fontSize: typeScale.md, fontWeight: "700", color: colors.gray800, marginBottom: 10 },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray200,
-  },
-  dot: { width: 10, height: 10, borderRadius: 5 },
-  rowTitle: { fontSize: typeScale.md, fontWeight: "600", color: colors.gray900 },
-  rowMeta: { fontSize: typeScale.xs, color: colors.gray500, marginTop: 4, lineHeight: 16 },
-  leftOk: { color: colors.green600, fontWeight: "700" },
-  leftBad: { color: colors.rose600, fontWeight: "700" },
-  setBudgetBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    backgroundColor: colors.emerald50,
-  },
-  setBudgetBtnTxt: { fontSize: 10, fontWeight: "800", color: colors.primary, letterSpacing: 0.3 },
+  root: { flex: 1, backgroundColor: colors.background }, content: { padding: spacing.lg, paddingBottom: 100 },
+  monthRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: spacing.md },
+  monthArrow: { width: 34, height: 36, borderRadius: radius.medium, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
+  monthLabel: { flex: 1, height: 36, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: radius.medium, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  monthText: { fontSize: uiType.body, fontWeight: "700", color: colors.textPrimary },
+  pickerDone: { color: colors.primary, fontWeight: "700", textAlign: "right", marginBottom: spacing.sm },
+  overview: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginBottom: spacing.lg },
+  donutValue: { fontSize: 15, fontWeight: "800", color: colors.textPrimary, maxWidth: 92, textAlign: "center" }, donutLabel: { fontSize: 10, color: colors.gray600, marginTop: 2 },
+  overviewNumbers: { flex: 1, gap: 9 }, overviewStat: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
+  statValue: { fontSize: 15, fontWeight: "800", color: colors.primary }, statLabel: { fontSize: uiType.caption, color: colors.gray600 }, percent: { textAlign: "center", fontSize: uiType.caption, fontWeight: "800", color: colors.gray700 },
+  budgetRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.surface, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.divider },
+  rowMain: { flex: 1, minWidth: 0, gap: 3 }, rowName: { fontSize: uiType.secondary, fontWeight: "700", color: colors.textPrimary }, rowAmounts: { fontSize: uiType.caption, color: colors.gray600 }, rowPct: { fontSize: uiType.caption, fontWeight: "700", color: colors.gray700, minWidth: 34, textAlign: "right" },
+  helpCard: { flexDirection: "row", gap: 8, backgroundColor: colors.blueSoft, marginTop: spacing.xl }, helpText: { flex: 1, fontSize: uiType.caption, color: colors.gray700, lineHeight: 16 },
 });

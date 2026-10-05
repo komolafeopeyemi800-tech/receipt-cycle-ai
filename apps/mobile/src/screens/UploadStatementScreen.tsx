@@ -15,8 +15,10 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as DocumentPicker from "expo-document-picker";
-import { useAction, useMutation, useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
+import { useAction, useMutation, useQuery } from "../lib/api";
+import { api } from "../lib/api";
 import { colors, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
 import { useWorkspace } from "../contexts/WorkspaceContext";
@@ -249,21 +251,39 @@ export function UploadStatementScreen() {
     }
   }, [picked, ready, workspace, user?.id, token, ensureCats, bulkImport, navigation, reset, sub]);
 
-  const onPick = () => {
+  const canPick = () => {
+    if (!ready || busy) return false;
     if (runtime?.maintenanceMode) {
       Alert.alert("Unavailable", "System is in maintenance mode.");
-      return;
+      return false;
     }
     if (runtime?.mobileUploadPageEnabled === false) {
       Alert.alert("Unavailable", "This page is currently disabled by admin.");
-      return;
+      return false;
     }
     if (runtime?.uploadEnabled === false) {
       Alert.alert("Unavailable", "Upload is currently disabled by admin.");
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const onPick = () => {
+    if (!canPick()) return;
     if (Platform.OS === "web") onPickWeb();
     else void onPickNative();
+  };
+
+  const onPickGallery = async () => {
+    if (!canPick()) return;
+    if (Platform.OS === "web") { onPickWeb(); return; }
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.9 });
+    if (res.canceled || !res.assets[0]) return;
+    const asset = res.assets[0];
+    const p: Picked = { uri: asset.uri, name: asset.fileName ?? "receipt-image.jpg", mime: asset.mimeType ?? "image/jpeg", kind: "image" };
+    setPicked(p);
+    setStatus(null);
+    void loadPreview(p);
   };
 
   return (
@@ -274,23 +294,27 @@ export function UploadStatementScreen() {
     >
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
-          <FontAwesome5 name="times" size={18} color={colors.gray700} />
+          <Ionicons name="arrow-back" size={21} color={colors.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>Upload document</Text>
         <View style={{ width: 24 }} />
       </View>
 
       {!picked ? (
-        <View style={styles.card}>
-          <FontAwesome5 name="file-invoice" size={28} color={colors.primary} />
-          <Text style={styles.title}>Choose a file</Text>
-          <Text style={styles.sub}>
-            Receipt photo or CSV only. Preview first, then run smart read (like the camera flow) or import table rows from
-            CSV.
-          </Text>
-          <Pressable style={[styles.btn, busy && { opacity: 0.7 }]} onPress={onPick} disabled={busy || !ready}>
-            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnTxt}>Choose file</Text>}
-          </Pressable>
+        <View style={styles.uploadContent}>
+          <View style={styles.dropZone}>
+            <Ionicons name="cloud-upload-outline" size={42} color={colors.primary} />
+            <Text style={styles.title}>Upload a document</Text>
+            <Text style={styles.sub}>Choose a receipt image or CSV document</Text>
+            <Pressable style={styles.chooseButton} onPress={onPick} disabled={busy || !ready}><Text style={styles.chooseText}>Choose files</Text></Pressable>
+          </View>
+          <View style={styles.tileGrid}>
+            <Pressable style={[styles.tile, { backgroundColor: colors.blueSoft }]} onPress={() => void onPickGallery()}><Ionicons name="images-outline" size={27} color={colors.blue600} /><Text style={styles.tileText}>Gallery</Text></Pressable>
+            <Pressable style={[styles.tile, { backgroundColor: "#f3f7ff" }]} onPress={onPick}><Ionicons name="document-outline" size={27} color={colors.blue600} /><Text style={styles.tileText}>Files</Text></Pressable>
+            <Pressable style={[styles.tile, { backgroundColor: colors.roseSoft, opacity: 0.65 }]} onPress={() => Alert.alert("PDF unavailable", "PDF upload is not supported on this device yet. Choose a JPG or PNG image instead.")}><Ionicons name="document-text-outline" size={27} color={colors.rose600} /><Text style={styles.tileText}>PDF</Text><Text style={styles.tileHint}>Coming soon</Text></Pressable>
+            <Pressable style={[styles.tile, { backgroundColor: colors.mintSoft }]} onPress={() => void onPickGallery()}><Ionicons name="image-outline" size={27} color={colors.primary} /><Text style={styles.tileText}>Image</Text></Pressable>
+          </View>
+          <View style={styles.infoCard}><Ionicons name="bulb-outline" size={19} color={colors.amber600} /><Text style={styles.infoText}>AI extracts key details from JPG, PNG and other supported images. CSV files can also be imported as transaction rows.</Text></View>
         </View>
       ) : (
         <View style={styles.card}>
@@ -350,16 +374,28 @@ export function UploadStatementScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.surface },
+  root: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 16,
-    paddingHorizontal: 4,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
   },
   headerTitle: { fontSize: typeScale.headline, fontWeight: "700", color: colors.gray900 },
+  uploadContent: { paddingHorizontal: 16, paddingTop: 16, gap: 16 },
+  dropZone: { minHeight: 222, borderWidth: 1.5, borderStyle: "dashed", borderColor: "#8ed8d0", borderRadius: 16, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: 20, gap: 8 },
+  chooseButton: { backgroundColor: colors.blueSoft, borderRadius: 12, minHeight: 38, minWidth: 170, alignItems: "center", justifyContent: "center", marginTop: 10 },
+  chooseText: { color: colors.primary, fontSize: 13, fontWeight: "700" },
+  tileGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  tile: { width: "48%", minHeight: 110, borderRadius: 12, alignItems: "center", justifyContent: "center", gap: 6 },
+  tileText: { color: colors.textPrimary, fontSize: 13, fontWeight: "700" },
+  tileHint: { color: colors.gray600, fontSize: 10 },
+  infoCard: { flexDirection: "row", gap: 9, backgroundColor: colors.blueSoft, borderRadius: 12, padding: 14 },
+  infoText: { flex: 1, fontSize: 11, color: colors.gray700, lineHeight: 17 },
   card: {
+    marginHorizontal: 16,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,

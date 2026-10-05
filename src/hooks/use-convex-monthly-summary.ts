@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
+import { useQuery } from "@mobile-lib/api";
+import { api } from "@mobile-lib/api";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { buildSummary, monthRangeISO, type DocTx } from "@/lib/transactionMath";

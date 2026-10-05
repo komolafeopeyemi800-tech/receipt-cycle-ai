@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from "react";
-import { useConvexConnectionState } from "convex/react";
+import { useConnectionState } from "@mobile-lib/api";
 import { Link, useLocation } from "react-router-dom";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import { useWebAuth } from "@/contexts/WebAuthContext";
@@ -10,7 +10,7 @@ type AppChromeProps = {
 
 export function AppChrome({ children }: AppChromeProps) {
   const { user, loading, clearLocalSession } = useWebAuth();
-  const conn = useConvexConnectionState();
+  const conn = useConnectionState();
   const [showStuckHint, setShowStuckHint] = useState(false);
   const location = useLocation();
 

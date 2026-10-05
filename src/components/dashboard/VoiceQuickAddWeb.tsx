@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
-import { useAction } from "convex/react";
-import { api } from "@convex/_generated/api";
+import { useAction } from "@mobile-lib/api";
+import { api } from "@mobile-lib/api";
 import { userFacingError } from "@/lib/userFacingErrors";
 import { useWebPreferences } from "@/contexts/WebPreferencesContext";
 import { useWebAuth } from "@/contexts/WebAuthContext";

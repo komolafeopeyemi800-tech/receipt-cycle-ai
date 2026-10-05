@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useWebAuth } from "@/contexts/WebAuthContext";
-import { WhopOAuthButton } from "@/components/auth/WhopOAuthButton";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { getWebLastEmail, getWebSessionUser } from "@/lib/webSession";
 import { needsWebOnboarding } from "@/lib/webOnboarding";
 
@@ -11,7 +11,7 @@ function safeInternalPath(raw: string | null, fallback: string): string {
 }
 
 export default function WebSignIn() {
-  const { signIn } = useWebAuth();
+  const { signIn, signInWithGoogle } = useWebAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = safeInternalPath(params.get("next"), "/dashboard");
@@ -42,6 +42,26 @@ export default function WebSignIn() {
     }
   }
 
+  async function onGoogle(idToken: string) {
+    setMsg(null);
+    setBusy(true);
+    try {
+      const { error, isNewRegistration } = await signInWithGoogle(idToken);
+      if (error) {
+        setMsg(error.message);
+        return;
+      }
+      const sessionUser = getWebSessionUser();
+      if (sessionUser && (isNewRegistration || needsWebOnboarding(sessionUser.id))) {
+        navigate("/onboarding", { replace: true });
+        return;
+      }
+      navigate(next, { replace: true });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-slate-100">
       <header className="border-b border-slate-200/80 bg-white/90 px-4 py-4 backdrop-blur">
@@ -59,10 +79,10 @@ export default function WebSignIn() {
         <div className="w-full max-w-[420px] rounded-2xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back</h1>
-            <p className="mt-2 text-sm text-slate-600">Sign in with your email or Whop — same account as the mobile app.</p>
+            <p className="mt-2 text-sm text-slate-600">Sign in with your email or Google — same account as the mobile app.</p>
           </div>
 
-          <WhopOAuthButton mode="signin" className="mt-8" onError={(m) => setMsg(m)} />
+          <GoogleSignInButton mode="signin" className="mt-8" onCredential={onGoogle} onError={(m) => setMsg(m)} />
           <div className="my-8 flex items-center gap-3">
             <span className="h-px flex-1 bg-slate-200" />
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">or email</span>

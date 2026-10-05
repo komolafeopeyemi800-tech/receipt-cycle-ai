@@ -1,0 +1,8 @@
+node_modules
+.wrangler
+.dev.vars
+.tmp-d1
+
+# Migration output holds user data and password hashes: never commit it.
+migration/
+*.zip

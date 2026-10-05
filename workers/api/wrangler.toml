@@ -1,0 +1,19 @@
+# Receipt Cycle API Worker (replaces the Convex backend). Secrets are set with
+# `wrangler secret put <NAME>`; never commit values.
+name = "receipt-cycle-api"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "receipt-cycle-db"
+database_id = "5f160001-46c7-4733-8e51-bd73997589cc"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "receipt-cycle-files"
+
+[vars]
+PUBLIC_WEB_APP_URL = "https://receiptcycle.com"

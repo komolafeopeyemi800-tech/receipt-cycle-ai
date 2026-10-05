@@ -8,7 +8,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.{test,spec}.{ts,tsx}", "apps/mobile/src/lib/**/*.test.ts"],
+    include: ["src/**/*.{test,spec}.{ts,tsx}", "apps/mobile/src/lib/**/*.test.ts", "apps/mobile/convex/**/*.test.ts"],
   },
   resolve: {
     alias: {

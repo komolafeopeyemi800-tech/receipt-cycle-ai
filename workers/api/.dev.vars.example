@@ -1,0 +1,30 @@
+# Copy to .dev.vars for `wrangler dev`. In production set each with `wrangler secret put NAME`.
+# Never commit real values.
+BETTER_AUTH_SECRET=change-me-to-32-or-more-random-characters
+BETTER_AUTH_URL=http://localhost:8787
+PUBLIC_WEB_APP_URL=http://localhost:8080
+TRUSTED_ORIGINS=http://localhost:8080
+
+# Sign in with Google (any of these client IDs is accepted as the token audience)
+GOOGLE_WEB_CLIENT_ID=
+GOOGLE_IOS_CLIENT_ID=
+GOOGLE_ANDROID_CLIENT_ID=
+# Whop payments (kept until the move to Polar)
+WHOP_WEBHOOK_SECRET=
+WHOP_PRO_PRODUCT_IDS=
+
+# Email
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=
+RESEND_SUPPORT_EMAIL=
+
+# AI
+OPENAI_API_KEY=
+OPENROUTER_API_KEY=
+GEMINI_API_KEY=
+LANDING_AI_API_KEY=
+
+# Admin
+ADMIN_DASHBOARD_SECRET=
+ADMIN_DASHBOARD_ADMIN_EMAILS=
+LIFETIME_PRO_EMAILS=

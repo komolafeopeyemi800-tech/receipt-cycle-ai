@@ -89,7 +89,7 @@ export default function WebSignUp() {
   }
 
   return (
-    <AuthLayout title="Create your account" subtitle="Free to start. Use Google or your email, it takes under a minute.">
+    <AuthLayout title="Create your account" subtitle="Free to start. Use your email or Google, it takes under a minute.">
           <GoogleSignInButton mode="signup" className="" onCredential={onGoogle} onError={(m) => setMsg(m)} />
           {msg && !passwordsOn ? (
             <p className="mt-3 text-sm text-red-600" role="alert" aria-live="polite">

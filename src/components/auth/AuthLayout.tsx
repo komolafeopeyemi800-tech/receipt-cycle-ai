@@ -36,7 +36,7 @@ export function AuthLayout({ title, subtitle, children }: Props) {
             ))}
           </ul>
         </div>
-        <p className="relative text-xs text-teal-100/80">Your data is private to you. Sign in with Google or a one-time email code, no password to remember.</p>
+        <p className="relative text-xs text-teal-100/80">Your data is private to you. Sign in with your email and password, or with Google.</p>
       </aside>
 
       <main className="flex flex-col px-5 py-6 sm:px-8">

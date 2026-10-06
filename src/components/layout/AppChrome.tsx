@@ -40,8 +40,6 @@ export function AppChrome({ children }: AppChromeProps) {
     loading ? (
       <div className="flex min-h-[50vh] items-center justify-center text-slate-500">
         <div className="max-w-sm px-4 text-center">
-          <i className="fas fa-circle-notch fa-spin text-2xl text-primary mb-3" />
-          <p className="text-sm font-medium">Loading your workspace…</p>
           <p className="mt-2 text-xs text-slate-500">{connLabel}</p>
           <p className="mt-2 text-xs text-slate-400">
             If loading takes unusually long, check your network or try refreshing the page.

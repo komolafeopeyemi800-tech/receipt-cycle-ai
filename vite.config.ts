@@ -44,7 +44,12 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
     resolve: {
+      // apps/mobile has its own React 19; the web app must use exactly one React (18) everywhere.
+      dedupe: ["react", "react-dom", "@tanstack/react-query"],
       alias: {
+        react: path.resolve(repoRoot, "node_modules/react"),
+        "react-dom": path.resolve(repoRoot, "node_modules/react-dom"),
+        "@tanstack/react-query": path.resolve(repoRoot, "node_modules/@tanstack/react-query"),
         "@": path.resolve(repoRoot, "./src"),
         "@mobile-lib": path.resolve(repoRoot, "./apps/mobile/src/lib"),
       },

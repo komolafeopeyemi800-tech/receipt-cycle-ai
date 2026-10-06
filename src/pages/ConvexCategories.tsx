@@ -60,7 +60,7 @@ function CategoryWorkspace() {
     </div>
     <Surface className="mt-4">
       <SurfaceHeader title="Category library" description="Choose a category to edit its name, type, or color." action={<Segmented value={filter} onChange={(value) => setFilter(value as typeof filter)} options={[{ value: "all", label: "All" }, { value: "expense", label: "Expense" }, { value: "income", label: "Income" }] as const} />} />
-      {list === undefined ? <div className="flex justify-center py-16"><i className="fas fa-circle-notch fa-spin text-2xl text-teal-700" /></div> :
+      {list === undefined ? <div className="flex justify-center py-16"><div className="h-24 w-full animate-pulse rounded-xl bg-slate-100" aria-hidden /></div> :
         <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">{filtered.map((row) => <div key={String(row.id)} className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition hover:border-teal-200 hover:shadow-sm">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${row.color}18`, color: row.color }}><i className={`fas ${categoryIcons[row.name.toLowerCase()] ?? "fa-tag"}`} /></div>
           <button type="button" onClick={() => setEditor({ ...row })} className="min-w-0 flex-1 text-left"><p className="truncate text-sm font-extrabold text-slate-900">{row.name}</p><p className="mt-1 text-xs capitalize text-slate-500">{row.kind} category</p></button>

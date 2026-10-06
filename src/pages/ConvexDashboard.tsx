@@ -257,8 +257,7 @@ function ConvexDashboardInner() {
           </div>
         ) : listLoading ? (
           <div className="flex flex-col items-center justify-center gap-2 py-10">
-            <i className="fas fa-circle-notch fa-spin text-2xl" style={{ color: primary }} />
-            <p className="text-center text-xs text-slate-500">Loading transactions…</p>
+            <div className="h-24 w-full animate-pulse rounded-xl bg-slate-100" aria-hidden />
           </div>
         ) : (
           <>

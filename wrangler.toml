@@ -1,8 +1,16 @@
-# Static Vite SPA — deploy with `npx wrangler deploy` after `npm run build`.
+# Vite site — deploy with `npx wrangler deploy` after `npm run build`.
 # Does not use @cloudflare/vite-plugin (project is on Vite 5, not 6+).
 name = "receipt-cycle-ai"
 compatibility_date = "2024-06-01"
+workers_dev = true
+preview_urls = true
+
+routes = [
+  { pattern = "receiptcycle.com", custom_domain = true },
+  { pattern = "www.receiptcycle.com", custom_domain = true },
+]
 
 [assets]
 directory = "./dist"
-not_found_handling = "single-page-application"
+# Missing files answer 404 (served as 404.html) instead of index.html, so a stale asset can never be cached as "JS".
+not_found_handling = "404-page"

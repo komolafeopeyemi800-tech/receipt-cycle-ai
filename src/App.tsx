@@ -110,7 +110,7 @@ function WebAuthShell() {
 }
 
 const App = () => (
-  <BrowserRouter>
+  <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
     <Routes>
       <Route
         path="/admin"

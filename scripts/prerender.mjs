@@ -185,6 +185,27 @@ async function main() {
     await writeRouteFile(home, baseHtml, SITE_URL);
   }
 
+  // App-only pages (sign in, dashboard, ...) get a real file too, so the host never has to
+  // answer a missing /assets/*.js with index.html (that got cached as "JS" and left blank pages).
+  // Unknown paths get 404.html: the app still loads there and sends visitors home.
+  const appRoutes = [
+    "signin", "signup", "forgot-password", "reset-password", "checkout-return", "onboarding",
+    "dashboard", "transactions", "insights", "budgets", "accounts", "categories", "sales", "customers",
+    "items-services", "business-profile", "invoice-settings", "invoices", "estimates", "payments",
+    "reports", "reports/cash-flow", "reports/overdue", "ai-assistant", "notifications", "subscription",
+    "profile", "more", "upload-statement", "settings", "admin", "impressum", "cookie-settings", "do-not-sell",
+  ];
+  for (const r of appRoutes) {
+    const file = path.join(DIST, r, "index.html");
+    try {
+      await readFile(file);
+    } catch {
+      await mkdir(path.dirname(file), { recursive: true });
+      await writeFile(file, baseHtml);
+    }
+  }
+  await writeFile(path.join(DIST, "404.html"), baseHtml);
+
   // Copy generated SEO assets into dist if Vite didn't pick them up (they're
   // in /public so Vite should, but belt-and-suspenders for custom builds).
   const publicAssets = [

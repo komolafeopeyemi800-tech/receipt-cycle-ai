@@ -204,7 +204,7 @@ function ConvexInsightsInner() {
           <p className="mt-1 text-xs text-slate-500">Share of expenses by category (top 8).</p>
           {loading ? (
             <div className="flex justify-center py-10">
-              <i className="fas fa-circle-notch fa-spin text-2xl" style={{ color: primary }} />
+              <div className="h-24 w-full animate-pulse rounded-xl bg-slate-100" aria-hidden />
             </div>
           ) : pieSlices.length === 0 ? (
             <p className="mt-4 text-sm text-slate-500">No expense data in this period yet.</p>
@@ -284,7 +284,7 @@ function ConvexInsightsInner() {
           <p className="text-xs text-slate-500">Open the transactions list to add or edit entries.</p>
           {loading ? (
             <div className="flex justify-center py-8">
-              <i className="fas fa-circle-notch fa-spin text-2xl" style={{ color: primary }} />
+              <div className="h-24 w-full animate-pulse rounded-xl bg-slate-100" aria-hidden />
             </div>
           ) : byCategory.length === 0 ? (
             <p className="mt-3 text-sm text-slate-500">No expense data in this period yet.</p>

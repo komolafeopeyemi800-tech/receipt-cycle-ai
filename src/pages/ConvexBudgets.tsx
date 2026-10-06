@@ -149,7 +149,7 @@ function ConvexBudgetsInner() {
 
         {loading ? (
           <div className="flex justify-center py-8">
-            <i className="fas fa-circle-notch fa-spin text-2xl" style={{ color: primary }} />
+            <div className="h-24 w-full animate-pulse rounded-xl bg-slate-100" aria-hidden />
           </div>
         ) : (
           expenseCats.map((c) => {

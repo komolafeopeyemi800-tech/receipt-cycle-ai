@@ -2,6 +2,7 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth";
 import { hashPassword as defaultHash, verifyPassword as defaultVerify } from "better-auth/crypto";
 import { bearer, emailOTP } from "better-auth/plugins";
+import { dash } from "@better-auth/infra";
 import bcrypt from "bcryptjs";
 import { and, eq } from "drizzle-orm";
 import { authAccount, profile, session, user, verification } from "../db/schema";
@@ -151,6 +152,8 @@ function build(env: Env, db: Db) {
     },
     plugins: [
       bearer(),
+      // Optional Better Auth dashboard (users, sessions, audit log). Only on when BETTER_AUTH_API_KEY is set.
+      ...(env.BETTER_AUTH_API_KEY?.trim() ? [dash({ apiKey: env.BETTER_AUTH_API_KEY.trim() })] : []),
       // Passwordless sign-in: a 6-digit code by email. Codes are stored hashed (cheap), expire in
       // 10 minutes and lock after 5 wrong tries. The first successful code also creates the account.
       emailOTP({

@@ -16,6 +16,8 @@ export type Env = {
   BETTER_AUTH_URL?: string;
   /** Signing secret for Better Auth (`wrangler secret put BETTER_AUTH_SECRET`, 32+ random chars). */
   BETTER_AUTH_SECRET?: string;
+  /** Key from the Better Auth dashboard (dash.better-auth.com); enables the admin dashboard plugin. */
+  BETTER_AUTH_API_KEY?: string;
   /** Extra browser origins allowed to call the auth endpoints, comma separated. */
   TRUSTED_ORIGINS?: string;
   /**

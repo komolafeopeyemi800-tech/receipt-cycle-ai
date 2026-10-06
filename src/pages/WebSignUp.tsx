@@ -106,7 +106,7 @@ export default function WebSignUp() {
 
           <EmailCodeForm mode="signup" initialEmail={email} onDone={(r) => afterCodeSignIn(r.isNewRegistration)} />
           </>
-          ) : (
+          ) : passwordsOn ? null : (
             <p className="mt-6 rounded-xl bg-slate-50 p-3 text-center text-xs text-slate-600">
               Email sign-in is not available yet. Please continue with Google.
             </p>
@@ -116,7 +116,7 @@ export default function WebSignUp() {
           <>
           <div className="my-6 flex items-center gap-3">
             <span className="h-px flex-1 bg-slate-200" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">or with a password</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">or with email and password</span>
             <span className="h-px flex-1 bg-slate-200" />
           </div>
 

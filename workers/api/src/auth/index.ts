@@ -1,12 +1,13 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth";
-import { hashPassword as defaultHash, verifyPassword as defaultVerify } from "better-auth/crypto";
+import { verifyPassword as defaultVerify } from "better-auth/crypto";
 import { bearer, emailOTP } from "better-auth/plugins";
 import { dash } from "@better-auth/infra";
 import bcrypt from "bcryptjs";
 import { and, eq } from "drizzle-orm";
 import { authAccount, profile, session, user, verification } from "../db/schema";
 import { reconcileEntitlementForUser } from "../lib/entitlements";
+import { hashPbkdf2, isPbkdf2, verifyPbkdf2 } from "../lib/passwordHash";
 import { escapeHtml, layout, mailEnabled, sendMail } from "../lib/mailer";
 import type { Db, Env } from "../types";
 
@@ -107,19 +108,21 @@ function build(env: Env, db: Db) {
       enabled: env.PASSWORD_AUTH_ENABLED === "true",
       minPasswordLength: 6,
       autoSignIn: true,
+      requireEmailVerification: false,
       resetPasswordTokenExpiresIn: RESET_SECONDS,
       password: {
-        hash: (password) => defaultHash(password),
+        hash: (password) => hashPbkdf2(password),
         /**
          * Accounts migrated from Convex still carry bcrypt hashes ("$2a$..."). Accept them once and
          * immediately re-save the password in Better Auth's format (lazy rehash).
          */
         verify: async ({ hash, password }) => {
+          if (isPbkdf2(hash)) return verifyPbkdf2(hash, password);
           if (!hash.startsWith("$2")) return defaultVerify({ hash, password });
           if (!(await bcrypt.compare(password, hash))) return false;
           await db
             .update(authAccount)
-            .set({ password: await defaultHash(password) })
+            .set({ password: await hashPbkdf2(password) })
             .where(and(eq(authAccount.providerId, "credential"), eq(authAccount.password, hash)));
           return true;
         },

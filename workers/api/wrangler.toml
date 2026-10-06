@@ -29,8 +29,8 @@ name = "EMAIL"
 PUBLIC_WEB_APP_URL = "https://receiptcycle.com"
 # This Worker's own address; Better Auth builds its links from it.
 BETTER_AUTH_URL = "https://api.receiptcycle.com"
-# Password sign-in is off on the free plan (see src/types.ts). Set to "true" after upgrading.
-PASSWORD_AUTH_ENABLED = "false"
+# Email + password sign-in (no email confirmation needed). Uses fast PBKDF2 hashing so it fits the free plan.
+PASSWORD_AUTH_ENABLED = "true"
 # Public Google OAuth web client id (safe to commit; it ships in the website anyway).
 GOOGLE_WEB_CLIENT_ID = "257702962892-m2m0terd11tbn8049umc5bltp5sjqqr1.apps.googleusercontent.com"
 # Browser addresses allowed to call the auth endpoints (the live site, www, and Cloudflare preview versions).

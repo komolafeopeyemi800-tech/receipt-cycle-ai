@@ -51,10 +51,10 @@ const enc = encodeURIComponent;
 type NoArgs = Record<string, never>;
 type Ok = { ok: boolean; error?: string };
 
-type BetterAuthSession = { token: string; user: { id: string; email: string; name?: string | null } };
+type BetterAuthSession = { token: string; user: { id: string; email: string; name?: string | null; image?: string | null } };
 const toAuthResult = (r: BetterAuthSession, isNewRegistration: boolean): AuthResult => ({
   token: r.token,
-  user: { id: r.user.id, email: r.user.email, name: r.user.name?.trim() || null },
+  user: { id: r.user.id, email: r.user.email, name: r.user.name?.trim() || null, image: r.user.image ?? null },
   isNewRegistration,
 });
 
@@ -154,8 +154,18 @@ export const api = {
   },
 
   auth: {
-    me: fn<SessionArgs, { id: string; email: string; name: string | null } | null>("query", "auth.me", async (c, a) =>
+    me: fn<SessionArgs, { id: string; email: string; name: string | null; image?: string | null } | null>("query", "auth.me", async (c, a) =>
       c.request("GET", "/api/me", { token: tok(a), onUnauthorized: "null" }),
+    ),
+    updateProfile: fn<SessionArgs & { name: string }, { ok: true; name: string }>("mutation", "auth.updateProfile", (c, a) =>
+      c.request("PATCH", "/api/me", { token: tok(a), body: { name: a.name } }),
+    ),
+    /** `file` is a JPG/PNG/WebP Blob (max 1 MB). Returns the new picture address. */
+    uploadAvatar: fn<SessionArgs & { file: Blob }, { image: string }>("mutation", "auth.uploadAvatar", (c, a) =>
+      c.request("PUT", "/api/me/avatar", { token: tok(a), form: a.file as unknown as FormData }),
+    ),
+    removeAvatar: fn<SessionArgs, { ok: true }>("mutation", "auth.removeAvatar", (c, a) =>
+      c.request("DELETE", "/api/me/avatar", { token: tok(a) }),
     ),
     signOut: fn<SessionArgs, void>("mutation", "auth.signOut", async (c, a) => {
       await c.request("POST", "/api/auth/sign-out", { token: tok(a), body: {} });

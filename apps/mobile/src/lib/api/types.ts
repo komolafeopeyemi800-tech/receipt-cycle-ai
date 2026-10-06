@@ -3,7 +3,7 @@
 /** Row ids are plain strings now (they were Convex `Id<"table">`). */
 export type Id<_Table extends string = string> = string;
 
-export type AuthUser = { id: string; email: string; name: string | null };
+export type AuthUser = { id: string; email: string; name: string | null; image?: string | null };
 export type AuthResult = { token: string; user: AuthUser; isNewRegistration?: boolean };
 
 /** Session arguments the old Convex calls carried; the client now sends its own bearer token. */

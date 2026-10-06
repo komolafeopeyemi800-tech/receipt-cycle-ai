@@ -1,3 +1,4 @@
+import { Avatar } from "@/components/Avatar";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 
@@ -109,12 +110,10 @@ const DesktopNav = ({ variant = "landing", showSidebarTrigger, onSidebarTrigger 
             <button
               type="button"
               onClick={() => navigate(inAdmin ? '/admin' : '/profile')}
-              className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-gray-100 bg-gray-50 text-sm font-semibold text-primary hover:border-primary transition-colors"
+              className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 border-gray-100 bg-gray-50 text-sm font-semibold text-primary hover:border-primary transition-colors"
               title="Profile and security"
             >
-              {user?.name?.trim()?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? (
-                <i className="fas fa-user text-gray-500" />
-              )}
+              <Avatar image={user?.image} name={user?.name} email={user?.email} className="h-full w-full text-sm" />
             </button>
             {user ? (
               <button

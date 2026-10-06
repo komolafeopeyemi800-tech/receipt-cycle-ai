@@ -22,7 +22,9 @@ import { requireUser } from "../middleware/auth";
 import { deleteAllReceipts } from "./receipts";
 import type { AppEnv } from "../types";
 
-type GoogleProfile = { sub: string; email: string; name?: string };
+type GoogleProfile = { sub: string; email: string; name?: string; picture?: string };
+
+const isGooglePhoto = (url: string | null | undefined) => !url || /^https:\/\/[a-z0-9-]+\.googleusercontent\.com\//i.test(url);
 
 /**
  * Sign in (or register) someone who proved their identity with Google. Same account rules as the
@@ -56,7 +58,7 @@ async function completeGoogleSignIn(c: import("hono").Context<AppEnv>, p: Google
       throw new ApiError(409, "Google sign-in could not be completed for this account. Try a different sign-in method.");
     }
     const created = await ctx.internalAdapter.createUser(
-      { email: p.email, name: p.name ?? "", emailVerified: true },
+      { email: p.email, name: p.name ?? "", emailVerified: true, image: p.picture ?? null },
       { method: "oauth", oauth: { providerId: "google", profile: { sub: p.sub, email: p.email, name: p.name } } },
     );
     userId = created.id;
@@ -67,12 +69,21 @@ async function completeGoogleSignIn(c: import("hono").Context<AppEnv>, p: Google
     isNewRegistration = true;
   }
 
-  const row = await db.select({ id: user.id, email: user.email, name: user.name }).from(user).where(eq(user.id, userId)).get();
+  let row = await db.select({ id: user.id, email: user.email, name: user.name, image: user.image }).from(user).where(eq(user.id, userId)).get();
   if (!row) throw new ApiError(500, "Sign-in failed. Please try again.");
+  // Keep the Google photo and name fresh, but never overwrite a picture the person uploaded themselves.
+  if (p.picture && isGooglePhoto(row.image) && row.image !== p.picture) {
+    await db.update(user).set({ image: p.picture, updatedAt: new Date() }).where(eq(user.id, userId));
+    row = { ...row, image: p.picture };
+  }
+  if (!row.name.trim() && p.name) {
+    await db.update(user).set({ name: p.name, updatedAt: new Date() }).where(eq(user.id, userId));
+    row = { ...row, name: p.name };
+  }
   const session = await ctx.internalAdapter.createSession(userId);
   return {
     token: session.token,
-    user: { id: row.id, email: row.email, name: row.name.trim() || null },
+    user: { id: row.id, email: row.email, name: row.name.trim() || null, image: row.image ?? null },
     isNewRegistration,
   };
 }
@@ -101,17 +112,66 @@ socialRoutes.post("/google", async (c) => {
       sub: claims.sub,
       email: claims.email.trim().toLowerCase(),
       name: claims.name?.trim() || undefined,
+      picture: claims.picture?.startsWith("https://") ? claims.picture : undefined,
     }),
   );
 });
 
 /** Signed-in account endpoints (was auth.me / resetMyData / deleteMyAccount). */
 export const meRoutes = new Hono<AppEnv>();
+
+/** Profile pictures are public images (an <img> tag cannot send a login header); the id is an unguessable UUID. */
+meRoutes.get("/avatar/:id", async (c) => {
+  const obj = await c.env.FILES.get(`avatars/${c.req.param("id")}`);
+  if (!obj) return c.body(null, 404);
+  return new Response(obj.body, {
+    headers: {
+      "content-type": obj.httpMetadata?.contentType ?? "image/jpeg",
+      "cache-control": "public, max-age=3600",
+      "access-control-allow-origin": "*",
+      "cross-origin-resource-policy": "cross-origin",
+    },
+  });
+});
+
 meRoutes.use("*", requireUser);
 
-meRoutes.get("/", (c) => {
+meRoutes.get("/", async (c) => {
   const u = c.get("user");
-  return c.json({ id: u.id, email: u.email, name: u.name.trim() || null });
+  const row = await c.get("db").select({ image: user.image }).from(user).where(eq(user.id, u.id)).get();
+  return c.json({ id: u.id, email: u.email, name: u.name.trim() || null, image: row?.image ?? null });
+});
+
+/** Change the display name. */
+meRoutes.patch("/", async (c) => {
+  const { name } = await parseBody(c, z.object({ name: z.string().trim().min(1).max(80) }));
+  await c.get("db").update(user).set({ name, updatedAt: new Date() }).where(eq(user.id, c.get("user").id));
+  return c.json({ ok: true, name });
+});
+
+const AVATAR_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+const AVATAR_MAX_BYTES = 1024 * 1024;
+
+/** Upload a profile picture (raw image bytes, max 1 MB — the web app shrinks photos before sending). */
+meRoutes.put("/avatar", async (c) => {
+  const type = (c.req.header("content-type") ?? "").split(";")[0].trim().toLowerCase();
+  if (!AVATAR_TYPES[type]) throw new ApiError(400, "Use a JPG, PNG or WebP picture.");
+  const bytes = await c.req.arrayBuffer();
+  if (bytes.byteLength === 0 || bytes.byteLength > AVATAR_MAX_BYTES) throw new ApiError(413, "Picture is too large. Choose one under 1 MB.");
+  const id = c.get("user").id;
+  await c.env.FILES.put(`avatars/${id}`, bytes, { httpMetadata: { contentType: type } });
+  const base = (c.env.BETTER_AUTH_URL ?? new URL(c.req.url).origin).replace(/\/$/, "");
+  const image = `${base}/api/me/avatar/${id}?v=${Date.now()}`;
+  await c.get("db").update(user).set({ image, updatedAt: new Date() }).where(eq(user.id, id));
+  return c.json({ image });
+});
+
+/** Remove the picture. */
+meRoutes.delete("/avatar", async (c) => {
+  const id = c.get("user").id;
+  await c.env.FILES.delete(`avatars/${id}`);
+  await c.get("db").update(user).set({ image: null, updatedAt: new Date() }).where(eq(user.id, id));
+  return c.json({ ok: true });
 });
 
 /** Wipes the user's transactions and preferences; keeps the account. */

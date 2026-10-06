@@ -1,4 +1,6 @@
 import { FormEvent, useState } from "react";
+import { toast } from "sonner";
+import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
@@ -29,9 +31,11 @@ export default function WebSignIn() {
   function afterCodeSignIn(isNewRegistration: boolean) {
     const sessionUser = getWebSessionUser();
     if (sessionUser && (isNewRegistration || needsWebOnboarding(sessionUser.id))) {
+      toast.success("Signed in successfully");
       navigate("/onboarding", { replace: true });
       return;
     }
+    toast.success("Signed in successfully");
     navigate(next, { replace: true });
   }
 
@@ -47,9 +51,11 @@ export default function WebSignIn() {
       }
       const sessionUser = getWebSessionUser();
       if (sessionUser && needsWebOnboarding(sessionUser.id)) {
+        toast.success("Signed in successfully");
         navigate("/onboarding", { replace: true });
         return;
       }
+      toast.success("Signed in successfully");
       navigate(next, { replace: true });
     } finally {
       setBusy(false);
@@ -67,9 +73,11 @@ export default function WebSignIn() {
       }
       const sessionUser = getWebSessionUser();
       if (sessionUser && (isNewRegistration || needsWebOnboarding(sessionUser.id))) {
+        toast.success("Signed in successfully");
         navigate("/onboarding", { replace: true });
         return;
       }
+      toast.success("Signed in successfully");
       navigate(next, { replace: true });
     } finally {
       setBusy(false);
@@ -77,26 +85,8 @@ export default function WebSignIn() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-100">
-      <header className="border-b border-slate-200/80 bg-white/90 px-4 py-4 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 font-display font-bold text-slate-900">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-teal-600 text-white shadow-sm">
-              <i className="fas fa-receipt text-sm" />
-            </span>
-            Receipt Cycle
-          </Link>
-        </div>
-      </header>
-
-      <main className="flex flex-1 flex-col items-center justify-center px-4 py-12 sm:py-16">
-        <div className="w-full max-w-[420px] rounded-2xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back</h1>
-            <p className="mt-2 text-sm text-slate-600">Sign in with your email or Google — same account as the mobile app.</p>
-          </div>
-
-          <GoogleSignInButton mode="signin" className="mt-8" onCredential={onGoogle} onError={(m) => setMsg(m)} />
+    <AuthLayout title="Welcome back" subtitle="Sign in to pick up where you left off. Same account on the web and mobile app.">
+          <GoogleSignInButton mode="signin" className="" onCredential={onGoogle} onError={(m) => setMsg(m)} />
           {msg && !passwordsOn ? (
             <p className="mt-3 text-sm text-red-600" role="alert" aria-live="polite">
               {msg}
@@ -104,7 +94,7 @@ export default function WebSignIn() {
           ) : null}
           {emailCodesOn ? (
           <>
-          <div className="my-8 flex items-center gap-3">
+          <div className="my-6 flex items-center gap-3">
             <span className="h-px flex-1 bg-slate-200" />
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">or with your email</span>
             <span className="h-px flex-1 bg-slate-200" />
@@ -120,7 +110,7 @@ export default function WebSignIn() {
 
           {passwordsOn ? (
           <>
-          <div className="my-8 flex items-center gap-3">
+          <div className="my-6 flex items-center gap-3">
             <span className="h-px flex-1 bg-slate-200" />
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">or password</span>
             <span className="h-px flex-1 bg-slate-200" />
@@ -173,14 +163,12 @@ export default function WebSignIn() {
           </>
           ) : null}
 
-          <p className="mt-8 text-center text-sm text-slate-600">
+          <p className="mt-6 text-center text-sm text-slate-600">
             No account?{" "}
             <Link to={`/signup?next=${encodeURIComponent(next)}`} className="font-semibold text-primary hover:underline">
               Create one
             </Link>
           </p>
-        </div>
-      </main>
-    </div>
+    </AuthLayout>
   );
 }

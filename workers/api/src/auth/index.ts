@@ -6,68 +6,70 @@ import bcrypt from "bcryptjs";
 import { and, eq } from "drizzle-orm";
 import { authAccount, profile, session, user, verification } from "../db/schema";
 import { reconcileEntitlementForUser } from "../lib/entitlements";
+import { escapeHtml, layout, mailEnabled, sendMail } from "../lib/mailer";
 import type { Db, Env } from "../types";
 
 const SESSION_SECONDS = 30 * 24 * 60 * 60;
 const RESET_SECONDS = 60 * 60;
 
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
 /** Reset email with the same three ways in as before: web link, app deep link, and the raw token. */
 async function sendResetEmail(env: Env, email: string, token: string): Promise<void> {
-  const key = env.RESEND_API_KEY?.trim();
-  if (!key) {
-    console.warn("RESEND_API_KEY is not set; password reset email was not sent.");
-    return;
-  }
   const webBase = env.PUBLIC_WEB_APP_URL?.trim().replace(/\/$/, "");
   const webLink = webBase ? `${webBase}/reset-password?token=${encodeURIComponent(token)}` : null;
   const deepLink = `receiptcycle://reset-password?token=${encodeURIComponent(token)}`;
-  const html = `
-      <p>You asked to reset your Receipt Cycle password.</p>
-      ${webLink ? `<p><a href="${escapeHtml(webLink)}">Reset password on the web</a></p>` : ""}
+  await sendMail(env, {
+    to: email,
+    subject: "Reset your Receipt Cycle password",
+    html: layout(
+      "Reset your password",
+      `<p>You asked to reset your Receipt Cycle password.</p>
+      ${webLink ? `<p><a href="${escapeHtml(webLink)}" style="display:inline-block;background:#0f766e;color:#fff;padding:10px 18px;border-radius:10px;text-decoration:none;font-weight:600">Reset password</a></p>` : ""}
       <p><a href="${escapeHtml(deepLink)}">Open the mobile app to reset</a> (if installed)</p>
-      <p>If links don’t work, open Reset password in the app or on the web and paste this token:</p>
-      <p style="font-family:monospace">${escapeHtml(token)}</p>
-      <p>This link expires in 1 hour.</p>
-    `;
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from: env.RESEND_FROM_EMAIL?.trim() || "Receipt Cycle <onboarding@resend.dev>",
-      to: [email],
-      subject: "Reset your Receipt Cycle password",
-      html,
-    }),
+      <p style="font-size:13px;color:#475569">If the links don’t work, paste this token on the reset page:</p>
+      <p style="word-break:break-all;font-family:monospace">${escapeHtml(token)}</p>
+      <p style="font-size:13px;color:#475569">This link expires in 1 hour. If you did not ask for this, ignore this email — your password is unchanged.</p>`,
+    ),
+    text: `Reset your Receipt Cycle password: ${webLink ?? deepLink}
+Token: ${token}
+Expires in 1 hour. If you did not ask for this, ignore this email.`,
   });
-  if (!res.ok) throw new Error(`Could not send reset email: ${(await res.text()) || res.statusText}`);
 }
 
 /** Sign-in code email: short, plain, and says what to do if it was not you. */
 async function sendCodeEmail(env: Env, email: string, otp: string): Promise<void> {
-  const key = env.RESEND_API_KEY?.trim();
-  if (!key) {
-    console.warn("RESEND_API_KEY is not set; sign-in code email was not sent.");
-    return;
-  }
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from: env.RESEND_FROM_EMAIL?.trim() || "Receipt Cycle <onboarding@resend.dev>",
-      to: [email],
-      subject: `${otp} is your Receipt Cycle sign-in code`,
-      html: `
-        <p>Your Receipt Cycle sign-in code is:</p>
-        <p style="font-family:monospace;font-size:28px;letter-spacing:6px;margin:12px 0"><strong>${escapeHtml(otp)}</strong></p>
-        <p>It works for 10 minutes. If you did not ask for it, you can ignore this email.</p>`,
-      text: `Your Receipt Cycle sign-in code is ${otp}. It works for 10 minutes. If you did not ask for it, ignore this email.`,
-    }),
+  await sendMail(env, {
+    to: email,
+    subject: `${otp} is your Receipt Cycle sign-in code`,
+    html: layout(
+      "Your sign-in code",
+      `<p>Use this code to sign in to Receipt Cycle:</p>
+      <p style="font-family:monospace;font-size:32px;letter-spacing:6px;margin:14px 0"><strong>${escapeHtml(otp)}</strong></p>
+      <p style="font-size:13px;color:#475569">It works for 10 minutes. If you did not ask for it, you can ignore this email.</p>`,
+    ),
+    text: `Your Receipt Cycle sign-in code is ${otp}. It works for 10 minutes. If you did not ask for it, ignore this email.`,
   });
-  if (!res.ok) throw new Error(`Could not send sign-in code: ${(await res.text()) || res.statusText}`);
+}
+
+/** Sent once, right after an account is created. Never blocks sign-up if email fails. */
+async function sendWelcomeEmail(env: Env, email: string, name: string): Promise<void> {
+  if (!mailEnabled(env)) return;
+  const base = env.PUBLIC_WEB_APP_URL?.trim().replace(/\/$/, "") || "https://receiptcycle.com";
+  const hello = name.trim() ? `Welcome, ${escapeHtml(name.trim().split(/\s+/)[0])}!` : "Welcome!";
+  try {
+    await sendMail(env, {
+      to: email,
+      subject: "Welcome to Receipt Cycle",
+      html: layout(
+        hello,
+        `<p>Your Receipt Cycle account is ready. Scan receipts, import statements and see where your money goes.</p>
+        <p><a href="${escapeHtml(base)}/dashboard" style="display:inline-block;background:#0f766e;color:#fff;padding:10px 18px;border-radius:10px;text-decoration:none;font-weight:600">Open your dashboard</a></p>
+        <p style="font-size:13px;color:#475569">Signed up by mistake or need help? Reply to this email.</p>`,
+      ),
+      text: `Welcome to Receipt Cycle! Your account is ready: ${base}/dashboard`,
+    });
+  } catch (error) {
+    console.error("welcome email failed", error);
+  }
 }
 
 /**
@@ -130,6 +132,7 @@ function build(env: Env, db: Db) {
         create: {
           after: async (u) => {
             await db.insert(profile).values({ userId: u.id }).onConflictDoNothing();
+            await sendWelcomeEmail(env, u.email, u.name ?? "");
           },
         },
       },

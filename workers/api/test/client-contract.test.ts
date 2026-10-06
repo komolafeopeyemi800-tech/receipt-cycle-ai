@@ -28,7 +28,7 @@ function makeClient(e: typeof env = env) {
 
 async function signedIn(email = "ada@example.com") {
   const client = makeClient();
-  const res = await client.action(api.authNode.signUp, { email, password: "secret123", name: "Ada" });
+  const res = await client.action(api.authNode.signUp, { email, password: "secret123", name: "Ada", image: null });
   client.setToken(res.token);
   return { client, res };
 }
@@ -51,7 +51,7 @@ describe("sign-in calls", () => {
 
   it("me / subscription / signOut", async () => {
     const { client, res } = await signedIn();
-    expect(await client.query(api.auth.me, {})).toEqual({ id: res.user.id, email: "ada@example.com", name: "Ada" });
+    expect(await client.query(api.auth.me, {})).toEqual({ id: res.user.id, email: "ada@example.com", name: "Ada", image: null });
     expect(await client.query(api.subscription.getSubscriptionState, {})).toMatchObject({ phase: "trial", pro: false });
     expect(await client.mutation(api.subscription.bootstrapSubscription, {})).toEqual({ ok: true });
     await client.mutation(api.auth.signOut, { token: res.token });

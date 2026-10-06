@@ -16,7 +16,7 @@ function captureEmails() {
       return new Response("{}", { status: 200 });
     }),
   );
-  const lastCode = () => /letter-spacing:6px[^>]*><strong>(\d{6})</.exec(sent[sent.length - 1]!.html)![1]!;
+  const lastCode = () => /letter-spacing:6px[^>]*><strong>(\d{6})</.exec([...sent].reverse().find((m) => /sign-in code/.test(m.subject))!.html)![1]!;
   return { sent, lastCode };
 }
 

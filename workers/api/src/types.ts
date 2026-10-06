@@ -7,6 +7,10 @@ export type Db = DrizzleD1Database<typeof schema>;
 export type Env = {
   DB: D1Database;
   FILES: R2Bucket;
+  /** Cloudflare Email Sending binding (`[[send_email]]` in wrangler.toml). */
+  EMAIL?: { send(message: { from: string; to: string; subject: string; html?: string; text?: string }): Promise<unknown> };
+  /** From address, e.g. "Receipt Cycle <no-reply@receiptcycle.com>". */
+  MAIL_FROM?: string;
   PUBLIC_WEB_APP_URL: string;
   /** Public origin of this API (used for Better Auth links), e.g. https://api.receiptcycle.com */
   BETTER_AUTH_URL?: string;

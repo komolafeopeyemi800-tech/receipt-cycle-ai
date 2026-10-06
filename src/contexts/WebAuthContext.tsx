@@ -24,6 +24,7 @@ export type WebAuthUser = {
   id: string;
   email: string;
   name: string | null;
+  image?: string | null;
 };
 
 export type WebAuthActionResult = {
@@ -44,6 +45,8 @@ type WebAuthCtx = {
   sendEmailCode: (email: string) => Promise<{ error: Error | null }>;
   signInWithEmailCode: (email: string, otp: string) => Promise<WebAuthActionResult>;
   signOut: () => Promise<void>;
+  /** Update the signed-in user's name/picture in memory and local storage after a profile change. */
+  patchUser: (patch: Partial<Pick<WebAuthUser, "name" | "image">>) => void;
 };
 
 const Ctx = createContext<WebAuthCtx | null>(null);
@@ -103,6 +106,7 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
       id: me.id as string,
       email: me.email as string,
       name: (me as { name?: string | null }).name ?? null,
+      image: (me as { image?: string | null }).image ?? null,
     };
     setCachedUser(nextUser);
     setWebSessionUser(nextUser);
@@ -150,13 +154,13 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
         setWebSessionUser({
           id: res.user.id,
           email: res.user.email,
-          name: res.user.name ?? null,
+          name: res.user.name ?? null, image: res.user.image ?? null,
         });
         setToken(res.token);
         setCachedUser({
           id: res.user.id,
           email: res.user.email,
-          name: res.user.name ?? null,
+          name: res.user.name ?? null, image: res.user.image ?? null,
         });
         setWebLastEmail(res.user.email);
         return { error: null, isNewRegistration: res.isNewRegistration === true };
@@ -179,13 +183,13 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
         setWebSessionUser({
           id: res.user.id,
           email: res.user.email,
-          name: res.user.name ?? null,
+          name: res.user.name ?? null, image: res.user.image ?? null,
         });
         setToken(res.token);
         setCachedUser({
           id: res.user.id,
           email: res.user.email,
-          name: res.user.name ?? null,
+          name: res.user.name ?? null, image: res.user.image ?? null,
         });
         setWebLastEmail(res.user.email);
         return { error: null, isNewRegistration: res.isNewRegistration === true };
@@ -204,13 +208,13 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
         setWebSessionUser({
           id: res.user.id,
           email: res.user.email,
-          name: res.user.name ?? null,
+          name: res.user.name ?? null, image: res.user.image ?? null,
         });
         setToken(res.token);
         setCachedUser({
           id: res.user.id,
           email: res.user.email,
-          name: res.user.name ?? null,
+          name: res.user.name ?? null, image: res.user.image ?? null,
         });
         setWebLastEmail(res.user.email);
         return { error: null, isNewRegistration: res.isNewRegistration === true };
@@ -238,9 +242,9 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
       try {
         const res = await signInWithEmailCodeAction({ email, otp });
         setWebSessionToken(res.token);
-        setWebSessionUser({ id: res.user.id, email: res.user.email, name: res.user.name ?? null });
+        setWebSessionUser({ id: res.user.id, email: res.user.email, name: res.user.name ?? null, image: res.user.image ?? null });
         setToken(res.token);
-        setCachedUser({ id: res.user.id, email: res.user.email, name: res.user.name ?? null });
+        setCachedUser({ id: res.user.id, email: res.user.email, name: res.user.name ?? null, image: res.user.image ?? null });
         setWebLastEmail(res.user.email);
         return { error: null, isNewRegistration: res.isNewRegistration === true };
       } catch (e) {
@@ -249,6 +253,15 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
     },
     [signInWithEmailCodeAction],
   );
+
+  const patchUser = useCallback((patch: Partial<Pick<WebAuthUser, "name" | "image">>) => {
+    setCachedUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      setWebSessionUser(next);
+      return next;
+    });
+  }, []);
 
   const clearLocalSession = useCallback(() => {
     clearWebSessionToken();
@@ -292,8 +305,9 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
       sendEmailCode,
       signInWithEmailCode,
       signOut,
+      patchUser,
     }),
-    [user, token, loading, clearLocalSession, signIn, signUp, signInWithGoogle, sendEmailCode, signInWithEmailCode, signOut],
+    [user, token, loading, clearLocalSession, signIn, signUp, signInWithGoogle, sendEmailCode, signInWithEmailCode, signOut, patchUser],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

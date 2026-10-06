@@ -20,6 +20,11 @@ migrations_dir = "migrations"
 binding = "FILES"
 bucket_name = "receipt-cycle-files"
 
+# Cloudflare Email Sending (sign-in codes, welcome and reset emails). Turned on by setting MAIL_FROM below
+# once the domain is enabled with `wrangler email sending enable receiptcycle.com`.
+[[send_email]]
+name = "EMAIL"
+
 [vars]
 PUBLIC_WEB_APP_URL = "https://receiptcycle.com"
 # This Worker's own address; Better Auth builds its links from it.

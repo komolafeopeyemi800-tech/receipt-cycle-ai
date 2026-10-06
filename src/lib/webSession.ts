@@ -3,7 +3,7 @@ export const WEB_SESSION_TOKEN_KEY = "receiptcycle_session_token";
 export const WEB_SESSION_USER_KEY = "receiptcycle_session_user";
 export const WEB_LAST_EMAIL_KEY = "receiptcycle_last_signin_email";
 
-type SessionUser = { id: string; email: string; name: string | null };
+type SessionUser = { id: string; email: string; name: string | null; image?: string | null };
 
 export function getWebSessionToken(): string | null {
   try {
@@ -39,6 +39,7 @@ export function getWebSessionUser(): SessionUser | null {
       id: parsed.id,
       email: parsed.email,
       name: typeof parsed.name === "string" || parsed.name === null ? parsed.name : null,
+      image: typeof parsed.image === "string" ? parsed.image : null,
     };
   } catch {
     return null;

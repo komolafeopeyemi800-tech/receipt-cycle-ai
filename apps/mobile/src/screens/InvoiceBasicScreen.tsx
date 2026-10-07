@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { AppButton, AppCard, FormField, ScreenContainer, SearchInput, SegmentedTabs, SelectField, StatusBadge } from "../components/ui/FinanceUI";
 import { DocumentProgress } from "../components/ui/SalesDocumentUI";
+import { SafeActionFooter } from "../components/ui/SafeActionFooter";
 import { InitialsAvatar } from "../components/ui/SalesSetupUI";
 import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
 import { usePreferences } from "../contexts/PreferencesContext";
@@ -63,7 +64,7 @@ export function InvoiceBasicScreen() {
         <AppCard style={styles.nextCard}><View style={styles.nextIcon}><Ionicons name="receipt-outline" size={22} color="#fff" /></View><View style={{ flex: 1 }}><Text style={styles.nextTitle}>Next step</Text><Text style={styles.nextCopy}>Add line items, then adjust tax, discount, and extras.</Text></View></AppCard>
       </ScrollView>
       {dateTarget ? <View style={styles.datePickerWrap}><DateTimePicker value={new Date(`${dateTarget === "issue" ? draft.issueDate : draft.dueDate}T12:00:00`)} mode="date" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={(_, selected) => onDate(selected)} />{Platform.OS === "ios" ? <Pressable onPress={() => setDateTarget(null)}><Text style={styles.done}>Done</Text></Pressable> : null}</View> : null}
-      <View style={styles.footer}><AppButton label="Continue to Items" icon="arrow-forward" onPress={continueFlow} /></View>
+      <SafeActionFooter><AppButton label="Continue to Items" icon="arrow-forward" onPress={continueFlow} /></SafeActionFooter>
     </KeyboardAvoidingView>
     <CustomerPickerSheet visible={customerPickerOpen} selectedId={draft.customerId} onSelect={(customerId) => { updateDraft({ customerId }); setCustomerPickerOpen(false); }} onClose={() => setCustomerPickerOpen(false)} />
   </ScreenContainer>;
@@ -140,7 +141,6 @@ const styles = StyleSheet.create({
   nextCopy: { color: colors.gray600, fontSize: uiType.secondary, lineHeight: 18, marginTop: 3 },
   datePickerWrap: { backgroundColor: colors.surface, paddingHorizontal: spacing.lg },
   done: { textAlign: "right", color: colors.primary, fontWeight: "800", paddingVertical: spacing.sm },
-  footer: { backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.divider, padding: spacing.lg },
   backdrop: { flex: 1, backgroundColor: "rgba(15,23,42,0.48)", justifyContent: "flex-end" },
   sheet: { maxHeight: "88%", backgroundColor: colors.surface, borderTopLeftRadius: radius.extraLarge, borderTopRightRadius: radius.extraLarge, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   handle: { width: 32, height: 4, borderRadius: 2, backgroundColor: colors.gray400, alignSelf: "center", marginBottom: spacing.md },

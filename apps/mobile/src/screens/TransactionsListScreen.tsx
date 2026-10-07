@@ -203,12 +203,6 @@ export function TransactionsListScreen() {
             </Text>
           </View>
         ) : null}
-        <View style={styles.statusPill}>
-          <Ionicons name="id-card-outline" size={13} color={colors.gray600} />
-          <Text style={styles.statusPillTxt}>
-            {sub ? sub.pro ? "Receipt Cycle Pro" : sub.phase === "trial" ? "Free trial" : "Receipt Cycle Free" : "Loading plan..."}
-          </Text>
-        </View>
         <View style={{ height: 100 }} />
       </ScrollView>
     </LinearGradient>
@@ -229,21 +223,6 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-  statusPill: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderWidth: 1,
-    borderColor: colors.gray200,
-    backgroundColor: colors.surface,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  statusPillTxt: { fontSize: typeScale.sm, fontWeight: "600", color: colors.gray700 },
   addBtn: {
     flexDirection: "row",
     alignItems: "center",

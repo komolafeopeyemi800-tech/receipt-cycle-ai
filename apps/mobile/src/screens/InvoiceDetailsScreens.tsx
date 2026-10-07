@@ -8,6 +8,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { AppButton, AppCard, FormField, ScreenContainer, SelectField } from "../components/ui/FinanceUI";
+import { SafeActionFooter } from "../components/ui/SafeActionFooter";
 import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { useSalesSetup } from "../contexts/SalesSetupContext";
@@ -54,7 +55,7 @@ export function InvoiceDiscountTaxScreen() {
       <View style={styles.totalRow}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalValue}>{formatMoney(totals.total)}</Text></View>
       {totals.discountAmount > 0 ? <AppCard style={styles.savings}><View style={styles.savingIcon}><Ionicons name="pricetag-outline" size={20} color="#fff" /></View><View style={{ flex: 1 }}><Text style={styles.savingTitle}>You’re saving {formatMoney(totals.discountAmount)}</Text><Text style={styles.savingCopy}>The discount has been applied to this invoice.</Text></View></AppCard> : null}
     </ScrollView>
-    <View style={styles.footer}><AppButton label="Continue to Extras" icon="arrow-forward" onPress={() => navigation.navigate("InvoiceExtras")} /></View>
+    <SafeActionFooter><AppButton label="Continue to Extras" icon="arrow-forward" onPress={() => navigation.navigate("InvoiceExtras")} /></SafeActionFooter>
   </ScreenContainer>;
 }
 
@@ -93,7 +94,7 @@ export function InvoiceExtrasScreen() {
         <Pressable onPress={() => void addAttachment()} style={styles.assetCard} accessibilityRole="button" accessibilityLabel="Add invoice attachment"><Ionicons name={draft.attachment ? "document-attach-outline" : "attach-outline"} size={34} color={colors.textPrimary} /><Text style={styles.assetTitle} numberOfLines={1}>{draft.attachment?.name ?? (attaching ? "Adding..." : "Add file")}</Text><Text style={styles.assetMeta}>{draft.attachment ? "Tap to replace" : "PDF, image, etc."}</Text></Pressable>
       </View>
     </ScrollView>
-    <View style={styles.footer}><AppButton label="Continue to Preview" icon="arrow-forward" onPress={() => navigation.navigate("InvoicePreview")} /></View>
+    <SafeActionFooter><AppButton label="Continue to Preview" icon="arrow-forward" onPress={() => navigation.navigate("InvoicePreview")} /></SafeActionFooter>
   </ScreenContainer>;
 }
 
@@ -113,7 +114,6 @@ const styles = StyleSheet.create({
   savingIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
   savingTitle: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "800" },
   savingCopy: { color: colors.gray600, fontSize: uiType.caption, lineHeight: 16, marginTop: 3 },
-  footer: { backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.divider, padding: spacing.lg },
   switchRow: { minHeight: 64, flexDirection: "row", alignItems: "center", gap: spacing.md, marginBottom: spacing.md },
   switchTitle: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "800" },
   switchMeta: { color: colors.gray500, fontSize: uiType.caption, marginTop: 3 },

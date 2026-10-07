@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { useMutation } from "../lib/api";
 import type { Id } from "../lib/api";
 import { api } from "../lib/api";
-import { createPaymentDraft, localInvoiceToPaymentInvoice, nextReceiptNumber, paymentInvoicePreview, paymentReference, type PaymentDraft, type PaymentInvoice, type SavedPayment } from "../features/payments/model";
+import { createPaymentDraft, localInvoiceToPaymentInvoice, nextReceiptNumber, paymentReference, type PaymentDraft, type PaymentInvoice, type SavedPayment } from "../features/payments/model";
 import { useAuth } from "./AuthContext";
 import { useInvoiceFlow } from "./InvoiceFlowContext";
 import { useSalesSetup } from "./SalesSetupContext";
@@ -59,11 +59,7 @@ export function PaymentFlowProvider({ children }: { children: ReactNode }) {
         const customer = customers.find((item) => item.id === invoice.customerId);
         return { ...row, customerEmail: customer?.email ?? "", customerAddress: customer?.billingAddress ?? "" };
       });
-    const preview = paymentInvoicePreview.map((invoice) => {
-      const newlyPaid = state.payments.filter((payment) => payment.invoiceNumber === invoice.invoiceNumber && payment.status !== "refunded").reduce((sum, payment) => sum + payment.amount, 0);
-      return { ...invoice, amountPaid: Math.min(invoice.total, invoice.amountPaid + newlyPaid), status: invoice.amountPaid + newlyPaid > 0 ? "partially_paid" as const : invoice.status };
-    });
-    return [...local, ...preview];
+    return local;
   }, [customers, invoices, state.payments]);
   const availableInvoices = useMemo(() => paymentInvoices.filter((invoice) => invoice.amountPaid < invoice.total), [paymentInvoices]);
 

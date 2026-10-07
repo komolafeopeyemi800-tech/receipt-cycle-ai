@@ -1,6 +1,8 @@
 import { Avatar } from "@/components/Avatar";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useWebAuth } from "@/contexts/WebAuthContext";
+import { useEffect, useRef, useState } from "react";
+import { useSubscriptionState } from "@/hooks/use-subscription-state";
 
 interface DesktopNavProps {
   variant?: "landing" | "app";
@@ -14,6 +16,23 @@ const DesktopNav = ({ variant = "landing", showSidebarTrigger, onSidebarTrigger 
   const location = useLocation();
   const inAdmin = location.pathname.startsWith("/admin");
   const { user, signOut } = useWebAuth();
+  const subscription = useSubscriptionState();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const close = (event: MouseEvent) => {
+      if (!profileRef.current?.contains(event.target as Node)) setProfileOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
+  const planLabel = subscription?.pro
+    ? "Pro member"
+    : subscription?.phase === "trial"
+      ? "Free trial"
+      : "Free member";
   
   if (variant === 'app') {
     return (
@@ -107,29 +126,36 @@ const DesktopNav = ({ variant = "landing", showSidebarTrigger, onSidebarTrigger 
             >
               <i className="fas fa-bell text-gray-600" />
             </button>
-            <button
-              type="button"
-              onClick={() => navigate(inAdmin ? '/admin' : '/profile')}
-              className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 border-gray-100 bg-gray-50 text-sm font-semibold text-primary hover:border-primary transition-colors"
-              title="Profile and security"
-            >
-              <Avatar image={user?.image} name={user?.name} email={user?.email} className="h-full w-full text-sm" />
-            </button>
-            {user ? (
+            <div className="relative" ref={profileRef}>
               <button
                 type="button"
-                onClick={async () => {
-                  await signOut();
-                  navigate("/signin", { replace: true });
-                }}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold text-slate-600 transition-colors hover:bg-gray-50 hover:text-slate-900 sm:h-10 sm:w-auto sm:px-3"
-                title="Sign out"
-                aria-label="Sign out"
+                onClick={() => inAdmin ? navigate("/admin") : setProfileOpen((open) => !open)}
+                className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 border-gray-100 bg-gray-50 text-sm font-semibold text-primary transition-colors hover:border-primary"
+                title="Profile and account"
+                aria-haspopup="menu"
+                aria-expanded={profileOpen}
               >
-                <i className="fas fa-right-from-bracket sm:hidden" aria-hidden />
-                <span className="hidden sm:inline">Sign out</span>
+                <Avatar image={user?.image} name={user?.name} email={user?.email} className="h-full w-full text-sm" />
               </button>
-            ) : null}
+              {profileOpen && !inAdmin ? (
+                <div className="absolute right-0 top-12 z-[70] w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" role="menu">
+                  <div className="border-b border-slate-100 p-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar image={user?.image} name={user?.name} email={user?.email} className="h-11 w-11 text-sm" />
+                      <div className="min-w-0"><p className="truncate text-sm font-extrabold text-slate-950">{user?.name || "Receipt Cycle user"}</p><p className="truncate text-xs text-slate-500">{user?.email}</p></div>
+                    </div>
+                    <div className={`mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold ${subscription?.pro ? "bg-amber-50 text-amber-800" : "bg-teal-50 text-teal-800"}`}>
+                      <i className={`fas ${subscription?.pro ? "fa-crown" : "fa-user"}`} />{planLabel}
+                    </div>
+                  </div>
+                  <div className="p-2">
+                    <button type="button" onClick={() => { setProfileOpen(false); navigate("/profile"); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-slate-50" role="menuitem"><i className="fas fa-user-shield w-4 text-slate-400" />Profile &amp; security</button>
+                    <button type="button" onClick={() => { setProfileOpen(false); navigate("/subscription"); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-slate-50" role="menuitem"><i className="fas fa-crown w-4 text-slate-400" />Subscription &amp; usage</button>
+                    <button type="button" onClick={async () => { setProfileOpen(false); await signOut(); navigate("/signin", { replace: true }); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-rose-700 hover:bg-rose-50" role="menuitem"><i className="fas fa-right-from-bracket w-4" />Sign out</button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       </header>

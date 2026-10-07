@@ -8,6 +8,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { api } from "../lib/api";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { AppButton, AppCard, EmptyState, FormField, IconTile, ScreenContainer, SearchInput, SegmentedTabs, SelectField } from "../components/ui/FinanceUI";
+import { SafeActionFooter } from "../components/ui/SafeActionFooter";
 import { InitialsAvatar } from "../components/ui/SalesSetupUI";
 import { usePaymentFlow } from "../contexts/PaymentFlowContext";
 import { usePreferences } from "../contexts/PreferencesContext";
@@ -62,7 +63,7 @@ export function PaymentCreateScreen() {
         <FormField label="Note" icon="document-text-outline" value={draft.note} onChangeText={(note) => updateDraft({ note })} placeholder="First installment payment" multiline />
       </ScrollView>
       {dateOpen ? <View style={styles.datePicker}><DateTimePicker value={new Date(`${draft.paymentDate}T12:00:00`)} mode="date" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={(_, selected) => onDate(selected)} />{Platform.OS === "ios" ? <Pressable onPress={() => setDateOpen(false)}><Text style={styles.done}>Done</Text></Pressable> : null}</View> : null}
-      <View style={styles.footer}><AppButton label={saving ? "Recording Payment..." : "Save Payment"} onPress={() => void save()} disabled={saving || !invoice || !draft.accountId || !(Number(amount) > 0) || Number(amount) > balance} /></View>
+      <SafeActionFooter><AppButton label={saving ? "Recording Payment..." : "Save Payment"} onPress={() => void save()} disabled={saving || !invoice || !draft.accountId || !(Number(amount) > 0) || Number(amount) > balance} /></SafeActionFooter>
     </KeyboardAvoidingView>
     <InvoicePicker visible={invoiceOpen} invoices={availableInvoices} selected={draft.invoiceNumber} onClose={() => setInvoiceOpen(false)} onSelect={(invoiceNumber) => { updateDraft({ invoiceNumber, amount: 0 }); setAmount(""); setInvoiceOpen(false); }} />
   </ScreenContainer>;
@@ -113,7 +114,7 @@ export function PaymentMethodScreen() {
       {loading ? <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} /> : accounts.map((account) => { const type = accountType(account.iconKey); return <Pressable key={account.id} onPress={() => updateDraft({ accountId: account.id, accountName: account.name })} style={[styles.accountRow, draft.accountId === account.id && styles.accountSelected]} accessibilityRole="radio" accessibilityState={{ checked: draft.accountId === account.id }}><Ionicons name={draft.accountId === account.id ? "radio-button-on" : "radio-button-off"} size={21} color={draft.accountId === account.id ? colors.primary : colors.gray400} /><IconTile icon={type.icon} tone="blue" size={36} /><View style={{ flex: 1 }}><Text style={styles.accountName}>{account.name}</Text><Text style={styles.customerMeta}>{type.label} account · balance available</Text></View></Pressable>; })}
       {!loading && !accounts.length ? <EmptyState icon="wallet-outline" title="No accounts" description="Add an account before recording a payment." /> : null}
     </ScrollView>
-    <View style={styles.footer}><AppButton label="Confirm Selection" onPress={() => navigation.goBack()} disabled={!draft.accountId} /></View>
+    <SafeActionFooter><AppButton label="Confirm Selection" onPress={() => navigation.goBack()} disabled={!draft.accountId} /></SafeActionFooter>
   </ScreenContainer>;
 }
 
@@ -128,7 +129,6 @@ const styles = StyleSheet.create({
   dateValue: { flex: 1, color: colors.textPrimary, fontSize: uiType.body },
   datePicker: { backgroundColor: colors.surface, paddingHorizontal: spacing.lg },
   done: { color: colors.primary, fontWeight: "800", textAlign: "right", paddingVertical: spacing.sm },
-  footer: { padding: spacing.lg, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.divider },
   backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(15,23,42,0.47)" },
   sheet: { maxHeight: "88%", backgroundColor: colors.surface, borderTopLeftRadius: radius.extraLarge, borderTopRightRadius: radius.extraLarge, padding: spacing.lg },
   handle: { width: 32, height: 4, backgroundColor: colors.gray400, borderRadius: 2, alignSelf: "center", marginBottom: spacing.md },

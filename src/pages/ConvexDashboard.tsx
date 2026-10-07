@@ -13,6 +13,7 @@ import {
   buildSummary,
   formatMonthYearLabel,
   todayYm,
+  toLocalISODate,
   ymToDateRange,
   type DocTx,
 } from "@/lib/transactionMath";
@@ -103,7 +104,7 @@ function ConvexDashboardInner() {
 
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const displayName = "there";
+  const displayName = user?.name?.trim().split(/\s+/)[0] || "there";
 
   const listLoading = ready && Boolean(user?.id) && all === undefined;
   const connProblem = conn.hasEverConnected && !conn.isWebSocketConnected && conn.connectionRetries > 2;
@@ -151,7 +152,7 @@ function ConvexDashboardInner() {
         type: parsedDraft.type,
         category: parsedDraft.category || "Other",
         merchant: parsedDraft.merchant || undefined,
-        date: parsedDraft.date || new Date().toISOString().split("T")[0],
+        date: parsedDraft.date || toLocalISODate(new Date()),
         description: parsedDraft.description?.trim() || "Voice / quick text",
         payment_method: parsedDraft.payment_method?.trim() || "Manual",
         tags: [],
@@ -159,8 +160,8 @@ function ConvexDashboardInner() {
         entrySource: "manual",
       });
       setParsedDraft(null);
-    } catch {
-      /* surface via browser — optional toast */
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save transaction.");
     } finally {
       setVoiceSaveBusy(false);
     }
@@ -169,61 +170,14 @@ function ConvexDashboardInner() {
   const voiceBlocked = Boolean(sub && (!sub.canUseAiFeatures || !sub.canCreateTransaction));
   const addBlocked = Boolean(sub && !sub.canCreateTransaction);
   const budgetBlocked = Boolean(sub && !sub.canMutateBudgets);
-  const statusLabel = !sub
-    ? "Loading plan..."
-    : sub.pro
-      ? "Pro"
-      : sub.phase === "trial"
-        ? "Free trial"
-        : sub.phase === "trial_exhausted"
-          ? "Free (limit reached)"
-          : "Free";
-
   return (
     <div className="min-h-full bg-gradient-to-b from-white via-[#f0fdf9] to-[#f0fdfa]">
-      <div className="border-b border-slate-200 bg-white px-4 py-2.5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-white shadow-sm"
-              style={{ background: `linear-gradient(135deg, ${primary}, ${teal600})` }}
-            >
-              <i className="fas fa-sync-alt text-sm" aria-hidden />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[15px] font-bold leading-tight text-slate-900">Receipt Cycle</p>
-              <p className="text-xs text-slate-500">Dashboard</p>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <Link
-              to="/settings"
-              className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-slate-100 text-slate-600 hover:bg-slate-200"
-              aria-label="Notifications"
-            >
-              <i className="far fa-bell text-[15px]" />
-            </Link>
-            <Link
-              to="/settings"
-              className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200"
-              aria-label="Settings"
-            >
-              <i className="far fa-user text-[15px]" />
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4 px-4 pb-10 pt-3 sm:px-5">
+      <div className="space-y-4 pb-10">
         <div>
-          <h1 className="text-[17px] font-bold text-slate-900">
+          <h1 className="text-2xl font-black tracking-tight text-slate-900">
             {greet}, {displayName}
           </h1>
-          <p className="mt-1 text-[13px] text-slate-600">Here&apos;s your financial snapshot for today</p>
-          <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
-            <i className="fas fa-id-badge text-[10px]" aria-hidden />
-            Status: {statusLabel}
-          </div>
+          <p className="mt-1 text-sm text-slate-600">Here&apos;s your financial snapshot for today.</p>
         </div>
 
         {sub && !sub.pro && sub.trialTimeActive && sub.canCreateTransaction ? (

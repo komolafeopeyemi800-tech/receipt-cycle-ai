@@ -9,14 +9,14 @@ import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
 import { useEstimateFlow } from "../contexts/EstimateFlowContext";
 import { usePaymentFlow } from "../contexts/PaymentFlowContext";
 
-type TabName = "Records" | "Analysis" | "Sales" | "More";
+type TabName = "Home" | "Records" | "Sales" | "More";
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
 const tabIcons: Record<TabName, IconName> = {
+  Home: "home-outline",
   Records: "file-tray-full-outline",
-  Analysis: "stats-chart-outline",
   Sales: "briefcase-outline",
-  More: "grid-outline",
+  More: "person-circle-outline",
 };
 const moreModuleIcons: Record<string, IconName> = { Budgets: "pie-chart-outline", Accounts: "wallet-outline", Categories: "grid-outline" };
 const salesModuleIcons: Record<string, IconName> = { SalesInvoices: "document-text-outline", SalesEstimates: "document-outline", SalesPayments: "card-outline", SalesReports: "bar-chart-outline" };
@@ -49,9 +49,17 @@ export function ReceiptCycleTabBar({ state, descriptors, navigation }: BottomTab
     const moduleName = nested?.routes?.[nested.index ?? 0]?.name;
     const contextualIcons = name === "More" ? moreModuleIcons : name === "Sales" ? salesModuleIcons : {};
     const contextualModule = moduleName && contextualIcons[moduleName] ? moduleName : null;
-    const label = contextualModule === "SalesInvoices" ? "Invoices" : contextualModule === "SalesEstimates" ? "Estimates" : contextualModule === "SalesPayments" ? "Payments" : contextualModule === "SalesReports" ? "Reports" : contextualModule ?? descriptors[route.key]?.options.tabBarLabel ?? name;
-    const icon = contextualModule ? contextualIcons[contextualModule]! : tabIcons[name];
-    return <Pressable key={name} style={styles.tabBtn} onPress={() => navigation.navigate(name)} accessibilityRole="tab" accessibilityState={{ selected: isFocused }} accessibilityLabel={String(label)}>
+    const label = name === "More" ? "Me" : contextualModule === "SalesInvoices" ? "Invoices" : contextualModule === "SalesEstimates" ? "Estimates" : contextualModule === "SalesPayments" ? "Payments" : contextualModule === "SalesReports" ? "Reports" : contextualModule ?? descriptors[route.key]?.options.tabBarLabel ?? name;
+    const icon = name === "More" ? tabIcons.More : contextualModule ? contextualIcons[contextualModule]! : tabIcons[name];
+    const openTab = () => {
+      const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
+      if (event.defaultPrevented) return;
+      // Always return Me to its landing screen. React Navigation otherwise keeps
+      // the previous nested More route (for example Budgets or Categories).
+      if (name === "More") navigation.navigate("More", { screen: "MoreHome" });
+      else navigation.navigate(name);
+    };
+    return <Pressable key={name} style={styles.tabBtn} onPress={openTab} accessibilityRole="tab" accessibilityState={{ selected: isFocused }} accessibilityLabel={String(label)}>
       <Ionicons name={icon} size={21} color={isFocused ? colors.primary : colors.gray500} />
       <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>{String(label)}</Text>
     </Pressable>;
@@ -70,8 +78,8 @@ export function ReceiptCycleTabBar({ state, descriptors, navigation }: BottomTab
   return <>
     <View style={[styles.wrap, { paddingBottom: bottomPad }]}>
       <View style={styles.barRow}>
+        {renderTab("Home")}
         {renderTab("Records")}
-        {renderTab("Analysis")}
         <View style={styles.fabGap}><Pressable style={styles.fab} onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel="Create new"><Ionicons name="add" size={28} color="#fff" /></Pressable></View>
         {renderTab("Sales")}
         {renderTab("More")}

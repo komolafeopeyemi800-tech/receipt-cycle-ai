@@ -80,6 +80,7 @@ export function formatMoneyAmount(amount: number, currencyCode: string): string 
     return new Intl.NumberFormat(undefined, {
       style: "currency",
       currency: currencyCode.length === 3 ? currencyCode : "USD",
+      currencyDisplay: "narrowSymbol",
       maximumFractionDigits: 2,
     }).format(amount);
   } catch {

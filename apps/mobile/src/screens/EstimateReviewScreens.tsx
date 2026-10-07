@@ -12,7 +12,7 @@ import { useEstimateFlow } from "../contexts/EstimateFlowContext";
 import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { useSalesSetup } from "../contexts/SalesSetupContext";
-import { calculateEstimateTotals, createAcceptedPreviewEstimate, estimateAsInvoiceDraft, type SavedEstimate } from "../features/estimates/model";
+import { calculateEstimateTotals, estimateAsInvoiceDraft, type SavedEstimate } from "../features/estimates/model";
 import { createInvoicePdf } from "../features/invoices/pdf";
 import type { BusinessProfile, SalesCustomer } from "../features/sales/setupData";
 import type { RootStackParamList } from "../navigation/types";
@@ -79,21 +79,19 @@ export function EstimateDetailScreen() {
   const { convertToInvoice } = useInvoiceFlow();
   const { customers, businessProfile } = useSalesSetup();
   const { currency, formatMoney, formatDate } = usePreferences();
-  const preview = route.params.estimateNumber === "EST-2026-001";
-  const acme = customers.find((customer) => customer.id === "customer-acme") ?? customers[0];
-  const estimate = useMemo(() => estimates.find((item) => item.estimateNumber === route.params.estimateNumber) ?? (preview && acme ? createAcceptedPreviewEstimate(acme.id) : null), [acme, estimates, preview, route.params.estimateNumber]);
+  const estimate = useMemo(() => estimates.find((item) => item.estimateNumber === route.params.estimateNumber) ?? null, [estimates, route.params.estimateNumber]);
   const customer = estimate ? customers.find((item) => item.id === estimate.customerId) : undefined;
 
   if (!estimate || !customer) return <ScreenContainer><ScreenHeader title="Estimate Detail" back /><EmptyState icon="document-outline" title="Estimate unavailable" description="This estimate is no longer available on this device." /></ScreenContainer>;
 
   function loadAndNavigate(target: "EstimateCreate" | "EstimatePreview") {
-    if (preview || !loadEstimate(estimate!.estimateNumber)) { Alert.alert("Worksheet preview", "Create or save an estimate to edit and send it from this device."); return; }
+    if (!loadEstimate(estimate!.estimateNumber)) { Alert.alert("Estimate unavailable", "This estimate could not be loaded from this device."); return; }
     navigation.navigate(target);
   }
 
   function duplicate() {
     const number = duplicateEstimate(estimate!.estimateNumber);
-    if (!number) { Alert.alert("Worksheet preview", "Preview rows cannot be duplicated. Create an estimate first."); return; }
+    if (!number) { Alert.alert("Could not duplicate", "This estimate could not be duplicated."); return; }
     navigation.navigate("EstimateCreate");
   }
 
@@ -109,7 +107,7 @@ export function EstimateDetailScreen() {
   }
 
   function more() {
-    const actions = preview ? [{ text: "Convert to Invoice", onPress: convert }] : [
+    const actions = [
       { text: "Mark Accepted", onPress: () => setEstimateStatus(estimate!.estimateNumber, "accepted") },
       { text: "Mark Expired", onPress: () => setEstimateStatus(estimate!.estimateNumber, "expired") },
       { text: "Convert to Invoice", onPress: convert },

@@ -31,6 +31,11 @@ class AuthViewModel(
     /** Password fields are shown only when the server has them on. */
     val passwordsEnabled: StateFlow<Boolean> = _passwordsEnabled.asStateFlow()
 
+    private val _emailCodesEnabled = MutableStateFlow(false)
+
+    /** Emailed codes and reset links are offered only when the server can send email. */
+    val emailCodesEnabled: StateFlow<Boolean> = _emailCodesEnabled.asStateFlow()
+
     private val tokenState = MutableStateFlow(sessionStorage.getToken())
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
@@ -55,6 +60,7 @@ class AuthViewModel(
 
     init {
         viewModelScope.launch { _passwordsEnabled.value = authRepository.passwordsEnabled() }
+        viewModelScope.launch { _emailCodesEnabled.value = authRepository.emailCodesEnabled() }
         viewModelScope.launch {
             meResult.collect { result ->
                 val token = tokenState.value ?: return@collect

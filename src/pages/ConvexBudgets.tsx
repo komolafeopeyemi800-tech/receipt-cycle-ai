@@ -46,17 +46,11 @@ function ConvexBudgetsInner() {
     ready ? { workspace, userId, startDate: range.start, endDate: range.end } : "skip",
   );
   const upsert = useMutation(api.budgets.upsert);
-  const ensureCats = useMutation(api.categories.ensureSeed);
 
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [budgetModal, setBudgetModal] = useState<CatRow | null>(null);
   const [budgetDetail, setBudgetDetail] = useState<CatRow | null>(null);
   const [modalLimit, setModalLimit] = useState("");
-
-  useEffect(() => {
-    if (!ready) return;
-    void ensureCats({ workspace });
-  }, [ready, workspace, ensureCats]);
 
   useEffect(() => {
     if (!budgets) return;
@@ -180,7 +174,7 @@ function ConvexBudgetsInner() {
                   style={{ borderColor: primary, backgroundColor: "#ecfdf5" }}
                   onClick={(event) => {
                     event.stopPropagation();
-                    const lim = draft[c.name] ?? String(budgetByCat.get(c.name) ?? "");
+                    const lim = String(budgetByCat.get(c.name) ?? "");
                     setModalLimit(lim);
                     setBudgetModal({ id: c.id, name: c.name, color: c.color });
                   }}
@@ -198,9 +192,9 @@ function ConvexBudgetsInner() {
         {budgetDetail ? (() => {
           const limit = budgetByCat.get(budgetDetail.name) ?? 0;
           const spent = spentByCat.get(budgetDetail.name) ?? 0;
-          const pct = limit > 0 ? Math.min(100, Math.round(spent / limit * 100)) : 0;
+          const pct = limit > 0 ? Math.round(spent / limit * 100) : 0;
           const categoryTransactions = ((txs ?? []) as DocTx[]).filter((tx) => tx.type === "expense" && tx.category === budgetDetail.name);
-          return <><div className="grid grid-cols-3 gap-2"><StatCard label="Budget" value={formatMoney(limit)} icon="fa-bullseye" /><StatCard label="Spent" value={formatMoney(spent)} icon="fa-arrow-trend-up" tone="rose" /><StatCard label="Remaining" value={formatMoney(limit - spent)} icon="fa-wallet" tone="blue" /></div><Surface className="mt-4 p-4"><div className="flex justify-between text-xs font-bold"><span>Monthly progress</span><span>{pct}% used</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${pct >= 100 ? "bg-rose-600" : "bg-teal-600"}`} style={{ width: `${pct}%` }} /></div><div className="mt-6 flex h-32 items-end gap-2">{[28,42,35,55,48,72,65,Math.max(8,pct)].map((height,index) => <div key={index} className="flex-1 rounded-t bg-teal-500" style={{ height: `${height}%`, opacity: .45 + index / 16 }} />)}</div></Surface><Surface className="mt-4"><SurfaceHeader title="Recent transactions" />{categoryTransactions.length ? categoryTransactions.slice(0,6).map((tx) => <div key={tx.id} className="flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-0"><div><p className="font-bold">{tx.merchant || tx.description || budgetDetail.name}</p><p className="text-xs text-slate-500">{tx.date}</p></div><strong className="text-rose-700">-{formatMoney(tx.amount)}</strong></div>) : <p className="p-5 text-sm text-slate-500">No spending in this category for the selected month.</p>}</Surface><button type="button" className="mt-4 w-full rounded-lg bg-teal-700 py-3 text-sm font-bold text-white" onClick={() => { setModalLimit(String(limit || "")); setBudgetModal(budgetDetail); }}>Edit budget</button></>;
+          return <><div className="grid grid-cols-3 gap-2"><StatCard label="Budget" value={formatMoney(limit)} icon="fa-bullseye" /><StatCard label="Spent" value={formatMoney(spent)} icon="fa-arrow-trend-up" tone="rose" /><StatCard label="Remaining" value={formatMoney(limit - spent)} icon="fa-wallet" tone="blue" /></div><Surface className="mt-4 p-4"><div className="flex justify-between text-xs font-bold"><span>Monthly progress</span><span>{pct}% used</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${pct >= 100 ? "bg-rose-600" : "bg-teal-600"}`} style={{ width: `${Math.min(100, pct)}%` }} /></div></Surface><Surface className="mt-4"><SurfaceHeader title="Recent transactions" />{categoryTransactions.length ? categoryTransactions.slice(0,6).map((tx) => <div key={tx.id} className="flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-0"><div><p className="font-bold">{tx.merchant || tx.description || budgetDetail.name}</p><p className="text-xs text-slate-500">{tx.date}</p></div><strong className="text-rose-700">-{formatMoney(tx.amount)}</strong></div>) : <p className="p-5 text-sm text-slate-500">No spending in this category for the selected month.</p>}</Surface><button type="button" className="mt-4 w-full rounded-lg bg-teal-700 py-3 text-sm font-bold text-white" onClick={() => { setModalLimit(String(limit || "")); setBudgetModal(budgetDetail); }}>Edit budget</button></>;
         })() : null}
       </Drawer>
 

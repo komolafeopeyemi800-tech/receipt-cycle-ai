@@ -118,7 +118,11 @@ accountRoutes.patch("/:id", async (c) => {
   const row = await db.select().from(accounts).where(eq(accounts.id, c.req.param("id"))).get();
   if (!row || !(await canAccessScope(db, c.get("user").id, row.scope))) throw new ApiError(404, "Account not found");
   const patch: Partial<typeof accounts.$inferInsert> = {};
-  if (body.name !== undefined) patch.name = body.name.trim().slice(0, 80);
+  if (body.name !== undefined) {
+    const name = body.name.trim().slice(0, 80);
+    if (name.length < 1) throw new ApiError(400, "Account name required");
+    patch.name = name;
+  }
   if (body.balance !== undefined) patch.balance = body.balance;
   if (body.iconKey !== undefined) patch.iconKey = body.iconKey;
   if (Object.keys(patch).length > 0) await db.update(accounts).set(patch).where(eq(accounts.id, row.id));
@@ -194,7 +198,15 @@ categoryRoutes.patch("/:id", async (c) => {
   );
   const row = await loadOwnedCategory(c);
   const patch: Partial<typeof categories.$inferInsert> = {};
-  if (body.name !== undefined) patch.name = body.name.trim().slice(0, 80);
+  if (body.name !== undefined) {
+    const name = body.name.trim().slice(0, 80);
+    if (name.length < 1) throw new ApiError(400, "Category name required");
+    const siblings = await db.select({ id: categories.id, name: categories.name }).from(categories).where(eq(categories.scope, row.scope));
+    if (siblings.some((r) => r.id !== row.id && r.name.toLowerCase() === name.toLowerCase())) {
+      throw new ApiError(409, "A category with this name already exists.");
+    }
+    patch.name = name;
+  }
   if (body.color !== undefined) patch.color = body.color;
   if (body.kind !== undefined) patch.kind = body.kind;
   if (Object.keys(patch).length > 0) await db.update(categories).set(patch).where(eq(categories.id, row.id));
@@ -234,7 +246,7 @@ budgetRoutes.put("/", async (c) => {
     z.object({
       workspace: z.string().min(1),
       category: z.string().min(1),
-      month: z.string().min(1),
+      month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "month must be YYYY-MM"),
       limitAmount: z.number().finite().min(0),
     }),
   );

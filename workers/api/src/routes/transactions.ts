@@ -76,6 +76,9 @@ function bumpTrialAdds(db: Db, userId: string, by: number) {
     .where(and(eq(profile.userId, userId), eq(profile.proSubscriptionActive, false)));
 }
 
+/** Dates are compared as strings by the range filters, so only `YYYY-MM-DD` is accepted. */
+const ymd = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD");
+
 const entrySource = z.enum(["camera", "upload", "manual"]);
 
 const txnFields = {
@@ -84,7 +87,7 @@ const txnFields = {
   type: z.string().min(1),
   category: z.string().min(1),
   merchant: z.string().nullish(),
-  date: z.string().min(1),
+  date: ymd,
   description: z.string().nullish(),
   payment_method: z.string().nullish(),
   accountId: z.string().nullish(),
@@ -106,7 +109,7 @@ const bulkBody = z.object({
       amount: z.number().finite(),
       type: z.string().min(1),
       category: z.string().min(1),
-      date: z.string().min(1),
+      date: ymd,
       merchant: z.string().nullish(),
       description: z.string().nullish(),
       payment_method: z.string().nullish(),

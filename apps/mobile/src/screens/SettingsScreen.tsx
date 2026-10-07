@@ -1,5 +1,5 @@
 import { type ComponentProps } from "react";
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { Alert, Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { Directory, File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
@@ -164,17 +164,15 @@ export function SettingsScreen() {
         </View>
 
         {user && (
-          <View style={styles.profile}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarTxt}>{(user.name || user.email || "?").slice(0, 1).toUpperCase()}</Text>
-            </View>
+          <Pressable style={styles.profile} onPress={() => navigation.navigate("PersonalProfile")} accessibilityRole="button" accessibilityLabel="Edit personal profile">
+            <View style={styles.avatar}>{user.image ? <Image source={{ uri: user.image }} style={styles.avatarImage} /> : <Ionicons name="person" size={25} color="#fff" />}</View>
             <View style={{ flex: 1 }}>
               <Text style={styles.profileName}>{user.name || "Receipt Cycle user"}</Text>
               <Text style={styles.email}>{user.email}</Text>
               <Text style={styles.ownerLabel}>Business Owner</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
-          </View>
+          </Pressable>
         )}
 
         <Text style={styles.section}>ACCOUNT</Text>
@@ -203,7 +201,7 @@ export function SettingsScreen() {
           <RowNav
             icon="diamond-outline"
             title="Manage Subscription"
-            sub={sub?.pro ? "Pro plan active" : "View plans and billing"}
+            sub={sub?.pro ? "Pro plan active" : sub?.phase === "trial" ? "Free trial active" : "Free plan · View plans and billing"}
             onPress={() => navigation.navigate("Pricing")}
           />
           <Divider />
@@ -309,6 +307,15 @@ export function SettingsScreen() {
           />
         </View>
 
+        <Text style={styles.section}>HELP & LEGAL</Text>
+        <View style={styles.card}>
+          <RowNav icon="help-buoy-outline" title="Help & Support" sub="FAQs and ways to contact us" onPress={() => void Linking.openURL("https://receiptcycle.com/faq")} />
+          <Divider />
+          <RowNav icon="lock-closed-outline" title="Privacy Policy" sub="How Receipt Cycle handles your data" onPress={() => void Linking.openURL("https://receiptcycle.com/privacy")} />
+          <Divider />
+          <RowNav icon="document-text-outline" title="Terms of Service" sub="Terms for the mobile and web apps" onPress={() => void Linking.openURL("https://receiptcycle.com/terms")} />
+        </View>
+
         {user && (
           <Pressable
             style={styles.signOut}
@@ -322,7 +329,7 @@ export function SettingsScreen() {
           </Pressable>
         )}
 
-        <Text style={styles.footer}>Receipt Cycle · Convex auth & data</Text>
+        <Text style={styles.footer}>Receipt Cycle · Secure cloud workspace</Text>
         <View style={{ height: 40 }} />
       </ScrollView>
     </LinearGradient>
@@ -407,6 +414,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  avatarImage: { width: "100%", height: "100%", borderRadius: 28 },
   avatarTxt: { color: "#fff", fontWeight: "700", fontSize: typeScale.title },
   profileName: { fontSize: typeScale.bodyStrong, fontWeight: "800", color: colors.gray900 },
   email: { fontSize: typeScale.sm, fontWeight: "500", color: colors.gray500, marginTop: 2 },

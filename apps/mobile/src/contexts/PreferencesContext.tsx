@@ -81,6 +81,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
   const lastRemoteJson = useRef<string | null>(null);
   const nullRemoteSeeded = useRef(false);
+  const savedCurrency = useRef<string | null>(null);
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const snapshot = useRef({
@@ -158,7 +159,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         const r = await AsyncStorage.multiGet(keys);
         const map = Object.fromEntries(r);
         if (map[PREF_KEYS.currency] && String(map[PREF_KEYS.currency]).length === 3) {
-          setCurrencyState(String(map[PREF_KEYS.currency]).toUpperCase());
+          const localCurrency = String(map[PREF_KEYS.currency]).toUpperCase();
+          savedCurrency.current = localCurrency;
+          setCurrencyState(localCurrency);
         }
         const df = map[PREF_KEYS.dateFormat];
         if (df === "iso" || df === "us" || df === "eu") setDateFormatState(df);
@@ -213,8 +216,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    const localCurrency = savedCurrency.current;
     const payload = {
-      currency: remoteRow.currency,
+      currency: localCurrency && localCurrency.length === 3 ? localCurrency : remoteRow.currency,
       dateFormat: remoteRow.dateFormat,
       merchants: remoteRow.merchants,
       locations: remoteRow.locations,
@@ -228,6 +232,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     const j = JSON.stringify(payload);
     if (lastRemoteJson.current === j) return;
     lastRemoteJson.current = j;
+
+    if (localCurrency && localCurrency !== remoteRow.currency) {
+      void upsertRemote({ userId: user.id, ...payload }).catch(() => {});
+    }
 
     setCurrencyState(payload.currency);
     setDateFormatState(payload.dateFormat);
@@ -279,15 +287,33 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const setCurrency = useCallback(
     async (c: string) => {
       const v = c.slice(0, 3).toUpperCase();
+      savedCurrency.current = v;
       setCurrencyState(v);
       try {
         await AsyncStorage.setItem(PREF_KEYS.currency, v);
       } catch {
         /* ignore */
       }
-      scheduleConvexSync();
+      const s = snapshot.current;
+      try {
+        if (user?.id) await upsertRemote({
+          userId: user.id,
+          currency: v,
+          dateFormat: s.dateFormat,
+          merchants: s.merchants,
+          locations: s.locations,
+          reimbursements: s.reimbursements,
+          txnNumber: s.txnNumber,
+          scanPayment: s.scanPayment,
+          requirePay: s.requirePay,
+          requireNotes: s.requireNotes,
+          voiceInputLanguage: normalizeVoiceInputLanguage(s.voiceInputLanguage),
+        });
+      } catch {
+        scheduleConvexSync();
+      }
     },
-    [scheduleConvexSync],
+    [scheduleConvexSync, upsertRemote, user?.id],
   );
 
   const setDateFormat = useCallback(

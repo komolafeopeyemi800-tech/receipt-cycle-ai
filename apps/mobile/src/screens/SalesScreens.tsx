@@ -8,12 +8,12 @@ import { AppButton, AppCard, EmptyState, IconTile, KpiCard, ScreenContainer, Sea
 import { usePreferences } from "../contexts/PreferencesContext";
 import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
 import { usePaymentFlow } from "../contexts/PaymentFlowContext";
-import { previewEstimates, previewInvoices, previewPayments, previewSalesMetrics, salesDataMode, type SalesEstimate, type SalesInvoice } from "../features/sales/previewData";
+import { useEstimateFlow } from "../contexts/EstimateFlowContext";
 import type { RootStackParamList, SalesStackParamList } from "../navigation/types";
 import { colors, radius, spacing, uiType } from "../theme/tokens";
 
 type Nav = CompositeNavigationProp<NativeStackNavigationProp<SalesStackParamList>, NativeStackNavigationProp<RootStackParamList>>;
-type Document = SalesInvoice | SalesEstimate;
+type Document = { id: string; customer: string; issuedAt: string; amount: number; status: "draft" | "sent" | "paid" | "overdue" | "accepted" | "expired" };
 type ListKind = "invoice" | "estimate";
 
 function PreviewBanner() {
@@ -67,41 +67,39 @@ export function SalesHubScreen() {
   const navigation = useNavigation<Nav>();
   const { formatMoney, formatDate } = usePreferences();
   const { invoices: savedInvoices } = useInvoiceFlow();
+  const { estimates } = useEstimateFlow();
   const { payments } = usePaymentFlow();
   const [period, setPeriod] = useState<"This Month" | "All Time">("This Month");
   const activity = [
-    { key: "payment", title: "Payment received", subtitle: previewPayments[0].customer, amount: previewPayments[0].amount, date: previewPayments[0].paidAt, tone: "mint" as const, icon: "cash-outline" as const },
-    { key: "invoice", title: "Invoice sent", subtitle: previewInvoices[1].customer, amount: previewInvoices[1].amount, date: previewInvoices[1].issuedAt, tone: "blue" as const, icon: "document-text-outline" as const },
-    { key: "estimate", title: "Estimate created", subtitle: previewEstimates[0].customer, amount: previewEstimates[0].amount, date: previewEstimates[0].issuedAt, tone: "blue" as const, icon: "document-outline" as const },
-    { key: "overdue", title: "Invoice overdue", subtitle: previewInvoices[2].customer, amount: previewInvoices[2].amount, date: previewInvoices[2].issuedAt, tone: "rose" as const, icon: "alert-circle-outline" as const },
-  ];
+    ...payments.map((item) => ({ key: item.id, title: "Payment received", subtitle: item.customerName, amount: item.amount, date: item.paymentDate, tone: "mint" as const, icon: "cash-outline" as const, kind: "payment" })),
+    ...savedInvoices.map((item) => ({ key: item.invoiceNumber, title: `Invoice ${item.status}`, subtitle: item.customerName, amount: item.total, date: item.issueDate, tone: item.status === "overdue" ? "rose" as const : "blue" as const, icon: "document-text-outline" as const, kind: "invoice" })),
+    ...estimates.map((item) => ({ key: item.estimateNumber, title: `Estimate ${item.status}`, subtitle: item.customerName, amount: item.total, date: item.estimateDate, tone: "blue" as const, icon: "document-outline" as const, kind: "estimate" })),
+  ].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
   const localOutstanding = savedInvoices.filter((item) => item.status === "sent" || item.status === "overdue" || item.status === "partially_paid").reduce((sum, item) => sum + Math.max(0, item.total - (item.amountPaid ?? 0)), 0);
   const localPaid = payments.filter((item) => item.status !== "refunded").reduce((sum, item) => sum + item.amount, 0);
   const localOverdue = savedInvoices.filter((item) => item.status === "overdue").reduce((sum, item) => sum + item.total, 0);
-  const outstandingCount = 2 + savedInvoices.filter((item) => item.status === "sent" || item.status === "overdue" || item.status === "partially_paid").length;
+  const outstandingCount = savedInvoices.filter((item) => item.status === "sent" || item.status === "overdue" || item.status === "partially_paid").length;
+  const openEstimates = estimates.filter((item) => item.status === "sent" || item.status === "draft");
   return (
     <ScreenContainer>
       <ScreenHeader title="Sales" onRightPress={() => navigation.navigate("BusinessProfile")} />
       <ScrollView contentContainerStyle={styles.pageContent} showsVerticalScrollIndicator={false}>
         <View style={styles.periodRow}><SegmentedTabs options={["This Month", "All Time"] as const} value={period} onChange={setPeriod} /><Ionicons name="calendar-outline" size={20} color={colors.gray600} /></View>
-        {salesDataMode === "preview" ? <PreviewBanner /> : null}
         <View style={styles.kpiRow}>
-          <Pressable style={styles.kpiPress} onPress={() => navigation.navigate("SalesInvoices")}><KpiCard title="Outstanding Invoices" value={formatMoney(previewSalesMetrics.outstanding + localOutstanding)} detail={`${outstandingCount} invoices`} /></Pressable>
-          <Pressable style={styles.kpiPress} onPress={() => navigation.navigate("SalesPayments")}><KpiCard title={period === "This Month" ? "Paid This Month" : "Total Paid"} value={formatMoney((period === "This Month" ? previewSalesMetrics.paidThisMonth : previewPayments.reduce((sum, payment) => sum + payment.amount, 0)) + localPaid)} detail={`${previewPayments.length + payments.length} payments`} tone="positive" /></Pressable>
+          <Pressable style={styles.kpiPress} onPress={() => navigation.navigate("SalesInvoices")}><KpiCard title="Outstanding Invoices" value={formatMoney(localOutstanding)} detail={`${outstandingCount} invoices`} /></Pressable>
+          <Pressable style={styles.kpiPress} onPress={() => navigation.navigate("SalesPayments")}><KpiCard title={period === "This Month" ? "Paid This Month" : "Total Paid"} value={formatMoney(localPaid)} detail={`${payments.length} payments`} tone="positive" /></Pressable>
         </View>
         <View style={styles.kpiRow}>
-          <Pressable style={styles.kpiPress} onPress={() => navigation.navigate("SalesInvoices")}><KpiCard title="Overdue" value={formatMoney(previewSalesMetrics.overdue + localOverdue)} detail={`${1 + savedInvoices.filter((item) => item.status === "overdue").length} invoices`} tone="negative" /></Pressable>
-          <Pressable style={styles.kpiPress} onPress={() => navigation.navigate("SalesEstimates")}><KpiCard title="Open Estimates" value={formatMoney(previewSalesMetrics.openEstimates)} detail="1 estimate" tone="info" /></Pressable>
+          <Pressable style={styles.kpiPress} onPress={() => navigation.navigate("SalesInvoices")}><KpiCard title="Overdue" value={formatMoney(localOverdue)} detail={`${savedInvoices.filter((item) => item.status === "overdue").length} invoices`} tone="negative" /></Pressable>
+          <Pressable style={styles.kpiPress} onPress={() => navigation.navigate("SalesEstimates")}><KpiCard title="Open Estimates" value={formatMoney(openEstimates.reduce((sum, item) => sum + item.total, 0))} detail={`${openEstimates.length} estimates`} tone="info" /></Pressable>
         </View>
         <View style={styles.shortcuts}>
-          <Pressable style={styles.shortcut} onPress={() => navigation.navigate("SalesInvoices")}><IconTile icon="document-text-outline" tone="blue" size={32} /><Text style={styles.shortcutLabel}>Invoices</Text><Ionicons name="chevron-forward" size={16} color={colors.gray400} /></Pressable>
-          <Pressable style={styles.shortcut} onPress={() => navigation.navigate("SalesEstimates")}><IconTile icon="document-outline" tone="amber" size={32} /><Text style={styles.shortcutLabel}>Estimates</Text><Ionicons name="chevron-forward" size={16} color={colors.gray400} /></Pressable>
-          <Pressable style={styles.shortcut} onPress={() => navigation.navigate("SalesPayments")}><IconTile icon="card-outline" tone="mint" size={32} /><Text style={styles.shortcutLabel}>Payments</Text><Ionicons name="chevron-forward" size={16} color={colors.gray400} /></Pressable>
+          <Pressable style={styles.shortcut} onPress={() => navigation.navigate("SalesInvoices")}><View style={[styles.shortcutIcon, { backgroundColor: colors.blueSoft }]}><Ionicons name="receipt-outline" size={27} color={colors.blue600} /></View><Text style={styles.shortcutLabel}>Invoices</Text><Text style={styles.shortcutHint}>Bill customers</Text></Pressable>
+          <Pressable style={styles.shortcut} onPress={() => navigation.navigate("SalesEstimates")}><View style={[styles.shortcutIcon, { backgroundColor: colors.amberSoft }]}><Ionicons name="calculator-outline" size={27} color={colors.warning} /></View><Text style={styles.shortcutLabel}>Estimates</Text><Text style={styles.shortcutHint}>Quote new work</Text></Pressable>
+          <Pressable style={styles.shortcut} onPress={() => navigation.navigate("SalesPayments")}><View style={[styles.shortcutIcon, { backgroundColor: colors.mintSoft }]}><Ionicons name="cash-outline" size={27} color={colors.success} /></View><Text style={styles.shortcutLabel}>Payments</Text><Text style={styles.shortcutHint}>Track receipts</Text></Pressable>
         </View>
         <SectionHeader title="Recent Activity" actionLabel="See all" onAction={() => navigation.navigate("SalesInvoices")} />
-        <AppCard style={styles.activityCard}>
-          {activity.map((item, index) => <View key={item.key} style={[styles.activityRow, index !== activity.length - 1 && styles.rowDivider]}><IconTile icon={item.icon} tone={item.tone} size={34} /><View style={styles.activityMain}><Text style={styles.activityTitle}>{item.title}</Text><Text style={styles.activitySubtitle}>{item.subtitle}</Text></View><View style={styles.activityValue}><Text style={[styles.activityAmount, item.key === "payment" && { color: colors.success }, item.key === "overdue" && { color: colors.danger }]}>{item.key === "payment" ? "+" : ""}{formatMoney(item.amount)}</Text><Text style={styles.activitySubtitle}>{formatDate(item.date)}</Text></View></View>)}
-        </AppCard>
+        {activity.length ? <AppCard style={styles.activityCard}>{activity.map((item, index) => <View key={`${item.kind}-${item.key}`} style={[styles.activityRow, index !== activity.length - 1 && styles.rowDivider]}><IconTile icon={item.icon} tone={item.tone} size={34} /><View style={styles.activityMain}><Text style={styles.activityTitle}>{item.title}</Text><Text style={styles.activitySubtitle}>{item.subtitle}</Text></View><View style={styles.activityValue}><Text style={[styles.activityAmount, item.kind === "payment" && { color: colors.success }]}>{item.kind === "payment" ? "+" : ""}{formatMoney(item.amount)}</Text><Text style={styles.activitySubtitle}>{formatDate(item.date)}</Text></View></View>)}</AppCard> : <EmptyState icon="briefcase-outline" title="No sales activity yet" description="Create an invoice or estimate to start your sales workspace." />}
         <View style={styles.manageSection}>
           <SectionHeader title="Sales workspace" />
           <AppCard style={styles.manageCard}>
@@ -124,19 +122,19 @@ function SalesList({ kind }: { kind: ListKind }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
   const [selected, setSelected] = useState<Document | null>(null);
-  const source: Document[] = kind === "invoice" ? previewInvoices : previewEstimates;
+  const source: Document[] = [];
   const filters = kind === "invoice" ? ["All", "Draft", "Sent", "Paid", "Overdue"] : ["All", "Draft", "Sent", "Accepted", "Expired"];
   const rows = useMemo(() => source.filter((item) => (filter === "All" || item.status === filter.toLowerCase()) && (item.id.toLowerCase().includes(search.trim().toLowerCase()) || item.customer.toLowerCase().includes(search.trim().toLowerCase()))), [source, filter, search]);
   const title = kind === "invoice" ? "Invoices" : "Estimates";
   return (
     <ScreenContainer>
-      <ScreenHeader title={title} back rightIcon="add-circle" onRightPress={() => Alert.alert(`${kind === "invoice" ? "Invoice" : "Estimate"} builder`, "This creation flow is scheduled for its dedicated worksheet. The list shown here uses preview data.")} />
+      <ScreenHeader title={title} back rightIcon="add-circle" onRightPress={() => navigation.navigate(kind === "invoice" ? "InvoiceCreate" : "EstimateCreate")} />
       <FlatList
         data={rows}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         keyboardShouldPersistTaps="handled"
-        ListHeaderComponent={<><PreviewBanner /><SearchInput value={search} onChangeText={setSearch} placeholder={`Search ${title.toLowerCase()} or customers`} /><View style={styles.filters}><SegmentedTabs options={filters} value={filter} onChange={setFilter} /></View></>}
+        ListHeaderComponent={<><SearchInput value={search} onChangeText={setSearch} placeholder={`Search ${title.toLowerCase()} or customers`} /><View style={styles.filters}><SegmentedTabs options={filters} value={filter} onChange={setFilter} /></View></>}
         renderItem={({ item }) => <DocumentRow item={item} kind={kind} formatMoney={formatMoney} formatDate={formatDate} onPress={() => setSelected(item)} onConvert={() => Alert.alert("Estimate conversion", "Conversion will be connected when the estimate and invoice builders are implemented.")} />}
         ListEmptyComponent={<EmptyState icon="document-outline" title={`No ${title.toLowerCase()} found`} description="Try another search or status filter." />}
       />
@@ -156,8 +154,10 @@ const styles = StyleSheet.create({
   kpiRow: { flexDirection: "row", gap: spacing.sm, marginBottom: spacing.sm },
   kpiPress: { flex: 1, minWidth: 0 },
   shortcuts: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm, marginBottom: spacing.xl },
-  shortcut: { flex: 1, minHeight: 50, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.medium, flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.sm, gap: spacing.sm },
-  shortcutLabel: { flex: 1, color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "700" },
+  shortcut: { flex: 1, minWidth: 0, minHeight: 112, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.large, alignItems: "center", justifyContent: "center", padding: spacing.sm },
+  shortcutIcon: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: 7 },
+  shortcutLabel: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "800", textAlign: "center" },
+  shortcutHint: { color: colors.textMuted, fontSize: 10, marginTop: 2, textAlign: "center" },
   activityCard: { paddingVertical: 0, paddingHorizontal: spacing.sm },
   activityRow: { minHeight: 62, flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingVertical: spacing.sm },
   rowDivider: { borderBottomWidth: 1, borderBottomColor: colors.divider },

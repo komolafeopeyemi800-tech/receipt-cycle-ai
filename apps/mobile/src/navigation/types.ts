@@ -5,6 +5,7 @@ export type EntrySource = "camera" | "upload" | "manual";
 export type ScanReviewParams = { scannedData: ScannedExtracted; source: Exclude<EntrySource, "manual">; receiptUri?: string };
 
 export type MainTabParamList = {
+  Home: undefined;
   Records: undefined;
   Analysis: undefined;
   Sales: undefined;
@@ -68,6 +69,8 @@ export type RootStackParamList = {
   UploadStatement: undefined;
   ScanReview: ScanReviewParams;
   Settings: undefined;
+  AllFeatures: undefined;
+  PersonalProfile: undefined;
   GoogleDriveBackup: undefined;
   RegionalPreferences: undefined;
   MerchantsVendors: undefined;

@@ -275,7 +275,7 @@ export function FinanceCoachScreen() {
 
   return (
     <LinearGradient colors={[...gradients.page]} style={styles.flex}>
-      <SafeAreaView style={styles.flex} edges={["top"]}>
+      <SafeAreaView style={styles.flex} edges={["top", "bottom"]}>
         <View style={styles.topBar}>
           <Pressable onPress={() => navigation.goBack()} hitSlop={14} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color={colors.gray900} />
@@ -335,7 +335,7 @@ export function FinanceCoachScreen() {
 
         <KeyboardAvoidingView
           style={styles.flex}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
         >
           <FlatList

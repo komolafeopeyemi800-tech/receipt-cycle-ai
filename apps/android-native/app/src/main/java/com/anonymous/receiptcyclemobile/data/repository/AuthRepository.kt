@@ -55,6 +55,10 @@ class AuthRepository(
     suspend fun passwordsEnabled(): Boolean =
         runCatching { api.get<PublicConfig>("/api/config", anonymous = true)?.passwordAuthEnabled == true }.getOrDefault(false)
 
+    /** Whether the server can send email (sign-in codes, reset links). */
+    suspend fun emailCodesEnabled(): Boolean =
+        runCatching { api.get<PublicConfig>("/api/config", anonymous = true)?.emailCodesEnabled == true }.getOrDefault(false)
+
     /** Passwordless sign-in, step 1: email a 6-digit code. */
     suspend fun sendEmailCode(email: String): Result<Unit> = runAuth {
         api.sendUnit(

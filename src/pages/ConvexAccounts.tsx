@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@mobile-lib/api";
 import { api } from "@mobile-lib/api";
 import type { Id } from "@mobile-lib/api";
@@ -48,14 +48,12 @@ function AccountsWorkspace() {
     api.transactions.list,
     ready && user ? { workspace, userId: user.id } : "skip",
   ) as AccountTransaction[] | undefined;
-  const ensure = useMutation(api.accounts.ensureSeed);
   const create = useMutation(api.accounts.create);
   const update = useMutation(api.accounts.update);
   const [selectedId, setSelectedId] = useState<Id<"accounts"> | null>(null);
   const [editor, setEditor] = useState<AccountDraft | null>(null);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { if (ready) void ensure({ workspace }); }, [ready, ensure, workspace]);
   const selected = (list ?? []).find((row) => row.id === selectedId) ?? null;
   const accountTransactions = useMemo(
     () => selected ? (transactions ?? []).filter((row) => row.accountId === String(selected.id)) : [],
@@ -68,7 +66,7 @@ function AccountsWorkspace() {
     const months = Array.from({ length: 6 }, (_, index) => {
       const date = new Date();
       date.setMonth(date.getMonth() - (5 - index), 1);
-      return { key: date.toISOString().slice(0, 7), label: date.toLocaleString("en-US", { month: "short" }), net: 0 };
+      return { key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`, label: date.toLocaleString("en-US", { month: "short" }), net: 0 };
     });
     for (const row of accountTransactions) {
       const month = months.find((item) => row.date.startsWith(item.key));
@@ -87,6 +85,8 @@ function AccountsWorkspace() {
       if (editor.id) await update({ id: editor.id, name: editor.name.trim(), balance, iconKey: editor.iconKey });
       else await create({ workspace, name: editor.name.trim(), balance, iconKey: editor.iconKey });
       setEditor(null);
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : "Could not save account.");
     } finally { setBusy(false); }
   }
 
@@ -100,7 +100,8 @@ function AccountsWorkspace() {
     </div>
     <Surface className="mt-4">
       <SurfaceHeader title="Connected accounts" description="Open an account to review activity and edit its setup." />
-      {list === undefined ? <p className="p-8 text-center text-sm text-slate-500">Loading accounts…</p> :
+      {list === undefined ? <p className="p-8 text-center text-sm text-slate-500">Loading accounts…</p> : list.length === 0 ?
+        <EmptyState icon="fa-wallet" title="No accounts yet" description="Add the cash, card, bank, or wallet account you actually use. Receipt Cycle will not create balances for you." /> :
         <div className="grid md:grid-cols-2 xl:grid-cols-3">{list.map((account) => <button key={String(account.id)} type="button" onClick={() => setSelectedId(account.id)} className="flex items-center gap-3 border-b border-r border-slate-100 p-4 text-left hover:bg-slate-50">
           <IconBox icon={accountIcon(account.iconKey)} />
           <div className="min-w-0 flex-1"><p className="truncate text-sm font-extrabold">{account.name}</p><p className={`mt-1 text-base font-black ${account.balance >= 0 ? "text-teal-700" : "text-rose-700"}`}>{formatMoney(account.balance)}</p></div>

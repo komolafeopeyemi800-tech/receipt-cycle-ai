@@ -112,6 +112,8 @@ data class PublicConfig(
     val maintenanceMode: Boolean? = false,
     /** False on the free-plan deployment: sign in with Google or an emailed code instead. */
     val passwordAuthEnabled: Boolean? = false,
+    /** False when the server has no email key: emailed codes and reset links cannot be delivered. */
+    val emailCodesEnabled: Boolean? = false,
 )
 
 @Serializable

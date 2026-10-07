@@ -4,12 +4,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ScreenHeader } from "../components/ScreenHeader";
-import { ContactAction, ContactInfoRow, InitialsAvatar, SalesSetupPreviewBanner } from "../components/ui/SalesSetupUI";
+import { ContactAction, ContactInfoRow, InitialsAvatar } from "../components/ui/SalesSetupUI";
 import { AppButton, AppCard, EmptyState, FormField, KpiCard, ScreenContainer, SearchInput, SectionHeader, SegmentedTabs, StatusBadge } from "../components/ui/FinanceUI";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
+import { useEstimateFlow } from "../contexts/EstimateFlowContext";
+import { usePaymentFlow } from "../contexts/PaymentFlowContext";
 import { useSalesSetup } from "../contexts/SalesSetupContext";
-import { previewEstimates, previewInvoices, previewPayments } from "../features/sales/previewData";
 import type { CustomerStatus } from "../features/sales/setupData";
 import type { RootStackParamList } from "../navigation/types";
 import { colors, spacing, uiType } from "../theme/tokens";
@@ -40,7 +41,7 @@ export function CustomersScreen() {
       keyExtractor={(item) => item.id}
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={styles.listContent}
-      ListHeaderComponent={<View style={styles.listHeader}><SalesSetupPreviewBanner /><SearchInput value={search} onChangeText={setSearch} placeholder="Search customers..." /><SegmentedTabs options={["All", "Active", "Prospects", "Inactive"] as const} value={filter} onChange={setFilter} /></View>}
+      ListHeaderComponent={<View style={styles.listHeader}><SearchInput value={search} onChangeText={setSearch} placeholder="Search customers..." /><SegmentedTabs options={["All", "Active", "Prospects", "Inactive"] as const} value={filter} onChange={setFilter} /></View>}
       renderItem={({ item }) => <Pressable onPress={() => navigation.navigate("SalesCustomerDetail", { customerId: item.id })} style={({ pressed }) => [styles.customerRow, pressed && styles.pressed]} accessibilityRole="button">
         <InitialsAvatar name={item.name} />
         <View style={styles.rowMain}><Text style={styles.rowTitle} numberOfLines={1}>{item.name}</Text>{item.email ? <Text style={styles.rowMeta} numberOfLines={1}>{item.email}</Text> : null}{item.phone ? <Text style={styles.rowMeta}>{item.phone}</Text> : null}</View>
@@ -58,18 +59,17 @@ export function CustomerDetailScreen() {
   const route = useRoute<RouteProp<RootStackParamList, "SalesCustomerDetail">>();
   const { customers, setCustomerStatus } = useSalesSetup();
   const { invoices: savedInvoices } = useInvoiceFlow();
+  const { estimates: savedEstimates } = useEstimateFlow();
+  const { payments } = usePaymentFlow();
   const { formatMoney, formatDate } = usePreferences();
   const [tab, setTab] = useState<"Invoices" | "Estimates">("Invoices");
   const customer = customers.find((item) => item.id === route.params.customerId);
   if (!customer) return <ScreenContainer><ScreenHeader title="Customer" back /><EmptyState icon="person-outline" title="Customer unavailable" description="This customer may have been removed." /></ScreenContainer>;
 
-  const invoices = [
-    ...savedInvoices.filter((item) => item.customerId === customer.id).map((item) => ({ id: item.invoiceNumber, customer: item.customerName, issuedAt: item.issueDate, amount: item.total, status: item.status })),
-    ...previewInvoices.filter((item) => item.customer === customer.name),
-  ];
-  const estimates = previewEstimates.filter((item) => item.customer === customer.name);
+  const invoices = savedInvoices.filter((item) => item.customerId === customer.id).map((item) => ({ id: item.invoiceNumber, customer: item.customerName, issuedAt: item.issueDate, amount: item.total, status: item.status }));
+  const estimates = savedEstimates.filter((item) => item.customerId === customer.id).map((item) => ({ id: item.estimateNumber, customer: item.customerName, issuedAt: item.estimateDate, amount: item.total, status: item.status }));
   const totalInvoiced = invoices.reduce((sum, item) => sum + item.amount, 0);
-  const amountPaid = previewPayments.filter((item) => item.customer === customer.name).reduce((sum, item) => sum + item.amount, 0);
+  const amountPaid = payments.filter((item) => item.customerId === customer.id && item.status !== "refunded").reduce((sum, item) => sum + item.amount, 0);
   const balance = Math.max(0, totalInvoiced - amountPaid);
   const documents = tab === "Invoices" ? invoices : estimates;
   const customerId = customer.id;
@@ -86,7 +86,6 @@ export function CustomerDetailScreen() {
   return <ScreenContainer>
     <ScreenHeader title="Customer Details" back rightIcon="ellipsis-vertical" onRightPress={openMenu} />
     <ScrollView contentContainerStyle={styles.detailContent} showsVerticalScrollIndicator={false}>
-      <SalesSetupPreviewBanner />
       <View style={styles.customerHero}><InitialsAvatar name={customer.name} size={58} /><View style={styles.heroMain}><View style={styles.heroTitleRow}><Text style={styles.heroTitle}>{customer.name}</Text><StatusBadge status={customer.status} /></View><Text style={styles.heroMeta}>{customer.businessName || "Individual customer"}</Text><Text style={styles.heroMeta}>Since {formatDate(customer.createdAt)}</Text></View></View>
       <View style={styles.contactActions}>
         <ContactAction icon="call-outline" label="Call" onPress={() => customer.phone ? openContactUrl(`tel:${customer.phone}`, "No calling app is available.") : Alert.alert("No phone number", "Add a phone number to this customer first.")} />
@@ -109,7 +108,7 @@ export function CustomerDetailScreen() {
 
       <SegmentedTabs options={["Invoices", "Estimates"] as const} value={tab} onChange={setTab} />
       <AppCard style={styles.documentCard}>
-        {documents.length ? documents.map((item, index) => <View key={item.id} style={[styles.documentRow, index !== documents.length - 1 && styles.divider]}><Ionicons name="document-text-outline" size={20} color={colors.blue600} /><View style={styles.rowMain}><Text style={styles.rowTitle}>{item.id}</Text><Text style={styles.rowMeta}>{formatDate(item.issuedAt)}</Text></View><StatusBadge status={item.status} /><Text style={styles.documentAmount}>{formatMoney(item.amount)}</Text></View>) : <EmptyState icon="document-outline" title={`No ${tab.toLowerCase()}`} description={`This customer has no preview ${tab.toLowerCase()} yet.`} />}
+        {documents.length ? documents.map((item, index) => <View key={item.id} style={[styles.documentRow, index !== documents.length - 1 && styles.divider]}><Ionicons name="document-text-outline" size={20} color={colors.blue600} /><View style={styles.rowMain}><Text style={styles.rowTitle}>{item.id}</Text><Text style={styles.rowMeta}>{formatDate(item.issuedAt)}</Text></View><StatusBadge status={item.status} /><Text style={styles.documentAmount}>{formatMoney(item.amount)}</Text></View>) : <EmptyState icon="document-outline" title={`No ${tab.toLowerCase()}`} description={`This customer has no ${tab.toLowerCase()} yet.`} />}
       </AppCard>
     </ScrollView>
   </ScreenContainer>;

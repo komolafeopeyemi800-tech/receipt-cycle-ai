@@ -13,6 +13,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { apiClient } from "./src/lib/apiClient";
 import { ReceiptCycleTabBar } from "./src/components/ReceiptCycleTabBar";
 import { TransactionsListScreen } from "./src/screens/TransactionsListScreen";
+import { MobileHomeScreen } from "./src/screens/MobileHomeScreen";
 import { RecordsFiltersScreen } from "./src/screens/RecordsFiltersScreen";
 import { RecordsFilterProvider } from "./src/contexts/RecordsFilterContext";
 import { InsightsScreen } from "./src/screens/InsightsScreen";
@@ -56,6 +57,7 @@ import { CustomerDetailScreen, CustomerFormScreen, CustomersScreen } from "./src
 import { ItemServiceFormScreen, ItemsServicesScreen } from "./src/screens/CatalogScreens";
 import { BusinessProfileScreen, InvoiceSettingsScreen } from "./src/screens/BusinessSetupScreens";
 import { MoreHubScreen } from "./src/screens/MoreHubScreen";
+import { PersonalProfileScreen } from "./src/screens/PersonalProfileScreen";
 import { ScanReceiptScreen } from "./src/screens/ScanReceiptScreen";
 import { ScanReviewScreen } from "./src/screens/ScanReviewScreen";
 import { UploadStatementScreen } from "./src/screens/UploadStatementScreen";
@@ -176,7 +178,7 @@ function SalesNavigator() {
 
 function MoreNavigator() {
   return <MoreStack.Navigator screenOptions={{ headerShown: false }}>
-    <MoreStack.Screen name="MoreHome" component={MoreHubScreen} />
+    <MoreStack.Screen name="MoreHome" component={SettingsScreen} />
     <MoreStack.Screen name="Budgets" component={BudgetsScreen} />
     <MoreStack.Screen name="Accounts" component={AccountsScreen} />
     <MoreStack.Screen name="Categories" component={CategoriesScreen} />
@@ -186,6 +188,7 @@ function MoreNavigator() {
 function MainTabs() {
   return (
     <Tab.Navigator tabBar={(props) => <ReceiptCycleTabBar {...props} />} screenOptions={{ headerShown: false }}>
+      <Tab.Screen name="Home" component={MobileHomeScreen} options={{ tabBarLabel: "Home" }} />
       <Tab.Screen name="Records" component={TransactionsListScreen} options={{ tabBarLabel: "Records" }} />
       <Tab.Screen name="Analysis" component={InsightsScreen} options={{ tabBarLabel: "Analysis" }} />
       <Tab.Screen name="Sales" component={SalesNavigator} />
@@ -236,6 +239,8 @@ function MainStackNavigator() {
       <Stack.Screen name="ReceiptPreview" component={ReceiptPreviewScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="ReceiptShare" component={ReceiptShareScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ presentation: "card" }} />
+      <Stack.Screen name="AllFeatures" component={MoreHubScreen} options={{ presentation: "card" }} />
+      <Stack.Screen name="PersonalProfile" component={PersonalProfileScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="GoogleDriveBackup" component={GoogleDriveBackupScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="RegionalPreferences" component={RegionalPreferencesScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="MerchantsVendors" component={MerchantsVendorsScreen} options={{ presentation: "card" }} />

@@ -42,7 +42,7 @@ export const estimateListPreview = [
 
 function nextEstimateNumber(saved: SavedEstimate[]) {
   const year = new Date().getFullYear();
-  const values = [...estimateListPreview.map((item) => item.estimateNumber), ...saved.map((item) => item.estimateNumber)].map((id) => Number(id.match(/(\d+)$/)?.[1] ?? 0));
+  const values = saved.map((item) => item.estimateNumber).map((id) => Number(id.match(/(\d+)$/)?.[1] ?? 0));
   return `EST-${year}-${String(Math.max(0, ...values) + 1).padStart(3, "0")}`;
 }
 

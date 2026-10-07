@@ -5,7 +5,6 @@ import { useActionSheet } from "@expo/react-native-action-sheet";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ScreenHeader } from "../components/ScreenHeader";
-import { SalesSetupPreviewBanner } from "../components/ui/SalesSetupUI";
 import { AppButton, EmptyState, FormField, IconTile, ScreenContainer, SearchInput, SelectField, SegmentedTabs, StatusBadge } from "../components/ui/FinanceUI";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { useSalesSetup } from "../contexts/SalesSetupContext";
@@ -45,7 +44,7 @@ export function ItemsServicesScreen() {
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.listContent}
       keyboardShouldPersistTaps="handled"
-      ListHeaderComponent={<View style={styles.listHeader}><SalesSetupPreviewBanner /><SearchInput value={search} onChangeText={setSearch} placeholder="Search items and services..." /><SegmentedTabs options={["All", "Services", "Products", "Active"] as const} value={filter} onChange={setFilter} /></View>}
+      ListHeaderComponent={<View style={styles.listHeader}><SearchInput value={search} onChangeText={setSearch} placeholder="Search items and services..." /><SegmentedTabs options={["All", "Services", "Products", "Active"] as const} value={filter} onChange={setFilter} /></View>}
       renderItem={({ item }) => {
         const appearance = itemAppearance(item.category);
         return <Pressable onPress={() => navigation.navigate("SalesItemForm", { itemId: item.id })} style={({ pressed }) => [styles.itemRow, pressed && { opacity: 0.72 }]} accessibilityRole="button">

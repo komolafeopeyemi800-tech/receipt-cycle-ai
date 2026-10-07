@@ -25,7 +25,6 @@ function ConvexUploadStatementInner() {
   const userId = user!.id;
   const runtime = useQuery(api.admin.publicConfig, {});
   const bulkImport = useMutation(api.transactions.bulkImport);
-  const ensureCats = useMutation(api.categories.ensureSeed);
 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -51,7 +50,6 @@ function ConvexUploadStatementInner() {
       setBusy(true);
       setMsg(null);
       try {
-        await ensureCats({ workspace });
         const name = file.name.toLowerCase();
         let rows: StatementRow[] | null = null;
         let note = "";
@@ -105,7 +103,7 @@ function ConvexUploadStatementInner() {
         setBusy(false);
       }
     },
-    [ready, workspace, userId, token, ensureCats, bulkImport, runtime?.maintenanceMode, runtime?.uploadEnabled],
+    [ready, workspace, userId, token, bulkImport, runtime?.maintenanceMode, runtime?.uploadEnabled],
   );
 
   const onPick = () => {

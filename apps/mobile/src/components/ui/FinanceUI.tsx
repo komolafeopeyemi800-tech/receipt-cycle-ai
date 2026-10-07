@@ -110,7 +110,7 @@ export function KpiCard({ title, value, detail, tone = "neutral" }: { title: str
   return (
     <AppCard style={[styles.kpi, { backgroundColor: bg }]}>
       <Text style={styles.kpiLabel}>{title}</Text>
-      <Text style={[styles.kpiValue, { color }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{value}</Text>
+      <Text style={[styles.kpiValue, { color }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.48}>{value}</Text>
       {detail ? <Text style={styles.kpiDetail}>{detail}</Text> : null}
     </AppCard>
   );
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   segmentTextActive: { color: "#fff" },
   kpi: { flex: 1, minWidth: 0, minHeight: 86, justifyContent: "center", padding: spacing.sm },
   kpiLabel: { color: colors.gray600, fontSize: uiType.caption, fontWeight: "600" },
-  kpiValue: { fontSize: uiType.amount, fontWeight: "800", marginTop: 3 },
+  kpiValue: { width: "100%", fontSize: uiType.amount, fontWeight: "800", marginTop: 3, includeFontPadding: false },
   kpiDetail: { color: colors.gray500, fontSize: uiType.caption, marginTop: 3 },
   search: { height: controlHeight.input, borderRadius: radius.medium, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: spacing.md, flexDirection: "row", alignItems: "center", gap: spacing.sm },
   searchInput: { flex: 1, minWidth: 0, color: colors.textPrimary, fontSize: uiType.body, paddingVertical: 0 },

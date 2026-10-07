@@ -83,6 +83,18 @@ describe("transactions", () => {
     expect(bad.status).toBe(400);
   });
 
+  it("rejects dates that are not YYYY-MM-DD (range filters compare strings)", async () => {
+    const { token } = await makeUser({ pro: true });
+    expect((await api("POST", "/api/transactions", { token, body: txn({ date: "10/05/2026" }) })).status).toBe(400);
+    expect((await api("POST", "/api/transactions", { token, body: txn({ date: "2026-10-05T10:00:00Z" }) })).status).toBe(400);
+    const bulk = await api("POST", "/api/transactions/bulk-import", {
+      token,
+      body: { workspace: "personal", rows: [{ amount: 1, type: "expense", category: "Other", date: "garbage" }] },
+    });
+    expect(bulk.status).toBe(400);
+    expect((await api("GET", "/api/transactions", { token })).json).toHaveLength(0);
+  });
+
   it("blocks creation after the trial transaction cap and counts adds", async () => {
     const { token } = await makeUser({ trialAdds: 24 });
     expect((await api("POST", "/api/transactions", { token, body: txn() })).status).toBe(201);

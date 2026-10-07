@@ -81,7 +81,7 @@ export function parsePercent(value: string) {
 
 export function nextInvoiceNumber(prefix: string, saved: SavedInvoice[]) {
   const year = new Date().getFullYear();
-  const numbers = [...invoiceListPreview.map((item) => item.invoiceNumber), ...saved.map((item) => item.invoiceNumber)].map((id) => Number(id.match(/(\d+)$/)?.[1] ?? 0));
+  const numbers = saved.map((item) => item.invoiceNumber).map((id) => Number(id.match(/(\d+)$/)?.[1] ?? 0));
   const next = Math.max(0, ...numbers) + 1;
   return `${prefix.trim().toUpperCase() || "INV"}-${year}-${String(next).padStart(3, "0")}`;
 }

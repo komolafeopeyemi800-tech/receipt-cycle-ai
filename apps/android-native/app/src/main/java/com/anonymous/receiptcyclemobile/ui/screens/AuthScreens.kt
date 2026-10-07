@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -49,10 +50,13 @@ fun SignInScreen(
     var busy by remember { mutableStateOf(false) }
     val error by authViewModel.error.collectAsState()
     val passwordsEnabled by authViewModel.passwordsEnabled.collectAsState()
+    val emailCodesEnabled by authViewModel.emailCodesEnabled.collectAsState()
 
     LaunchedEffect(Unit) {
         authViewModel.rememberedEmail()?.let { email = it }
     }
+    // A failed sign-in never calls onDone, so release the button when an error arrives.
+    LaunchedEffect(error) { if (error != null) busy = false }
 
     ReceiptCycleGradientBackground {
     Column(
@@ -68,12 +72,32 @@ fun SignInScreen(
                 }
                 Spacer(Modifier.height(12.dp))
             }
-            EmailCodeSection(authViewModel, email, { email = it }, signup = false)
+            if (emailCodesEnabled) {
+                EmailCodeSection(authViewModel, email, { email = it }, signup = false)
+            }
             if (passwordsEnabled) {
-                Spacer(Modifier.height(16.dp))
-                Text("or sign in with a password", color = RcColors.Gray600)
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(password, { password = it }, label = { Text("Password") }, modifier = Modifier.fillMaxWidth())
+                if (emailCodesEnabled) {
+                    Spacer(Modifier.height(16.dp))
+                    Text("or sign in with a password", color = RcColors.Gray600)
+                    Spacer(Modifier.height(8.dp))
+                } else {
+                    OutlinedTextField(
+                        email,
+                        { email = it },
+                        label = { Text("Email") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+                OutlinedTextField(
+                    password,
+                    { password = it },
+                    label = { Text("Password") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 Spacer(Modifier.height(12.dp))
                 Button(
                     onClick = {
@@ -85,8 +109,9 @@ fun SignInScreen(
                 ) {
                     if (busy) CircularProgressIndicator() else Text("Sign in")
                 }
-                TextButton(onClick = onForgot) { Text("Forgot password?") }
-            } else if (error != null) {
+                if (emailCodesEnabled) TextButton(onClick = onForgot) { Text("Forgot password?") }
+            }
+            if (!emailCodesEnabled && error != null) {
                 Text(error!!, color = RcColors.Rose600, modifier = Modifier.padding(top = 8.dp))
             }
             TextButton(onClick = onSignUp) { Text("Create account") }
@@ -159,6 +184,7 @@ fun SignUpScreen(authViewModel: AuthViewModel, onBack: () -> Unit, onDone: () ->
     var name by remember { mutableStateOf("") }
     val error by authViewModel.error.collectAsState()
     val passwordsEnabled by authViewModel.passwordsEnabled.collectAsState()
+    val emailCodesEnabled by authViewModel.emailCodesEnabled.collectAsState()
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         ScreenHeader("Create account")
@@ -168,15 +194,24 @@ fun SignUpScreen(authViewModel: AuthViewModel, onBack: () -> Unit, onDone: () ->
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(email, { email = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(password, { password = it }, label = { Text("Password") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(
+                    password,
+                    { password = it },
+                    label = { Text("Password (6+ characters)") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 if (error != null) Text(error!!, color = RcColors.Rose600)
                 Spacer(Modifier.height(12.dp))
                 Button(
                     onClick = { authViewModel.signUp(email, password, name.ifBlank { null }, onDone) },
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text("Sign up") }
-            } else {
+            } else if (emailCodesEnabled) {
                 EmailCodeSection(authViewModel, email, { email = it }, signup = true)
+            } else {
+                Text("Sign-up with email is not available right now. Continue with Google from the sign-in screen.", color = RcColors.Gray600)
             }
             TextButton(onClick = onBack) { Text("Back to sign in") }
         }

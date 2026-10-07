@@ -32,7 +32,28 @@ describe("accounts and categories are private per user", () => {
   });
 });
 
+describe("rename validation", () => {
+  it("rejects blank or duplicate category names and blank account names on update", async () => {
+    const { token } = await makeUser();
+    const a = await api("POST", "/api/categories", { token, body: { workspace: "personal", name: "Pets", kind: "expense", color: "#fff" } });
+    const b = await api("POST", "/api/categories", { token, body: { workspace: "personal", name: "Toys", kind: "expense", color: "#fff" } });
+    expect((await api("PATCH", `/api/categories/${a.json.id}`, { token, body: { name: "   " } })).status).toBe(400);
+    expect((await api("PATCH", `/api/categories/${b.json.id}`, { token, body: { name: "pets" } })).status).toBe(409);
+    expect((await api("PATCH", `/api/categories/${b.json.id}`, { token, body: { name: "Toys", color: "#000" } })).status).toBe(200);
+    const acc = await api("POST", "/api/accounts", { token, body: { workspace: "personal", name: "Till" } });
+    expect((await api("PATCH", `/api/accounts/${acc.json.id}`, { token, body: { name: " " } })).status).toBe(400);
+  });
+});
+
 describe("budgets", () => {
+  it("rejects malformed months", async () => {
+    const { token } = await makeUser();
+    const body = { workspace: "personal", category: "Bills", limitAmount: 10 };
+    expect((await api("PUT", "/api/budgets", { token, body: { ...body, month: "October" } })).status).toBe(400);
+    expect((await api("PUT", "/api/budgets", { token, body: { ...body, month: "2026-13" } })).status).toBe(400);
+    expect((await api("PUT", "/api/budgets", { token, body: { ...body, month: "2026-10" } })).status).toBe(200);
+  });
+
   it("upserts one budget per category and month", async () => {
     const { token } = await makeUser();
     const body = { workspace: "personal", category: "Bills", month: "2026-10", limitAmount: 100 };

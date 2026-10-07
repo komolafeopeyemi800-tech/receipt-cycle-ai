@@ -1,6 +1,7 @@
-import { StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 import { AppButton } from "./FinanceUI";
-import { colors, spacing } from "../../theme/tokens";
+import { spacing } from "../../theme/tokens";
+import { SafeActionFooter } from "./SafeActionFooter";
 
 export const estimateProgressLabels = ["Basic Info", "Items", "Totals", "Extras"] as const;
 
@@ -11,14 +12,13 @@ export function EstimateFlowFooter({ onBack, onNext, nextLabel, nextIcon = "arro
   nextIcon?: "arrow-forward" | "paper-plane-outline" | "checkmark";
   disabled?: boolean;
 }) {
-  return <View style={styles.footer}>
+  return <SafeActionFooter horizontal>
     {onBack ? <AppButton label="Back" icon="arrow-back" variant="secondary" onPress={onBack} style={styles.back} /> : null}
     <AppButton label={nextLabel} icon={nextIcon} onPress={onNext} disabled={disabled} style={styles.next} />
-  </View>;
+  </SafeActionFooter>;
 }
 
 const styles = StyleSheet.create({
-  footer: { flexDirection: "row", gap: spacing.sm, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.divider, padding: spacing.lg },
   back: { flex: 0.75 },
   next: { flex: 1.7 },
 });

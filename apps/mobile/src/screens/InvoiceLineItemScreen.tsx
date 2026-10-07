@@ -6,6 +6,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { AppButton, AppCard, FormField, ScreenContainer, SectionHeader } from "../components/ui/FinanceUI";
 import { DocumentProgress } from "../components/ui/SalesDocumentUI";
+import { SafeActionFooter } from "../components/ui/SafeActionFooter";
 import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { useSalesSetup } from "../contexts/SalesSetupContext";
@@ -59,7 +60,7 @@ export function InvoiceLineItemScreen() {
         <AppCard style={styles.recentCard}>{items.filter((item) => item.active).slice(0, 5).map((item, index) => <Pressable key={item.id} onPress={() => prefill(item)} style={[styles.recentRow, index !== Math.min(4, items.filter((row) => row.active).length - 1) && styles.divider]}><View style={{ flex: 1 }}><Text style={styles.itemName}>{item.name}</Text><Text style={styles.itemMeta}>{formatMoney(item.unitPrice)} / {item.kind === "service" ? "hour" : "unit"}</Text></View><View style={styles.addSmall}><Ionicons name="add" size={18} color={colors.primary} /></View></Pressable>)}</AppCard>
       </View>
     </ScrollView>
-    <View style={styles.footer}><AppButton label="Continue to Discount & Tax" icon="arrow-forward" onPress={continueFlow} disabled={!draft.items.length} /></View>
+    <SafeActionFooter><AppButton label="Continue to Discount & Tax" icon="arrow-forward" onPress={continueFlow} disabled={!draft.items.length} /></SafeActionFooter>
   </ScreenContainer>;
 }
 
@@ -78,5 +79,4 @@ const styles = StyleSheet.create({
   itemName: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "700" },
   itemMeta: { color: colors.gray500, fontSize: uiType.caption, marginTop: 3 },
   addSmall: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.mintSoft, alignItems: "center", justifyContent: "center" },
-  footer: { backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.divider, padding: spacing.lg },
 });

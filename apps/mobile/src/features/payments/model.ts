@@ -92,7 +92,7 @@ export function localInvoiceToPaymentInvoice(invoice: SavedInvoice): PaymentInvo
 
 export function nextReceiptNumber(payments: SavedPayment[]) {
   const year = new Date().getFullYear();
-  const values = [...paymentListPreview.map((item) => item.receiptNumber), ...payments.map((item) => item.receiptNumber)].map((id) => Number(id.match(/(\d+)$/)?.[1] ?? 0));
+  const values = payments.map((item) => item.receiptNumber).map((id) => Number(id.match(/(\d+)$/)?.[1] ?? 0));
   return `RCPT-${year}-${String(Math.max(0, ...values) + 1).padStart(4, "0")}`;
 }
 

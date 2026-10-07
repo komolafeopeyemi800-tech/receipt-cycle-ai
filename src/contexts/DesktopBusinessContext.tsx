@@ -35,41 +35,68 @@ type Value = DesktopBusinessState & {
   recordPayment: (invoiceId: string, amount: number, method: string) => DesktopPayment | null;
 };
 
-function line(id: string, name: string, quantity: number, rate: number, description = ""): DesktopLineItem { return { id, name, quantity, rate, description }; }
 const initial: DesktopBusinessState = {
-  customers: [
-    { id: "cus-acme", name: "Alex Carter", company: "Acme Corp", email: "alex@acme.com", phone: "+1 415 555 0101", address: "123 Market Street, San Francisco, CA 94103", status: "active", notes: "Quarterly design and consulting work." },
-    { id: "cus-xyz", name: "Maya Lewis", company: "XYZ Media", email: "maya@xyzmedia.com", phone: "+1 628 555 0142", address: "48 Mission Street, San Francisco, CA", status: "active", notes: "Prefers email updates." },
-    { id: "cus-bright", name: "Jordan Lee", company: "Bright Co.", email: "billing@brightco.com", phone: "+1 650 555 0188", address: "456 Innovation Drive, San Jose, CA", status: "active", notes: "Net 30 account." },
-    { id: "cus-global", name: "Priya Shah", company: "Global Tech", email: "accounts@globaltech.com", phone: "+1 669 555 0167", address: "12 Innovation Way, San Jose, CA", status: "prospect", notes: "New enterprise lead." },
-  ],
-  items: [
-    { id: "item-web", name: "Website Design", description: "Responsive website design and implementation", kind: "service", price: 2500, category: "Design", active: true },
-    { id: "item-dev", name: "Development", description: "Frontend and backend development", kind: "service", price: 120, category: "Engineering", active: true },
-    { id: "item-content", name: "Content Setup", description: "Content entry and SEO setup", kind: "service", price: 85, category: "Marketing", active: true },
-    { id: "item-logo", name: "Logo Design", description: "Brand mark and export package", kind: "service", price: 800, category: "Design", active: true },
-  ],
-  invoices: [
-    { id: "inv-12", number: "INV-0012", customerId: "cus-acme", issueDate: "2026-09-12", dueDate: "2026-09-26", status: "sent", items: [line("li-1", "Website Design", 1, 2500)], discountPct: 0, taxPct: 0, paidAmount: 0, notes: "Thank you for your business." },
-    { id: "inv-11", number: "INV-0011", customerId: "cus-xyz", issueDate: "2026-09-10", dueDate: "2026-09-24", status: "paid", items: [line("li-2", "Development", 10, 120)], discountPct: 0, taxPct: 0, paidAmount: 1200, notes: "Paid in full." },
-    { id: "inv-10", number: "INV-0010", customerId: "cus-bright", issueDate: "2026-09-08", dueDate: "2026-09-22", status: "overdue", items: [line("li-3", "Website Design", 1, 2500), line("li-4", "Content Setup", 8, 85)], discountPct: 0, taxPct: 0, paidAmount: 1000, notes: "Payment reminder sent." },
-  ],
-  estimates: [
-    { id: "est-7", number: "EST-0007", customerId: "cus-acme", issueDate: "2026-09-14", validUntil: "2026-09-28", status: "sent", items: [line("eli-1", "Website Design", 1, 2500), line("eli-2", "Development", 40, 120), line("eli-3", "Content Setup", 8, 85)], discountPct: 10, taxPct: 8.25, terms: "Valid for 30 days from the issue date." },
-    { id: "est-6", number: "EST-0006", customerId: "cus-xyz", issueDate: "2026-09-10", validUntil: "2026-09-24", status: "accepted", items: [line("eli-4", "Logo Design", 1, 800)], discountPct: 0, taxPct: 0, terms: "Net 30." },
-  ],
-  payments: [
-    { id: "pay-1", invoiceId: "inv-11", amount: 1200, date: "2026-09-12", method: "Bank Transfer", reference: "TRF12345678", receiptNumber: "RCPT-0018" },
-    { id: "pay-2", invoiceId: "inv-10", amount: 1000, date: "2026-09-14", method: "Card", reference: "CRD92817433", receiptNumber: "RCPT-0019" },
-  ],
-  business: { name: "Receipt Cycle Studio", email: "hello@receiptcycle.app", phone: "+1 415 555 0101", address: "1234 Market Street, San Francisco, CA 94103", taxId: "12-3456789", website: "https://receiptcycle.app" },
-  invoicePreferences: { currency: "USD", dateFormat: "MM/DD/YYYY", prefix: "INV", taxRate: 8.25, taxLabel: "Sales Tax", paymentTerms: "Net 30", notes: "Thank you for your business!", accent: "#0f766e" },
+  customers: [],
+  items: [],
+  invoices: [],
+  estimates: [],
+  payments: [],
+  business: { name: "", email: "", phone: "", address: "", taxId: "", website: "" },
+  invoicePreferences: { currency: "USD", dateFormat: "MM/DD/YYYY", prefix: "INV", taxRate: 0, taxLabel: "Tax", paymentTerms: "Net 30", notes: "", accent: "#0f766e" },
   reminders: { invoice: true, overdue: true, payment: true, budget: true, weekly: false, marketing: true },
 };
 
+const legacyDemoIds = {
+  customers: new Set(["cus-acme", "cus-xyz", "cus-bright", "cus-global"]),
+  items: new Set(["item-web", "item-dev", "item-content", "item-logo"]),
+  invoices: new Set(["inv-10", "inv-11", "inv-12"]),
+  estimates: new Set(["est-6", "est-7"]),
+  payments: new Set(["pay-1", "pay-2"]),
+};
+
+function removeLegacyDemoRecords(state: DesktopBusinessState): DesktopBusinessState {
+  const business = state.business.name === "Receipt Cycle Studio" && state.business.email === "hello@receiptcycle.app"
+    ? initial.business
+    : state.business;
+  return {
+    ...state,
+    customers: state.customers.filter((row) => !legacyDemoIds.customers.has(row.id)),
+    items: state.items.filter((row) => !legacyDemoIds.items.has(row.id)),
+    invoices: state.invoices.filter((row) => !legacyDemoIds.invoices.has(row.id)),
+    estimates: state.estimates.filter((row) => !legacyDemoIds.estimates.has(row.id)),
+    payments: state.payments.filter((row) => !legacyDemoIds.payments.has(row.id)),
+    business,
+  };
+}
+
 function replaceById<T extends { id: string }>(rows: T[], row: T) { return rows.some((item) => item.id === row.id) ? rows.map((item) => item.id === row.id ? row : item) : [row, ...rows]; }
-export function invoiceSubtotal(invoice: Pick<DesktopInvoice, "items"> | Pick<DesktopEstimate, "items">) { return invoice.items.reduce((sum, item) => sum + item.quantity * item.rate, 0); }
-export function documentTotal(doc: Pick<DesktopInvoice, "items" | "discountPct" | "taxPct"> | Pick<DesktopEstimate, "items" | "discountPct" | "taxPct">) { const subtotal = invoiceSubtotal(doc); const discounted = subtotal * (1 - doc.discountPct / 100); return Math.round((discounted + discounted * doc.taxPct / 100) * 100) / 100; }
+const num = (value: unknown) => { const n = Number(value); return Number.isFinite(n) ? n : 0; };
+const round2 = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
+/** Local calendar date as YYYY-MM-DD (toISOString() would shift to UTC and be off by a day near midnight). */
+export function localDate(date: Date = new Date()) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`; }
+export function addDaysLocal(days: number) { const date = new Date(); date.setDate(date.getDate() + days); return localDate(date); }
+/** Days from a payment-terms label such as "Net 30" ("Due on receipt" -> 0). */
+export function paymentTermDays(terms: string) { const match = /(\d+)/.exec(terms); return match ? Number(match[1]) : 0; }
+/** Next sequential document number: highest trailing number already used + 1 (safe when rows are removed or prefixes change). */
+export function nextDocNumber(prefix: string, existing: string[]) { const highest = existing.reduce((max, value) => { const match = /(\d+)\s*$/.exec(value); return match ? Math.max(max, Number(match[1])) : max; }, 0); return `${prefix}-${String(highest + 1).padStart(4, "0")}`; }
+export function invoiceSubtotal(invoice: Pick<DesktopInvoice, "items"> | Pick<DesktopEstimate, "items">) { return invoice.items.reduce((sum, item) => sum + num(item.quantity) * num(item.rate), 0); }
+export function documentTotal(doc: Pick<DesktopInvoice, "items" | "discountPct" | "taxPct"> | Pick<DesktopEstimate, "items" | "discountPct" | "taxPct">) { const subtotal = invoiceSubtotal(doc); const discounted = subtotal * (1 - Math.min(100, Math.max(0, num(doc.discountPct))) / 100); return round2(discounted + discounted * Math.max(0, num(doc.taxPct)) / 100); }
+/** Amount still owed on an invoice, rounded to cents and never negative. */
+export function invoiceBalance(invoice: DesktopInvoice) { return Math.max(0, round2(documentTotal(invoice) - num(invoice.paidAmount))); }
+/** Drafts have not been issued, so they do not count toward receivables. */
+export function openBalance(invoice: DesktopInvoice) { return invoice.status === "draft" ? 0 : invoiceBalance(invoice); }
+/** Effective status: paid when settled, overdue when unpaid past the due date (the stored status never ages on its own). */
+export function invoiceStatus(invoice: DesktopInvoice): DesktopInvoice["status"] {
+  if (invoice.status === "draft") return "draft";
+  if (invoice.status === "paid" || (documentTotal(invoice) > 0 && invoiceBalance(invoice) === 0)) return "paid";
+  if (invoice.dueDate && invoice.dueDate < localDate()) return "overdue";
+  if (invoice.status === "overdue") return num(invoice.paidAmount) > 0 ? "partially_paid" : "sent";
+  return invoice.status;
+}
+export function estimateStatus(estimate: DesktopEstimate): DesktopEstimate["status"] {
+  if ((estimate.status === "draft" || estimate.status === "sent") && estimate.validUntil && estimate.validUntil < localDate()) return "expired";
+  return estimate.status;
+}
 
 const Ctx = createContext<Value | null>(null);
 
@@ -82,7 +109,10 @@ export function DesktopBusinessProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(key);
-      setState(raw ? { ...initial, ...(JSON.parse(raw) as Partial<DesktopBusinessState>) } : initial);
+      const restored = raw ? { ...initial, ...(JSON.parse(raw) as Partial<DesktopBusinessState>) } : initial;
+      const migrated = removeLegacyDemoRecords(restored);
+      setState(migrated);
+      if (raw && JSON.stringify(migrated) !== JSON.stringify(restored)) localStorage.setItem(key, JSON.stringify(migrated));
     } catch { setState(initial); }
     setLoadedKey(key);
   }, [key]);
@@ -101,16 +131,18 @@ export function DesktopBusinessProvider({ children }: { children: ReactNode }) {
     convertEstimate: (estimateId) => {
       const estimate = state.estimates.find((row) => row.id === estimateId);
       if (!estimate) return null;
-      const invoice: DesktopInvoice = { id: `inv-${Date.now()}`, number: `INV-${String(state.invoices.length + 13).padStart(4, "0")}`, customerId: estimate.customerId, issueDate: new Date().toISOString().slice(0, 10), dueDate: estimate.validUntil, status: "draft", items: estimate.items.map((item) => ({ ...item, id: `li-${Date.now()}-${item.id}` })), discountPct: estimate.discountPct, taxPct: estimate.taxPct, paidAmount: 0, notes: estimate.terms };
+      const invoice: DesktopInvoice = { id: `inv-${Date.now()}`, number: nextDocNumber(state.invoicePreferences.prefix || "INV", state.invoices.map((row) => row.number)), customerId: estimate.customerId, issueDate: localDate(), dueDate: addDaysLocal(paymentTermDays(state.invoicePreferences.paymentTerms)), status: "draft", items: estimate.items.map((item) => ({ ...item, id: `li-${Date.now()}-${item.id}` })), discountPct: estimate.discountPct, taxPct: estimate.taxPct, paidAmount: 0, notes: estimate.terms };
       update((current) => ({ ...current, invoices: [invoice, ...current.invoices], estimates: current.estimates.map((row) => row.id === estimateId ? { ...row, status: "accepted" } : row) }));
       return invoice;
     },
     recordPayment: (invoiceId, amount, method) => {
       const invoice = state.invoices.find((row) => row.id === invoiceId);
-      if (!invoice || amount <= 0) return null;
-      const payment: DesktopPayment = { id: `pay-${Date.now()}`, invoiceId, amount, method, date: new Date().toISOString().slice(0, 10), reference: `${method.slice(0, 3).toUpperCase()}${Date.now().toString().slice(-8)}`, receiptNumber: `RCPT-${String(state.payments.length + 18).padStart(4, "0")}` };
-      const newPaid = Math.min(documentTotal(invoice), invoice.paidAmount + amount);
-      update((current) => ({ ...current, payments: [payment, ...current.payments], invoices: current.invoices.map((row) => row.id === invoiceId ? { ...row, paidAmount: newPaid, status: newPaid >= documentTotal(row) ? "paid" : "partially_paid" } : row) }));
+      if (!invoice) return null;
+      // Never record more than what is owed, so payment history always sums to paidAmount.
+      const applied = round2(Math.min(num(amount), invoiceBalance(invoice)));
+      if (!(applied > 0)) return null;
+      const payment: DesktopPayment = { id: `pay-${Date.now()}`, invoiceId, amount: applied, method, date: localDate(), reference: `${method.slice(0, 3).toUpperCase()}${Date.now().toString().slice(-8)}`, receiptNumber: `RCPT-${String(state.payments.length + 1).padStart(4, "0")}` };
+      update((current) => ({ ...current, payments: [payment, ...current.payments], invoices: current.invoices.map((row) => { if (row.id !== invoiceId) return row; const newPaid = round2(Math.min(documentTotal(row), num(row.paidAmount) + applied)); return { ...row, paidAmount: newPaid, status: round2(documentTotal(row) - newPaid) <= 0 ? "paid" : "partially_paid" }; }) }));
       return payment;
     },
   }), [state, loadedKey, key]);

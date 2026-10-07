@@ -21,9 +21,11 @@ const SalesSetupContext = createContext<SalesSetupContextValue | null>(null);
 
 function normalizeState(parsed: Partial<SalesSetupState>): SalesSetupState {
   const defaults = cloneDefaultSalesSetupState();
+  const demoCustomers = new Set(["customer-acme", "customer-xyz", "customer-bright", "customer-abc", "customer-global", "customer-walk-in"]);
+  const demoItems = new Set(["item-consulting", "item-design", "item-web", "item-marketing", "item-project", "item-misc"]);
   return {
-    customers: Array.isArray(parsed.customers) ? parsed.customers : defaults.customers,
-    items: Array.isArray(parsed.items) ? parsed.items : defaults.items,
+    customers: Array.isArray(parsed.customers) ? parsed.customers.filter((item) => !demoCustomers.has(item.id)) : defaults.customers,
+    items: Array.isArray(parsed.items) ? parsed.items.filter((item) => !demoItems.has(item.id)) : defaults.items,
     businessProfile: { ...defaults.businessProfile, ...(parsed.businessProfile ?? {}) },
     invoiceSettings: { ...defaults.invoiceSettings, ...(parsed.invoiceSettings ?? {}) },
   };

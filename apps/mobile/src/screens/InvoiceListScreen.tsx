@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -16,7 +16,7 @@ type ListRow = { invoiceNumber: string; customerName: string; issuedAt: string; 
 
 export function InvoiceListScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { invoices, startNewInvoice, loadInvoice } = useInvoiceFlow();
+  const { invoices, startNewInvoice, loadInvoice, deleteInvoice } = useInvoiceFlow();
   const { formatMoney, formatDate } = usePreferences();
   const [filter, setFilter] = useState<Filter>("Draft");
   const [search, setSearch] = useState("");
@@ -34,6 +34,10 @@ export function InvoiceListScreen() {
     if (loadInvoice(item.invoiceNumber)) navigation.navigate(invoice?.items.length ? "InvoicePreview" : "InvoiceCreate");
   }
 
+  function askDelete(item: ListRow) {
+    Alert.alert(`Delete ${item.invoiceNumber}?`, "This also removes it from your web app.", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => deleteInvoice(item.invoiceNumber) }]);
+  }
+
   return <ScreenContainer>
     <ScreenHeader title="Invoices" rightIcon="add-circle" onRightPress={createInvoice} />
     <FlatList
@@ -45,13 +49,13 @@ export function InvoiceListScreen() {
         <SegmentedTabs options={["Draft", "Sent", "Paid", "Overdue"] as const} value={filter} onChange={setFilter} />
         <SearchInput value={search} onChangeText={setSearch} placeholder="Search invoices or customers" />
       </View>}
-      renderItem={({ item }) => <Pressable onPress={() => openInvoice(item)} style={({ pressed }) => [styles.row, pressed && { opacity: 0.72 }]} accessibilityRole="button" accessibilityLabel={`${item.invoiceNumber}, ${item.customerName}, ${formatMoney(item.amount)}, ${item.status}`}>
+      renderItem={({ item }) => <Pressable onPress={() => openInvoice(item)} onLongPress={() => askDelete(item)} style={({ pressed }) => [styles.row, pressed && { opacity: 0.72 }]} accessibilityRole="button" accessibilityLabel={`${item.invoiceNumber}, ${item.customerName}, ${formatMoney(item.amount)}, ${item.status}`}>
         <IconTile icon="document-text-outline" tone={item.status === "paid" ? "mint" : item.status === "overdue" ? "rose" : "blue"} size={38} />
         <View style={styles.main}><Text style={styles.number}>{item.invoiceNumber}</Text><Text style={styles.customer}>{item.customerName}</Text><Text style={styles.date}>{formatDate(item.issuedAt)}</Text></View>
         <View style={styles.right}><Text style={styles.amount}>{formatMoney(item.amount)}</Text><StatusBadge status={item.status} /></View>
         <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
       </Pressable>}
-      ListEmptyComponent={<EmptyState icon="document-text-outline" title={`No ${filter.toLowerCase()} invoices`} description="Create an invoice or choose another status." />}
+      ListEmptyComponent={<EmptyState icon="document-text-outline" title={`No ${filter.toLowerCase()} invoices`} description="Create an invoice or choose another status." actionLabel="Create new invoice" onAction={createInvoice} />}
     />
   </ScreenContainer>;
 }

@@ -1,7 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { createEstimateDraft, createSavedEstimate, type EstimateDraft, type EstimateStatus, type SavedEstimate } from "../features/estimates/model";
+import { createEstimateDraft, createSavedEstimate, estimateSyncId, type EstimateDraft, type EstimateStatus, type SavedEstimate } from "../features/estimates/model";
 import type { InvoiceLineItem } from "../features/invoices/model";
+import { asyncKv } from "../lib/asyncKv";
+import { applyToCollection, useSalesSync, type SalesChange, type SalesData } from "../lib/salesSync";
 import { useAuth } from "./AuthContext";
 import { useSalesSetup } from "./SalesSetupContext";
 import { useWorkspace } from "./WorkspaceContext";
@@ -18,6 +20,7 @@ type Value = State & {
   loadEstimate: (estimateNumber: string) => boolean;
   duplicateEstimate: (estimateNumber: string) => string | null;
   setEstimateStatus: (estimateNumber: string, status: EstimateStatus) => void;
+  deleteEstimate: (estimateNumber: string) => void;
 };
 
 const Context = createContext<Value | null>(null);
@@ -45,7 +48,23 @@ export function EstimateFlowProvider({ children }: { children: ReactNode }) {
     return () => { live = false; };
   }, [storageKey]);
 
-  function update(recipe: (current: State) => State) { setState((current) => { const next = recipe(current); void AsyncStorage.setItem(storageKey, JSON.stringify(next)); return next; }); }
+  const sync = useSalesSync({
+    userId: user?.id,
+    workspace,
+    kv: asyncKv,
+    kinds: ["estimate"],
+    ready: loadedKey === storageKey,
+    getLocal: () => state.estimates.map((row) => ({ kind: "estimate" as const, id: estimateSyncId(row), data: row as unknown as SalesData })),
+    apply: (changes: SalesChange[]) => {
+      setState((current) => {
+        const next = { ...current, estimates: applyToCollection("estimate", current.estimates, changes, estimateSyncId, (d) => d as unknown as SavedEstimate) };
+        void AsyncStorage.setItem(storageKey, JSON.stringify(next));
+        return next;
+      });
+    },
+  });
+
+  function update(recipe: (current: State) => State) { setState((current) => { const next = recipe(current); void AsyncStorage.setItem(storageKey, JSON.stringify(next)); sync.collection("estimate", current.estimates, next.estimates, estimateSyncId); return next; }); }
 
   const value = useMemo<Value>(() => ({
     ...state, ready: loadedKey === storageKey,
@@ -66,6 +85,7 @@ export function EstimateFlowProvider({ children }: { children: ReactNode }) {
       const next = createEstimateDraft(invoiceSettings, state.estimates); const draft: EstimateDraft = { ...next, customerId: source.customerId, reference: source.reference, items: source.items.map((item) => ({ ...item, id: `estimate-line-${Date.now()}-${Math.random()}` })), discountType: source.discountType, discountValue: source.discountValue, taxRate: source.taxRate, taxLabel: source.taxLabel, notes: source.notes, terms: source.terms, validityDays: source.validityDays };
       update((current) => ({ ...current, draft })); return draft.estimateNumber;
     },
+    deleteEstimate: (estimateNumber) => update((current) => ({ ...current, estimates: current.estimates.filter((item) => item.estimateNumber !== estimateNumber) })),
     setEstimateStatus: (estimateNumber, status) => update((current) => ({ ...current, estimates: current.estimates.map((item) => item.estimateNumber === estimateNumber ? { ...item, status, updatedAt: new Date().toISOString(), ...(status === "accepted" ? { acceptedAt: new Date().toISOString() } : {}) } : item) })),
   }), [state, loadedKey, storageKey, customers, invoiceSettings]);
 

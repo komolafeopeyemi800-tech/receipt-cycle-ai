@@ -7,6 +7,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { Id } from "../lib/api";
 import { api } from "../lib/api";
 import { AppButton, SegmentedTabs } from "../components/ui/FinanceUI";
+import { SafeActionFooter } from "../components/ui/SafeActionFooter";
 import { ModuleDetailHeader } from "../components/ui/MoneyModuleUI";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import { useMoneyAppearance } from "../contexts/MoneyAppearanceContext";
@@ -81,7 +82,7 @@ export function CategoryEditorScreen() {
         <View style={styles.colors}>{appearanceColors.map((hex) => <Pressable key={hex} onPress={() => setColor(hex)} style={[styles.colorRing, color === hex && styles.colorRingSelected]} accessibilityLabel={`Select ${hex} color`}><View style={[styles.colorDot, { backgroundColor: hex }]} /></Pressable>)}</View>
         {id ? <><Text style={styles.label}>More Options</Text><Pressable style={styles.option} onPress={() => setCategoryArchived(id, !archived)}><Ionicons name={archived ? "eye-outline" : "archive-outline"} size={20} color={colors.primary} /><View style={{ flex: 1 }}><Text style={styles.optionTitle}>{archived ? "Show Category" : "Hide Category"}</Text><Text style={styles.optionHint}>Changes visibility on this device</Text></View></Pressable><Pressable style={styles.option} onPress={confirmDelete}><Ionicons name="trash-outline" size={20} color={colors.danger} /><View style={{ flex: 1 }}><Text style={[styles.optionTitle, { color: colors.danger }]}>Delete Category</Text><Text style={styles.optionHint}>Permanently remove this category</Text></View></Pressable></> : null}
       </ScrollView>
-      <View style={styles.footer}><AppButton label={saving ? "Saving…" : id ? "Save Category" : "Create Category"} onPress={() => void save()} disabled={saving || !ready || Boolean(id && !category)} /></View>
+      <SafeActionFooter><AppButton label={saving ? "Saving…" : id ? "Save Category" : "Create Category"} onPress={() => void save()} disabled={saving || !ready || Boolean(id && !category)} /></SafeActionFooter>
     </KeyboardAvoidingView>
   </View>;
 }

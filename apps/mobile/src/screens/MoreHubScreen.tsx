@@ -27,6 +27,7 @@ export function MoreHubScreen() {
   };
 
   const capture: Entry[] = [
+    { title: "AI Capture", description: "Speak an expense or income and let AI prepare the form", icon: "mic", tone: "purple", action: () => openRoot("AddTransaction", { initialMode: "ai" }) },
     { title: "Scan Receipt", description: "Capture a receipt and extract its details with AI", icon: "scan-outline", tone: "mint", action: () => openRoot("ScanReceipt") },
     { title: "Upload Document", description: "Import a statement, PDF, spreadsheet, or receipt image", icon: "cloud-upload-outline", tone: "blue", action: () => openRoot("UploadStatement") },
     { title: "Add Expense", description: "Record a business expense manually", icon: "arrow-up-circle-outline", tone: "rose", action: () => openRoot("AddTransaction", { initialType: "expense" }) },

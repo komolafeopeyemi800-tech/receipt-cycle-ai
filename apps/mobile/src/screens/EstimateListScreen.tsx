@@ -53,7 +53,7 @@ export function EstimateListScreen() {
         </Pressable>
         {item.status === "accepted" ? <AppButton label="Convert to Invoice" variant="secondary" onPress={() => openEstimate(item)} style={styles.convertButton} /> : null}
       </View>}
-      ListEmptyComponent={<EmptyState icon="document-outline" title={`No ${filter.toLowerCase()} estimates`} description="Create an estimate or choose another status." />}
+      ListEmptyComponent={<EmptyState icon="document-outline" title={`No ${filter.toLowerCase()} estimates`} description="Create an estimate or choose another status." actionLabel="Create new estimate" onAction={createEstimate} />}
     />
   </ScreenContainer>;
 }

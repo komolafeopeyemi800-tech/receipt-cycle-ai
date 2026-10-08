@@ -56,7 +56,7 @@ export function SavedLocationsScreen() {
       </View>
       <ScrollView contentContainerStyle={styles.pad} keyboardShouldPersistTaps="handled">
         <Text style={styles.hint}>
-          Store addresses for notes or future features. When you&apos;re signed in, locations sync to your account (Convex).
+          Store addresses for notes or future entries. When you&apos;re signed in, locations sync securely to your account.
         </Text>
         <Text style={styles.lbl}>Label</Text>
         <TextInput

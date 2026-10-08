@@ -52,6 +52,16 @@ export type SalesSetupState = {
   items: CatalogItem[];
   businessProfile: BusinessProfile;
   invoiceSettings: InvoiceSettings;
+  reminders: NotificationPreferences;
+};
+
+export type NotificationPreferences = {
+  invoiceReminders: boolean;
+  overdueReminders: boolean;
+  paymentConfirmations: boolean;
+  budgetAlerts: boolean;
+  weeklyReports: boolean;
+  marketingUpdates: boolean;
 };
 
 export const defaultSalesSetupState: SalesSetupState = {
@@ -75,6 +85,7 @@ export const defaultSalesSetupState: SalesSetupState = {
     paymentTerms: "Net 30",
     defaultNotes: "Thank you for your business!",
   },
+  reminders: { invoiceReminders: true, overdueReminders: true, paymentConfirmations: true, budgetAlerts: true, weeklyReports: false, marketingUpdates: true },
 };
 
 export function cloneDefaultSalesSetupState(): SalesSetupState {

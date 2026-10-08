@@ -51,7 +51,7 @@ export function MerchantsVendorsScreen() {
       </View>
       <ScrollView contentContainerStyle={styles.pad} keyboardShouldPersistTaps="handled">
         <Text style={styles.hint}>
-          Saved names for quick entry. When you&apos;re signed in, this list syncs to your account (Convex).
+          Saved names for quick entry. When you&apos;re signed in, this list syncs securely to your account.
         </Text>
         <View style={styles.addRow}>
           <TextInput

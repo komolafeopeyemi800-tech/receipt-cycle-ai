@@ -1,4 +1,4 @@
-import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 /**
  * D1 schema for Receipt Cycle (replaces apps/mobile/convex/schema.ts).
@@ -327,3 +327,22 @@ export const rateLimits = sqliteTable("rate_limits", {
   windowStart: integer("window_start").notNull(),
   count: integer("count").notNull(),
 });
+
+/**
+ * Invoices, estimates, payments, customers, catalog items and business settings. One row per record, stored as JSON,
+ * so the web app and the mobile app read and write exactly the same data. Deleted rows stay as tombstones so a delete
+ * on one device reaches the others.
+ */
+export const salesRecords = sqliteTable(
+  "sales_records",
+  {
+    scope: text("scope").notNull(),
+    kind: text("kind").notNull(),
+    id: text("id").notNull(),
+    data: text("data").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+    deleted: integer("deleted").notNull().default(0),
+    updatedBy: text("updated_by"),
+  },
+  (t) => [primaryKey({ columns: [t.scope, t.kind, t.id] }), index("sales_records_scope_updated_idx").on(t.scope, t.updatedAt)],
+);

@@ -8,6 +8,7 @@ import { api } from "../lib/api";
 import { IncomeExpenseBars } from "../components/IncomeExpenseBars";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { AppButton, AppCard, IconTile, KpiCard, ScreenContainer, SectionHeader, SegmentedTabs } from "../components/ui/FinanceUI";
+import { SafeActionFooter } from "../components/ui/SafeActionFooter";
 import { useAuth } from "../contexts/AuthContext";
 import { usePaymentFlow } from "../contexts/PaymentFlowContext";
 import { usePreferences } from "../contexts/PreferencesContext";
@@ -73,7 +74,7 @@ export function ReportsHomeScreen() {
             <AppCard style={styles.profitCard}>
               <View style={styles.flexCopy}>
                 <Text style={styles.mutedLabel}>Profit</Text>
-                <Text style={[styles.heroValue, { color: summary.netBalance >= 0 ? colors.success : colors.danger }]}>{formatMoney(summary.netBalance)}</Text>
+                <Text style={[styles.heroValue, { color: summary.netBalance >= 0 ? colors.success : colors.danger }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.48}>{formatMoney(summary.netBalance)}</Text>
                 <Text style={styles.detail}>{summary.netBalance >= 0 ? "Income after expenses" : "Expenses exceed income"}</Text>
               </View>
               <IconTile icon="bar-chart-outline" tone="mint" size={46} />
@@ -130,7 +131,7 @@ export function CashFlowReportScreen() {
             <IconTile icon="trending-up-outline" tone={netPositive ? "blue" : "rose"} size={48} />
             <View style={styles.flexCopy}>
               <Text style={styles.mutedLabel}>Net cash flow</Text>
-              <Text style={[styles.heroValue, { color: netPositive ? colors.success : colors.danger }]}>{formatMoney(summary.netBalance)}</Text>
+              <Text style={[styles.heroValue, { color: netPositive ? colors.success : colors.danger }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.48}>{formatMoney(summary.netBalance)}</Text>
               <Text style={styles.detail}>{summary.savingsRate === null ? "Add income to calculate your cash-flow rate" : `${Math.abs(summary.savingsRate)}% of income ${netPositive ? "retained" : "overspent"}`}</Text>
             </View>
           </AppCard>
@@ -204,14 +205,14 @@ export function OverdueInvoicesReportScreen() {
               <Text style={styles.rowSub}>{invoice.invoiceNumber} · Due {formatDate(invoice.dueDate)}</Text>
             </View>
             <View style={styles.amountCopy}>
-              <Text style={[styles.amountText, { color: isOverdue ? colors.danger : isPaid ? colors.success : colors.textPrimary }]}>{isPaid ? "Paid" : formatMoney(remaining)}</Text>
+              <Text style={[styles.amountText, { color: isOverdue ? colors.danger : isPaid ? colors.success : colors.textPrimary }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>{isPaid ? "Paid" : formatMoney(remaining)}</Text>
               <Text style={[styles.daysText, isOverdue && { color: colors.danger }]}>{isPaid ? "Complete" : isOverdue ? `${days} days late` : `Due in ${days} days`}</Text>
             </View>
             <Ionicons name="chevron-forward" size={17} color={colors.gray400} />
           </Pressable>
         ))}
       </ScrollView>
-      <View style={styles.footerAction}><AppButton label="Send payment reminders" icon="notifications-outline" onPress={() => void sendReminders()} disabled={!overdue.length} /></View>
+      <SafeActionFooter><AppButton label="Send payment reminders" icon="notifications-outline" onPress={() => void sendReminders()} disabled={!overdue.length} /></SafeActionFooter>
     </ScreenContainer>
   );
 }
@@ -230,7 +231,7 @@ const styles = StyleSheet.create({
   netCard: { minHeight: 100, flexDirection: "row", alignItems: "center", gap: spacing.md, backgroundColor: "#f5f9ff" },
   flexCopy: { flex: 1, minWidth: 0 },
   mutedLabel: { color: colors.gray600, fontSize: uiType.secondary, fontWeight: "600" },
-  heroValue: { fontSize: uiType.kpi, fontWeight: "900", marginTop: 3 },
+  heroValue: { width: "100%", fontSize: uiType.kpi, fontWeight: "900", marginTop: 3 },
   detail: { color: colors.gray500, fontSize: uiType.caption, marginTop: 3 },
   toolCard: { paddingTop: spacing.md, paddingBottom: 0 },
   sectionTitle: { color: colors.textPrimary, fontSize: uiType.sectionTitle, fontWeight: "800" },

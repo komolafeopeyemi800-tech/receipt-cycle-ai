@@ -64,6 +64,9 @@ export const invoiceListPreview: InvoiceListPreview[] = [
   { invoiceNumber: "INV-2026-001", customerName: "Maple & Co", issuedAt: "2026-10-10", amount: 950, status: "paid" },
 ];
 
+/** Stable id shared by every device: the invoice number (unique per workspace). */
+export const invoiceSyncId = (invoice: Pick<SavedInvoice, "invoiceNumber">) => `inv:${invoice.invoiceNumber}`;
+
 export function todayYmd() {
   return new Date().toISOString().slice(0, 10);
 }

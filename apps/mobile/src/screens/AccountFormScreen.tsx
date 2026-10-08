@@ -7,6 +7,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { Id } from "../lib/api";
 import { api } from "../lib/api";
 import { AppButton, FormField } from "../components/ui/FinanceUI";
+import { SafeActionFooter } from "../components/ui/SafeActionFooter";
 import { ModuleDetailHeader } from "../components/ui/MoneyModuleUI";
 import { useMoneyAppearance } from "../contexts/MoneyAppearanceContext";
 import { useWorkspace } from "../contexts/WorkspaceContext";
@@ -73,7 +74,7 @@ export function AccountFormScreen() {
         <Text style={styles.label}>Color</Text>
         <View style={styles.colorRow}>{appearanceColors.map((hex) => <Pressable key={hex} onPress={() => setColor(hex)} style={[styles.colorRing, color === hex && styles.colorRingSelected]} accessibilityLabel={`Select ${hex} color`}><View style={[styles.colorDot, { backgroundColor: hex }]} /></Pressable>)}</View>
       </ScrollView>
-      <View style={styles.footer}><AppButton label={saving ? "Saving…" : id ? "Save Account" : "Create Account"} onPress={() => void save()} disabled={saving || !ready || Boolean(id && !account)} /></View>
+      <SafeActionFooter><AppButton label={saving ? "Saving…" : id ? "Save Account" : "Create Account"} onPress={() => void save()} disabled={saving || !ready || Boolean(id && !account)} /></SafeActionFooter>
     </KeyboardAvoidingView>
   </View>;
 }

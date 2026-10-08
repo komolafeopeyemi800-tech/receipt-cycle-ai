@@ -6,6 +6,7 @@ import { useNavigation, useRoute, type RouteProp } from "@react-navigation/nativ
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { AppButton, EmptyState, FormField, IconTile, ScreenContainer, SearchInput, SelectField, SegmentedTabs, StatusBadge } from "../components/ui/FinanceUI";
+import { SafeActionFooter } from "../components/ui/SafeActionFooter";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { useSalesSetup } from "../contexts/SalesSetupContext";
 import type { CatalogItemKind } from "../features/sales/setupData";
@@ -63,7 +64,7 @@ export function ItemsServicesScreen() {
 export function ItemServiceFormScreen() {
   const navigation = useNavigation<RootNav>();
   const route = useRoute<RouteProp<RootStackParamList, "SalesItemForm">>();
-  const { items, saveItem } = useSalesSetup();
+  const { items, saveItem, deleteItem } = useSalesSetup();
   const { showActionSheetWithOptions } = useActionSheet();
   const existing = route.params?.itemId ? items.find((item) => item.id === route.params?.itemId) : undefined;
   const [kind, setKind] = useState<CatalogItemKind>(existing?.kind ?? "service");
@@ -102,8 +103,8 @@ export function ItemServiceFormScreen() {
       <SelectField label="Category" icon="grid-outline" value={category} onPress={() => choose("Category", ["Consulting", "Design", "Development", "Marketing", "Management", "Products", "Other"], category, setCategory)} />
       <View style={styles.switchRow}><View style={styles.switchMain}><Text style={styles.switchTitle}>Set as default for new invoices</Text><Text style={styles.switchMeta}>This item will be suggested when creating invoices.</Text></View><Switch value={isDefault} onValueChange={setIsDefault} trackColor={{ false: colors.gray200, true: "#84d9c8" }} thumbColor={isDefault ? colors.primary : "#fff"} /></View>
       <View style={styles.switchRow}><View style={styles.switchMain}><Text style={styles.switchTitle}>Available for sales</Text><Text style={styles.switchMeta}>Inactive items stay in history but leave new-item choices.</Text></View><Switch value={active} onValueChange={setActive} trackColor={{ false: colors.gray200, true: "#84d9c8" }} thumbColor={active ? colors.primary : "#fff"} /></View>
-      <AppButton label={existing ? "Save changes" : "Save item"} onPress={onSave} style={styles.formButton} />
     </ScrollView>
+    <SafeActionFooter><AppButton label={existing ? "Save changes" : "Save item"} onPress={onSave} />{existing ? <AppButton label="Delete item" variant="secondary" onPress={() => Alert.alert("Delete item?", "This also removes it from your web app.", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => { deleteItem(existing.id); navigation.goBack(); } }])} /> : null}</SafeActionFooter>
   </ScreenContainer>;
 }
 

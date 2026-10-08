@@ -19,6 +19,7 @@ import { ApiError } from "../lib/errors";
 import { googleVerifier } from "../lib/googleIdToken";
 import { parseBody } from "../lib/http";
 import { requireUser } from "../middleware/auth";
+import { salesRecords } from "../db/schema";
 import { deleteAllReceipts } from "./receipts";
 import type { AppEnv } from "../types";
 
@@ -181,6 +182,7 @@ meRoutes.post("/reset-data", async (c) => {
   await runBatch(db, [
     db.delete(transactions).where(eq(transactions.userId, id)),
     db.delete(userPreferences).where(eq(userPreferences.userId, id)),
+    db.delete(salesRecords).where(like(salesRecords.scope, `u:${id}:%`)),
   ]);
   await deleteAllReceipts(c.env.FILES, id);
   return c.json({ ok: true });
@@ -197,6 +199,7 @@ meRoutes.delete("/", async (c) => {
     db.delete(accounts).where(like(accounts.scope, scopes)),
     db.delete(categories).where(like(categories.scope, scopes)),
     db.delete(budgets).where(like(budgets.scope, scopes)),
+    db.delete(salesRecords).where(like(salesRecords.scope, scopes)),
   ];
   if (slugs.length > 0) {
     const teamScopes = slugs.map((s) => `ws:${s}`);
@@ -204,6 +207,7 @@ meRoutes.delete("/", async (c) => {
       db.delete(accounts).where(inArray(accounts.scope, teamScopes)),
       db.delete(categories).where(inArray(categories.scope, teamScopes)),
       db.delete(budgets).where(inArray(budgets.scope, teamScopes)),
+      db.delete(salesRecords).where(inArray(salesRecords.scope, teamScopes)),
       db.delete(workspaceMembers).where(inArray(workspaceMembers.workspaceKey, slugs)),
       db.delete(workspaceInvites).where(inArray(workspaceInvites.workspaceKey, slugs)),
       db.delete(workspaces).where(inArray(workspaces.slug, slugs)),

@@ -4,6 +4,8 @@ import { useMutation } from "../lib/api";
 import type { Id } from "../lib/api";
 import { api } from "../lib/api";
 import { createPaymentDraft, localInvoiceToPaymentInvoice, nextReceiptNumber, paymentReference, type PaymentDraft, type PaymentInvoice, type SavedPayment } from "../features/payments/model";
+import { asyncKv } from "../lib/asyncKv";
+import { applyToCollection, useSalesSync, type SalesChange, type SalesData } from "../lib/salesSync";
 import { useAuth } from "./AuthContext";
 import { useInvoiceFlow } from "./InvoiceFlowContext";
 import { useSalesSetup } from "./SalesSetupContext";
@@ -47,8 +49,24 @@ export function PaymentFlowProvider({ children }: { children: ReactNode }) {
     return () => { live = false; };
   }, [storageKey]);
 
+  const sync = useSalesSync({
+    userId: user?.id,
+    workspace,
+    kv: asyncKv,
+    kinds: ["payment"],
+    ready: loadedKey === storageKey,
+    getLocal: () => state.payments.map((row) => ({ kind: "payment" as const, id: row.id, data: row as unknown as SalesData })),
+    apply: (changes: SalesChange[]) => {
+      setState((current) => {
+        const next = { ...current, payments: applyToCollection("payment", current.payments, changes, (r) => r.id, (d) => d as unknown as SavedPayment) };
+        void AsyncStorage.setItem(storageKey, JSON.stringify(next));
+        return next;
+      });
+    },
+  });
+
   function update(recipe: (current: State) => State) {
-    setState((current) => { const next = recipe(current); void AsyncStorage.setItem(storageKey, JSON.stringify(next)); return next; });
+    setState((current) => { const next = recipe(current); void AsyncStorage.setItem(storageKey, JSON.stringify(next)); sync.collection("payment", current.payments, next.payments, (r) => r.id); return next; });
   }
 
   const paymentInvoices = useMemo<PaymentInvoice[]>(() => {

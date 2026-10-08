@@ -1,29 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { AppCard, IconTile, ScreenContainer } from "../components/ui/FinanceUI";
-import { useAuth } from "../contexts/AuthContext";
+import { useSalesSetup } from "../contexts/SalesSetupContext";
+import type { NotificationPreferences } from "../features/sales/setupData";
 import { colors, spacing, uiType } from "../theme/tokens";
-
-type NotificationPreferences = {
-  invoiceReminders: boolean;
-  overdueReminders: boolean;
-  paymentConfirmations: boolean;
-  budgetAlerts: boolean;
-  weeklyReports: boolean;
-  marketingUpdates: boolean;
-};
-
-const defaults: NotificationPreferences = {
-  invoiceReminders: true,
-  overdueReminders: true,
-  paymentConfirmations: true,
-  budgetAlerts: true,
-  weeklyReports: false,
-  marketingUpdates: true,
-};
 
 const rows: { key: keyof NotificationPreferences; title: string; description: string; icon: React.ComponentProps<typeof Ionicons>["name"]; tone: "mint" | "blue" | "rose" }[] = [
   { key: "invoiceReminders", title: "Invoice Reminders", description: "Get notified before invoices are due", icon: "calendar-outline", tone: "blue" },
@@ -35,31 +16,11 @@ const rows: { key: keyof NotificationPreferences; title: string; description: st
 ];
 
 export function NotificationsScreen() {
-  const { user } = useAuth();
-  const storageKey = useMemo(() => `receipt_cycle_notification_preferences_${user?.id ?? "guest"}`, [user?.id]);
-  const [preferences, setPreferences] = useState(defaults);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    setReady(false);
-    void AsyncStorage.getItem(storageKey).then((raw) => {
-      if (!active) return;
-      if (raw) {
-        try { setPreferences({ ...defaults, ...(JSON.parse(raw) as Partial<NotificationPreferences>) }); }
-        catch { setPreferences(defaults); }
-      } else setPreferences(defaults);
-      setReady(true);
-    }).catch(() => { if (active) { setPreferences(defaults); setReady(true); } });
-    return () => { active = false; };
-  }, [storageKey]);
+  const { reminders, saveReminders, ready } = useSalesSetup();
+  const preferences = reminders;
 
   function setValue(key: keyof NotificationPreferences, value: boolean) {
-    setPreferences((current) => {
-      const next = { ...current, [key]: value };
-      void AsyncStorage.setItem(storageKey, JSON.stringify(next));
-      return next;
-    });
+    saveReminders({ ...reminders, [key]: value });
   }
 
   return (
@@ -76,7 +37,7 @@ export function NotificationsScreen() {
             <Switch value={preferences[row.key]} onValueChange={(value) => setValue(row.key, value)} trackColor={{ false: colors.gray200, true: colors.primary }} thumbColor="#fff" accessibilityLabel={row.title} />
           </View>)}
         </AppCard>
-        <Text style={styles.note}>Reminder choices are saved for this signed-in account on this device.</Text>
+        <Text style={styles.note}>Reminder choices are saved to your account and shared with the web app.</Text>
       </ScrollView>}
     </ScreenContainer>
   );

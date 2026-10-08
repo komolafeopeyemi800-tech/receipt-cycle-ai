@@ -32,6 +32,9 @@ import { useAuth } from "../contexts/AuthContext";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { useMoneyAppearance } from "../contexts/MoneyAppearanceContext";
 import { useSubscriptionState } from "../hooks/useSubscriptionState";
+import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
+import { useEstimateFlow } from "../contexts/EstimateFlowContext";
+import { useSalesSetup } from "../contexts/SalesSetupContext";
 import { AnimatedPressable } from "../components/AnimatedPressable";
 import { todayYm } from "../utils/transactionMath";
 import { userFacingError, userFacingErrorFromUnknown } from "../lib/userFacingErrors";
@@ -66,6 +69,9 @@ export function AddTransactionScreen() {
   const { voiceInputLanguage, currency } = usePreferences();
   const { appearance } = useMoneyAppearance();
   const sub = useSubscriptionState();
+  const invoiceFlow = useInvoiceFlow();
+  const estimateFlow = useEstimateFlow();
+  const { customers, saveCustomer } = useSalesSetup();
 
   const voiceAiOk = !sub || sub.canUseAiFeatures;
   const canSaveNew = !sub || sub.canCreateTransaction;
@@ -238,7 +244,7 @@ export function AddTransactionScreen() {
   }, []);
 
   type VoiceDraft = {
-    intent: "transaction" | "budget";
+    intent: "transaction" | "budget" | "invoice" | "estimate";
     amount: number | null;
     type: "expense" | "income";
     category: string;
@@ -250,9 +256,39 @@ export function AddTransactionScreen() {
     budgetCategory: string | null;
     budgetLimit: number | null;
     budgetMonth: string | null;
+    customerName: string | null;
+    customerEmail: string | null;
+    itemName: string | null;
+    quantity: number | null;
+    rate: number | null;
+    dueDate: string | null;
   };
 
   async function applyVoiceDraft(draft: VoiceDraft) {
+    if (draft.intent === "invoice" || draft.intent === "estimate") {
+      const customerName = draft.customerName?.trim();
+      const itemName = draft.itemName?.trim() || draft.description?.trim();
+      const rate = draft.rate ?? draft.amount;
+      if (!customerName || !itemName || rate == null || rate < 0) {
+        Alert.alert("More detail needed", `Say the customer, the ${draft.intent === "invoice" ? "work being billed" : "work being quoted"}, and the price.`);
+        return;
+      }
+      let customerId = customers.find((row) => row.name.toLowerCase() === customerName.toLowerCase() || row.businessName.toLowerCase() === customerName.toLowerCase())?.id;
+      if (!customerId) customerId = saveCustomer({ name: customerName, businessName: customerName, email: draft.customerEmail?.trim() ?? "", phone: "", billingAddress: "", taxId: "", notes: "Created with AI Capture", status: "prospect" });
+      const line = { id: `voice-line-${Date.now()}`, name: itemName, description: draft.description?.trim() ?? "", quantity: draft.quantity && draft.quantity > 0 ? draft.quantity : 1, rate };
+      if (draft.intent === "invoice") {
+        invoiceFlow.startNewInvoice();
+        invoiceFlow.updateDraft({ customerId, items: [line], ...(draft.dueDate ? { dueDate: draft.dueDate } : {}) });
+        setAiCapture(false);
+        navigation.navigate("InvoicePreview");
+      } else {
+        estimateFlow.startNewEstimate();
+        estimateFlow.updateDraft({ customerId, items: [line] });
+        setAiCapture(false);
+        navigation.navigate("EstimatePreview");
+      }
+      return;
+    }
     if (draft.intent === "budget" && draft.budgetLimit != null && draft.budgetLimit > 0 && user?.id) {
       if (sub && !sub.canMutateBudgets) {
         Alert.alert("Upgrade needed", sub.blockReason ?? "Pro or active trial required to edit budgets.");

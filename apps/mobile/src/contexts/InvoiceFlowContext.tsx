@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { createInvoiceDraft, createSavedInvoice, type InvoiceDraft, type InvoiceLineItem, type InvoiceStatus, type SavedInvoice } from "../features/invoices/model";
+import { createInvoiceDraft, createSavedInvoice, invoiceSyncId, type InvoiceDraft, type InvoiceLineItem, type InvoiceStatus, type SavedInvoice } from "../features/invoices/model";
+import { asyncKv } from "../lib/asyncKv";
+import { applyToCollection, useSalesSync, type SalesChange, type SalesData } from "../lib/salesSync";
 import { useAuth } from "./AuthContext";
 import { useSalesSetup } from "./SalesSetupContext";
 import { useWorkspace } from "./WorkspaceContext";
@@ -17,6 +19,7 @@ type ContextValue = InvoiceFlowState & {
   loadInvoice: (invoiceNumber: string) => boolean;
   convertToInvoice: (source: InvoiceConversionSource) => SavedInvoice | null;
   applyPayment: (invoiceNumber: string, amount: number) => void;
+  deleteInvoice: (invoiceNumber: string) => void;
 };
 
 const InvoiceFlowContext = createContext<ContextValue | null>(null);
@@ -47,10 +50,28 @@ export function InvoiceFlowProvider({ children }: { children: ReactNode }) {
     return () => { live = false; };
   }, [storageKey]);
 
+  const sync = useSalesSync({
+    userId: user?.id,
+    workspace,
+    kv: asyncKv,
+    kinds: ["invoice"],
+    ready: loadedKey === storageKey,
+    getLocal: () => state.invoices.map((row) => ({ kind: "invoice" as const, id: invoiceSyncId(row), data: row as unknown as SalesData })),
+    apply: (changes: SalesChange[]) => {
+      setState((current) => {
+        const invoices = applyToCollection("invoice", current.invoices, changes, invoiceSyncId, (d) => d as unknown as SavedInvoice);
+        const next = { ...current, invoices };
+        void AsyncStorage.setItem(storageKey, JSON.stringify(next));
+        return next;
+      });
+    },
+  });
+
   function update(recipe: (current: InvoiceFlowState) => InvoiceFlowState) {
     setState((current) => {
       const next = recipe(current);
       void AsyncStorage.setItem(storageKey, JSON.stringify(next));
+      sync.collection("invoice", current.invoices, next.invoices, invoiceSyncId);
       return next;
     });
   }
@@ -85,6 +106,7 @@ export function InvoiceFlowProvider({ children }: { children: ReactNode }) {
       update((current) => ({ draft, invoices: [invoice, ...current.invoices.filter((item) => item.invoiceNumber !== invoice.invoiceNumber)] }));
       return invoice;
     },
+    deleteInvoice: (invoiceNumber) => update((current) => ({ ...current, invoices: current.invoices.filter((invoice) => invoice.invoiceNumber !== invoiceNumber) })),
     applyPayment: (invoiceNumber, amount) => update((current) => ({
       ...current,
       invoices: current.invoices.map((invoice) => {

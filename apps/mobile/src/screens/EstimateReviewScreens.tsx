@@ -75,7 +75,7 @@ function DetailLine({ label, value, strong = false, badge }: { label: string; va
 export function EstimateDetailScreen() {
   const navigation = useNavigation<RootNav>();
   const route = useRoute<RouteProp<RootStackParamList, "EstimateDetail">>();
-  const { estimates, loadEstimate, duplicateEstimate, setEstimateStatus } = useEstimateFlow();
+  const { estimates, loadEstimate, duplicateEstimate, setEstimateStatus, deleteEstimate } = useEstimateFlow();
   const { convertToInvoice } = useInvoiceFlow();
   const { customers, businessProfile } = useSalesSetup();
   const { currency, formatMoney, formatDate } = usePreferences();
@@ -111,6 +111,7 @@ export function EstimateDetailScreen() {
       { text: "Mark Accepted", onPress: () => setEstimateStatus(estimate!.estimateNumber, "accepted") },
       { text: "Mark Expired", onPress: () => setEstimateStatus(estimate!.estimateNumber, "expired") },
       { text: "Convert to Invoice", onPress: convert },
+      { text: "Delete estimate", style: "destructive" as const, onPress: () => Alert.alert("Delete estimate?", "This also removes it from your web app.", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => { deleteEstimate(estimate!.estimateNumber); navigation.goBack(); } }]) },
     ];
     Alert.alert("Estimate actions", estimate!.estimateNumber, [...actions, { text: "Cancel", style: "cancel" }]);
   }

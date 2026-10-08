@@ -66,7 +66,7 @@ export type VoiceParseHints = {
 };
 
 export type TxDraft = {
-  intent: "transaction" | "budget";
+  intent: "transaction" | "budget" | "invoice" | "estimate";
   amount: number | null;
   type: "expense" | "income";
   category: string;
@@ -78,6 +78,12 @@ export type TxDraft = {
   budgetCategory: string | null;
   budgetLimit: number | null;
   budgetMonth: string | null;
+  customerName: string | null;
+  customerEmail: string | null;
+  itemName: string | null;
+  quantity: number | null;
+  rate: number | null;
+  dueDate: string | null;
 };
 
 function hintsBlock(hints?: VoiceParseHints | null): string {
@@ -114,9 +120,12 @@ export async function openaiParseTransaction(
   const todayUtc = new Date().toISOString().split("T")[0];
   const system = `You parse spoken or typed money notes into structured JSON for a personal receipt app.
 
-Two intents:
+Four intents (transaction, budget, invoice, estimate):
 1) "transaction" — a purchase, bill, refund, or income line they want to log (amount, merchant, category, date, etc.).
 2) "budget" — they want a monthly spending cap for a category (e.g. "set groceries budget to 300", "cap food at 500 this month").
+
+3) "invoice" means the user wants to bill a customer for work, products, or services.
+4) "estimate" means the user wants to quote a customer before work is accepted.
 
 Rules for transaction:
 - type: "expense" unless they clearly earned income.
@@ -129,9 +138,18 @@ Rules for transaction:
 
 Rules for budget:
 - intent "budget", budgetLimit = monthly cap as a positive number, budgetCategory = category name (match their list when possible), budgetMonth = YYYY-MM if they name a month/year else null (app will default to current month).
-- Other fields can be null or sensible defaults.${hintsBlock(hints)}`;
+- Other fields can be null or sensible defaults.
 
-  const jsonShape = `{"intent":"transaction"|"budget","amount":number|null,"type":"expense"|"income","category":"string","merchant":string|null,"date":"YYYY-MM-DD"|null,"description":string|null,"payment_method":string|null,"confidence":"high"|"medium"|"low","budgetCategory":string|null,"budgetLimit":number|null,"budgetMonth":"YYYY-MM"|null}`;
+Rules for invoice and estimate:
+- customerName: person or business receiving the document; null only when absent.
+- customerEmail: email only when stated.
+- itemName: concise name for the work, product, or service.
+- quantity: positive quantity, default 1.
+- rate: unit price. With one total and no quantity, use quantity 1 and rate equal to that total.
+- dueDate: YYYY-MM-DD when a due or valid-until date is stated, otherwise null.
+- Put extra scope or context in description.${hintsBlock(hints)}`;
+
+  const jsonShape = `{"intent":"transaction"|"budget"|"invoice"|"estimate","amount":number|null,"type":"expense"|"income","category":"string","merchant":string|null,"date":"YYYY-MM-DD"|null,"description":string|null,"payment_method":string|null,"confidence":"high"|"medium"|"low","budgetCategory":string|null,"budgetLimit":number|null,"budgetMonth":"YYYY-MM"|null,"customerName":string|null,"customerEmail":string|null,"itemName":string|null,"quantity":number|null,"rate":number|null,"dueDate":"YYYY-MM-DD"|null}`;
 
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -166,7 +184,7 @@ Rules for budget:
 
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    const intent = parsed.intent === "budget" ? "budget" : "transaction";
+    const intent = parsed.intent === "budget" || parsed.intent === "invoice" || parsed.intent === "estimate" ? parsed.intent : "transaction";
     const type = parsed.type === "income" ? "income" : "expense";
     let amount: number | null = null;
     if (parsed.amount !== null && parsed.amount !== undefined && Number.isFinite(Number(parsed.amount))) {
@@ -198,6 +216,12 @@ Rules for budget:
       budgetCategory: intent === "budget" ? catBudget : null,
       budgetLimit: intent === "budget" ? budgetLimit : null,
       budgetMonth: intent === "budget" ? monthOk : null,
+      customerName: parsed.customerName != null ? String(parsed.customerName).trim() || null : null,
+      customerEmail: parsed.customerEmail != null ? String(parsed.customerEmail).trim() || null : null,
+      itemName: parsed.itemName != null ? String(parsed.itemName).trim() || null : null,
+      quantity: Number.isFinite(Number(parsed.quantity)) && Number(parsed.quantity) > 0 ? Number(parsed.quantity) : null,
+      rate: Number.isFinite(Number(parsed.rate)) && Number(parsed.rate) >= 0 ? Number(parsed.rate) : amount,
+      dueDate: parsed.dueDate != null && /^\d{4}-\d{2}-\d{2}$/.test(String(parsed.dueDate).slice(0, 10)) ? String(parsed.dueDate).slice(0, 10) : null,
     };
     return { ok: true, draft };
   } catch {

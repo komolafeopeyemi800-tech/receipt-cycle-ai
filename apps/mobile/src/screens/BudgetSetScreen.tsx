@@ -7,6 +7,7 @@ import { useNavigation, useRoute, type RouteProp } from "@react-navigation/nativ
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { api } from "../lib/api";
 import { AppButton, AppCard, FormField } from "../components/ui/FinanceUI";
+import { SafeActionFooter } from "../components/ui/SafeActionFooter";
 import { CategoryGlyph, ModuleDetailHeader } from "../components/ui/MoneyModuleUI";
 import { useMoneyAppearance } from "../contexts/MoneyAppearanceContext";
 import { usePreferences } from "../contexts/PreferencesContext";
@@ -65,7 +66,7 @@ export function BudgetSetScreen() {
         <AppCard style={styles.info}><Ionicons name="refresh-outline" size={20} color={colors.primary} /><Text style={styles.infoText}>This budget applies to {formatMonthYearLabel(startMonth)}. Set future months separately when your plan changes.</Text></AppCard>
         {sub && !sub.canMutateBudgets ? <Text style={styles.limit}>{sub.blockReason ?? "Your plan cannot edit budgets right now."}</Text> : null}
       </ScrollView>
-      <View style={styles.footer}><AppButton label={saving ? "Saving…" : "Save Budget"} onPress={() => void save()} disabled={!valid || saving || loading || Boolean(sub && !sub.canMutateBudgets)} /></View>
+      <SafeActionFooter><AppButton label={saving ? "Saving…" : "Save Budget"} onPress={() => void save()} disabled={!valid || saving || loading || Boolean(sub && !sub.canMutateBudgets)} /></SafeActionFooter>
     </KeyboardAvoidingView>
   </View>;
 }

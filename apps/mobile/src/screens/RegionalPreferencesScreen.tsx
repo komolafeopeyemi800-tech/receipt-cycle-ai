@@ -36,6 +36,8 @@ export function RegionalPreferencesScreen() {
   } = usePreferences();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const [languageQuery, setLanguageQuery] = useState("");
 
   const allRows = useMemo(() => {
     return ISO_CURRENCY_DATA.map((c) => ({
@@ -52,6 +54,8 @@ export function RegionalPreferencesScreen() {
   }, [allRows, query]);
 
   const currentLabel = useMemo(() => allRows.find((r) => r.code === currency)?.label ?? currency, [allRows, currency]);
+  const currentLanguage = VOICE_INPUT_LANGUAGE_OPTIONS.find((row) => row.id === voiceInputLanguage)?.label ?? "Auto detect";
+  const languages = VOICE_INPUT_LANGUAGE_OPTIONS.filter((row) => row.label.toLowerCase().includes(languageQuery.trim().toLowerCase()));
 
   const onPickCurrency = useCallback(
     async (code: string) => {
@@ -106,18 +110,11 @@ export function RegionalPreferencesScreen() {
           Used for speech-to-text when you dictate transactions or use Ask AI. Auto lets the model detect
           the language.
         </Text>
-        <View style={styles.card}>
-          {VOICE_INPUT_LANGUAGE_OPTIONS.map((o) => (
-            <Pressable
-              key={o.id}
-              style={[styles.row, voiceInputLanguage === o.id && styles.rowOn]}
-              onPress={() => void setVoiceInputLanguage(o.id)}
-            >
-              <Text style={styles.rowTxt}>{o.label}</Text>
-              {voiceInputLanguage === o.id ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}
-            </Pressable>
-          ))}
-        </View>
+        <Pressable style={styles.currencyCard} onPress={() => setLanguageOpen(true)} accessibilityRole="button" accessibilityLabel={`Voice input language: ${currentLanguage}`}>
+          <View style={{ flex: 1 }}><Text style={styles.currencyCardLbl}>Selected input language</Text><Text style={styles.currencyCardVal}>{currentLanguage}</Text></View>
+          <Ionicons name="chevron-forward" size={20} color={colors.gray400} />
+        </Pressable>
+        <Text style={styles.miniHint}>Tap to search or choose another language.</Text>
         <View style={{ height: 40 }} />
       </ScrollView>
 
@@ -156,6 +153,13 @@ export function RegionalPreferencesScreen() {
             )}
             ListEmptyComponent={<Text style={styles.empty}>No matches.</Text>}
           />
+        </View>
+      </Modal>
+      <Modal visible={languageOpen} animationType="slide" onRequestClose={() => setLanguageOpen(false)}>
+        <View style={[styles.modalRoot, { paddingTop: insets.top + 8 }]}>
+          <View style={styles.modalHeader}><Pressable onPress={() => setLanguageOpen(false)} hitSlop={12}><Text style={styles.modalCancel}>Cancel</Text></Pressable><Text style={styles.modalTitle}>Input language</Text><View style={{ width: 56 }} /></View>
+          <TextInput style={styles.search} placeholder="Search languages…" placeholderTextColor={colors.gray400} value={languageQuery} onChangeText={setLanguageQuery} autoCorrect={false} />
+          <FlatList data={languages} keyExtractor={(item) => item.id} keyboardShouldPersistTaps="handled" renderItem={({ item }) => <Pressable style={[styles.pickerRow, item.id === voiceInputLanguage && styles.pickerRowOn]} onPress={() => { void setVoiceInputLanguage(item.id); setLanguageOpen(false); setLanguageQuery(""); }}><Text style={styles.pickerRowTxt}>{item.label}</Text>{item.id === voiceInputLanguage ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}</Pressable>} />
         </View>
       </Modal>
     </LinearGradient>

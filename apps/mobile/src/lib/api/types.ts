@@ -213,7 +213,7 @@ export type VoiceHints = {
 };
 
 export type TxDraft = {
-  intent: "transaction" | "budget";
+  intent: "transaction" | "budget" | "invoice" | "estimate";
   amount: number | null;
   type: "expense" | "income";
   category: string;
@@ -225,6 +225,12 @@ export type TxDraft = {
   budgetCategory: string | null;
   budgetLimit: number | null;
   budgetMonth: string | null;
+  customerName: string | null;
+  customerEmail: string | null;
+  itemName: string | null;
+  quantity: number | null;
+  rate: number | null;
+  dueDate: string | null;
 };
 
 export type Finding = { title: string; detail: string; severity: "low" | "medium" | "high" };

@@ -194,7 +194,7 @@ export function CommercialHeader({ ctaLabel, ctaHref, announcement }: { ctaLabel
             {productGroups.map((group) => (
               <div key={group.title}>
                 <p className="px-3 text-xs font-black uppercase tracking-[0.16em] text-slate-400">{group.title}</p>
-                {group.links.map(([label, href]) => <Link key={href} to={href} onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">{label}</Link>)}
+                {group.links.map((link) => { const [label, href] = link as readonly string[]; return <Link key={href} to={href} onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">{label}</Link>; })}
               </div>
             ))}
             <div className="border-t border-slate-100 pt-3">

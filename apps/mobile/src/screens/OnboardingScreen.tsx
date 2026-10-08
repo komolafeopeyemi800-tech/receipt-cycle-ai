@@ -295,7 +295,7 @@ export function OnboardingScreen({ onDone }: Props) {
                 <Ionicons name="shield-checkmark-outline" size={28} color={colors.primary} />
                 <Text style={[styles.bigTitle, { textAlign: "center" }]}>Your data stays yours</Text>
                 <Text style={[styles.bigSub, { textAlign: "center" }]}>
-                  Sign in to sync securely with Convex. Export CSV anytime from Settings.
+                  Sign in to sync securely across your devices. Export CSV anytime from Settings.
                 </Text>
               </View>
             </>
@@ -370,7 +370,7 @@ export function OnboardingScreen({ onDone }: Props) {
               <Text style={styles.h2}>You&apos;re ready</Text>
               <Text style={styles.p}>
                 Add transactions or scan receipts. While you&apos;re signed in, transactions and preferences are saved to
-                Convex (with a local cache on this device for speed).
+                Secure cloud storage with a local cache on this device for speed.
               </Text>
               <View style={styles.doneBox}>
                 <Ionicons name="checkmark-circle" size={28} color={colors.primary} />

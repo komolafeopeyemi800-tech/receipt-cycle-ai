@@ -57,7 +57,7 @@ export function CustomersScreen() {
 export function CustomerDetailScreen() {
   const navigation = useNavigation<RootNav>();
   const route = useRoute<RouteProp<RootStackParamList, "SalesCustomerDetail">>();
-  const { customers, setCustomerStatus } = useSalesSetup();
+  const { customers, setCustomerStatus, deleteCustomer } = useSalesSetup();
   const { invoices: savedInvoices } = useInvoiceFlow();
   const { estimates: savedEstimates } = useEstimateFlow();
   const { payments } = usePaymentFlow();
@@ -79,6 +79,7 @@ export function CustomerDetailScreen() {
     Alert.alert("Customer actions", undefined, [
       { text: "Edit customer", onPress: () => navigation.navigate("SalesCustomerForm", { customerId }) },
       { text: nextStatus === "active" ? "Mark active" : "Mark inactive", onPress: () => setCustomerStatus(customerId, nextStatus) },
+      { text: "Delete customer", style: "destructive", onPress: () => Alert.alert("Delete customer?", "This also removes the customer from your web app. Their invoices stay.", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => { deleteCustomer(customerId); navigation.goBack(); } }]) },
       { text: "Cancel", style: "cancel" },
     ]);
   }

@@ -8,6 +8,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { AppButton, FormField, ScreenContainer, SelectField } from "../components/ui/FinanceUI";
+import { SafeActionFooter } from "../components/ui/SafeActionFooter";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { useSalesSetup } from "../contexts/SalesSetupContext";
 import type { BusinessProfile, InvoiceSettings } from "../features/sales/setupData";
@@ -81,8 +82,8 @@ export function BusinessProfileScreen() {
       <FormField label="Business Address" icon="location-outline" value={profile.address} onChangeText={(value) => change("address", value)} placeholder={'123 Market Street\nSan Francisco, CA 94103'} multiline />
       <FormField label="Tax ID (EIN)" icon="lock-closed-outline" value={profile.taxId} onChangeText={(value) => change("taxId", value)} placeholder="12-3456789" />
       <FormField label="Website" icon="globe-outline" value={profile.website} onChangeText={(value) => change("website", value)} placeholder="https://www.yourbusiness.com" keyboardType="url" autoCapitalize="none" />
-      <AppButton label="Save changes" onPress={onSave} style={styles.button} />
     </ScrollView>
+    <SafeActionFooter><AppButton label="Save changes" onPress={onSave} /></SafeActionFooter>
   </ScreenContainer>;
 }
 
@@ -123,8 +124,8 @@ export function InvoiceSettingsScreen() {
       <SelectField label="Payment Terms" icon="time-outline" value={settings.paymentTerms} onPress={() => pick("Payment terms", ["Due on receipt", "Net 7", "Net 15", "Net 30", "Net 60"], (value) => change("paymentTerms", value))} />
       <FormField label="Notes for Invoices" icon="chatbox-ellipses-outline" value={settings.defaultNotes} onChangeText={(value) => change("defaultNotes", value)} placeholder="Thank you for your business!" multiline />
       <Text style={styles.helper}>This note will appear on all invoices by default.</Text>
-      <AppButton label={saving ? "Saving..." : "Save settings"} disabled={saving} onPress={() => void onSave()} style={styles.button} />
     </ScrollView>
+    <SafeActionFooter><AppButton label={saving ? "Saving..." : "Save settings"} disabled={saving} onPress={() => void onSave()} /></SafeActionFooter>
   </ScreenContainer>;
 }
 

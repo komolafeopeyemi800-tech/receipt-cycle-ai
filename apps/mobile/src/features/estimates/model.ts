@@ -40,6 +40,9 @@ export const estimateListPreview = [
   { estimateNumber: "EST-2026-006", customerName: "Maple Retail", estimateDate: "2026-08-12", amount: 6750, status: "draft" as const },
 ];
 
+/** Stable id shared by every device: the estimate number (unique per workspace). */
+export const estimateSyncId = (estimate: Pick<SavedEstimate, "estimateNumber">) => `est:${estimate.estimateNumber}`;
+
 function nextEstimateNumber(saved: SavedEstimate[]) {
   const year = new Date().getFullYear();
   const values = saved.map((item) => item.estimateNumber).map((id) => Number(id.match(/(\d+)$/)?.[1] ?? 0));

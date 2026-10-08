@@ -151,8 +151,8 @@ export function SelectField({ label, icon, value, onPress, required = false }: {
   </View>;
 }
 
-export function EmptyState({ icon = "document-outline", title, description }: { icon?: IconName; title: string; description: string }) {
-  return <View style={styles.empty}><IconTile icon={icon} tone="blue" size={52} /><Text style={styles.emptyTitle}>{title}</Text><Text style={styles.emptyDescription}>{description}</Text></View>;
+export function EmptyState({ icon = "document-outline", title, description, actionLabel, onAction }: { icon?: IconName; title: string; description: string; actionLabel?: string; onAction?: () => void }) {
+  return <View style={styles.empty}><IconTile icon={icon} tone="blue" size={52} /><Text style={styles.emptyTitle}>{title}</Text><Text style={styles.emptyDescription}>{description}</Text>{actionLabel && onAction ? <AppButton label={actionLabel} icon="add" onPress={onAction} style={styles.emptyAction} /> : null}</View>;
 }
 
 const styles = StyleSheet.create({
@@ -191,4 +191,5 @@ const styles = StyleSheet.create({
   empty: { alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.xxl, paddingVertical: spacing.xxxl },
   emptyTitle: { color: colors.textPrimary, fontSize: uiType.sectionTitle, fontWeight: "700", marginTop: spacing.md },
   emptyDescription: { color: colors.textSecondary, fontSize: uiType.secondary, textAlign: "center", marginTop: spacing.xs, lineHeight: 18 },
+  emptyAction: { alignSelf: "stretch", marginTop: spacing.lg },
 });

@@ -354,7 +354,7 @@ export function FinanceCoachScreen() {
                 <Text
                   style={item.role === "user" ? styles.bubbleTxtUser : styles.bubbleTxtAssistant}
                 >
-                  {item.content}
+                  {readableMessage(item.content)}
                 </Text>
               </View>
             )}
@@ -530,3 +530,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
 });
+  const readableMessage = (content: string) => content
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/^[-*]\s+/gm, "• ")
+    .replace(/`{1,3}/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();

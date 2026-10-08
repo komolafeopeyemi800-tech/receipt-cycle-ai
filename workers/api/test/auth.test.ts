@@ -139,7 +139,7 @@ describe("Google sign-in", () => {
     expect(verify).toHaveBeenCalledWith("tok", ["web-client.apps.googleusercontent.com", "android-client.apps.googleusercontent.com"]);
   });
 
-  it("no longer offers Whop sign-in", async () => {
+  it("offers no sign-in provider besides Google", async () => {
     expect((await api("POST", "/api/social/whop", { body: { code: "c", redirectUri: "x", codeVerifier: "v" } })).status).toBe(404);
   });
 

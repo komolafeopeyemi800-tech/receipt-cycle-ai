@@ -115,7 +115,7 @@ export async function transform(input: ConvexTables): Promise<{ statements: stri
       role: u.role ?? null,
       status: u.status ?? null,
       google_sub: u.googleSub ?? null,
-      whop_sub: u.whopSub ?? null,
+      polar_customer_id: null, // old Whop ids are not Polar customers; buyers are matched by email
       legacy_password_hash: null,
       legacy_convex_id: u._id,
     });
@@ -364,9 +364,9 @@ export async function transform(input: ConvexTables): Promise<{ statements: stri
     });
   }
   for (const e of t("whopEntitlements")) {
-    add("whop_entitlements", {
+    add("billing_entitlements", {
       id: await stableId(`entitlement:${e._id}`),
-      whop_user_id: e.whopUserId ?? null,
+      polar_customer_id: null,
       email: e.email ? String(e.email).toLowerCase() : null,
       membership_id: e.membershipId ?? null,
       subscription_status: e.subscriptionStatus,

@@ -17,8 +17,8 @@ export default function CheckoutReturn() {
     const params = new URLSearchParams(window.location.search);
     const screen = parseTargetScreen(params);
     const status = (params.get("status") ?? "").trim().toLowerCase();
-    const whopFlag = params.get("polar_checkout") === "1" ? "&polar_checkout=1" : "";
-    const fallback = `/dashboard?screen=${encodeURIComponent(screen)}${whopFlag}${status ? `&status=${encodeURIComponent(status)}` : ""}`;
+    const polarFlag = params.get("polar_checkout") === "1" ? "&polar_checkout=1" : "";
+    const fallback = `/dashboard?screen=${encodeURIComponent(screen)}${polarFlag}${status ? `&status=${encodeURIComponent(status)}` : ""}`;
 
     if (status && status !== "success") {
       window.location.replace(fallback);

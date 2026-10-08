@@ -5,7 +5,7 @@ const TABLES = [
   "rate_limits",
   "upload_parses",
   "admin_audit_logs",
-  "whop_entitlements",
+  "billing_entitlements",
   "app_config",
   "user_preferences",
   "workspace_members",

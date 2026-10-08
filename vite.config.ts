@@ -8,30 +8,9 @@ const repoRoot = path.dirname(fileURLToPath(import.meta.url));
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  /** Same directory as this file — avoids missing Whop keys when `process.cwd()` is not the repo root. */
-  const env = loadEnv(mode, repoRoot, ["VITE_", "WHOP_"]);
-  /** Public Whop checkout links — copy plan checkout URLs from your Whop dashboard. */
-  const checkoutFree =
-    env.VITE_WHOP_CHECKOUT_FREE_URL?.trim() || env.WHOP_CHECKOUT_FREE_URL?.trim();
-  const checkoutMonthly =
-    env.VITE_WHOP_CHECKOUT_MONTHLY_URL?.trim() || env.WHOP_CHECKOUT_MONTHLY_URL?.trim();
-  const checkoutYearly =
-    env.VITE_WHOP_CHECKOUT_YEARLY_URL?.trim() || env.WHOP_CHECKOUT_YEARLY_URL?.trim();
-  const manageUrl = env.VITE_WHOP_MANAGE_URL?.trim() || env.WHOP_MANAGE_URL?.trim();
-
+  /** Same directory as this file, so env files are found when `process.cwd()` is not the repo root. */
+  loadEnv(mode, repoRoot, ["VITE_"]);
   const define: Record<string, string> = {};
-  if (checkoutFree) {
-    define["import.meta.env.VITE_WHOP_CHECKOUT_FREE_URL"] = JSON.stringify(checkoutFree);
-  }
-  if (checkoutMonthly) {
-    define["import.meta.env.VITE_WHOP_CHECKOUT_MONTHLY_URL"] = JSON.stringify(checkoutMonthly);
-  }
-  if (checkoutYearly) {
-    define["import.meta.env.VITE_WHOP_CHECKOUT_YEARLY_URL"] = JSON.stringify(checkoutYearly);
-  }
-  if (manageUrl) {
-    define["import.meta.env.VITE_WHOP_MANAGE_URL"] = JSON.stringify(manageUrl);
-  }
 
   return {
     envDir: repoRoot,

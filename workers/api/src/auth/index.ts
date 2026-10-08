@@ -146,8 +146,8 @@ function build(env: Env, db: Db) {
             try {
               await reconcileEntitlementForUser(db, s.userId);
             } catch (error) {
-              // Never block sign-in over a stale Whop entitlement.
-              console.error("whop entitlement reconcile failed", { userId: s.userId, error });
+              // Never block sign-in over a stale billing entitlement.
+              console.error("billing entitlement reconcile failed", { userId: s.userId, error });
             }
           },
         },

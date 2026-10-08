@@ -88,7 +88,7 @@ subscriptionRoutes.get("/", async (c) => {
 });
 
 /**
- * Called after sign-in or checkout return: applies any stored Whop entitlement, then for non-Pro
+ * Called after sign-in or checkout return: applies any stored billing entitlement, then for non-Pro
  * users backfills the trial counters (port of bootstrapSubscription).
  */
 subscriptionRoutes.post("/bootstrap", async (c) => {

@@ -1,5 +1,5 @@
 import { desc, eq } from "drizzle-orm";
-import { adminAuditLogs, profile, user, whopEntitlements } from "../db/schema";
+import { adminAuditLogs, profile, user, billingEntitlements } from "../db/schema";
 import type { Db } from "../types";
 import { newId } from "./scope";
 
@@ -10,13 +10,13 @@ export function normalizeEmail(email: string | undefined | null): string | undef
   return e && e.includes("@") ? e : undefined;
 }
 
-async function latestEntitlement(db: Db, whopUserId: string | undefined, email: string | undefined) {
-  if (whopUserId) {
+async function latestEntitlement(db: Db, polarCustomerId: string | undefined, email: string | undefined) {
+  if (polarCustomerId) {
     const bySub = await db
       .select()
-      .from(whopEntitlements)
-      .where(eq(whopEntitlements.whopUserId, whopUserId))
-      .orderBy(desc(whopEntitlements.lastEventAt))
+      .from(billingEntitlements)
+      .where(eq(billingEntitlements.polarCustomerId, polarCustomerId))
+      .orderBy(desc(billingEntitlements.lastEventAt))
       .get();
     if (bySub) return bySub;
   }
@@ -24,22 +24,22 @@ async function latestEntitlement(db: Db, whopUserId: string | undefined, email: 
     return (
       (await db
         .select()
-        .from(whopEntitlements)
-        .where(eq(whopEntitlements.email, email))
-        .orderBy(desc(whopEntitlements.lastEventAt))
+        .from(billingEntitlements)
+        .where(eq(billingEntitlements.email, email))
+        .orderBy(desc(billingEntitlements.lastEventAt))
         .get()) ?? null
     );
   }
   return null;
 }
 
-async function findUserIdForEntitlement(db: Db, whopUserId: string | undefined, email: string | undefined, userId?: string) {
+async function findUserIdForEntitlement(db: Db, polarCustomerId: string | undefined, email: string | undefined, userId?: string) {
   if (userId) {
     const direct = await db.select({ id: user.id }).from(user).where(eq(user.id, userId)).get();
     if (direct) return direct.id;
   }
-  if (whopUserId) {
-    const bySub = await db.select({ userId: profile.userId }).from(profile).where(eq(profile.whopSub, whopUserId)).get();
+  if (polarCustomerId) {
+    const bySub = await db.select({ userId: profile.userId }).from(profile).where(eq(profile.polarCustomerId, polarCustomerId)).get();
     if (bySub) return bySub.userId;
   }
   if (email) {
@@ -52,7 +52,7 @@ async function findUserIdForEntitlement(db: Db, whopUserId: string | undefined, 
 /** Create a bare user + profile for a paying customer who has not signed up yet. */
 async function createUserFromWebhook(
   db: Db,
-  args: { email: string; whopUserId: string | undefined; proActive: boolean; plan: string },
+  args: { email: string; polarCustomerId: string | undefined; proActive: boolean; plan: string },
 ) {
   const id = newId();
   const now = Date.now();
@@ -60,7 +60,7 @@ async function createUserFromWebhook(
     db.insert(user).values({ id, email: args.email, name: "", emailVerified: false, createdAt: new Date(now), updatedAt: new Date(now) }),
     db.insert(profile).values({
       userId: id,
-      whopSub: args.whopUserId ?? null,
+      polarCustomerId: args.polarCustomerId ?? null,
       proSubscriptionActive: args.proActive,
       plan: args.plan,
     }),
@@ -71,7 +71,7 @@ async function createUserFromWebhook(
 export async function upsertEntitlementFromWebhook(
   db: Db,
   args: {
-    whopUserId?: string;
+    polarCustomerId?: string;
     /** Our own user id, when the payment provider knows it (Polar `external_id`). */
     userId?: string;
     email?: string;
@@ -83,16 +83,16 @@ export async function upsertEntitlementFromWebhook(
     eventType: string;
   },
 ) {
-  const whopUserId = args.whopUserId?.trim() || undefined;
+  const polarCustomerId = args.polarCustomerId?.trim() || undefined;
   const email = normalizeEmail(args.email);
-  if (!whopUserId && !email) return { ok: false as const, reason: "missing_identity" as const };
+  if (!polarCustomerId && !email) return { ok: false as const, reason: "missing_identity" as const };
 
-  const existing = await latestEntitlement(db, whopUserId, email);
+  const existing = await latestEntitlement(db, polarCustomerId, email);
   const now = Date.now();
   if (!existing) {
-    await db.insert(whopEntitlements).values({
+    await db.insert(billingEntitlements).values({
       id: newId(),
-      whopUserId: whopUserId ?? null,
+      polarCustomerId: polarCustomerId ?? null,
       email: email ?? null,
       membershipId: args.membershipId ?? null,
       subscriptionStatus: args.status,
@@ -104,9 +104,9 @@ export async function upsertEntitlementFromWebhook(
     });
   } else {
     await db
-      .update(whopEntitlements)
+      .update(billingEntitlements)
       .set({
-        whopUserId: whopUserId ?? existing.whopUserId,
+        polarCustomerId: polarCustomerId ?? existing.polarCustomerId,
         email: email ?? existing.email,
         membershipId: args.membershipId ?? existing.membershipId,
         subscriptionStatus: args.status,
@@ -116,25 +116,25 @@ export async function upsertEntitlementFromWebhook(
         lastEventType: args.eventType,
         lastEventAt: now,
       })
-      .where(eq(whopEntitlements.id, existing.id));
+      .where(eq(billingEntitlements.id, existing.id));
   }
 
-  let userId = await findUserIdForEntitlement(db, whopUserId, email, args.userId);
+  let userId = await findUserIdForEntitlement(db, polarCustomerId, email, args.userId);
   if (!userId && email) {
-    await createUserFromWebhook(db, { email, whopUserId, proActive: args.proActive, plan: args.status });
-    userId = await findUserIdForEntitlement(db, whopUserId, email, args.userId);
+    await createUserFromWebhook(db, { email, polarCustomerId, proActive: args.proActive, plan: args.status });
+    userId = await findUserIdForEntitlement(db, polarCustomerId, email, args.userId);
   }
   if (userId) {
-    const current = await db.select({ whopSub: profile.whopSub }).from(profile).where(eq(profile.userId, userId)).get();
+    const current = await db.select({ polarCustomerId: profile.polarCustomerId }).from(profile).where(eq(profile.userId, userId)).get();
     await db
       .insert(profile)
-      .values({ userId, proSubscriptionActive: args.proActive, plan: args.status, whopSub: whopUserId ?? null })
+      .values({ userId, proSubscriptionActive: args.proActive, plan: args.status, polarCustomerId: polarCustomerId ?? null })
       .onConflictDoUpdate({
         target: profile.userId,
         set: {
           proSubscriptionActive: args.proActive,
           plan: args.status,
-          whopSub: whopUserId ?? current?.whopSub ?? null,
+          polarCustomerId: polarCustomerId ?? current?.polarCustomerId ?? null,
         },
       });
   }
@@ -145,7 +145,7 @@ export async function upsertEntitlementFromWebhook(
     actor: "polar_webhook",
     details: JSON.stringify({
       eventType: args.eventType,
-      whopUserId: whopUserId ?? null,
+      polarCustomerId: polarCustomerId ?? null,
       email: email ?? null,
       membershipId: args.membershipId ?? null,
       status: args.status,
@@ -162,13 +162,13 @@ export async function upsertEntitlementFromWebhook(
 /** Apply any stored entitlement to a user after sign-in (port of reconcileEntitlementForUser). */
 export async function reconcileEntitlementForUser(db: Db, userId: string) {
   const row = await db
-    .select({ email: user.email, whopSub: profile.whopSub })
+    .select({ email: user.email, polarCustomerId: profile.polarCustomerId })
     .from(user)
     .leftJoin(profile, eq(profile.userId, user.id))
     .where(eq(user.id, userId))
     .get();
   if (!row) return { ok: false as const };
-  const ent = await latestEntitlement(db, row.whopSub ?? undefined, normalizeEmail(row.email));
+  const ent = await latestEntitlement(db, row.polarCustomerId ?? undefined, normalizeEmail(row.email));
   if (!ent) return { ok: true as const, applied: false as const };
   await db
     .insert(profile)
@@ -176,14 +176,14 @@ export async function reconcileEntitlementForUser(db: Db, userId: string) {
       userId,
       proSubscriptionActive: ent.proActive,
       plan: ent.subscriptionStatus,
-      whopSub: row.whopSub ?? ent.whopUserId ?? null,
+      polarCustomerId: row.polarCustomerId ?? ent.polarCustomerId ?? null,
     })
     .onConflictDoUpdate({
       target: profile.userId,
       set: {
         proSubscriptionActive: ent.proActive,
         plan: ent.subscriptionStatus,
-        whopSub: row.whopSub ?? ent.whopUserId ?? null,
+        polarCustomerId: row.polarCustomerId ?? ent.polarCustomerId ?? null,
       },
     });
   return { ok: true as const, applied: true as const };

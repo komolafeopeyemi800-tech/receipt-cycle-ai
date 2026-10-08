@@ -1,6 +1,6 @@
 /**
  * Polar (polar.sh) billing: webhook signature check, event -> entitlement mapping, and the two API calls the apps need
- * (create a checkout, open the customer portal). Polar replaces Whop.
+ * (create a checkout, open the customer portal). Polar is the payment provider.
  */
 import type { EntitlementStatus } from "./entitlements";
 import { ApiError } from "./errors";

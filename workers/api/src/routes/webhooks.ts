@@ -25,8 +25,7 @@ webhookRoutes.post("/polar", async (c) => {
   const entitlement = toPolarEntitlement(c.env, type, event.data);
   if (entitlement) {
     await upsertEntitlementFromWebhook(c.get("db"), {
-      // The entitlement table's "whop" columns now hold the Polar customer id.
-      whopUserId: entitlement.polarCustomerId,
+      polarCustomerId: entitlement.polarCustomerId,
       userId: entitlement.externalId,
       email: entitlement.email,
       membershipId: entitlement.subscriptionId,

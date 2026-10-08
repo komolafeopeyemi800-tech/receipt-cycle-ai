@@ -54,7 +54,7 @@ function readExport(path: string): ConvexTables {
 
 const TABLES = [
   "user", "profile", "account", "user_preferences", "workspaces", "workspace_members", "workspace_invites",
-  "accounts", "categories", "budgets", "transactions", "app_config", "admin_audit_logs", "whop_entitlements",
+  "accounts", "categories", "budgets", "transactions", "app_config", "admin_audit_logs", "billing_entitlements",
 ];
 
 async function main() {

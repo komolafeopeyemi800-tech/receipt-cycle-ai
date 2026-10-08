@@ -162,8 +162,8 @@ adminRoutes.get("/stats", async (c) => {
 
   const usersTotal = await count(db.select({ n: sql<number>`count(*)` }).from(user).get());
   const txTotal = await count(db.select({ n: sql<number>`count(*)` }).from(transactions).get());
-  const whopUsers = await count(
-    db.select({ n: sql<number>`count(*)` }).from(profile).where(sql`coalesce(trim(${profile.whopSub}), '') <> ''`).get(),
+  const billingUsers = await count(
+    db.select({ n: sql<number>`count(*)` }).from(profile).where(sql`coalesce(trim(${profile.polarCustomerId}), '') <> ''`).get(),
   );
   const inRange = (col: Parameters<typeof gte>[0], from: number, to: number) =>
     sql`${col} >= ${from} and ${col} < ${to}`;
@@ -198,7 +198,7 @@ adminRoutes.get("/stats", async (c) => {
   }
 
   return c.json({
-    totals: { users: usersTotal, transactions: txTotal, whopUsers },
+    totals: { users: usersTotal, transactions: txTotal, billingUsers },
     growth: {
       users30,
       usersPrev30,
@@ -226,7 +226,7 @@ adminRoutes.get("/users", async (c) => {
       name: user.name,
       createdAt: user.createdAt,
       googleSub: profile.googleSub,
-      whopSub: profile.whopSub,
+      polarCustomerId: profile.polarCustomerId,
       plan: profile.plan,
       pro: profile.proSubscriptionActive,
       status: profile.status,
@@ -244,7 +244,7 @@ adminRoutes.get("/users", async (c) => {
       name: u.name || null,
       createdAt: u.createdAt.getTime(),
       googleLinked: Boolean(u.googleSub),
-      whopLinked: Boolean(u.whopSub?.trim()),
+      billingLinked: Boolean(u.polarCustomerId?.trim()),
       plan: u.plan ?? (u.pro ? "pro" : "free"),
       proSubscriptionActive: u.pro === true,
       status: u.status ?? "active",

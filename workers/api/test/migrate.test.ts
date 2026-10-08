@@ -145,12 +145,12 @@ describe("Convex to D1 migration", () => {
     expect(await count("SELECT count(*) AS n FROM transactions WHERE amount = 7 AND account_id IS NULL")).toBe(1);
   });
 
-  it("carries config, preferences, audit log and Whop entitlements", async () => {
+  it("carries config, preferences, audit log and billing entitlements", async () => {
     await load();
     expect(await count("SELECT count(*) AS n FROM app_config WHERE key = 'global' AND free_manual_limit = 80")).toBe(1);
     expect(await count("SELECT count(*) AS n FROM user_preferences WHERE currency = 'NGN'")).toBe(1);
     expect(await count("SELECT count(*) AS n FROM admin_audit_logs")).toBe(1);
-    expect(await count("SELECT count(*) AS n FROM whop_entitlements WHERE email = 'ada@example.com' AND pro_active = 1")).toBe(1);
+    expect(await count("SELECT count(*) AS n FROM billing_entitlements WHERE email = 'ada@example.com' AND pro_active = 1")).toBe(1);
     expect(await count("SELECT count(*) AS n FROM workspace_invites WHERE email = 'new@example.com'")).toBe(1);
   });
 

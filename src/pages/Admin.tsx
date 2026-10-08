@@ -6,7 +6,7 @@ const STORAGE_KEY = "receiptcycle_admin_secret";
 const ADMIN_EMAIL_KEY = "receiptcycle_admin_email";
 const PAGE_SIZE = 10;
 
-type UserFilter = "all" | "active" | "premium" | "suspended" | "whop";
+type UserFilter = "all" | "active" | "premium" | "suspended" | "billing";
 type EditableUser = {
   id: string;
   name: string;
@@ -125,7 +125,7 @@ export default function Admin() {
     return source.filter((u) => {
       if (q && !u.email.toLowerCase().includes(q) && !(u.name ?? "").toLowerCase().includes(q)) return false;
       if (filter === "premium" && !u.proSubscriptionActive) return false;
-      if (filter === "whop" && !u.whopLinked) return false;
+      if (filter === "billing" && !u.billingLinked) return false;
       if (filter === "active" && (u.status ?? "active") !== "active") return false;
       if (filter === "suspended" && (u.status ?? "active") !== "suspended") return false;
       return true;
@@ -334,7 +334,7 @@ export default function Admin() {
               <StatCard title="Total Users" value={stats ? fmtNum(stats.totals.users) : "--"} sub={stats ? `+${fmtNum(stats.growth.users30)} this month` : "Loading..."} icon="fa-users" />
               <StatCard
                 title="Paying customers"
-                value={stats ? fmtNum(stats.totals.whopUsers ?? 0) : "--"}
+                value={stats ? fmtNum(stats.totals.billingUsers ?? 0) : "--"}
                 sub="users with a Polar billing profile"
                 icon="fa-bolt"
               />
@@ -476,7 +476,7 @@ export default function Admin() {
                 <FilterButton label="All Users" active={filter === "all"} onClick={() => { setFilter("all"); setPage(0); }} />
                 <FilterButton label="Active" active={filter === "active"} onClick={() => { setFilter("active"); setPage(0); }} />
                 <FilterButton label="Premium" active={filter === "premium"} onClick={() => { setFilter("premium"); setPage(0); }} />
-                <FilterButton label="Paid" active={filter === "whop"} onClick={() => { setFilter("whop"); setPage(0); }} />
+                <FilterButton label="Paid" active={filter === "billing"} onClick={() => { setFilter("billing"); setPage(0); }} />
                 <FilterButton label="Suspended" active={filter === "suspended"} onClick={() => { setFilter("suspended"); setPage(0); }} />
               </div>
               <table className="w-full">
@@ -500,13 +500,13 @@ export default function Admin() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1">
-                          {u.whopLinked ? (
+                          {u.billingLinked ? (
                             <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-orange-100 text-orange-800">Polar</span>
                           ) : null}
                           {u.googleLinked ? (
                             <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-100 text-blue-800">Google</span>
                           ) : null}
-                          {!u.whopLinked && !u.googleLinked ? (
+                          {!u.billingLinked && !u.googleLinked ? (
                             <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-gray-100 text-gray-700">Email</span>
                           ) : null}
                         </div>

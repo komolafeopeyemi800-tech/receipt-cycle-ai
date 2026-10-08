@@ -43,7 +43,7 @@
   and money-leak detection.
 - **Pro Yearly**: same as Pro Monthly, billed annually with a discount.
 
-Checkout is handled by Whop. See https://receiptcycle.com/pricing.
+Checkout is handled by Polar. See https://receiptcycle.com/pricing.
 
 ## Frequently asked
 

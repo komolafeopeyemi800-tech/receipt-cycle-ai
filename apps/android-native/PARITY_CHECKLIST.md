@@ -3,7 +3,7 @@
 ## Auth
 - [x] Email sign-in / sign-up
 - [x] Password reset request + deep link `receiptcycle://reset-password?token=`
-- [x] Google sign-in (Whop sign-in removed; payments stay on Whop until Polar)
+- [x] Google sign-in (Whop sign-in removed; payments use Polar)
 - [x] Google Sign-In when `GOOGLE_ANDROID_CLIENT_ID` is set
 - [x] Sign out
 - [x] Onboarding gate per user

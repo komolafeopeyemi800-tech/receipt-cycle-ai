@@ -91,7 +91,7 @@ export const profile = sqliteTable(
     role: text("role"),
     status: text("status"),
     googleSub: text("google_sub"),
-    whopSub: text("whop_sub"),
+    polarCustomerId: text("polar_customer_id"),
     /** Convex-era bcrypt hash; verified once at first login, then cleared (lazy rehash). */
     legacyPasswordHash: text("legacy_password_hash"),
     /** Original Convex user id, kept for the data migration and support lookups. */
@@ -99,7 +99,7 @@ export const profile = sqliteTable(
   },
   (t) => [
     index("profile_google_sub_idx").on(t.googleSub),
-    index("profile_whop_sub_idx").on(t.whopSub),
+    index("profile_polar_customer_idx").on(t.polarCustomerId),
     index("profile_legacy_convex_idx").on(t.legacyConvexId),
   ],
 );
@@ -278,12 +278,12 @@ export const adminAuditLogs = sqliteTable(
   (t) => [index("audit_created_idx").on(t.createdAt)],
 );
 
-/** Latest known Whop entitlement snapshot (lets access be granted before the user account exists). */
-export const whopEntitlements = sqliteTable(
-  "whop_entitlements",
+/** Latest known billing (Polar) entitlement snapshot (lets access be granted before the user account exists). */
+export const billingEntitlements = sqliteTable(
+  "billing_entitlements",
   {
     id: text("id").primaryKey(),
-    whopUserId: text("whop_user_id"),
+    polarCustomerId: text("polar_customer_id"),
     email: text("email"),
     membershipId: text("membership_id"),
     /** free | pro_monthly | pro_yearly | cancelling */
@@ -294,7 +294,7 @@ export const whopEntitlements = sqliteTable(
     lastEventType: text("last_event_type").notNull(),
     lastEventAt: integer("last_event_at").notNull(),
   },
-  (t) => [index("whop_ent_user_idx").on(t.whopUserId), index("whop_ent_email_idx").on(t.email)],
+  (t) => [index("billing_ent_customer_idx").on(t.polarCustomerId), index("billing_ent_email_idx").on(t.email)],
 );
 
 /**

@@ -138,7 +138,7 @@ export type ConfigPatch = Partial<
 export type AdminArgs = { secret: string; adminEmail?: string; actor?: string };
 
 export type AdminStats = {
-  totals: { users: number; transactions: number; whopUsers: number };
+  totals: { users: number; transactions: number; billingUsers: number };
   growth: {
     users30: number;
     usersPrev30: number;
@@ -159,7 +159,7 @@ export type AdminUser = {
   name: string | null;
   createdAt: number;
   googleLinked: boolean;
-  whopLinked: boolean;
+  billingLinked: boolean;
   plan: string;
   proSubscriptionActive: boolean;
   status: string;

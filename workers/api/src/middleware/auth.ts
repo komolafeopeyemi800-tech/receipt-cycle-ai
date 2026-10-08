@@ -7,7 +7,7 @@ import type { AppEnv, AuthedUser } from "../types";
 
 /**
  * Resolve the signed-in user id for a request. A bearer token is the raw `session.token` that
- * Better Auth (or the Google/Whop endpoints) returned at sign-in; browsers that use Better Auth's
+ * Better Auth (or the Google endpoint) returned at sign-in; browsers that use Better Auth's
  * cookie are handled by falling back to its own session lookup.
  */
 export async function getSessionUserId(c: Parameters<Parameters<typeof createMiddleware<AppEnv>>[0]>[0]): Promise<string | null> {

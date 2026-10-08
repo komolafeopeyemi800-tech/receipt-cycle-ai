@@ -1,8 +1,9 @@
 import { LegalLayout } from "./LegalLayout";
 import { SUPPORT_EMAIL } from "@/content/site";
 
-const PADDLE_BUYER_TERMS = "https://www.paddle.com/legal/buyer-terms";
-const PADDLE_REFUND_POLICY = "https://www.paddle.com/legal/refund-policy";
+const POLAR_TERMS = "https://polar.sh/legal/terms";
+const POLAR_PRIVACY = "https://polar.sh/legal/privacy";
+const POLAR_PORTAL = "https://polar.sh/receipt-cycle/portal";
 
 export default function TermsOfService() {
   return (
@@ -28,19 +29,19 @@ export default function TermsOfService() {
         deal.
       </p>
 
-      <h2>2. Paddle and other payment relationships</h2>
+      <h2>2. Polar and other payment relationships</h2>
       <p>
-        When you purchase a paid plan or digital goods through our <strong>Paddle</strong> checkout, Paddle group
-        companies act as <strong>Merchant of Record</strong> for that transaction. Your contract for payment, receipts,
-        and many buyer-facing obligations runs with Paddle as described in Paddle&apos;s{" "}
-        <a href={PADDLE_BUYER_TERMS} rel="noopener noreferrer" target="_blank">
-          Buyer Terms and Conditions
+        When you purchase a paid plan through our <strong>Polar</strong> checkout, Polar acts as{" "}
+        <strong>Merchant of Record</strong> for that transaction. It collects payment, issues receipts, and handles
+        applicable sales taxes, as described in Polar&apos;s{" "}
+        <a href={POLAR_TERMS} rel="noopener noreferrer" target="_blank">
+          Terms of Service
         </a>{" "}
         and{" "}
-        <a href={PADDLE_REFUND_POLICY} rel="noopener noreferrer" target="_blank">
-          Refund Policy
+        <a href={POLAR_PRIVACY} rel="noopener noreferrer" target="_blank">
+          Privacy Policy
         </a>
-        . TempEmailGen remains the supplier of the Software as that term is used in Paddle&apos;s documentation.
+        . TempEmailGen remains the supplier of the Software and is responsible for the product itself.
       </p>
       <p>
         If you purchase through an <strong>app marketplace</strong> (for example Apple or Google), the marketplace is
@@ -144,7 +145,7 @@ export default function TermsOfService() {
       <h2>10. Fees, trials, and taxes</h2>
       <p>
         Paid features require timely payment through the channel you choose. Prices, currency, taxes, and invoicing for
-        Paddle checkout follow Paddle&apos;s checkout and legal documents at the time of purchase. For marketplace
+        Polar checkout follow what is shown at checkout and Polar&apos;s legal documents at the time of purchase. For marketplace
         purchases, the store sets price and tax presentation. You are responsible for providing accurate billing details
         and for any fees your bank or card issuer charges.
       </p>
@@ -180,7 +181,7 @@ export default function TermsOfService() {
       <p>
         To the maximum extent permitted by law, our aggregate liability for claims arising out of or related to the
         Services or these Terms will not exceed the greater of (a) the amount you paid TempEmailGen directly for the
-        Services in the twelve months before the claim (excluding amounts collected by Paddle or app stores as
+        Services in the twelve months before the claim (excluding amounts collected by Polar or app stores as
         Merchant or seller of record), or (b) fifty US dollars (USD $50) if no such payment occurred.
       </p>
       <p>
@@ -263,9 +264,10 @@ export default function TermsOfService() {
         <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
       </p>
       <p>
-        For Paddle receipts, refunds, and subscription management, use the links in your Paddle email or Paddle&apos;s{" "}
-        <a href="https://paddle.net/" rel="noopener noreferrer" target="_blank">
-          buyer support
+        For receipts, refunds, and subscription management, use <strong>Manage subscription</strong> in the app, the links in
+        your Polar receipt email, or the{" "}
+        <a href={POLAR_PORTAL} rel="noopener noreferrer" target="_blank">
+          customer portal
         </a>
         .
       </p>

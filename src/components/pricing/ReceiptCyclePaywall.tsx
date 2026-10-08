@@ -9,7 +9,7 @@ import {
   PAYWALL_PRICING,
   type PaywallPlanId,
 } from "@mobile-lib/pricingPaywall";
-import { getWhopCheckoutUrl } from "@/lib/whopCheckout";
+import { useBilling } from "@/lib/billing";
 
 function TierCheck() {
   return (
@@ -20,25 +20,20 @@ function TierCheck() {
 export default function ReceiptCyclePaywall() {
   const navigate = useNavigate();
   const { user } = useWebAuth();
+  const { startCheckout } = useBilling();
   const discountPct = yearlyDiscountPercent();
 
-  function ctaForPlan(id: PaywallPlanId) {
-    const url = getWhopCheckoutUrl(id);
+  async function ctaForPlan(id: PaywallPlanId) {
     if (id === "free") {
-      if (url) {
-        window.open(url, "_blank", "noopener,noreferrer");
-        return;
-      }
-      navigate("/dashboard");
+      navigate(user ? "/dashboard" : "/signup");
       return;
     }
-    if (url) {
-      window.open(url, "_blank", "noopener,noreferrer");
+    if (!user) {
+      navigate(`/signup?next=${encodeURIComponent("/pricing")}`);
       return;
     }
-    window.alert(
-      "Checkout is not configured yet. Add VITE_WHOP_CHECKOUT_MONTHLY_URL and VITE_WHOP_CHECKOUT_YEARLY_URL (Whop plan checkout URLs). Optional: VITE_WHOP_CHECKOUT_FREE_URL. Local: repo-root `.env` / `.env.local`, then restart `npm run dev`. Cloudflare Pages: same variable names under Environment variables, then trigger a new deploy. WHOP_CHECKOUT_* / WHOP_CLIENT_ID names are mapped by vite.config.",
-    );
+    const problem = await startCheckout(id);
+    if (problem) window.alert(problem);
   }
 
   return (
@@ -53,7 +48,7 @@ export default function ReceiptCyclePaywall() {
           </h1>
           <p className="mt-3 text-base text-slate-600 sm:text-lg">
             Start free with a guided trial, or unlock unlimited tracking and exports with Pro. Cancel paid plans anytime
-            on Whop.
+            from your account.
           </p>
         </div>
 
@@ -120,7 +115,7 @@ export default function ReceiptCyclePaywall() {
 
         <div className="mx-auto mt-6 max-w-3xl rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-sm text-slate-600 shadow-sm">
           <strong className="font-semibold text-slate-800">Yearly:</strong>{" "}
-          {PAYWALL_PRICING.trialDays}-day free trial on Whop, then {formatUsd(PAYWALL_PRICING.yearlyUsd)} per year.
+          {PAYWALL_PRICING.trialDays}-day free trial, then {formatUsd(PAYWALL_PRICING.yearlyUsd)} per year.
           <span className="text-slate-500"> Monthly bills {formatUsd(PAYWALL_PRICING.monthlyUsd)} per month.</span>
         </div>
 
@@ -167,8 +162,8 @@ export default function ReceiptCyclePaywall() {
         </div>
 
         <p className="mx-auto mt-6 max-w-lg text-center text-xs leading-relaxed text-slate-500">
-          Payments are processed by Whop. Linking your Whop purchase to your Receipt Cycle account unlocks Pro on web and
-          mobile.
+          Payments are processed securely by Polar. Your subscription is tied to your Receipt Cycle account and unlocks Pro on
+          web and mobile.
         </p>
       </main>
     </div>

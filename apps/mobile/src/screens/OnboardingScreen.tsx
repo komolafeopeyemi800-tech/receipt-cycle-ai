@@ -22,7 +22,7 @@ import { usePreferences } from "../contexts/PreferencesContext";
 import { VOICE_INPUT_LANGUAGE_OPTIONS, normalizeVoiceInputLanguage } from "../lib/preferences";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import { PRICING_PLANS } from "../constants/pricing";
-import { expoWhopCheckoutUrl } from "../constants/urls";
+import { useBillingActions } from "../lib/billing";
 import { openHttpsOrExternalUrl } from "../lib/openExternalUrl";
 import type { PaywallPlanId } from "../lib/pricingPaywall";
 
@@ -125,15 +125,12 @@ export function OnboardingScreen({ onDone }: Props) {
     set(arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]);
   };
 
+  const { startCheckout } = useBillingActions();
   const openPlanCheckout = useCallback(async (planId: PaywallPlanId) => {
-    const url = expoWhopCheckoutUrl(planId);
-    if (!url) return;
-    try {
-      await openHttpsOrExternalUrl(url);
-    } catch {
-      // Ignore from onboarding card tap; Pricing screen has richer error messaging.
-    }
-  }, []);
+    if (planId === "free") return;
+    // Errors are ignored here; the Pricing screen has richer error messaging.
+    await startCheckout(planId);
+  }, [startCheckout]);
 
   const persistAndFinish = useCallback(async () => {
     const lang = normalizeVoiceInputLanguage(voiceLang);

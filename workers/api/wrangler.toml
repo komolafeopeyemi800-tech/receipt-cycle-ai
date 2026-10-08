@@ -35,3 +35,12 @@ PASSWORD_AUTH_ENABLED = "true"
 GOOGLE_WEB_CLIENT_ID = "257702962892-m2m0terd11tbn8049umc5bltp5sjqqr1.apps.googleusercontent.com"
 # Browser addresses allowed to call the auth endpoints (the live site, www, and Cloudflare preview versions).
 TRUSTED_ORIGINS = "https://www.receiptcycle.com,https://receipt-cycle-ai.komolafebamidele.workers.dev,https://*-receipt-cycle-ai.komolafebamidele.workers.dev"
+
+# Polar (polar.sh) billing. Secrets (set with `wrangler secret put`): POLAR_ACCESS_TOKEN, POLAR_WEBHOOK_SECRET.
+POLAR_SERVER = "production"
+# Fill these in once the products exist in Polar, then deploy:
+# POLAR_ORGANIZATION_ID = ""
+# POLAR_ORG_SLUG = ""
+# POLAR_MONTHLY_PRODUCT_ID = ""
+# POLAR_YEARLY_PRODUCT_ID = ""
+# POLAR_FREE_PRODUCT_ID = ""

@@ -33,7 +33,11 @@ async function latestEntitlement(db: Db, whopUserId: string | undefined, email: 
   return null;
 }
 
-async function findUserIdForEntitlement(db: Db, whopUserId: string | undefined, email: string | undefined) {
+async function findUserIdForEntitlement(db: Db, whopUserId: string | undefined, email: string | undefined, userId?: string) {
+  if (userId) {
+    const direct = await db.select({ id: user.id }).from(user).where(eq(user.id, userId)).get();
+    if (direct) return direct.id;
+  }
   if (whopUserId) {
     const bySub = await db.select({ userId: profile.userId }).from(profile).where(eq(profile.whopSub, whopUserId)).get();
     if (bySub) return bySub.userId;
@@ -68,6 +72,8 @@ export async function upsertEntitlementFromWebhook(
   db: Db,
   args: {
     whopUserId?: string;
+    /** Our own user id, when the payment provider knows it (Polar `external_id`). */
+    userId?: string;
     email?: string;
     membershipId?: string;
     status: EntitlementStatus;
@@ -113,10 +119,10 @@ export async function upsertEntitlementFromWebhook(
       .where(eq(whopEntitlements.id, existing.id));
   }
 
-  let userId = await findUserIdForEntitlement(db, whopUserId, email);
+  let userId = await findUserIdForEntitlement(db, whopUserId, email, args.userId);
   if (!userId && email) {
     await createUserFromWebhook(db, { email, whopUserId, proActive: args.proActive, plan: args.status });
-    userId = await findUserIdForEntitlement(db, whopUserId, email);
+    userId = await findUserIdForEntitlement(db, whopUserId, email, args.userId);
   }
   if (userId) {
     const current = await db.select({ whopSub: profile.whopSub }).from(profile).where(eq(profile.userId, userId)).get();
@@ -135,8 +141,8 @@ export async function upsertEntitlementFromWebhook(
 
   await db.insert(adminAuditLogs).values({
     id: newId(),
-    action: "whop.webhook_sync",
-    actor: "whop_webhook",
+    action: "billing.webhook_sync",
+    actor: "polar_webhook",
     details: JSON.stringify({
       eventType: args.eventType,
       whopUserId: whopUserId ?? null,

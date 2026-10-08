@@ -1,63 +1,40 @@
 import { Hono } from "hono";
-import { Webhook } from "standardwebhooks";
 import { upsertEntitlementFromWebhook } from "../lib/entitlements";
-import {
-  extractMembershipId,
-  extractWhopEmail,
-  extractWhopUserId,
-  productMatches,
-  toEntitlementStatus,
-} from "../lib/whop";
+import { toPolarEntitlement, verifyPolarWebhook } from "../lib/polar";
 import type { AppEnv } from "../types";
-
-/** Standard Webhooks wants the signing secret base64 encoded; Whop gives it as plain text. */
-function secretB64(raw: string): string {
-  return btoa(raw.trim());
-}
 
 export const webhookRoutes = new Hono<AppEnv>();
 
-/** Whop membership/payment events (port of POST /whop-webhook). Public route, authenticated by signature. */
-webhookRoutes.post("/whop", async (c) => {
-  const rawSecret = c.env.WHOP_WEBHOOK_SECRET?.trim();
-  if (!rawSecret) return c.text("Webhook secret not configured", 503);
-
+/**
+ * Polar webhook (set the endpoint format to "Raw"). Public route, authenticated by the signature.
+ * Answers 202 as soon as the event is accepted; events we do not act on are accepted too so Polar never retries them.
+ */
+webhookRoutes.post("/polar", async (c) => {
+  const secret = c.env.POLAR_WEBHOOK_SECRET?.trim();
+  if (!secret) return c.text("Webhook secret not configured", 503);
   const body = await c.req.text();
-  const headers: Record<string, string> = {};
-  c.req.raw.headers.forEach((value, key) => {
-    headers[key.toLowerCase()] = value;
-  });
+  if (!(await verifyPolarWebhook(secret, c.req.raw.headers, body))) return c.text("Invalid webhook signature", 403);
 
-  let payload: { type?: string; data?: unknown };
+  let event: { type?: string; data?: unknown };
   try {
-    payload = new Webhook(secretB64(rawSecret)).verify(body, headers) as { type?: string; data?: unknown };
+    event = JSON.parse(body) as { type?: string; data?: unknown };
   } catch {
-    return c.text("Invalid webhook signature", 400);
+    return c.text("Invalid payload", 400);
   }
-
-  const type = payload.type ?? "";
-  const data = payload.data;
-  const allowed = new Set(
-    (c.env.WHOP_PRO_PRODUCT_IDS?.trim() ?? "")
-      .split(/[\s,]+/)
-      .map((s) => s.trim())
-      .filter(Boolean),
-  );
-  const entitlement = toEntitlementStatus(type, data);
-  const filterByProduct = type.startsWith("membership.") || type.startsWith("payment.");
-  if (filterByProduct && !productMatches(data, allowed)) return c.text("OK", 200);
-
+  const type = event.type ?? "";
+  const entitlement = toPolarEntitlement(c.env, type, event.data);
   if (entitlement) {
     await upsertEntitlementFromWebhook(c.get("db"), {
-      whopUserId: extractWhopUserId(data) ?? undefined,
-      email: extractWhopEmail(data) ?? undefined,
-      membershipId: extractMembershipId(data) ?? undefined,
+      // The entitlement table's "whop" columns now hold the Polar customer id.
+      whopUserId: entitlement.polarCustomerId,
+      userId: entitlement.externalId,
+      email: entitlement.email,
+      membershipId: entitlement.subscriptionId,
       status: entitlement.status,
       proActive: entitlement.proActive,
-      paymentStatus: entitlement.paymentStatus,
-      source: type,
+      source: "polar",
       eventType: type,
     });
   }
-  return c.text("OK", 200);
+  return c.body(null, 202);
 });

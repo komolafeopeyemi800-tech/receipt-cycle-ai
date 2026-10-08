@@ -17,7 +17,7 @@ export default function CheckoutReturn() {
     const params = new URLSearchParams(window.location.search);
     const screen = parseTargetScreen(params);
     const status = (params.get("status") ?? "").trim().toLowerCase();
-    const whopFlag = params.get("whop_checkout") === "1" ? "&whop_checkout=1" : "";
+    const whopFlag = params.get("polar_checkout") === "1" ? "&polar_checkout=1" : "";
     const fallback = `/dashboard?screen=${encodeURIComponent(screen)}${whopFlag}${status ? `&status=${encodeURIComponent(status)}` : ""}`;
 
     if (status && status !== "success") {

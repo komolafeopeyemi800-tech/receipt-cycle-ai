@@ -5,7 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { AppButton, AppCard, IconTile, ScreenContainer, SegmentedTabs } from "../components/ui/FinanceUI";
-import { expoWhopCheckoutUrl, expoWhopManageUrl } from "../constants/urls";
+import { useBillingActions } from "../lib/billing";
 import { useSubscriptionState } from "../hooks/useSubscriptionState";
 import { openHttpsOrExternalUrl } from "../lib/openExternalUrl";
 import { equivalentMonthlyFromYearly, formatUsd, PAYWALL_PRICING, PAYWALL_TIER_FEATURES, type PaywallPlanId, yearlyDiscountPercent } from "../lib/pricingPaywall";
@@ -18,28 +18,25 @@ export function PricingScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const subscription = useSubscriptionState();
   const [plan, setPlan] = useState<PaidPlan>("yearly");
+  const { startCheckout, openPortal } = useBillingActions();
+  const [busy, setBusy] = useState(false);
 
   async function openCheckout(target: PaywallPlanId = plan) {
-    const url = expoWhopCheckoutUrl(target);
     if (target === "free") {
-      if (url) {
-        try { await openHttpsOrExternalUrl(url); }
-        catch { Alert.alert("Could not open checkout", url); }
-      } else navigation.navigate("Main");
+      navigation.navigate("Main");
       return;
     }
-    if (!url) {
-      Alert.alert("Checkout not configured", "The checkout link for this plan has not been configured yet.");
-      return;
-    }
-    try { await openHttpsOrExternalUrl(url); }
-    catch { Alert.alert("Could not open checkout", url); }
+    setBusy(true);
+    const problem = await startCheckout(target);
+    setBusy(false);
+    if (problem) Alert.alert("Could not open checkout", problem);
   }
 
   async function openManage() {
-    const url = expoWhopManageUrl();
-    try { await openHttpsOrExternalUrl(url); }
-    catch { Alert.alert("Could not open link", url); }
+    setBusy(true);
+    const problem = await openPortal();
+    setBusy(false);
+    if (problem) Alert.alert("Could not open billing", problem);
   }
 
   const price = plan === "yearly" ? formatUsd(PAYWALL_PRICING.yearlyUsd) : formatUsd(PAYWALL_PRICING.monthlyUsd);
@@ -64,7 +61,7 @@ export function PricingScreen() {
             <View><Text style={styles.planName}>Pro Plan</Text><View style={styles.priceRow}><Text style={styles.price}>{price}</Text><Text style={styles.period}>{period}</Text></View></View>
             {plan === "yearly" ? <View style={styles.saveBadge}><Text style={styles.saveText}>Save {yearlyDiscountPercent()}%</Text></View> : null}
           </View>
-          <Text style={styles.billing}>{plan === "yearly" ? `About ${equivalentMonthlyFromYearly()} per month, billed annually after a ${PAYWALL_PRICING.trialDays}-day trial.` : "Flexible monthly billing. Cancel anytime on Whop."}</Text>
+          <Text style={styles.billing}>{plan === "yearly" ? `About ${equivalentMonthlyFromYearly()} per month, billed annually after a ${PAYWALL_PRICING.trialDays}-day trial.` : "Flexible monthly billing. Cancel anytime."}</Text>
           <AppButton label={subscription?.pro ? "Manage subscription" : plan === "yearly" ? "Start your free week" : "Upgrade to Pro"} icon={subscription?.pro ? "settings-outline" : "sparkles-outline"} onPress={() => void (subscription?.pro ? openManage() : openCheckout())} style={styles.cta} />
           <View style={styles.features}>
             {PAYWALL_TIER_FEATURES.monthly.map((feature) => <View key={feature} style={styles.featureRow}><Ionicons name="checkmark-circle" size={18} color={colors.primary} /><Text style={styles.featureText}>{feature}</Text></View>)}
@@ -79,7 +76,7 @@ export function PricingScreen() {
         </AppCard>
 
         {!subscription?.pro ? <Pressable onPress={() => void openCheckout("free")} style={styles.textButton}><Text style={styles.textButtonLabel}>Continue with Free</Text></Pressable> : null}
-        <Pressable onPress={() => void openManage()} style={styles.textButton}><Text style={styles.manageLabel}>Restore purchases or manage on Whop</Text></Pressable>
+        <Pressable onPress={() => void openManage()} style={styles.textButton}><Text style={styles.manageLabel}>Manage subscription and invoices</Text></Pressable>
       </ScrollView>
     </ScreenContainer>
   );

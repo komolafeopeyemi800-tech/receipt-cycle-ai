@@ -6,7 +6,7 @@ import { PAYWALL_PLANS, PAYWALL_TIER_FEATURES, type PaywallPlanId } from "@mobil
 import { ReceiptCycleLogo } from "@/components/brand/ReceiptCycleLogo";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { useWebPreferences } from "@/contexts/WebPreferencesContext";
-import { getWhopCheckoutUrl } from "@/lib/whopCheckout";
+import { useBilling } from "@/lib/billing";
 import { markWebOnboardingComplete, needsWebOnboarding } from "@/lib/webOnboarding";
 import {
   SETTINGS_STORAGE_KEYS,
@@ -90,11 +90,12 @@ export default function Onboarding() {
     navigate("/dashboard", { replace: true });
   }
 
-  function choosePlan(id: PaywallPlanId) {
+  const { startCheckout } = useBilling();
+  async function choosePlan(id: PaywallPlanId) {
     if (id === "free") { finish(); return; }
-    const checkout = getWhopCheckoutUrl(id);
-    if (!checkout) { window.alert("Checkout is not configured yet."); return; }
-    window.open(checkout, "_blank", "noopener,noreferrer");
+    markWebOnboardingComplete(user!.id);
+    const problem = await startCheckout(id);
+    if (problem) window.alert(problem);
   }
 
   if (loading || !user) return null;

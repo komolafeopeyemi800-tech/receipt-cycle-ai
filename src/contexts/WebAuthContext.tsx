@@ -119,7 +119,7 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
     });
   }, [token, bootstrapSubscription]);
 
-  /** After Whop checkout the user may land on our site with `?status=success` or return to an existing tab — re-sync Pro. */
+  /** After Polar checkout the user may land on our site with `?status=success` or return to an existing tab — re-sync Pro. */
   useEffect(() => {
     if (!token || typeof window === "undefined") return;
     const syncIfCheckoutReturn = () => {
@@ -127,19 +127,18 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
       const hit =
         sp.get("status") === "success" ||
         sp.get("checkout") === "success" ||
-        sp.get("whop_checkout") === "1";
+        sp.get("polar_checkout") === "1";
       if (!hit) return;
-      void bootstrapSubscription({ token }).finally(() => {
-        sp.delete("status");
-        sp.delete("checkout");
-        sp.delete("whop_checkout");
-        const qs = sp.toString();
-        window.history.replaceState(
-          {},
-          "",
-          `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`,
-        );
-      });
+      sp.delete("status");
+      sp.delete("checkout");
+      sp.delete("polar_checkout");
+      sp.delete("checkout_id");
+      const qs = sp.toString();
+      window.history.replaceState({}, "", `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`);
+      // Polar confirms the payment to us a moment after the customer returns, so check a few times.
+      for (const delay of [0, 4_000, 10_000, 20_000, 40_000]) {
+        window.setTimeout(() => void bootstrapSubscription({ token }).catch(() => undefined), delay);
+      }
     };
     syncIfCheckoutReturn();
     window.addEventListener("focus", syncIfCheckoutReturn);

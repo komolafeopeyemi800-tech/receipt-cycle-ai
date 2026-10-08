@@ -333,9 +333,9 @@ export default function Admin() {
             <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
               <StatCard title="Total Users" value={stats ? fmtNum(stats.totals.users) : "--"} sub={stats ? `+${fmtNum(stats.growth.users30)} this month` : "Loading..."} icon="fa-users" />
               <StatCard
-                title="Whop sign-in"
+                title="Paying customers"
                 value={stats ? fmtNum(stats.totals.whopUsers ?? 0) : "--"}
-                sub="users with Whop linked"
+                sub="users with a Polar billing profile"
                 icon="fa-bolt"
               />
               <StatCard title="Active Users (30d)" value={stats ? fmtNum(stats.growth.activeUsers30) : "--"} sub={stats ? pct(stats.growth.activeGrowthPct) : "Loading..."} icon="fa-user-check" />
@@ -476,7 +476,7 @@ export default function Admin() {
                 <FilterButton label="All Users" active={filter === "all"} onClick={() => { setFilter("all"); setPage(0); }} />
                 <FilterButton label="Active" active={filter === "active"} onClick={() => { setFilter("active"); setPage(0); }} />
                 <FilterButton label="Premium" active={filter === "premium"} onClick={() => { setFilter("premium"); setPage(0); }} />
-                <FilterButton label="Whop" active={filter === "whop"} onClick={() => { setFilter("whop"); setPage(0); }} />
+                <FilterButton label="Paid" active={filter === "whop"} onClick={() => { setFilter("whop"); setPage(0); }} />
                 <FilterButton label="Suspended" active={filter === "suspended"} onClick={() => { setFilter("suspended"); setPage(0); }} />
               </div>
               <table className="w-full">
@@ -501,7 +501,7 @@ export default function Admin() {
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1">
                           {u.whopLinked ? (
-                            <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-orange-100 text-orange-800">Whop</span>
+                            <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-orange-100 text-orange-800">Polar</span>
                           ) : null}
                           {u.googleLinked ? (
                             <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-100 text-blue-800">Google</span>

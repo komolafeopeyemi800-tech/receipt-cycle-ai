@@ -3,7 +3,7 @@ import { Linking } from "react-native";
 /**
  * Open a URL in the browser / external app.
  * iOS: `Linking.canOpenURL("https://...")` is often false without `LSApplicationQueriesSchemes`,
- * so we skip the check for http(s) and open directly (Whop checkout, manage hub, etc.).
+ * so we skip the check for http(s) and open directly (Polar checkout, billing portal, etc.).
  */
 export async function openHttpsOrExternalUrl(url: string): Promise<void> {
   const u = url.trim();

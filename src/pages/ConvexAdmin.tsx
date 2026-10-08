@@ -334,7 +334,7 @@ export default function ConvexAdmin() {
                         <td className="px-6 py-4">
                           <div className="flex flex-wrap gap-1">
                             {u.whopLinked ? (
-                              <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-orange-100 text-orange-800">Whop</span>
+                              <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-orange-100 text-orange-800">Polar</span>
                             ) : null}
                             {u.googleLinked ? (
                               <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-100 text-blue-800">Google</span>

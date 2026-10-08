@@ -11,7 +11,12 @@ export default defineConfig(async () => {
         miniflare: {
           bindings: {
             TEST_MIGRATIONS: migrations,
-            WHOP_WEBHOOK_SECRET: "whsec_test_secret",
+            POLAR_WEBHOOK_SECRET: "whsec_dGVzdC1zZWNyZXQtYnl0ZXM=",
+            POLAR_ACCESS_TOKEN: "polar_test_token",
+            POLAR_ORG_SLUG: "receipt-cycle",
+            POLAR_MONTHLY_PRODUCT_ID: "prod_monthly",
+            POLAR_YEARLY_PRODUCT_ID: "prod_yearly",
+            POLAR_FREE_PRODUCT_ID: "prod_free",
             ADMIN_DASHBOARD_SECRET: "admin-secret",
             ADMIN_DASHBOARD_ADMIN_EMAILS: "boss@example.com",
             BETTER_AUTH_SECRET: "test-secret-test-secret-test-secret-123",

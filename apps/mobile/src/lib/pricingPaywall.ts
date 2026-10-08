@@ -1,6 +1,6 @@
 /**
  * Single source for premium paywall — web (via @mobile-lib) and Expo share the same prices and copy.
- * Checkout URLs are supplied per platform through env (Whop).
+ * Checkout is created by the API (Polar) when a plan is chosen.
  */
 export const PAYWALL_PRICING = {
   monthlyUsd: 3.5,
@@ -71,7 +71,7 @@ export function paywallPlanDetailLine(plan: PaywallPlanId): string {
     return `Free includes ${PAYWALL_PRICING.trialDays}-day access to Pro-style features and up to 25 transactions (all entry types). No export — upgrade for unlimited data & CSV.`;
   }
   if (plan === "monthly") {
-    return `${formatUsd(PAYWALL_PRICING.monthlyUsd)}/month · full Pro on phone & web. Cancel anytime on Whop.`;
+    return `${formatUsd(PAYWALL_PRICING.monthlyUsd)}/month · full Pro on phone & web. Cancel anytime from your account.`;
   }
   return `${PAYWALL_PRICING.trialDays}-day free trial · then ${formatUsd(PAYWALL_PRICING.yearlyUsd)}/year (save ${yearlyDiscountPercent()}% vs monthly).`;
 }

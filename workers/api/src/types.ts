@@ -30,8 +30,16 @@ export type Env = {
   GOOGLE_ANDROID_CLIENT_ID?: string;
   /** Comma or newline separated emails treated as lifetime Pro / admin allowlist. */
   LIFETIME_PRO_EMAILS?: string;
-  WHOP_WEBHOOK_SECRET?: string;
-  WHOP_PRO_PRODUCT_IDS?: string;
+  /** Polar (polar.sh) billing. Secrets: POLAR_ACCESS_TOKEN, POLAR_WEBHOOK_SECRET. The rest are plain vars. */
+  POLAR_ACCESS_TOKEN?: string;
+  POLAR_WEBHOOK_SECRET?: string;
+  POLAR_ORGANIZATION_ID?: string;
+  POLAR_ORG_SLUG?: string;
+  POLAR_MONTHLY_PRODUCT_ID?: string;
+  POLAR_YEARLY_PRODUCT_ID?: string;
+  POLAR_FREE_PRODUCT_ID?: string;
+  /** "sandbox" uses sandbox-api.polar.sh; anything else is production. */
+  POLAR_SERVER?: string;
   ADMIN_DASHBOARD_SECRET?: string;
   ADMIN_DASHBOARD_ADMIN_EMAILS?: string;
   OPENAI_API_KEY?: string;

@@ -1,6 +1,8 @@
 # Receipt Cycle API Worker (replaces the Convex backend). Secrets are set with
 # `wrangler secret put <NAME>`; never commit values.
 name = "receipt-cycle-api"
+# Keep variables that were added in the Cloudflare dashboard (e.g. the Polar settings) when this file is deployed.
+keep_vars = true
 main = "src/index.ts"
 compatibility_date = "2025-09-01"
 compatibility_flags = ["nodejs_compat"]

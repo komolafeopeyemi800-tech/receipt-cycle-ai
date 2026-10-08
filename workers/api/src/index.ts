@@ -76,6 +76,22 @@ app.route("/api/workspaces", workspaceRoutes);
 app.route("/api/preferences", preferenceRoutes);
 app.route("/api/subscription", subscriptionRoutes);
 app.route("/api/sales", salesRoutes);
+/** Which billing settings are present (yes/no only, never the values). Lets setup be checked without exposing secrets. */
+app.get("/api/billing/status", (c) => {
+  const has = (v: string | undefined) => Boolean(v?.trim());
+  const e = c.env;
+  const checks = {
+    POLAR_ACCESS_TOKEN: has(e.POLAR_ACCESS_TOKEN),
+    POLAR_WEBHOOK_SECRET: has(e.POLAR_WEBHOOK_SECRET),
+    POLAR_ORGANIZATION_ID: has(e.POLAR_ORGANIZATION_ID),
+    POLAR_ORG_SLUG: has(e.POLAR_ORG_SLUG),
+    POLAR_MONTHLY_PRODUCT_ID: has(e.POLAR_MONTHLY_PRODUCT_ID),
+    POLAR_YEARLY_PRODUCT_ID: has(e.POLAR_YEARLY_PRODUCT_ID),
+    POLAR_FREE_PRODUCT_ID: has(e.POLAR_FREE_PRODUCT_ID),
+  };
+  const required = ["POLAR_ACCESS_TOKEN", "POLAR_WEBHOOK_SECRET", "POLAR_MONTHLY_PRODUCT_ID", "POLAR_YEARLY_PRODUCT_ID"] as const;
+  return c.json({ server: e.POLAR_SERVER === "sandbox" ? "sandbox" : "production", ready: required.every((k) => checks[k]), present: checks });
+});
 app.route("/api/billing", billingRoutes);
 app.route("/api/admin", adminRoutes);
 app.route("/api/ai", aiRoutes);

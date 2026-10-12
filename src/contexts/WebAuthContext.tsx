@@ -275,10 +275,21 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
   /** After hydration: allow cached user fallback while fresh `me` resolves. */
   const loading = !hydrated || (Boolean(token) && me === undefined && !cachedUser);
 
-  const user: WebAuthUser | null =
+  const fromServer: WebAuthUser | null =
     me && typeof me === "object" && "id" in me
-      ? { id: me.id as string, email: me.email as string, name: (me as { name?: string | null }).name ?? null }
-      : cachedUser;
+      ? {
+          id: me.id as string,
+          email: me.email as string,
+          name: (me as { name?: string | null }).name ?? null,
+          image: (me as { image?: string | null }).image ?? null,
+        }
+      : null;
+  // Edits made on this device (new name or picture) show immediately, before the server copy refreshes.
+  const user: WebAuthUser | null = fromServer
+    ? cachedUser && cachedUser.id === fromServer.id
+      ? { ...fromServer, name: cachedUser.name ?? fromServer.name, image: cachedUser.image ?? fromServer.image }
+      : fromServer
+    : cachedUser;
 
   const value = useMemo(
     () => ({

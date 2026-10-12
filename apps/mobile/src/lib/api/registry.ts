@@ -3,6 +3,7 @@
  * the names the Convex code used, so screens only changed their imports. Each entry says which
  * Worker route it hits and how to reshape the answer.
  */
+import { defaultAvatarUrl } from "../avatar";
 import type { ApiClient } from "./client";
 import type { ColumnMapping } from "../statementParse/statement";
 import type {
@@ -54,7 +55,7 @@ type Ok = { ok: boolean; error?: string };
 type BetterAuthSession = { token: string; user: { id: string; email: string; name?: string | null; image?: string | null } };
 const toAuthResult = (r: BetterAuthSession, isNewRegistration: boolean): AuthResult => ({
   token: r.token,
-  user: { id: r.user.id, email: r.user.email, name: r.user.name?.trim() || null, image: r.user.image ?? null },
+  user: { id: r.user.id, email: r.user.email, name: r.user.name?.trim() || null, image: r.user.image ?? defaultAvatarUrl(r.user.id) },
   isNewRegistration,
 });
 

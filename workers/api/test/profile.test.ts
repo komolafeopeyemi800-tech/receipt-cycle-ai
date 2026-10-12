@@ -48,6 +48,31 @@ describe("profile editing", () => {
     );
     expect(big.status).toBe(413);
     expect((await api("DELETE", "/api/me/avatar", { token })).json).toEqual({ ok: true });
-    expect((await api("GET", "/api/me", { token })).json.image).toBeNull();
+    expect((await api("GET", "/api/me", { token })).json.image).toMatch(/^https:\/\/api\.dicebear\.com\/9\.x\/notionists\/png\?seed=/);
+  });
+});
+
+describe("default picture and 30-day sign-in", () => {
+  it("gives everyone without a photo the same generated picture everywhere, never based on their email", async () => {
+    const { token, id, email } = await makeUser();
+    const me = (await api("GET", "/api/me", { token })).json;
+    expect(me.image).toContain(`seed=${id}`);
+    expect(me.image).not.toContain(encodeURIComponent(email));
+    expect((await api("GET", "/api/me", { token })).json.image).toBe(me.image);
+    const other = await makeUser();
+    expect((await api("GET", "/api/me", { token: other.token })).json.image).not.toBe(me.image);
+  });
+
+  it("keeps people signed in for 30 days from their last visit, not from first sign-in", async () => {
+    const { token, id } = await makeUser();
+    const expiry = async () => (await env.DB.prepare("SELECT expires_at AS e FROM session WHERE user_id = ?").bind(id).first<{ e: number }>())!.e;
+    const before = await expiry(); // the test helper starts sessions with a 1 day expiry
+    expect(before - Date.now()).toBeLessThan(2 * 86_400_000);
+    expect((await api("GET", "/api/me", { token })).status).toBe(200);
+    const after = await expiry();
+    expect(after - Date.now()).toBeGreaterThan(29 * 86_400_000);
+    // an expired session still cannot be used
+    await env.DB.prepare("UPDATE session SET expires_at = ? WHERE user_id = ?").bind(Date.now() - 1000, id).run();
+    expect((await api("GET", "/api/me", { token })).status).toBe(401);
   });
 });

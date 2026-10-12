@@ -11,7 +11,7 @@ import { hashPbkdf2, isPbkdf2, verifyPbkdf2 } from "../lib/passwordHash";
 import { escapeHtml, layout, mailEnabled, sendMail } from "../lib/mailer";
 import type { Db, Env } from "../types";
 
-const SESSION_SECONDS = 30 * 24 * 60 * 60;
+export const SESSION_SECONDS = 30 * 24 * 60 * 60;
 const RESET_SECONDS = 60 * 60;
 
 /** Reset email with the same three ways in as before: web link, app deep link, and the raw token. */

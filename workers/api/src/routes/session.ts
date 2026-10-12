@@ -20,6 +20,7 @@ import { googleVerifier } from "../lib/googleIdToken";
 import { parseBody } from "../lib/http";
 import { requireUser } from "../middleware/auth";
 import { salesRecords } from "../db/schema";
+import { defaultAvatarUrl } from "../lib/avatar";
 import { deleteAllReceipts } from "./receipts";
 import type { AppEnv } from "../types";
 
@@ -84,7 +85,7 @@ async function completeGoogleSignIn(c: import("hono").Context<AppEnv>, p: Google
   const session = await ctx.internalAdapter.createSession(userId);
   return {
     token: session.token,
-    user: { id: row.id, email: row.email, name: row.name.trim() || null, image: row.image ?? null },
+    user: { id: row.id, email: row.email, name: row.name.trim() || null, image: row.image ?? defaultAvatarUrl(row.id) },
     isNewRegistration,
   };
 }
@@ -140,7 +141,7 @@ meRoutes.use("*", requireUser);
 meRoutes.get("/", async (c) => {
   const u = c.get("user");
   const row = await c.get("db").select({ image: user.image }).from(user).where(eq(user.id, u.id)).get();
-  return c.json({ id: u.id, email: u.email, name: u.name.trim() || null, image: row?.image ?? null });
+  return c.json({ id: u.id, email: u.email, name: u.name.trim() || null, image: row?.image ?? defaultAvatarUrl(u.id) });
 });
 
 /** Change the display name. */

@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { createMiddleware } from "hono/factory";
-import { getAuth } from "../auth";
+import { getAuth, SESSION_SECONDS } from "../auth";
 import { profile, session, user } from "../db/schema";
 import { ApiError } from "../lib/errors";
 import type { AppEnv, AuthedUser } from "../types";
@@ -16,6 +16,11 @@ export async function getSessionUserId(c: Parameters<Parameters<typeof createMid
   if (token) {
     const row = await c.get("db").select().from(session).where(eq(session.token, token)).get();
     if (!row || row.expiresAt.getTime() <= Date.now()) return null;
+    // Keep people signed in for 30 days after they last used the app: push the expiry forward (at most once a day).
+    const full = SESSION_SECONDS * 1000;
+    if (row.expiresAt.getTime() - Date.now() < full - 24 * 60 * 60 * 1000) {
+      await c.get("db").update(session).set({ expiresAt: new Date(Date.now() + full), updatedAt: new Date() }).where(eq(session.id, row.id));
+    }
     return row.userId;
   }
   const viaCookie = await getAuth(c.env, c.get("db")).api.getSession({ headers: c.req.raw.headers });

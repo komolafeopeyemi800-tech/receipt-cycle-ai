@@ -1,23 +1,7 @@
 import { useEffect, useState } from "react";
 import { VoiceQuickAddWeb } from "@/components/dashboard/VoiceQuickAddWeb";
 import { AppChrome } from "@/components/layout/AppChrome";
-import {
-  DetailRow,
-  Drawer,
-  EmptyState,
-  Field,
-  IconBox,
-  inputClass,
-  PrimaryButton,
-  SecondaryButton,
-  Segmented,
-  StatCard,
-  StatusPill,
-  Surface,
-  SurfaceHeader,
-  textareaClass,
-  WorkspaceHeader,
-} from "@/components/workspace/DesktopWorkspaceUI";
+import { DetailRow, Drawer, EmptyState, Field, IconBox, MobileList, MobileRow, PrimaryButton, SecondaryButton, Segmented, StatCard, StatusPill, Surface, SurfaceHeader, WorkspaceHeader, inputClass, textareaClass } from "@/components/workspace/DesktopWorkspaceUI";
 import {
   documentTotal,
   estimateStatus,
@@ -370,7 +354,36 @@ export function CustomersPage() {
             onChange={setStatusFilter}
           />
         </div>
-        <div className="overflow-x-auto">
+        <MobileList>
+          {shown.map((customer) => {
+            const customerInvoices = invoices.filter((invoice) => invoice.customerId === customer.id);
+            const balance = customerInvoices.reduce((sum, invoice) => sum + openBalance(invoice), 0);
+            return (
+              <MobileRow
+                key={customer.id}
+                onClick={() => setSelectedId(customer.id)}
+                label={`Open ${customer.name}`}
+                lead={
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-100 text-xs font-extrabold text-teal-800">
+                    {(customer.company || customer.name).slice(0, 2).toUpperCase()}
+                  </div>
+                }
+                title={customer.name}
+                subtitle={customer.company}
+                lines={[customer.email || customer.phone, `${customerInvoices.length} invoice${customerInvoices.length === 1 ? "" : "s"}`]}
+                amount={balance > 0 ? money(balance) : undefined}
+                amountClassName="text-rose-700"
+                badge={<StatusPill status={customer.status} />}
+              />
+            );
+          })}
+        </MobileList>
+        {shown.length === 0 ? (
+          <div className="xl:hidden">
+            <EmptyState icon="fa-users" title="No customers found" description="Try another search or add a customer." />
+          </div>
+        ) : null}
+        <div className="hidden overflow-x-auto xl:block">
           <table className="w-full min-w-[760px] text-left text-sm">
             <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500">
               <tr>

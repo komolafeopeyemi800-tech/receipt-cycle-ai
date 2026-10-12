@@ -17,22 +17,7 @@ import {
   type VoiceDraft,
 } from "@/components/dashboard/VoiceQuickAddWeb";
 import { TransactionEditDialog } from "@/components/transactions/TransactionEditDialog";
-import {
-  Drawer,
-  EmptyState,
-  Field,
-  IconBox,
-  inputClass,
-  Modal,
-  PrimaryButton,
-  SecondaryButton,
-  Segmented,
-  StatusPill,
-  Surface,
-  SurfaceHeader,
-  textareaClass,
-  WorkspaceHeader,
-} from "@/components/workspace/DesktopWorkspaceUI";
+import { Drawer, EmptyState, Field, IconBox, MobileList, MobileRow, Modal, PrimaryButton, SecondaryButton, Segmented, StatusPill, Surface, SurfaceHeader, WorkspaceHeader, inputClass, textareaClass } from "@/components/workspace/DesktopWorkspaceUI";
 import { MerchantIconBox } from "@/components/workspace/MerchantIconBox";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { useWebPreferences } from "@/contexts/WebPreferencesContext";
@@ -557,7 +542,44 @@ export default function TransactionWorkspace() {
               Filters{activeFilterCount ? ` (${activeFilterCount})` : ""}
             </SecondaryButton>
           </div>
-          <div className="overflow-x-auto">
+          <MobileList>
+            {shown.map((row) => {
+              const account = (accounts ?? []).find((a) => String(a.id) === row.accountId);
+              const isIncome = row.type === "income";
+              return (
+                <MobileRow
+                  key={row.id}
+                  onClick={() => setSelected(row)}
+                  label={`Open ${row.merchant || row.category}`}
+                  lead={
+                    <div className="flex items-center gap-2.5">
+                      <input
+                        type="checkbox"
+                        className="h-5 w-5"
+                        checked={selectedIds.has(String(row.id))}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={() => toggleSelected(String(row.id))}
+                        aria-label={`Select ${row.merchant || row.category}`}
+                      />
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center"><MerchantIconBox merchant={row.merchant} category={row.category} type={isIncome ? "income" : "expense"} /></div>
+                    </div>
+                  }
+                  title={row.merchant || row.description || row.category}
+                  subtitle={`${row.category} · ${account?.name ?? "No account"}`}
+                  lines={[`${formatDate(row.date)}${row.description && row.merchant ? ` · ${row.description}` : ""}`]}
+                  amount={`${isIncome ? "+" : "-"}${formatMoney(row.amount)}`}
+                  amountClassName={isIncome ? "text-emerald-700" : "text-rose-700"}
+                  badge={<StatusPill status={row.type} />}
+                />
+              );
+            })}
+          </MobileList>
+          {shown.length === 0 ? (
+            <div className="xl:hidden">
+              <EmptyState icon="fa-receipt" title="No matching transactions" description="Adjust the filters or add a new expense or income record." />
+            </div>
+          ) : null}
+          <div className="hidden overflow-x-auto xl:block">
             <table className="w-full min-w-[900px] text-left text-sm">
               <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500">
                 <tr>

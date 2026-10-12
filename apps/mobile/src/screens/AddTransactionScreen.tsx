@@ -127,6 +127,8 @@ export function AddTransactionScreen() {
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [accountId, setAccountId] = useState<Id<"accounts"> | null>(null);
   const [notes, setNotes] = useState("");
+  const [showAdditional, setShowAdditional] = useState(false);
+  const [details, setDetails] = useState<ScannedExtracted>({ taxes: [], items: [] });
   const [saving, setSaving] = useState(false);
   const [attachmentBusy, setAttachmentBusy] = useState(false);
   const [attachedScan, setAttachedScan] = useState<ScannedExtracted | null>(
@@ -232,6 +234,8 @@ export function AddTransactionScreen() {
     if (editId) return;
     const s = route.params?.scannedData;
     if (!s) return;
+    setDetails({ ...s, taxes: s.taxes ?? [], items: s.items ?? [] });
+    setShowAdditional(true);
     setTransactionType(s.transaction_type === "income" ? "income" : "expense");
     if (s.total_amount != null && s.total_amount > 0)
       setAmount(String(s.total_amount));
@@ -269,6 +273,11 @@ export function AddTransactionScreen() {
     if (!Number.isNaN(p.getTime())) setDateObj(p);
     if (existing.payment_method) setPaymentMethod(existing.payment_method);
     setNotes(existing.description ?? "");
+    if (existing.receipt_data && typeof existing.receipt_data === "object") {
+      const saved = existing.receipt_data as ScannedExtracted;
+      setDetails({ ...saved, taxes: saved.taxes ?? [], items: saved.items ?? [] });
+      setShowAdditional(true);
+    }
     if (existing.accountId) setAccountId(existing.accountId as Id<"accounts">);
   }, [existing, editId]);
 
@@ -333,6 +342,16 @@ export function AddTransactionScreen() {
     quantity: number | null;
     rate: number | null;
     dueDate: string | null;
+    subtotal: number | null;
+    taxAmount: number | null;
+    taxType: string | null;
+    currency: string | null;
+    vendorAddress: string | null;
+    receiptNumber: string | null;
+    country: string | null;
+    cardType: string | null;
+    cardLast4: string | null;
+    items: Array<{ name: string; quantity: number; unit_price: number; total: number; category?: string }>;
   };
 
   async function applyVoiceDraft(draft: VoiceDraft) {
@@ -449,6 +468,23 @@ export function AddTransactionScreen() {
         (a) => a.name.toLowerCase() === pm.toLowerCase(),
       );
       if (acc) setAccountId(acc.id);
+    }
+    const hasAdditional = draft.subtotal != null || draft.taxAmount != null || Boolean(draft.vendorAddress || draft.receiptNumber || draft.country || draft.cardType || draft.cardLast4 || draft.currency || draft.items?.length);
+    if (hasAdditional) {
+      setDetails((current) => ({
+        ...current,
+        subtotal: draft.subtotal ?? current.subtotal,
+        tax_amount: draft.taxAmount ?? current.tax_amount,
+        taxes: draft.taxAmount != null ? [{ type: draft.taxType ?? "Sales Tax", amount: draft.taxAmount }] : current.taxes,
+        currency: draft.currency ?? current.currency,
+        merchant_address: draft.vendorAddress ?? current.merchant_address,
+        receipt_number: draft.receiptNumber ?? current.receipt_number,
+        country: draft.country ?? current.country,
+        card_type: draft.cardType ?? current.card_type,
+        card_last4: draft.cardLast4 ?? current.card_last4,
+        items: draft.items?.length ? draft.items.map((item) => ({ ...item, price: item.unit_price })) : current.items,
+      }));
+      setShowAdditional(true);
     }
 
     const catName = draft.category.trim();
@@ -649,6 +685,8 @@ export function AddTransactionScreen() {
       }
       const receipt = extracted as ScannedExtracted;
       setAttachedScan(receipt);
+      setDetails({ ...receipt, taxes: receipt.taxes ?? [], items: receipt.items ?? [] });
+      setShowAdditional(true);
       setAttachedReceiptUri(asset.uri);
       setTransactionType(receipt.transaction_type === "income" ? "income" : "expense");
       if (!amount.trim() && receipt.total_amount)
@@ -720,17 +758,29 @@ export function AddTransactionScreen() {
       const mergedTags = [
         ...new Set(scanned ? [...scanTags, "scan"] : scanTags),
       ].slice(0, 16);
+      const cleanNumber = (value: unknown) => {
+        if (value === null || value === undefined || value === "") return undefined;
+        const n = Number(value);
+        return Number.isFinite(n) ? n : undefined;
+      };
+      const receiptData: ScannedExtracted = {
+        ...(scanned ?? {}),
+        ...details,
+        transaction_type: transactionType,
+        merchant_name: merchant.trim() || undefined,
+        total_amount: n,
+        date,
+        category,
+        payment_method: paymentMethod,
+        description: details.description?.trim() || notes.trim() || undefined,
+        subtotal: cleanNumber(details.subtotal),
+        tax_amount: cleanNumber(details.tax_amount),
+        taxes: (details.taxes ?? []).filter((row) => row.type?.trim() || cleanNumber(row.amount) != null),
+        items: (details.items ?? []).filter((row) => row.name.trim()).map((row) => ({ ...row, quantity: cleanNumber(row.quantity) ?? 1, unit_price: cleanNumber(row.unit_price), price: cleanNumber(row.price) ?? cleanNumber(row.unit_price) ?? 0, total: cleanNumber(row.total) })),
+        formatted_receipt_text: (scanned?.formatted_receipt_text ?? details.formatted_receipt_text)?.slice(0, 12000),
+      };
 
       if (editId) {
-        const rd = scanned
-          ? {
-              ...scanned,
-              formatted_receipt_text: scanned.formatted_receipt_text?.slice(
-                0,
-                12000,
-              ),
-            }
-          : (existing?.receipt_data as Record<string, unknown> | undefined);
         await updateTx({
           id: editId,
           workspace,
@@ -748,7 +798,7 @@ export function AddTransactionScreen() {
             ? (existing.tags as string[])
             : [],
           is_recurring: false,
-          receipt_data: rd,
+          receipt_data: receiptData,
         });
       } else {
         // Keep the original picture with the entry. A failed upload must never block saving the transaction.
@@ -791,15 +841,7 @@ export function AddTransactionScreen() {
           accountId: accountId ?? undefined,
           tags: mergedTags,
           is_recurring: false,
-          receipt_data: scanned
-            ? {
-                ...scanned,
-                formatted_receipt_text: scanned.formatted_receipt_text?.slice(
-                  0,
-                  12000,
-                ),
-              }
-            : undefined,
+          receipt_data: receiptData,
           entrySource,
           receipt_url: receiptKey,
         });
@@ -1194,6 +1236,51 @@ export function AddTransactionScreen() {
           placeholder="Add a note..."
           multiline
         />
+        <Pressable style={styles.additionalToggle} onPress={() => setShowAdditional((value) => !value)}>
+          <View style={styles.additionalIcon}><Ionicons name="list-outline" size={18} color={colors.primary} /></View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.additionalTitle}>Additional transaction details</Text>
+            <Text style={styles.additionalHint}>Optional financial, vendor, tax, card and line-item information</Text>
+          </View>
+          <Ionicons name={showAdditional ? "chevron-up" : "chevron-down"} size={18} color={colors.gray500} />
+        </Pressable>
+        {showAdditional ? (
+          <View style={styles.additionalPanel}>
+            <Text style={styles.detailSection}>FINANCIAL DETAILS</Text>
+            <FormField label="Currency" icon="cash-outline" value={details.currency ?? ""} onChangeText={(value) => setDetails((d) => ({ ...d, currency: value.toUpperCase() }))} placeholder={currency} />
+            <FormField label="Subtotal" icon="calculator-outline" value={details.subtotal == null ? "" : String(details.subtotal)} onChangeText={(value) => setDetails((d) => ({ ...d, subtotal: value === "" ? null : Number(value) }))} placeholder="0.00" keyboardType="decimal-pad" />
+            <Text style={styles.detailSection}>VENDOR & PAYMENT</Text>
+            <FormField label="Vendor address" icon="location-outline" value={details.merchant_address ?? ""} onChangeText={(value) => setDetails((d) => ({ ...d, merchant_address: value }))} placeholder="Street, city, state or country" multiline />
+            <FormField label="Receipt number" icon="receipt-outline" value={details.receipt_number ?? ""} onChangeText={(value) => setDetails((d) => ({ ...d, receipt_number: value }))} placeholder="Order or receipt number" />
+            <FormField label="Country" icon="globe-outline" value={details.country ?? ""} onChangeText={(value) => setDetails((d) => ({ ...d, country: value }))} placeholder="Country" />
+            <FormField label="Card type" icon="card-outline" value={details.card_type ?? ""} onChangeText={(value) => setDetails((d) => ({ ...d, card_type: value }))} placeholder="Visa, Mastercard..." />
+            <FormField label="Card last 4" icon="keypad-outline" value={details.card_last4 ?? ""} onChangeText={(value) => setDetails((d) => ({ ...d, card_last4: value.replace(/\D/g, "").slice(0, 4) }))} placeholder="1234" keyboardType="number-pad" />
+            <FormField label="Description" icon="document-text-outline" value={details.description ?? ""} onChangeText={(value) => setDetails((d) => ({ ...d, description: value }))} placeholder="Additional transaction description" multiline />
+
+            <View style={styles.sectionHeadingRow}><Text style={styles.detailSection}>TAX DETAILS</Text><Pressable onPress={() => setDetails((d) => ({ ...d, taxes: [...(d.taxes ?? []), { type: "Sales Tax", amount: 0 }] }))}><Text style={styles.addRowText}>+ Add tax</Text></Pressable></View>
+            {(details.taxes ?? []).map((tax, index) => (
+              <View key={`tax-${index}`} style={styles.detailRowCard}>
+                <TextInput style={[styles.detailInput, { flex: 1.3 }]} value={tax.type ?? ""} onChangeText={(value) => setDetails((d) => ({ ...d, taxes: (d.taxes ?? []).map((row, i) => i === index ? { ...row, type: value } : row) }))} placeholder="Sales Tax" placeholderTextColor={colors.gray400} />
+                <TextInput style={styles.detailInput} value={tax.amount == null ? "" : String(tax.amount)} onChangeText={(value) => setDetails((d) => ({ ...d, taxes: (d.taxes ?? []).map((row, i) => i === index ? { ...row, amount: value === "" ? undefined : Number(value) } : row), tax_amount: (d.taxes ?? []).reduce((sum, row, i) => sum + (i === index ? Number(value) || 0 : Number(row.amount) || 0), 0) }))} placeholder="0.00" keyboardType="decimal-pad" placeholderTextColor={colors.gray400} />
+                <Pressable onPress={() => setDetails((d) => ({ ...d, taxes: (d.taxes ?? []).filter((_, i) => i !== index) }))}><Ionicons name="trash-outline" size={19} color={colors.rose600} /></Pressable>
+              </View>
+            ))}
+
+            <View style={styles.sectionHeadingRow}><Text style={styles.detailSection}>LINE ITEMS</Text><Pressable onPress={() => setDetails((d) => ({ ...d, items: [...(d.items ?? []), { name: "", quantity: 1, unit_price: 0, price: 0, total: 0 }] }))}><Text style={styles.addRowText}>+ Add item</Text></Pressable></View>
+            {(details.items ?? []).map((item, index) => (
+              <View key={`item-${index}`} style={styles.lineItemCard}>
+                <View style={styles.sectionHeadingRow}><Text style={styles.lineItemLabel}>Item {index + 1}</Text><Pressable onPress={() => setDetails((d) => ({ ...d, items: (d.items ?? []).filter((_, i) => i !== index) }))}><Ionicons name="trash-outline" size={18} color={colors.rose600} /></Pressable></View>
+                <TextInput style={styles.detailInputFull} value={item.name} onChangeText={(value) => setDetails((d) => ({ ...d, items: (d.items ?? []).map((row, i) => i === index ? { ...row, name: value } : row) }))} placeholder="Item description" placeholderTextColor={colors.gray400} />
+                <View style={styles.detailRowCard}>
+                  <TextInput style={styles.detailInput} value={String(item.quantity ?? 1)} onChangeText={(value) => setDetails((d) => ({ ...d, items: (d.items ?? []).map((row, i) => i === index ? { ...row, quantity: Number(value) || 1 } : row) }))} placeholder="Qty" keyboardType="decimal-pad" placeholderTextColor={colors.gray400} />
+                  <TextInput style={styles.detailInput} value={String(item.unit_price ?? item.price ?? "")} onChangeText={(value) => setDetails((d) => ({ ...d, items: (d.items ?? []).map((row, i) => i === index ? { ...row, unit_price: Number(value) || 0, price: Number(value) || 0, total: (Number(value) || 0) * (row.quantity || 1) } : row) }))} placeholder="Unit price" keyboardType="decimal-pad" placeholderTextColor={colors.gray400} />
+                  <TextInput style={styles.detailInput} value={item.total == null ? "" : String(item.total)} onChangeText={(value) => setDetails((d) => ({ ...d, items: (d.items ?? []).map((row, i) => i === index ? { ...row, total: Number(value) || 0 } : row) }))} placeholder="Total" keyboardType="decimal-pad" placeholderTextColor={colors.gray400} />
+                </View>
+                <TextInput style={styles.detailInputFull} value={item.category ?? ""} onChangeText={(value) => setDetails((d) => ({ ...d, items: (d.items ?? []).map((row, i) => i === index ? { ...row, category: value } : row) }))} placeholder="Item category (optional)" placeholderTextColor={colors.gray400} />
+              </View>
+            ))}
+          </View>
+        ) : null}
         {attachedScan ||
         route.params?.scannedData ||
         (editId && existing?.receipt_data) ? (
@@ -1523,6 +1610,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.mintSoft,
     marginBottom: 14,
   },
+  additionalToggle: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: colors.border, borderRadius: 14, padding: 13, backgroundColor: colors.surface, marginBottom: 14 },
+  additionalIcon: { width: 36, height: 36, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: colors.mintSoft },
+  additionalTitle: { color: colors.textPrimary, fontSize: 13, fontWeight: "800" },
+  additionalHint: { color: colors.textSecondary, fontSize: 11, lineHeight: 16, marginTop: 2 },
+  additionalPanel: { borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 13, backgroundColor: colors.surface, marginBottom: 16 },
+  detailSection: { color: colors.gray600, fontSize: 11, fontWeight: "900", letterSpacing: 0.8, marginTop: 4, marginBottom: 10 },
+  sectionHeadingRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
+  addRowText: { color: colors.primary, fontSize: 12, fontWeight: "800", marginBottom: 8 },
+  detailRowCard: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
+  detailInput: { flex: 1, minWidth: 0, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 10, color: colors.textPrimary, backgroundColor: colors.surfaceSoft, fontSize: 12 },
+  detailInputFull: { width: "100%", borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 10, color: colors.textPrimary, backgroundColor: colors.surfaceSoft, fontSize: 12, marginBottom: 8 },
+  lineItemCard: { borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 10, marginBottom: 10, backgroundColor: colors.surfaceSoft },
+  lineItemLabel: { color: colors.textPrimary, fontSize: 12, fontWeight: "800", marginBottom: 8 },
   attachedText: {
     color: colors.textPrimary,
     fontSize: 12,

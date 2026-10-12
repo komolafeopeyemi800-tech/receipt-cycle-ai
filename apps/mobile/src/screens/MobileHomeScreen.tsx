@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Animated,
   Image,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -377,38 +378,24 @@ export function MobileHomeScreen() {
               </View>
             </LinearGradient>
             <Pressable
-              style={styles.latestStrip}
-              onPress={() => navigation.navigate("Records")}
+              style={styles.webAccessCard}
+              onPress={() => void Linking.openURL(process.env.EXPO_PUBLIC_WEB_APP_URL?.trim() || "https://receiptcycle.com")}
+              accessibilityRole="link"
+              accessibilityLabel="Open Receipt Cycle website"
             >
-              <View style={styles.latestIcon}>
-                <Ionicons
-                  name={
-                    rows[0]?.type === "income"
-                      ? "arrow-down"
-                      : "receipt-outline"
-                  }
-                  size={17}
-                  color={colors.primary}
-                />
+              <View style={styles.webBrowserIcon}>
+                <View style={styles.webBrowserTop}><View style={styles.webBrowserDots}><View style={styles.webBrowserDot} /><View style={styles.webBrowserDot} /><View style={styles.webBrowserDot} /></View></View>
+                <Ionicons name="globe-outline" size={14} color={colors.primary} />
               </View>
-              <View style={styles.latestCopy}>
-                <Text style={styles.latestTitle} numberOfLines={1}>
-                  {rows[0]
-                    ? rows[0].merchant || rows[0].category
-                    : "No transactions yet"}
-                </Text>
-                <Text style={styles.latestMeta}>
-                  {rows[0]
-                    ? `${formatMoney(Math.abs(rows[0].amount))} · ${formatDate(rows[0].date)}`
-                    : "Your latest activity will appear here"}
-                </Text>
+              <View style={styles.webTitleBox}>
+                <Text style={styles.webAccessTitle} numberOfLines={1}>Access Web</Text>
+                <Text style={styles.webAccessTitle} numberOfLines={1}>Version</Text>
               </View>
-              <Text style={styles.historyLabel}>History</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={17}
-                color={colors.primary}
-              />
+              <View style={styles.webSecurityMark}>
+                <View style={styles.webSecurityRing}><Ionicons name="lock-closed-outline" size={21} color={colors.primary} /></View>
+                <View style={styles.webCrown}><Ionicons name="diamond" size={8} color="#fff" /></View>
+              </View>
+              <Ionicons name="arrow-forward" size={34} color={colors.primary} />
             </Pressable>
             <View style={styles.primaryRow}>
               {primaryTools.map((tool) => (
@@ -753,7 +740,7 @@ export function MobileHomeScreen() {
                             color:
                               tx.type === "income"
                                 ? colors.success
-                                : colors.textPrimary,
+                                : colors.rose600,
                           },
                         ]}
                         numberOfLines={1}
@@ -917,6 +904,16 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     ...shadows.card,
   },
+  webAccessCard: { flexDirection: "row", alignItems: "center", marginTop: 14, paddingHorizontal: 14, paddingVertical: 10, minHeight: 70, borderRadius: 2, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, ...shadows.card },
+  webBrowserIcon: { width: 32, height: 27, borderRadius: 2, borderWidth: 2, borderColor: colors.primary, alignItems: "center", justifyContent: "flex-end", paddingBottom: 1, marginRight: 14 },
+  webBrowserTop: { position: "absolute", top: 0, left: 0, right: 0, height: 7, borderBottomWidth: 1.5, borderBottomColor: colors.primary, justifyContent: "center", paddingLeft: 3 },
+  webBrowserDots: { flexDirection: "row", gap: 3 },
+  webBrowserDot: { width: 2, height: 2, borderRadius: 1, backgroundColor: colors.primary },
+  webTitleBox: { flex: 1, minWidth: 0 },
+  webAccessTitle: { color: colors.textPrimary, fontSize: 16, lineHeight: 21, fontWeight: "500" },
+  webSecurityMark: { width: 42, height: 42, marginRight: 9, flexShrink: 0, alignItems: "center", justifyContent: "center" },
+  webSecurityRing: { width: 38, height: 38, borderRadius: 19, borderWidth: 2, borderColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  webCrown: { position: "absolute", right: -1, bottom: 0, width: 19, height: 19, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: colors.amber600, borderWidth: 2, borderColor: colors.surface },
   latestIcon: {
     width: 34,
     height: 34,

@@ -5,23 +5,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { apiClient } from "@/lib/api";
 import { AppChrome } from "@/components/layout/AppChrome";
 import { VoiceQuickAddWeb, type VoiceDraft } from "@/components/dashboard/VoiceQuickAddWeb";
-import {
-  Drawer,
-  EmptyState,
-  Field,
-  IconBox,
-  inputClass,
-  Modal,
-  PrimaryButton,
-  SecondaryButton,
-  Segmented,
-  StatCard,
-  StatusPill,
-  Surface,
-  SurfaceHeader,
-  textareaClass,
-  WorkspaceHeader,
-} from "@/components/workspace/DesktopWorkspaceUI";
+import { Drawer, EmptyState, Field, IconBox, MobileList, MobileRow, Modal, PrimaryButton, SecondaryButton, Segmented, StatCard, StatusPill, Surface, SurfaceHeader, WorkspaceHeader, inputClass, textareaClass } from "@/components/workspace/DesktopWorkspaceUI";
 import {
   addDaysLocal,
   documentTotal,
@@ -759,7 +743,26 @@ export function InvoicesPage() {
           />
           <p className="text-xs text-slate-500">{shown.length} invoices</p>
         </div>
-        <div className="overflow-x-auto">
+        <MobileList>
+          {shown.map((invoice) => {
+            const owed = invoiceBalance(invoice);
+            const status = invoiceStatus(invoice);
+            return (
+              <MobileRow
+                key={invoice.id}
+                onClick={() => setSelectedId(invoice.id)}
+                label={`Open invoice ${invoice.number}`}
+                lead={<span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-700"><i className="fas fa-file-invoice-dollar" /></span>}
+                title={customerName(invoice.customerId, customers)}
+                subtitle={invoice.number}
+                lines={[`Due ${invoice.dueDate}`, owed > 0 && status !== "draft" ? `Balance ${money(owed)}` : null]}
+                amount={money(documentTotal(invoice))}
+                badge={<StatusPill status={status} />}
+              />
+            );
+          })}
+        </MobileList>
+        <div className="hidden overflow-x-auto xl:block">
           <table className="w-full min-w-[760px] text-left text-sm">
             <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500">
               <tr>
@@ -1366,7 +1369,22 @@ export function EstimatesPage() {
         }
       />
       <Surface>
-        <div className="overflow-x-auto">
+        <MobileList>
+          {estimates.map((estimate) => (
+            <MobileRow
+              key={estimate.id}
+              onClick={() => setSelected(estimate)}
+              label={`Open estimate ${estimate.number}`}
+              lead={<span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-700"><i className="fas fa-file-signature" /></span>}
+              title={customerName(estimate.customerId, customers)}
+              subtitle={estimate.number}
+              lines={[`Valid until ${estimate.validUntil}`]}
+              amount={money(documentTotal(estimate))}
+              badge={<StatusPill status={estimateStatus(estimate)} />}
+            />
+          ))}
+        </MobileList>
+        <div className="hidden overflow-x-auto xl:block">
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500">
               <tr>
@@ -1699,7 +1717,26 @@ export function PaymentsPage() {
           title="Payment history"
           description="Open a completed payment to regenerate or share its receipt"
         />
-        <div className="overflow-x-auto">
+        <MobileList>
+          {payments.map((payment) => {
+            const invoice = invoices.find((row) => row.id === payment.invoiceId);
+            return (
+              <MobileRow
+                key={payment.id}
+                onClick={() => setReceipt(payment)}
+                label={`Open receipt ${payment.receiptNumber}`}
+                lead={<span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-700"><i className="fas fa-receipt" /></span>}
+                title={invoice ? customerName(invoice.customerId, customers) : "Customer"}
+                subtitle={`${payment.receiptNumber}${invoice ? ` · ${invoice.number}` : ""}`}
+                lines={[`${payment.date} · ${payment.method}`]}
+                amount={money(payment.amount)}
+                amountClassName="text-emerald-700"
+                badge={<StatusPill status="received" />}
+              />
+            );
+          })}
+        </MobileList>
+        <div className="hidden overflow-x-auto xl:block">
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500">
               <tr>

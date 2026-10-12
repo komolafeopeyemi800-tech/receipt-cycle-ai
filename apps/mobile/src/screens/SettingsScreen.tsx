@@ -88,8 +88,8 @@ export function SettingsScreen() {
     }
     if (sub && !sub.canExportCsv) {
       Alert.alert(
-        "Pro feature",
-        "CSV export is not included with your current access.",
+        "Pro export",
+        "CSV export is a Pro feature. To review or update your account access, open Receipt Cycle on the web.",
         [
           { text: "OK" },
         ],
@@ -199,14 +199,14 @@ export function SettingsScreen() {
           <RowNav
             icon="download-outline"
             title="Export Data"
-            sub={runtime?.exportEnabled === false ? "Disabled by admin" : sub && !sub.canExportCsv ? "Not included with your current access" : "Download your transaction spreadsheet"}
+            sub={runtime?.exportEnabled === false ? "Disabled by admin" : sub && !sub.canExportCsv ? "Pro feature · Manage access on receiptcycle.com" : "Download your transaction spreadsheet"}
             onPress={() => void exportCsvDownload()}
           />
           <Divider />
           <RowNav
             icon="diamond-outline"
             title="Plan & Access"
-            sub={sub?.pro ? "Pro access active" : sub?.phase === "trial" ? "Trial access active" : "Free access"}
+            sub={sub?.pro ? "Pro access active · Manage on the web" : sub?.phase === "trial" ? "Trial active · Plans are managed on the web" : "Free access · Plans are managed on the web"}
             onPress={() => navigation.navigate("Pricing")}
           />
           <Divider />

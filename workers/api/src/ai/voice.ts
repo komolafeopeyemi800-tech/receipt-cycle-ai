@@ -84,6 +84,16 @@ export type TxDraft = {
   quantity: number | null;
   rate: number | null;
   dueDate: string | null;
+  subtotal: number | null;
+  taxAmount: number | null;
+  taxType: string | null;
+  currency: string | null;
+  vendorAddress: string | null;
+  receiptNumber: string | null;
+  country: string | null;
+  cardType: string | null;
+  cardLast4: string | null;
+  items: Array<{ name: string; quantity: number; unit_price: number; total: number; category?: string }>;
 };
 
 function hintsBlock(hints?: VoiceParseHints | null): string {
@@ -136,6 +146,9 @@ Rules for transaction:
 - description: short note or null.
 - payment_method: how they paid ONLY if they say it (e.g. cash, card, Venmo) — match to their account list when provided; else null.
 
+- Capture every stated transaction detail: subtotal, tax amount and tax type, currency, vendor address, receipt number, country, card type, and last four card digits.
+- If products or services are listed, return every one in items with name, quantity, unit price, total, and category when inferable. Never discard stated line items.
+
 Rules for budget:
 - intent "budget", budgetLimit = monthly cap as a positive number, budgetCategory = category name (match their list when possible), budgetMonth = YYYY-MM if they name a month/year else null (app will default to current month).
 - Other fields can be null or sensible defaults.
@@ -149,7 +162,7 @@ Rules for invoice and estimate:
 - dueDate: YYYY-MM-DD when a due or valid-until date is stated, otherwise null.
 - Put extra scope or context in description.${hintsBlock(hints)}`;
 
-  const jsonShape = `{"intent":"transaction"|"budget"|"invoice"|"estimate","amount":number|null,"type":"expense"|"income","category":"string","merchant":string|null,"date":"YYYY-MM-DD"|null,"description":string|null,"payment_method":string|null,"confidence":"high"|"medium"|"low","budgetCategory":string|null,"budgetLimit":number|null,"budgetMonth":"YYYY-MM"|null,"customerName":string|null,"customerEmail":string|null,"itemName":string|null,"quantity":number|null,"rate":number|null,"dueDate":"YYYY-MM-DD"|null}`;
+  const jsonShape = `{"intent":"transaction"|"budget"|"invoice"|"estimate","amount":number|null,"type":"expense"|"income","category":"string","merchant":string|null,"date":"YYYY-MM-DD"|null,"description":string|null,"payment_method":string|null,"confidence":"high"|"medium"|"low","budgetCategory":string|null,"budgetLimit":number|null,"budgetMonth":"YYYY-MM"|null,"customerName":string|null,"customerEmail":string|null,"itemName":string|null,"quantity":number|null,"rate":number|null,"dueDate":"YYYY-MM-DD"|null,"subtotal":number|null,"taxAmount":number|null,"taxType":string|null,"currency":string|null,"vendorAddress":string|null,"receiptNumber":string|null,"country":string|null,"cardType":string|null,"cardLast4":string|null,"items":[{"name":string,"quantity":number,"unit_price":number,"total":number,"category":string|null}]}`;
 
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -203,6 +216,22 @@ Rules for invoice and estimate:
     const monthOk = budgetMonth && /^\d{4}-\d{2}$/.test(budgetMonth) ? budgetMonth : null;
     const catBudget =
       parsed.budgetCategory != null ? String(parsed.budgetCategory).trim() || null : null;
+    const money = (value: unknown): number | null => {
+      const n = Number(value);
+      return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
+    };
+    const items = Array.isArray(parsed.items)
+      ? parsed.items.flatMap((raw) => {
+          if (!raw || typeof raw !== "object") return [];
+          const row = raw as Record<string, unknown>;
+          const name = String(row.name ?? "").trim();
+          if (!name) return [];
+          const quantity = Number(row.quantity);
+          const unitPrice = money(row.unit_price) ?? 0;
+          const total = money(row.total) ?? unitPrice * (Number.isFinite(quantity) && quantity > 0 ? quantity : 1);
+          return [{ name, quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1, unit_price: unitPrice, total, ...(row.category ? { category: String(row.category).trim() } : {}) }];
+        })
+      : [];
     const draft: TxDraft = {
       intent,
       amount,
@@ -222,6 +251,16 @@ Rules for invoice and estimate:
       quantity: Number.isFinite(Number(parsed.quantity)) && Number(parsed.quantity) > 0 ? Number(parsed.quantity) : null,
       rate: Number.isFinite(Number(parsed.rate)) && Number(parsed.rate) >= 0 ? Number(parsed.rate) : amount,
       dueDate: parsed.dueDate != null && /^\d{4}-\d{2}-\d{2}$/.test(String(parsed.dueDate).slice(0, 10)) ? String(parsed.dueDate).slice(0, 10) : null,
+      subtotal: money(parsed.subtotal),
+      taxAmount: money(parsed.taxAmount),
+      taxType: parsed.taxType != null ? String(parsed.taxType).trim() || null : null,
+      currency: parsed.currency != null ? String(parsed.currency).trim().toUpperCase() || null : null,
+      vendorAddress: parsed.vendorAddress != null ? String(parsed.vendorAddress).trim() || null : null,
+      receiptNumber: parsed.receiptNumber != null ? String(parsed.receiptNumber).trim() || null : null,
+      country: parsed.country != null ? String(parsed.country).trim() || null : null,
+      cardType: parsed.cardType != null ? String(parsed.cardType).trim() || null : null,
+      cardLast4: parsed.cardLast4 != null ? String(parsed.cardLast4).replace(/\D/g, "").slice(-4) || null : null,
+      items,
     };
     return { ok: true, draft };
   } catch {

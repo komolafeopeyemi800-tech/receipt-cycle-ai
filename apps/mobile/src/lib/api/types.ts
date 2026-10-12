@@ -241,6 +241,16 @@ export type TxDraft = {
   quantity: number | null;
   rate: number | null;
   dueDate: string | null;
+  subtotal: number | null;
+  taxAmount: number | null;
+  taxType: string | null;
+  currency: string | null;
+  vendorAddress: string | null;
+  receiptNumber: string | null;
+  country: string | null;
+  cardType: string | null;
+  cardLast4: string | null;
+  items: Array<{ name: string; quantity: number; unit_price: number; total: number; category?: string }>;
 };
 
 export type Finding = { title: string; detail: string; severity: "low" | "medium" | "high" };

@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "../lib/api";
+import { useMutation, useQuery } from "../lib/api";
 import { api } from "../lib/api";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { Directory, File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { TransactionGlyph } from "../components/ui/PremiumIcon";
@@ -45,12 +48,16 @@ type Nav = CompositeNavigationProp<
 export function TransactionsListScreen() {
   const navigation = useNavigation<Nav>();
   const { workspace, ready } = useWorkspace();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  const removeTx = useMutation(api.transactions.remove);
   const sub = useSubscriptionState();
   const { formatMoney, formatMoneyCompact, formatDate } = usePreferences();
   const { filters, setFilters } = useRecordsFilters();
   const [period, setPeriod] = useState<"month" | "all">("all");
   const [selectedYm, setSelectedYm] = useState(() => todayYm());
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
   const range =
     period === "month"
       ? (() => {
@@ -131,6 +138,54 @@ export function TransactionsListScreen() {
 
   const loading = !ready || all === undefined;
 
+  const toggleSelected = (id: string) => setSelectedIds((current) => {
+    const next = new Set(current);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+
+  const leaveSelection = () => { setSelectionMode(false); setSelectedIds(new Set()); };
+
+  async function exportSelected() {
+    if (sub && !sub.canExportCsv) {
+      Alert.alert("Pro export", "CSV export is a Pro feature. To review or update your account access, open Receipt Cycle on the web.", [{ text: "OK" }]);
+      return;
+    }
+    const rows = list.filter((row) => selectedIds.has(row.id));
+    if (!rows.length) return;
+    const csv = [
+      "date,type,category,amount,merchant,description,payment_method,evidence_url",
+      ...rows.map((row) => [row.date, row.type, row.category, row.amount, row.merchant, row.description, row.payment_method, row.evidence_url].map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`).join(",")),
+    ].join("\r\n");
+    try {
+      setBulkBusy(true);
+      const dir = new Directory(Paths.document, "ReceiptCycle", "Exports");
+      if (!dir.exists) dir.create({ intermediates: true });
+      const file = new File(dir, `receipt-cycle-selected-${new Date().toISOString().slice(0, 10)}.csv`);
+      if (!file.exists) file.create({ overwrite: true });
+      file.write(`\uFEFF${csv}`, { encoding: "utf8" });
+      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(file.uri, { mimeType: "text/csv", dialogTitle: "Export selected transactions" });
+      leaveSelection();
+    } catch {
+      Alert.alert("Export failed", "The selected transactions could not be exported.");
+    } finally { setBulkBusy(false); }
+  }
+
+  function deleteSelected() {
+    if (!selectedIds.size || !token) return;
+    Alert.alert("Delete transactions?", `Delete ${selectedIds.size} selected transaction${selectedIds.size === 1 ? "" : "s"}? This cannot be undone.`, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: () => void (async () => {
+        try {
+          setBulkBusy(true);
+          for (const id of selectedIds) await removeTx({ id, userId: user?.id, token });
+          leaveSelection();
+        } catch { Alert.alert("Delete failed", "Some transactions could not be deleted."); }
+        finally { setBulkBusy(false); }
+      })() },
+    ]);
+  }
+
   return (
     <LinearGradient colors={[...gradients.page]} style={styles.flex}>
       <ScreenHeader title="Records" />
@@ -171,9 +226,20 @@ export function TransactionsListScreen() {
         />
         <SectionHeader
           title="Recent Transactions"
-          actionLabel="Filters"
-          onAction={() => navigation.navigate("RecordsFilters")}
+          actionLabel={selectionMode ? "Done" : "Select"}
+          onAction={() => selectionMode ? leaveSelection() : setSelectionMode(true)}
         />
+        <View style={styles.recordsTools}>
+          <Pressable style={styles.filterTool} onPress={() => navigation.navigate("RecordsFilters")}><Ionicons name="funnel-outline" size={15} color={colors.primary} /><Text style={styles.filterToolText}>Filters</Text></Pressable>
+          {selectionMode ? <Pressable onPress={() => setSelectedIds(new Set(list.map((row) => row.id)))}><Text style={styles.selectAllText}>{selectedIds.size === list.length ? "All selected" : "Select all"}</Text></Pressable> : null}
+        </View>
+        {selectionMode ? (
+          <View style={styles.bulkBar}>
+            <Text style={styles.bulkCount}>{selectedIds.size} selected</Text>
+            <Pressable style={styles.bulkAction} disabled={!selectedIds.size || bulkBusy} onPress={() => void exportSelected()}><Ionicons name="download-outline" size={17} color={colors.primary} /><Text style={styles.bulkExport}>Export</Text></Pressable>
+            <Pressable style={styles.bulkAction} disabled={!selectedIds.size || bulkBusy} onPress={deleteSelected}><Ionicons name="trash-outline" size={17} color={colors.rose600} /><Text style={styles.bulkDelete}>Delete</Text></Pressable>
+          </View>
+        ) : null}
         {filters.search ||
         filters.category ||
         filters.startDate ||
@@ -215,13 +281,15 @@ export function TransactionsListScreen() {
                   containerStyle={styles.rowWrap}
                   style={styles.rowPressTarget}
                   onPress={() =>
-                    navigation.navigate("TransactionDetail", {
+                    selectionMode ? toggleSelected(tx.id) : navigation.navigate("TransactionDetail", {
                       transactionId: tx.id,
                     })
                   }
+                  onLongPress={() => { if (!selectionMode) setSelectionMode(true); toggleSelected(tx.id); }}
                   pressedScale={0.985}
                 >
                   <View style={styles.row}>
+                    {selectionMode ? <Ionicons name={selectedIds.has(tx.id) ? "checkbox" : "square-outline"} size={22} color={selectedIds.has(tx.id) ? colors.primary : colors.gray400} /> : null}
                     <TransactionGlyph
                       merchant={tx.merchant}
                       category={tx.category}
@@ -277,6 +345,15 @@ export function TransactionsListScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   pad: { padding: 16 },
+  recordsTools: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
+  filterTool: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 7 },
+  filterToolText: { color: colors.primary, fontSize: 13, fontWeight: "800" },
+  selectAllText: { color: colors.primary, fontSize: 13, fontWeight: "800" },
+  bulkBar: { flexDirection: "row", alignItems: "center", gap: 13, padding: 12, marginBottom: 12, borderRadius: 13, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  bulkCount: { flex: 1, color: colors.textPrimary, fontSize: 13, fontWeight: "800" },
+  bulkAction: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 5 },
+  bulkExport: { color: colors.primary, fontSize: 12, fontWeight: "800" },
+  bulkDelete: { color: colors.rose600, fontSize: 12, fontWeight: "800" },
   activeFilter: {
     flexDirection: "row",
     alignItems: "center",

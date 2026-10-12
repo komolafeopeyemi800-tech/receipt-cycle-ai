@@ -255,7 +255,7 @@ export function Segmented<T extends string>({
   onChange: (value: NoInfer<T>) => void;
 }) {
   return (
-    <div className="inline-flex max-w-full overflow-x-auto rounded-md bg-slate-100 p-1">
+    <div className="inline-flex max-w-full flex-wrap rounded-md bg-slate-100 p-1">
       {options.map((option) => (
         <button
           key={option.value}
@@ -483,5 +483,71 @@ export function DetailRow({
     <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3 last:border-0">
       {body}
     </div>
+  );
+}
+
+/**
+ * Phone and tablet version of a table: one tappable card per record, so nothing needs sideways scrolling.
+ * The table itself is kept for wide screens (xl and up), where there is room for every column.
+ */
+export function MobileList({ children, className }: { children: ReactNode; className?: string }) {
+  return <ul className={cn("divide-y divide-slate-100 xl:hidden", className)}>{children}</ul>;
+}
+
+export function MobileRow({
+  onClick,
+  lead,
+  title,
+  subtitle,
+  lines,
+  amount,
+  amountClassName,
+  badge,
+  label,
+}: {
+  onClick?: () => void;
+  /** Icon, avatar or checkbox shown before the text. */
+  lead?: ReactNode;
+  title: ReactNode;
+  subtitle?: ReactNode;
+  /** Extra short lines (date, category, ...) shown under the subtitle. */
+  lines?: ReactNode[];
+  amount?: ReactNode;
+  amountClassName?: string;
+  /** Usually a StatusPill, shown under the amount. */
+  badge?: ReactNode;
+  label?: string;
+}) {
+  return (
+    <li>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label={label}
+        onClick={onClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick?.();
+          }
+        }}
+        className="flex min-h-[68px] w-full cursor-pointer items-center gap-3 px-4 py-3 text-left active:bg-slate-50 hover:bg-slate-50"
+      >
+        {lead ? <div className="shrink-0">{lead}</div> : null}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-extrabold text-slate-900">{title}</p>
+          {subtitle ? <p className="truncate text-xs text-slate-500">{subtitle}</p> : null}
+          {(lines ?? []).filter(Boolean).map((line, i) => (
+            <p key={i} className="truncate text-xs text-slate-400">
+              {line}
+            </p>
+          ))}
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1 text-right">
+          {amount ? <p className={cn("text-sm font-extrabold tabular-nums text-slate-900", amountClassName)}>{amount}</p> : null}
+          {badge}
+        </div>
+      </div>
+    </li>
   );
 }

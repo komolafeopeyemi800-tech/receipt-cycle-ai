@@ -37,7 +37,10 @@ export function PricingScreen() {
 
         <View style={styles.notice}>
           <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
-          <Text style={styles.noticeText}>Subscription purchases and billing changes are not available inside this Android app.</Text>
+          <View style={styles.flex}>
+            <Text style={styles.noticeTitle}>Manage access on the web</Text>
+            <Text style={styles.noticeText}>Account plans and billing are handled securely on the Receipt Cycle website.</Text>
+          </View>
         </View>
       </ScrollView>
     </ScreenContainer>
@@ -63,5 +66,6 @@ const styles = StyleSheet.create({
   usageLabel: { color: colors.textSecondary, fontSize: uiType.secondary },
   usageValue: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "700", textAlign: "right", flexShrink: 1 },
   notice: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm, backgroundColor: colors.emerald50, borderRadius: 16, padding: spacing.md },
+  noticeTitle: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "800", marginBottom: 3 },
   noticeText: { flex: 1, color: colors.textSecondary, fontSize: uiType.caption, lineHeight: 18 },
 });

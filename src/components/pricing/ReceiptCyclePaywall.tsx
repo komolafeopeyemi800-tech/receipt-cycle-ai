@@ -52,7 +52,7 @@ export default function ReceiptCyclePaywall() {
           </p>
         </div>
 
-        <div className="mt-12 grid gap-6 lg:grid-cols-3 lg:items-stretch">
+        <div className="mt-12 grid gap-6 lg:grid-cols-3 lg:items-stretch grid-cols-1">
           {PAYWALL_PLANS.map((tier) => {
             const features = PAYWALL_TIER_FEATURES[tier.id];
             const popular = tier.id === "yearly";
@@ -121,7 +121,7 @@ export default function ReceiptCyclePaywall() {
 
         <div className="mt-16 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
           <p className="text-center text-xs font-bold uppercase tracking-wider text-slate-500">Why upgrade to Pro</p>
-          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 grid-cols-1">
             {PAYWALL_BENEFITS.slice(0, 6).map((b) => (
               <div key={b.title} className="flex gap-3">
                 <div

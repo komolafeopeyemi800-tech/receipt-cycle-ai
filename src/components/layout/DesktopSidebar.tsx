@@ -11,10 +11,12 @@ type DesktopSidebarProps = {
   drawerMode?: boolean;
   drawerOpen?: boolean;
   onNavigate?: () => void;
+  promoOffset?: boolean;
+  collapsed?: boolean;
 };
 
 /** Primary app navigation — mirrors mobile tabs + dashboard home (SaaS-style sidebar). */
-const DesktopSidebar = ({ drawerMode = false, drawerOpen = true, onNavigate }: DesktopSidebarProps) => {
+const DesktopSidebar = ({ drawerMode = false, drawerOpen = true, onNavigate, promoOffset = false, collapsed = false }: DesktopSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const inAdmin = location.pathname.startsWith("/admin");
@@ -55,19 +57,19 @@ const DesktopSidebar = ({ drawerMode = false, drawerOpen = true, onNavigate }: D
   return (
     <aside
       className={cn(
-        "fixed bottom-0 left-0 top-16 z-40 w-64 overflow-y-auto border-r border-slate-100 bg-white transition-transform duration-200 ease-out",
+        `scrollbar-hidden fixed bottom-0 left-0 ${promoOffset ? "top-[104px]" : "top-16"} z-40 ${collapsed ? "w-20" : "w-64"} overflow-y-auto border-r border-slate-200 bg-white transition-[width,transform] duration-200 ease-out`,
         drawerMode && "shadow-xl",
         drawerMode && !drawerOpen && "-translate-x-full",
         drawerMode && drawerOpen && "translate-x-0",
       )}
     >
       <div className="flex flex-col p-4">
-        <div className="mb-5 rounded-xl border border-teal-100 bg-gradient-to-br from-primary/10 to-teal-50 p-4">
-          <div className="text-xs font-medium text-slate-600">This month (net)</div>
-          <div className="mt-1 text-2xl font-bold tabular-nums text-slate-900" title={fullBalance}>
-            {displayBalance}
+        <div className={`mb-5 rounded-lg border border-teal-100 bg-gradient-to-br from-primary/10 to-teal-50 ${collapsed ? "p-2 text-center" : "p-4"}`}>
+          <div className={`text-xs font-medium text-slate-600 ${collapsed ? "hidden" : ""}`}>This month (net)</div>
+          <div className={`${collapsed ? "text-[10px]" : "mt-1 text-2xl"} font-bold tabular-nums text-slate-900`} title={fullBalance}>
+            {collapsed ? <i className="fas fa-chart-line text-teal-700" /> : displayBalance}
           </div>
-          <div className="mt-1 flex items-center gap-1">
+          <div className={`mt-1 items-center gap-1 ${collapsed ? "hidden" : "flex"}`}>
             {hasUser && summary && !summaryLoading && summary.savingsRate !== null ? (
               <i
                 className={`fas text-xs text-primary ${summary.savingsRate >= 0 ? "fa-arrow-trend-up" : "fa-arrow-trend-down"}`}
@@ -78,40 +80,40 @@ const DesktopSidebar = ({ drawerMode = false, drawerOpen = true, onNavigate }: D
         </div>
 
         <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Menu</p>
-        <nav className="space-y-0.5">
+        <nav className="space-y-0.5 rounded-md border border-slate-200 bg-white p-2 shadow-sm">
           {mainNav.map((item) => (
             <NavLink
               key={item.label}
               to={item.path}
               onClick={() => onNavigate?.()}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
                   isActive ? "bg-primary text-white shadow-md shadow-primary/25" : "text-slate-600 hover:bg-slate-50"
                 }`
               }
             >
-              <i className={`fas ${item.icon} w-5 shrink-0 text-center ${inAdmin ? "" : ""}`} />
-              <span className="truncate">{item.label}</span>
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${inAdmin ? "bg-slate-100" : "bg-teal-50 text-teal-700"}`}><i className={`fas ${item.icon} text-sm`} /></span>
+              <span className={collapsed ? "sr-only" : "truncate"}>{item.label}</span>
             </NavLink>
           ))}
         </nav>
 
-        <div className="mt-6 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white">
+        <div className={`mt-6 rounded-lg bg-gradient-to-br from-slate-900 to-slate-800 text-white ${collapsed ? "p-2" : "p-4"}`}>
           <div className="mb-1 flex items-center gap-2">
             <i className="fas fa-crown text-amber-400" />
-            <span className="text-sm font-semibold">Upgrade</span>
+            <span className={collapsed ? "sr-only" : "text-sm font-semibold"}>Upgrade</span>
           </div>
-          <p className="mb-3 text-xs text-slate-400">Unlimited scans, AI analysis &amp; more</p>
+          <p className={`mb-3 text-xs text-slate-400 ${collapsed ? "hidden" : ""}`}>Unlimited scans, AI analysis &amp; more</p>
           <button
             type="button"
-            onClick={() => navigate(inAdmin ? "/admin" : "/subscription")}
+            onClick={() => inAdmin ? navigate("/admin") : window.dispatchEvent(new Event("receipt-cycle:open-pricing"))}
             className="h-9 w-full rounded-lg bg-white text-xs font-semibold text-slate-900 hover:bg-slate-100"
           >
-            View plans
+            {collapsed ? <i className="fas fa-arrow-up-right-from-square" /> : "View plans"}
           </button>
         </div>
 
-        {user?.email ? (
+        {user?.email && !collapsed ? (
           <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
             <p className="truncate text-xs font-medium text-slate-700">{user.email}</p>
           </div>

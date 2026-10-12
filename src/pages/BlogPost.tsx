@@ -297,7 +297,7 @@ export default function BlogPost() {
         {related.length > 0 ? (
           <section className="mt-16 border-t border-slate-200 pt-10">
             <h2 className="font-display text-2xl font-bold text-slate-900">Keep reading</h2>
-            <div className="mt-6 grid gap-6 sm:grid-cols-3">
+            <div className="mt-6 grid gap-6 sm:grid-cols-3 grid-cols-1">
               {related.map((r) => (
                 <Link
                   key={r.slug}

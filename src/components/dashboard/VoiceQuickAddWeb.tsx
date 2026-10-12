@@ -9,7 +9,7 @@ const primary = "#0f766e";
 const rose600 = "#e11d48";
 
 export type VoiceDraft = {
-  intent: "transaction" | "budget";
+  intent: "transaction" | "budget" | "invoice" | "estimate";
   amount: number | null;
   type: "expense" | "income";
   category: string;
@@ -21,6 +21,12 @@ export type VoiceDraft = {
   budgetCategory: string | null;
   budgetLimit: number | null;
   budgetMonth: string | null;
+  customerName?: string | null;
+  customerEmail?: string | null;
+  itemName?: string | null;
+  quantity?: number | null;
+  rate?: number | null;
+  dueDate?: string | null;
 };
 
 function blobToBase64(blob: Blob): Promise<string> {
@@ -58,6 +64,7 @@ export function VoiceQuickAddWeb({ disabled, hints, onParsed }: Props) {
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [capturedCount, setCapturedCount] = useState(0);
   const recCtxRef = useRef<{ recorder: MediaRecorder; stream: MediaStream } | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
 
@@ -88,7 +95,9 @@ export function VoiceQuickAddWeb({ disabled, hints, onParsed }: Props) {
         setMsg(userFacingError(out.error));
         return;
       }
-      onParsed(out.draft as VoiceDraft);
+      const parsed = out.draft as VoiceDraft;
+      onParsed(parsed);
+      setCapturedCount(Object.values(parsed).filter((value) => value !== null && value !== undefined && value !== "").length);
       setMsg("Parsed — review the preview below and save.");
     } catch (e) {
       setMsg(userFacingError(e instanceof Error ? e.message : "Parse failed"));
@@ -135,7 +144,9 @@ export function VoiceQuickAddWeb({ disabled, hints, onParsed }: Props) {
               return;
             }
             if (out.transcript) setPhrase(out.transcript);
-            onParsed(out.draft as VoiceDraft, out.transcript);
+            const parsed = out.draft as VoiceDraft;
+            onParsed(parsed, out.transcript);
+            setCapturedCount(Object.values(parsed).filter((value) => value !== null && value !== undefined && value !== "").length);
             setMsg("Filled from voice — review and save.");
           } catch (e) {
             setMsg(userFacingError(e instanceof Error ? e.message : "Voice processing failed"));
@@ -175,18 +186,18 @@ export function VoiceQuickAddWeb({ disabled, hints, onParsed }: Props) {
   }, [busy, recording, stopTracks, voiceFromAudio, onParsed, voiceInputLanguage, token, hints]);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-[13px] font-extrabold text-slate-800">Voice or quick text</p>
-      <p className="mt-1.5 text-[11px] leading-snug text-slate-600">
+    <div className="overflow-hidden rounded-lg border border-teal-100 bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-teal-50 to-white px-4 py-3"><div><p className="text-sm font-extrabold text-slate-900">AI voice &amp; quick text</p><p className="mt-0.5 text-[11px] text-slate-500">Speak naturally or type the record you want to create.</p></div><span className="rounded-md bg-teal-700 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white">AI capture</span></div>
+      <div className="p-4"><p className="text-[11px] leading-snug text-slate-600">
         Say a purchase, a budget cap (e.g. &quot;set food budget to 400 this month&quot;), or type below — we match your
         categories and accounts when possible.
       </p>
-      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+      <div className="mt-3 grid grid-cols-[48px_minmax(0,1fr)] gap-2 sm:grid-cols-[48px_minmax(0,1fr)_auto]">
         <button
           type="button"
           disabled={disabled || busy}
           onClick={() => void toggleRecording()}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#0f766e] bg-white text-[#0f766e] shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-50"
+          className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-[#0f766e] bg-white text-[#0f766e] shadow-sm transition disabled:opacity-50 ${recording ? "animate-pulse ring-4 ring-rose-100" : "hover:bg-teal-50"}`}
           style={recording ? { backgroundColor: rose600, borderColor: rose600, color: "#fff" } : undefined}
           aria-label={recording ? "Stop recording" : "Start voice recording"}
         >
@@ -202,22 +213,29 @@ export function VoiceQuickAddWeb({ disabled, hints, onParsed }: Props) {
           onChange={(e) => setPhrase(e.target.value)}
           disabled={disabled || busy}
           placeholder="Type a purchase…"
-          className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-[13px] outline-none focus:border-[#0f766e] focus:ring-1 focus:ring-[#0f766e] disabled:bg-slate-50"
+          className="h-12 min-w-0 rounded-md border border-slate-200 px-3 text-[13px] outline-none focus:border-[#0f766e] focus:ring-2 focus:ring-[#0f766e]/10 disabled:bg-slate-50"
         />
         <button
           type="button"
           disabled={disabled || busy}
           onClick={() => void runParseFromText()}
-          className="shrink-0 rounded-lg px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+          className="col-span-2 h-12 shrink-0 rounded-md px-5 text-xs font-bold text-white disabled:opacity-50 sm:col-span-1"
           style={{ backgroundColor: primary }}
         >
-          Parse
+          {busy ? "Processing…" : "Fill with AI"}
         </button>
       </div>
       {recording ? (
         <p className="mt-2 text-[11px] font-semibold text-rose-600">Recording… tap the mic again to stop.</p>
       ) : null}
-      {msg ? <p className="mt-2 text-[11px] text-slate-600">{msg}</p> : null}
+      {msg ? <p className="mt-2 text-[11px] text-slate-600">{msg}</p> : null}</div>
+      {(recording || busy || capturedCount > 0) ? (
+        <div className="fixed bottom-5 right-5 z-[100] flex min-w-[270px] items-center gap-3 rounded-md border border-slate-200 bg-white px-4 py-4 shadow-2xl" role="status" aria-live="polite">
+          <span className={`flex h-10 w-10 items-center justify-center rounded-full ${recording ? "bg-rose-100 text-rose-600" : busy ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700"}`}><i className={`fas ${recording ? "fa-microphone animate-pulse" : busy ? "fa-circle-notch fa-spin" : "fa-check"}`} /></span>
+          <div><p className="text-sm font-extrabold text-slate-900">{recording ? "Listening…" : busy ? "Processing with AI…" : `Auto-filled ${capturedCount} field${capturedCount === 1 ? "" : "s"}`}</p><p className="mt-0.5 text-xs text-slate-500">{recording ? "Speak naturally, then tap stop." : busy ? "Extracting structured information." : "Review and complete any missing details."}</p></div>
+          {!recording && !busy ? <button type="button" onClick={() => setCapturedCount(0)} className="ml-auto text-slate-400" aria-label="Dismiss notification"><i className="fas fa-times" /></button> : null}
+        </div>
+      ) : null}
     </div>
   );
 }

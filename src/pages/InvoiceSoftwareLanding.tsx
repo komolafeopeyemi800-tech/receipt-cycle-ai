@@ -167,7 +167,7 @@ function PaymentStatusPreview() {
 
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-xl sm:p-6" role="img" aria-label="Sample Receipt Cycle invoice status and balance view">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3 grid-cols-1">
         {[["Total", "$2,770.20", "fa-file-invoice-dollar"], ["Paid", "$1,600.00", "fa-circle-check"], ["Balance", "$1,170.20", "fa-clock"]].map(([label, value, icon]) => (
           <div key={label} className="rounded-2xl bg-slate-50 p-4"><i className={`fas ${icon} text-teal-700`} aria-hidden /><p className="mt-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</p><p className="mt-1 text-lg font-black text-slate-900">{value}</p></div>
         ))}
@@ -325,7 +325,7 @@ export default function InvoiceSoftwareLanding() {
 
       <section className="relative overflow-hidden bg-white py-14 sm:py-20 lg:py-24">
         <div className="absolute -right-32 top-8 h-72 w-72 rounded-full bg-teal-100/70 blur-3xl" />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 sm:px-8 lg:grid-cols-[0.84fr_1.16fr] lg:gap-16">
+        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 sm:px-8 lg:grid-cols-[0.84fr_1.16fr] lg:gap-16 grid-cols-1">
           <div className="max-w-xl">
             <h1 className="text-balance font-display text-4xl font-bold leading-[1.04] tracking-[-0.04em] sm:text-5xl lg:text-[3.5rem]">
               <span className="block text-slate-950">Invoicing software for</span>
@@ -355,7 +355,7 @@ export default function InvoiceSoftwareLanding() {
             <h2 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Spend less time rebuilding invoices</h2>
             <p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg">Good invoicing software should make the next billing task easier while keeping the document accurate. Receipt Cycle brings the customer, work, totals, status, and payment history into the same view.</p>
           </div>
-          <div className="mt-12 grid gap-4 md:grid-cols-6">
+          <div className="mt-12 grid gap-4 md:grid-cols-6 grid-cols-1">
           {benefitCards.map((card, index) => (
             <article key={card.title} className={`${card.tone} rounded-2xl p-6 text-white shadow-sm ${index < 3 ? "md:col-span-2" : "md:col-span-3"}`}>
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-teal-50"><i className={`fas ${card.icon}`} aria-hidden /></span>
@@ -373,7 +373,7 @@ export default function InvoiceSoftwareLanding() {
             <h2 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">All the invoicing features you need to bill with confidence</h2>
             <p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg">Create the document, check the details, and follow the balance after it is sent. Each part of the page below shows a current Receipt Cycle product workflow.</p>
           </div>
-          <div className="mt-14 grid gap-5 lg:grid-cols-2">
+          <div className="mt-14 grid gap-5 lg:grid-cols-2 grid-cols-1">
             <article className="rounded-3xl bg-[#f5f2eb] p-6 sm:p-8">
               <h3 className="font-display text-2xl font-bold text-slate-950">Build invoices from customers and saved services</h3>
               <p className="mt-3 text-sm leading-7 text-slate-600">Choose a customer, confirm the issue and due dates, then add products or services from your catalog. You can also create a custom line item for work that does not fit a saved service. This makes Receipt Cycle useful as simple invoicing software for repeat work and one-off projects.</p>
@@ -404,7 +404,7 @@ export default function InvoiceSoftwareLanding() {
       </section>
 
       <section className="bg-teal-950 py-14 text-white sm:py-16">
-        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_440px]">
+        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_440px] grid-cols-1">
           <div><h2 className="font-display text-3xl font-bold sm:text-4xl">Create an invoice that stays useful after you send it</h2><p className="mt-4 max-w-2xl text-base leading-7 text-teal-100/80">Move from customer details to a reviewed invoice, then keep its status, payments, receipt, and balance in the same workspace.</p><div className="mt-7"><LandingPrimaryCta to={primaryCta} inverse>Create your first invoice</LandingPrimaryCta></div><Link to="/estimate-quotation-software/" className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-teal-100 hover:text-white">Need to quote the work first? Explore estimate software<i className="fas fa-arrow-right text-xs" aria-hidden /></Link></div>
           <div className="grid grid-cols-3 gap-3">
             {[['fa-file-signature','Estimate'],['fa-file-invoice','Invoice'],['fa-receipt','Receipt']].map(([icon,label]) => <div key={label} className="rounded-2xl border border-white/10 bg-white/10 p-4 text-center"><span className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-white text-teal-800"><i className={`fas ${icon}`} aria-hidden /></span><p className="mt-3 text-xs font-bold">{label}</p></div>)}
@@ -413,7 +413,7 @@ export default function InvoiceSoftwareLanding() {
       </section>
 
       <section className="bg-[#f8faf9] py-20 sm:py-28">
-        <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 sm:px-6 lg:grid-cols-[0.8fr_1.2fr]">
+        <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] grid-cols-1">
           <div>
             <h2 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">A clearer way to manage invoices than documents and spreadsheets</h2>
             <p className="mt-5 text-base leading-8 text-slate-600">A document template can produce a single invoice, but it does not remember the customer, connect the payment, or tell you which balance is overdue. A spreadsheet can track status, but it still leaves the customer-facing document and payment receipt somewhere else.</p>
@@ -428,7 +428,7 @@ export default function InvoiceSoftwareLanding() {
       <section className="bg-teal-900 py-20 text-white sm:py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-3xl font-bold sm:text-4xl">Why businesses choose a connected invoice record</h2><p className="mt-4 text-base leading-7 text-teal-100/80">The value is not a flashy template. It is knowing that the document, customer, payment, and remaining balance still agree when you return later.</p></div>
-          <div className="mt-12 grid gap-4 md:grid-cols-2">
+          <div className="mt-12 grid gap-4 md:grid-cols-2 grid-cols-1">
             {[
               ["The customer stays attached", "Open an invoice and see who it belongs to without searching another file. Customer records also support estimates and payment history."],
               ["The calculation stays visible", "Line items, quantities, rates, tax, discounts, and totals remain readable in the builder and preview."],
@@ -442,7 +442,7 @@ export default function InvoiceSoftwareLanding() {
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Invoice software for freelancers, consultants, and small businesses</h2><p className="mt-4 text-base leading-7 text-slate-600">Choose how you work to see how Receipt Cycle fits the billing job.</p></div>
-          <div className="mt-12 grid items-stretch gap-5 lg:grid-cols-[1.35fr_0.65fr]">
+          <div className="mt-12 grid items-stretch gap-5 lg:grid-cols-[1.35fr_0.65fr] grid-cols-1">
             <div
               id="audience-panel"
               role="tabpanel"
@@ -508,9 +508,9 @@ export default function InvoiceSoftwareLanding() {
 
       <section className="bg-[#eef8f5] py-20 sm:py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 lg:grid-cols-2">
+          <div className="grid overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 lg:grid-cols-2 grid-cols-1">
             <div className="p-8 sm:p-10"><h2 className="font-display text-3xl font-bold text-slate-950">Help when you need a clear answer</h2><p className="mt-4 text-base leading-7 text-slate-600">Questions about the invoice workflow, billing, or your account should have a direct path to an answer. Use the product guidance, browse common questions, or contact the Receipt Cycle team.</p><div className="mt-7 flex flex-wrap gap-3"><Link to="/contact" className="inline-flex min-h-11 items-center rounded-xl bg-teal-700 px-5 text-sm font-bold text-white">Contact us</Link><Link to="/faq" className="inline-flex min-h-11 items-center rounded-xl border border-slate-300 px-5 text-sm font-bold text-slate-700">Visit the FAQ</Link></div></div>
-            <div className="grid gap-px bg-slate-200 sm:grid-cols-3 lg:grid-cols-1">
+            <div className="grid gap-px bg-slate-200 sm:grid-cols-3 lg:grid-cols-1 grid-cols-1">
               {[['fa-list-ol','Guided setup','The invoice builder separates customer details, line items, totals, and review into clear steps.'],['fa-circle-question','Common questions','Find product answers without turning the sales page into a technical manual.'],['fa-envelope','Email support','Reach support@receiptcycle.com when your question needs a person.']].map(([icon,title,body]) => <div key={title} className="bg-[#f8faf9] p-6"><i className={`fas ${icon} text-teal-700`} aria-hidden /><h3 className="mt-3 text-sm font-extrabold">{title}</h3><p className="mt-2 text-xs leading-5 text-slate-500">{body}</p></div>)}
             </div>
           </div>
@@ -520,7 +520,7 @@ export default function InvoiceSoftwareLanding() {
       <section className="py-20 sm:py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-3xl font-bold text-slate-950 sm:text-4xl">Resources for clearer business records</h2><p className="mt-4 text-base leading-7 text-slate-600">Invoicing is one part of the financial record. These guides cover the expense and receipt side of running a small business.</p></div>
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
+          <div className="mt-12 grid gap-5 md:grid-cols-3 grid-cols-1">
             {resources.map((resource) => <article key={resource.href} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><img src={resource.image} alt="" className="aspect-[16/9] w-full object-cover" loading="lazy" decoding="async" /><div className="p-6"><h3 className="font-display text-lg font-bold leading-6 text-slate-950">{resource.title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{resource.description}</p><Link to={resource.href} className="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-teal-700">Read the guide<i className="fas fa-arrow-right text-xs" aria-hidden /></Link></div></article>)}
           </div>
         </div>
@@ -536,7 +536,7 @@ export default function InvoiceSoftwareLanding() {
       </section>
 
       <section className="bg-teal-950 py-16 text-white sm:py-20">
-        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 text-center sm:px-6 lg:grid-cols-[1fr_auto] lg:text-left">
+        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 text-center sm:px-6 lg:grid-cols-[1fr_auto] lg:text-left grid-cols-1">
           <div><h2 className="font-display text-3xl font-bold sm:text-4xl">Create a professional invoice and keep the balance in view</h2><p className="mt-4 max-w-2xl text-base leading-7 text-teal-100/80">Add the customer, describe the work, review the total, and keep every payment connected to the document that started it.</p></div>
           <div className="flex flex-col justify-center gap-3 sm:flex-row"><LandingPrimaryCta to={primaryCta} inverse>Create your first invoice</LandingPrimaryCta><Link to="/pricing" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/30 px-6 py-3 text-sm font-extrabold text-white hover:bg-white/10">View pricing</Link></div>
         </div>

@@ -22,7 +22,7 @@ function usePicker() {
   const { showActionSheetWithOptions } = useActionSheet();
   return (title: string, options: string[], onSelect: (value: string) => void) => {
     const labels = [...options, "Cancel"];
-    showActionSheetWithOptions({ title, options: labels, cancelButtonIndex: labels.length - 1 }, (index) => {
+    showActionSheetWithOptions({ title, options: labels, cancelButtonIndex: labels.length - 1, useModal: true, containerStyle: { paddingBottom: 40 } }, (index) => {
       if (index === undefined || index === labels.length - 1) return;
       if (options[index]) onSelect(options[index]!);
     });
@@ -36,6 +36,7 @@ export function InvoiceDiscountTaxScreen() {
   const pick = usePicker();
   const [discountInput, setDiscountInput] = useState(draft.discountValue ? String(draft.discountValue) : "");
   const [shippingInput, setShippingInput] = useState(draft.shipping ? String(draft.shipping) : "");
+  const [taxInput, setTaxInput] = useState(draft.taxRate ? String(draft.taxRate) : "");
   const totals = calculateInvoiceTotals(draft);
 
   function numberValue(value: string) {
@@ -49,7 +50,13 @@ export function InvoiceDiscountTaxScreen() {
       <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Subtotal</Text><Text style={styles.subtotal}>{formatMoney(totals.subtotal)}</Text></View>
       <SelectField label="Discount Type" icon="pricetag-outline" value={draft.discountType === "percentage" ? "Percentage" : "Fixed amount"} onPress={() => pick("Discount type", ["Percentage", "Fixed amount"], (value) => updateDraft({ discountType: (value === "Percentage" ? "percentage" : "fixed") as DiscountType }))} />
       <View style={styles.valueRow}><View style={{ flex: 1 }}><FormField label="Discount" icon="remove-circle-outline" value={discountInput} onChangeText={(value) => { setDiscountInput(value); updateDraft({ discountValue: numberValue(value) }); }} keyboardType="decimal-pad" placeholder="0" prefix={draft.discountType === "fixed" ? (currency === "USD" ? "$" : currency) : undefined} suffix={draft.discountType === "percentage" ? "%" : undefined} /></View><Text style={styles.negative}>-{formatMoney(totals.discountAmount)}</Text></View>
-      <SelectField label="Tax" icon="receipt-outline" value={draft.taxRate > 0 ? `${draft.taxLabel} (${draft.taxRate}%)` : "No tax"} onPress={() => pick("Tax rate", ["No tax", "Sales Tax (5%)", "Sales Tax (8.25%)", "Sales Tax (10%)"], (value) => updateDraft({ taxRate: Number(value.match(/[\d.]+/)?.[0] ?? 0), taxLabel: value === "No tax" ? draft.taxLabel : "Sales Tax" }))} />
+      <SelectField label="Tax" icon="receipt-outline" value={draft.taxRate > 0 ? `${draft.taxLabel} (${draft.taxRate}%)` : "No tax"} onPress={() => pick("Tax rate", ["No tax", "Sales Tax (5%)", "Sales Tax (8.25%)", "Sales Tax (10%)", "Custom rate"], (value) => {
+        if (value === "Custom rate") return;
+        const taxRate = Number(value.match(/[\d.]+/)?.[0] ?? 0);
+        setTaxInput(taxRate ? String(taxRate) : "");
+        updateDraft({ taxRate, taxLabel: value === "No tax" ? "Tax" : "Sales Tax" });
+      })} />
+      <FormField label="Custom Tax Rate" icon="calculator-outline" value={taxInput} onChangeText={(value) => { setTaxInput(value); updateDraft({ taxRate: Math.min(100, numberValue(value)), taxLabel: "Tax" }); }} keyboardType="decimal-pad" placeholder="Enter percentage" suffix="%" />
       <View style={styles.taxAmount}><Text style={styles.summaryLabel}>Calculated tax</Text><Text style={styles.positive}>+{formatMoney(totals.taxAmount)}</Text></View>
       <FormField label="Shipping" icon="car-outline" value={shippingInput} onChangeText={(value) => { setShippingInput(value); updateDraft({ shipping: numberValue(value) }); }} keyboardType="decimal-pad" placeholder="0.00" prefix={currency === "USD" ? "$" : currency} />
       <View style={styles.totalRow}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalValue}>{formatMoney(totals.total)}</Text></View>
@@ -87,6 +94,11 @@ export function InvoiceExtrasScreen() {
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       <FormField label="Notes" icon="chatbox-ellipses-outline" value={draft.notes} onChangeText={(notes) => updateDraft({ notes })} placeholder="Thank you for your business!" multiline />
       <SelectField label="Terms & Conditions" icon="document-text-outline" value={draft.terms} onPress={() => pick("Payment terms", ["Due on receipt", "Net 7", "Net 15", "Net 30", "Net 60"], (terms) => updateDraft({ terms, dueDate: addDaysYmd(draft.issueDate, paymentTermsDays(terms)) }))} />
+      <AppCard style={styles.automationCard}>
+        <View style={styles.switchRow}><View style={{ flex: 1 }}><Text style={styles.switchTitle}>Recurring Invoice</Text><Text style={styles.switchMeta}>Automatically create this invoice on a schedule.</Text></View><Switch value={draft.recurringEnabled ?? false} onValueChange={(recurringEnabled) => updateDraft({ recurringEnabled })} trackColor={{ false: colors.gray200, true: "#82d8c7" }} thumbColor={draft.recurringEnabled ? colors.primary : "#fff"} /></View>
+        {draft.recurringEnabled ? <><SelectField label="Frequency" icon="repeat-outline" value={(draft.recurrenceFrequency ?? "monthly").replace(/^./, (value) => value.toUpperCase())} onPress={() => pick("Repeat invoice", ["Weekly", "Monthly", "Quarterly", "Yearly"], (value) => updateDraft({ recurrenceFrequency: value.toLowerCase() as typeof draft.recurrenceFrequency }))} /><FormField label="Start Date" icon="calendar-outline" value={draft.recurrenceStartDate ?? draft.issueDate} onChangeText={(recurrenceStartDate) => updateDraft({ recurrenceStartDate })} placeholder="YYYY-MM-DD" /></> : null}
+        <View style={styles.switchRow}><View style={{ flex: 1 }}><Text style={styles.switchTitle}>Automated Reminders</Text><Text style={styles.switchMeta}>Send follow-ups when this invoice becomes overdue.</Text></View><Switch value={draft.automatedReminders ?? true} onValueChange={(automatedReminders) => updateDraft({ automatedReminders })} trackColor={{ false: colors.gray200, true: "#82d8c7" }} thumbColor={(draft.automatedReminders ?? true) ? colors.primary : "#fff"} /></View>
+      </AppCard>
       <View style={styles.switchRow}><View style={{ flex: 1 }}><Text style={styles.switchTitle}>Signature</Text><Text style={styles.switchMeta}>Add a typed signature to the invoice.</Text></View><Switch value={draft.signatureEnabled} onValueChange={(signatureEnabled) => updateDraft({ signatureEnabled })} trackColor={{ false: colors.gray200, true: "#82d8c7" }} thumbColor={draft.signatureEnabled ? colors.primary : "#fff"} /></View>
       {draft.signatureEnabled ? <View style={styles.signatureBox}><FormField label="Signature Name" icon="pencil-outline" value={draft.signatureText} onChangeText={(signatureText) => updateDraft({ signatureText })} placeholder="Alex Rivera" /><Text style={styles.signaturePreview}>{draft.signatureText || "Your signature"}</Text></View> : null}
       <View style={styles.assetRow}>
@@ -117,6 +129,7 @@ const styles = StyleSheet.create({
   switchRow: { minHeight: 64, flexDirection: "row", alignItems: "center", gap: spacing.md, marginBottom: spacing.md },
   switchTitle: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "800" },
   switchMeta: { color: colors.gray500, fontSize: uiType.caption, marginTop: 3 },
+  automationCard: { marginBottom: spacing.lg, paddingBottom: spacing.xs },
   signatureBox: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.medium, backgroundColor: colors.surface, padding: spacing.md, marginBottom: spacing.lg },
   signaturePreview: { color: colors.textPrimary, fontSize: 27, fontStyle: "italic", textAlign: "center", marginTop: -spacing.sm, marginBottom: spacing.sm },
   assetRow: { flexDirection: "row", gap: spacing.sm },

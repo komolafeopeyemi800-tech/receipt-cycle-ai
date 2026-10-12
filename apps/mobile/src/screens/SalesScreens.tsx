@@ -1,62 +1,207 @@
 import { useMemo, useState } from "react";
-import { Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  FlatList,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, type CompositeNavigationProp } from "@react-navigation/native";
+import {
+  useNavigation,
+  type CompositeNavigationProp,
+} from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ScreenHeader } from "../components/ScreenHeader";
-import { AppButton, AppCard, EmptyState, IconTile, KpiCard, ScreenContainer, SearchInput, SectionHeader, SegmentedTabs, StatusBadge } from "../components/ui/FinanceUI";
+import {
+  AppButton,
+  AppCard,
+  EmptyState,
+  IconTile,
+  KpiCard,
+  ScreenContainer,
+  SearchInput,
+  SectionHeader,
+  SegmentedTabs,
+  StatusBadge,
+} from "../components/ui/FinanceUI";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
 import { usePaymentFlow } from "../contexts/PaymentFlowContext";
 import { useEstimateFlow } from "../contexts/EstimateFlowContext";
-import type { RootStackParamList, SalesStackParamList } from "../navigation/types";
+import type {
+  RootStackParamList,
+  SalesStackParamList,
+} from "../navigation/types";
 import { colors, radius, spacing, uiType } from "../theme/tokens";
+import { PremiumIcon } from "../components/ui/PremiumIcon";
 
-type Nav = CompositeNavigationProp<NativeStackNavigationProp<SalesStackParamList>, NativeStackNavigationProp<RootStackParamList>>;
-type Document = { id: string; customer: string; issuedAt: string; amount: number; status: "draft" | "sent" | "paid" | "overdue" | "accepted" | "expired" };
+type Nav = CompositeNavigationProp<
+  NativeStackNavigationProp<SalesStackParamList>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
+type Document = {
+  id: string;
+  customer: string;
+  issuedAt: string;
+  amount: number;
+  status: "draft" | "sent" | "paid" | "overdue" | "accepted" | "expired";
+};
 type ListKind = "invoice" | "estimate";
 
 function PreviewBanner() {
-  return <View style={styles.previewBanner}><Ionicons name="eye-outline" size={14} color={colors.primary} /><Text style={styles.previewText}>Sales preview data</Text></View>;
-}
-
-function DocumentRow({ item, kind, formatMoney, formatDate, onPress, onConvert }: { item: Document; kind: ListKind; formatMoney: (n: number) => string; formatDate: (d: string) => string; onPress: () => void; onConvert?: () => void }) {
-  const tone = item.status === "overdue" || item.status === "expired" ? "rose" : item.status === "paid" || item.status === "accepted" ? "mint" : "blue";
   return (
-    <View style={styles.documentBlock}><Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${kind} ${item.id}, ${item.customer}, ${formatMoney(item.amount)}`} style={({ pressed }) => [styles.documentRow, pressed && { backgroundColor: colors.surfaceSoft }]}>
-      <IconTile icon="document-text-outline" tone={tone} size={36} />
-      <View style={styles.documentMain}>
-        <Text style={styles.documentId} numberOfLines={1}>{item.id}</Text>
-        <Text style={styles.documentMeta} numberOfLines={1}>{item.customer}</Text>
-        <Text style={styles.documentDate}>{formatDate(item.issuedAt)}</Text>
-      </View>
-      <View style={styles.documentRight}>
-        <Text style={styles.documentAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{formatMoney(item.amount)}</Text>
-        <StatusBadge status={item.status} />
-      </View>
-      <Ionicons name="chevron-forward" size={17} color={colors.gray500} />
-    </Pressable>
-    {kind === "estimate" && (item.status === "sent" || item.status === "accepted") && onConvert ? <Pressable onPress={onConvert} style={styles.convertButton} accessibilityRole="button"><Text style={styles.convertText}>Convert to Invoice</Text></Pressable> : null}
+    <View style={styles.previewBanner}>
+      <Ionicons name="eye-outline" size={14} color={colors.primary} />
+      <Text style={styles.previewText}>Sales preview data</Text>
     </View>
   );
 }
 
-function DocumentSheet({ item, kind, formatMoney, formatDate, onClose }: { item: Document | null; kind: ListKind; formatMoney: (n: number) => string; formatDate: (d: string) => string; onClose: () => void }) {
+function DocumentRow({
+  item,
+  kind,
+  formatMoney,
+  formatDate,
+  onPress,
+  onConvert,
+}: {
+  item: Document;
+  kind: ListKind;
+  formatMoney: (n: number) => string;
+  formatDate: (d: string) => string;
+  onPress: () => void;
+  onConvert?: () => void;
+}) {
+  const tone =
+    item.status === "overdue" || item.status === "expired"
+      ? "rose"
+      : item.status === "paid" || item.status === "accepted"
+        ? "mint"
+        : "blue";
   return (
-    <Modal visible={item !== null} transparent animationType="slide" onRequestClose={onClose}>
+    <View style={styles.documentBlock}>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`${kind} ${item.id}, ${item.customer}, ${formatMoney(item.amount)}`}
+        style={({ pressed }) => [
+          styles.documentRow,
+          pressed && { backgroundColor: colors.surfaceSoft },
+        ]}
+      >
+        <IconTile icon="document-text-outline" tone={tone} size={36} />
+        <View style={styles.documentMain}>
+          <Text style={styles.documentId} numberOfLines={1}>
+            {item.id}
+          </Text>
+          <Text style={styles.documentMeta} numberOfLines={1}>
+            {item.customer}
+          </Text>
+          <Text style={styles.documentDate}>{formatDate(item.issuedAt)}</Text>
+        </View>
+        <View style={styles.documentRight}>
+          <Text
+            style={styles.documentAmount}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
+          >
+            {formatMoney(item.amount)}
+          </Text>
+          <StatusBadge status={item.status} />
+        </View>
+        <Ionicons name="chevron-forward" size={17} color={colors.gray500} />
+      </Pressable>
+      {kind === "estimate" &&
+      (item.status === "sent" || item.status === "accepted") &&
+      onConvert ? (
+        <Pressable
+          onPress={onConvert}
+          style={styles.convertButton}
+          accessibilityRole="button"
+        >
+          <Text style={styles.convertText}>Convert to Invoice</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+function DocumentSheet({
+  item,
+  kind,
+  formatMoney,
+  formatDate,
+  onClose,
+}: {
+  item: Document | null;
+  kind: ListKind;
+  formatMoney: (n: number) => string;
+  formatDate: (d: string) => string;
+  onClose: () => void;
+}) {
+  return (
+    <Modal
+      visible={item !== null}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
       <Pressable style={styles.modalBackdrop} onPress={onClose}>
-        <Pressable style={styles.modalPanel} onPress={(event) => event.stopPropagation()}>
-          {item ? <>
-            <View style={styles.modalHandle} />
-            <View style={styles.modalHeading}><Text style={styles.modalTitle}>{kind === "invoice" ? "Invoice" : "Estimate"} preview</Text><Pressable onPress={onClose} accessibilityLabel="Close preview"><Ionicons name="close" size={24} color={colors.gray600} /></Pressable></View>
-            <Text style={styles.modalId}>{item.id}</Text>
-            <StatusBadge status={item.status} />
-            <View style={styles.modalLine}><Text style={styles.modalLabel}>Customer</Text><Text style={styles.modalValue}>{item.customer}</Text></View>
-            <View style={styles.modalLine}><Text style={styles.modalLabel}>Issue date</Text><Text style={styles.modalValue}>{formatDate(item.issuedAt)}</Text></View>
-            <View style={styles.modalLine}><Text style={styles.modalLabel}>Total</Text><Text style={[styles.modalValue, { color: colors.primary, fontWeight: "800" }]}>{formatMoney(item.amount)}</Text></View>
-            <Text style={styles.modalNote}>This is sample sales data for visual review. Document editing and sending will be connected in the dedicated workflow worksheet.</Text>
-            <AppButton label="Close" onPress={onClose} style={{ marginTop: spacing.lg }} />
-          </> : null}
+        <Pressable
+          style={styles.modalPanel}
+          onPress={(event) => event.stopPropagation()}
+        >
+          {item ? (
+            <>
+              <View style={styles.modalHandle} />
+              <View style={styles.modalHeading}>
+                <Text style={styles.modalTitle}>
+                  {kind === "invoice" ? "Invoice" : "Estimate"} preview
+                </Text>
+                <Pressable onPress={onClose} accessibilityLabel="Close preview">
+                  <Ionicons name="close" size={24} color={colors.gray600} />
+                </Pressable>
+              </View>
+              <Text style={styles.modalId}>{item.id}</Text>
+              <StatusBadge status={item.status} />
+              <View style={styles.modalLine}>
+                <Text style={styles.modalLabel}>Customer</Text>
+                <Text style={styles.modalValue}>{item.customer}</Text>
+              </View>
+              <View style={styles.modalLine}>
+                <Text style={styles.modalLabel}>Issue date</Text>
+                <Text style={styles.modalValue}>
+                  {formatDate(item.issuedAt)}
+                </Text>
+              </View>
+              <View style={styles.modalLine}>
+                <Text style={styles.modalLabel}>Total</Text>
+                <Text
+                  style={[
+                    styles.modalValue,
+                    { color: colors.primary, fontWeight: "800" },
+                  ]}
+                >
+                  {formatMoney(item.amount)}
+                </Text>
+              </View>
+              <Text style={styles.modalNote}>
+                This is sample sales data for visual review. Document editing
+                and sending will be connected in the dedicated workflow
+                worksheet.
+              </Text>
+              <AppButton
+                label="Close"
+                onPress={onClose}
+                style={{ marginTop: spacing.lg }}
+              />
+            </>
+          ) : null}
         </Pressable>
       </Pressable>
     </Modal>
@@ -71,44 +216,259 @@ export function SalesHubScreen() {
   const { payments } = usePaymentFlow();
   const [period, setPeriod] = useState<"This Month" | "All Time">("This Month");
   const activity = [
-    ...payments.map((item) => ({ key: item.id, title: "Payment received", subtitle: item.customerName, amount: item.amount, date: item.paymentDate, tone: "mint" as const, icon: "cash-outline" as const, kind: "payment" })),
-    ...savedInvoices.map((item) => ({ key: item.invoiceNumber, title: `Invoice ${item.status}`, subtitle: item.customerName, amount: item.total, date: item.issueDate, tone: item.status === "overdue" ? "rose" as const : "blue" as const, icon: "document-text-outline" as const, kind: "invoice" })),
-    ...estimates.map((item) => ({ key: item.estimateNumber, title: `Estimate ${item.status}`, subtitle: item.customerName, amount: item.total, date: item.estimateDate, tone: "blue" as const, icon: "document-outline" as const, kind: "estimate" })),
-  ].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
-  const localOutstanding = savedInvoices.filter((item) => item.status === "sent" || item.status === "overdue" || item.status === "partially_paid").reduce((sum, item) => sum + Math.max(0, item.total - (item.amountPaid ?? 0)), 0);
-  const localPaid = payments.filter((item) => item.status !== "refunded").reduce((sum, item) => sum + item.amount, 0);
-  const localOverdue = savedInvoices.filter((item) => item.status === "overdue").reduce((sum, item) => sum + item.total, 0);
-  const outstandingCount = savedInvoices.filter((item) => item.status === "sent" || item.status === "overdue" || item.status === "partially_paid").length;
-  const openEstimates = estimates.filter((item) => item.status === "sent" || item.status === "draft");
+    ...payments.map((item) => ({
+      key: item.id,
+      title: "Payment received",
+      subtitle: item.customerName,
+      amount: item.amount,
+      date: item.paymentDate,
+      tone: "mint" as const,
+      icon: "cash-outline" as const,
+      kind: "payment",
+    })),
+    ...savedInvoices.map((item) => ({
+      key: item.invoiceNumber,
+      title: `Invoice ${item.status}`,
+      subtitle: item.customerName,
+      amount: item.total,
+      date: item.issueDate,
+      tone: item.status === "overdue" ? ("rose" as const) : ("blue" as const),
+      icon: "document-text-outline" as const,
+      kind: "invoice",
+    })),
+    ...estimates.map((item) => ({
+      key: item.estimateNumber,
+      title: `Estimate ${item.status}`,
+      subtitle: item.customerName,
+      amount: item.total,
+      date: item.estimateDate,
+      tone: "blue" as const,
+      icon: "document-outline" as const,
+      kind: "estimate",
+    })),
+  ]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 5);
+  const localOutstanding = savedInvoices
+    .filter(
+      (item) =>
+        item.status === "sent" ||
+        item.status === "overdue" ||
+        item.status === "partially_paid",
+    )
+    .reduce(
+      (sum, item) => sum + Math.max(0, item.total - (item.amountPaid ?? 0)),
+      0,
+    );
+  const localPaid = payments
+    .filter((item) => item.status !== "refunded")
+    .reduce((sum, item) => sum + item.amount, 0);
+  const localOverdue = savedInvoices
+    .filter((item) => item.status === "overdue")
+    .reduce((sum, item) => sum + item.total, 0);
+  const outstandingCount = savedInvoices.filter(
+    (item) =>
+      item.status === "sent" ||
+      item.status === "overdue" ||
+      item.status === "partially_paid",
+  ).length;
+  const openEstimates = estimates.filter(
+    (item) => item.status === "sent" || item.status === "draft",
+  );
   return (
     <ScreenContainer>
-      <ScreenHeader title="Sales" onRightPress={() => navigation.navigate("BusinessProfile")} />
-      <ScrollView contentContainerStyle={styles.pageContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.periodRow}><SegmentedTabs options={["This Month", "All Time"] as const} value={period} onChange={setPeriod} /><Ionicons name="calendar-outline" size={20} color={colors.gray600} /></View>
-        <View style={styles.kpiRow}>
-          <Pressable style={styles.kpiPress} onPress={() => navigation.navigate("SalesInvoices")}><KpiCard title="Outstanding Invoices" value={formatMoney(localOutstanding)} detail={`${outstandingCount} invoices`} /></Pressable>
-          <Pressable style={styles.kpiPress} onPress={() => navigation.navigate("SalesPayments")}><KpiCard title={period === "This Month" ? "Paid This Month" : "Total Paid"} value={formatMoney(localPaid)} detail={`${payments.length} payments`} tone="positive" /></Pressable>
+      <ScreenHeader
+        title="Sales"
+        onRightPress={() => navigation.navigate("BusinessProfile")}
+      />
+      <ScrollView
+        contentContainerStyle={styles.pageContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.periodRow}>
+          <SegmentedTabs
+            options={["This Month", "All Time"] as const}
+            value={period}
+            onChange={setPeriod}
+          />
+          <Ionicons name="calendar-outline" size={20} color={colors.gray600} />
         </View>
         <View style={styles.kpiRow}>
-          <Pressable style={styles.kpiPress} onPress={() => navigation.navigate("SalesInvoices")}><KpiCard title="Overdue" value={formatMoney(localOverdue)} detail={`${savedInvoices.filter((item) => item.status === "overdue").length} invoices`} tone="negative" /></Pressable>
-          <Pressable style={styles.kpiPress} onPress={() => navigation.navigate("SalesEstimates")}><KpiCard title="Open Estimates" value={formatMoney(openEstimates.reduce((sum, item) => sum + item.total, 0))} detail={`${openEstimates.length} estimates`} tone="info" /></Pressable>
+          <Pressable
+            style={styles.kpiPress}
+            onPress={() => navigation.navigate("SalesInvoices")}
+          >
+            <KpiCard
+              title="Outstanding Invoices"
+              value={formatMoney(localOutstanding)}
+              detail={`${outstandingCount} invoices`}
+            />
+          </Pressable>
+          <Pressable
+            style={styles.kpiPress}
+            onPress={() => navigation.navigate("SalesPayments")}
+          >
+            <KpiCard
+              title={period === "This Month" ? "Paid This Month" : "Total Paid"}
+              value={formatMoney(localPaid)}
+              detail={`${payments.length} payments`}
+              tone="positive"
+            />
+          </Pressable>
+        </View>
+        <View style={styles.kpiRow}>
+          <Pressable
+            style={styles.kpiPress}
+            onPress={() => navigation.navigate("SalesInvoices")}
+          >
+            <KpiCard
+              title="Overdue"
+              value={formatMoney(localOverdue)}
+              detail={`${savedInvoices.filter((item) => item.status === "overdue").length} invoices`}
+              tone="negative"
+            />
+          </Pressable>
+          <Pressable
+            style={styles.kpiPress}
+            onPress={() => navigation.navigate("SalesEstimates")}
+          >
+            <KpiCard
+              title="Open Estimates"
+              value={formatMoney(
+                openEstimates.reduce((sum, item) => sum + item.total, 0),
+              )}
+              detail={`${openEstimates.length} estimates`}
+              tone="info"
+            />
+          </Pressable>
         </View>
         <View style={styles.shortcuts}>
-          <Pressable style={styles.shortcut} onPress={() => navigation.navigate("SalesInvoices")}><View style={[styles.shortcutIcon, { backgroundColor: colors.blueSoft }]}><Ionicons name="receipt-outline" size={27} color={colors.blue600} /></View><Text style={styles.shortcutLabel}>Invoices</Text><Text style={styles.shortcutHint}>Bill customers</Text></Pressable>
-          <Pressable style={styles.shortcut} onPress={() => navigation.navigate("SalesEstimates")}><View style={[styles.shortcutIcon, { backgroundColor: colors.amberSoft }]}><Ionicons name="calculator-outline" size={27} color={colors.warning} /></View><Text style={styles.shortcutLabel}>Estimates</Text><Text style={styles.shortcutHint}>Quote new work</Text></Pressable>
-          <Pressable style={styles.shortcut} onPress={() => navigation.navigate("SalesPayments")}><View style={[styles.shortcutIcon, { backgroundColor: colors.mintSoft }]}><Ionicons name="cash-outline" size={27} color={colors.success} /></View><Text style={styles.shortcutLabel}>Payments</Text><Text style={styles.shortcutHint}>Track receipts</Text></Pressable>
+          <Pressable
+            style={styles.shortcut}
+            onPress={() => navigation.navigate("SalesInvoices")}
+          >
+            <PremiumIcon icon="receipt-outline" tone="blue" size={48} />
+            <Text style={styles.shortcutLabel}>Invoices</Text>
+            <Text style={styles.shortcutHint}>Bill customers</Text>
+          </Pressable>
+          <Pressable
+            style={styles.shortcut}
+            onPress={() => navigation.navigate("SalesEstimates")}
+          >
+            <PremiumIcon icon="calculator-outline" tone="amber" size={48} />
+            <Text style={styles.shortcutLabel}>Estimates</Text>
+            <Text style={styles.shortcutHint}>Quote new work</Text>
+          </Pressable>
+          <Pressable
+            style={styles.shortcut}
+            onPress={() => navigation.navigate("SalesPayments")}
+          >
+            <PremiumIcon icon="cash-outline" tone="mint" size={48} />
+            <Text style={styles.shortcutLabel}>Payments</Text>
+            <Text style={styles.shortcutHint}>Track receipts</Text>
+          </Pressable>
         </View>
-        <SectionHeader title="Recent Activity" actionLabel="See all" onAction={() => navigation.navigate("SalesInvoices")} />
-        {activity.length ? <AppCard style={styles.activityCard}>{activity.map((item, index) => <View key={`${item.kind}-${item.key}`} style={[styles.activityRow, index !== activity.length - 1 && styles.rowDivider]}><IconTile icon={item.icon} tone={item.tone} size={34} /><View style={styles.activityMain}><Text style={styles.activityTitle}>{item.title}</Text><Text style={styles.activitySubtitle}>{item.subtitle}</Text></View><View style={styles.activityValue}><Text style={[styles.activityAmount, item.kind === "payment" && { color: colors.success }]}>{item.kind === "payment" ? "+" : ""}{formatMoney(item.amount)}</Text><Text style={styles.activitySubtitle}>{formatDate(item.date)}</Text></View></View>)}</AppCard> : <EmptyState icon="briefcase-outline" title="No sales activity yet" description="Create an invoice or estimate to start your sales workspace." />}
+        <SectionHeader
+          title="Recent Activity"
+          actionLabel="See all"
+          onAction={() => navigation.navigate("SalesInvoices")}
+        />
+        {activity.length ? (
+          <AppCard style={styles.activityCard}>
+            {activity.map((item, index) => (
+              <View
+                key={`${item.kind}-${item.key}`}
+                style={[
+                  styles.activityRow,
+                  index !== activity.length - 1 && styles.rowDivider,
+                ]}
+              >
+                <IconTile icon={item.icon} tone={item.tone} size={34} />
+                <View style={styles.activityMain}>
+                  <Text style={styles.activityTitle}>{item.title}</Text>
+                  <Text style={styles.activitySubtitle}>{item.subtitle}</Text>
+                </View>
+                <View style={styles.activityValue}>
+                  <Text
+                    style={[
+                      styles.activityAmount,
+                      item.kind === "payment" && { color: colors.success },
+                    ]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.58}
+                  >
+                    {item.kind === "payment" ? "+" : ""}
+                    {formatMoney(item.amount)}
+                  </Text>
+                  <Text style={styles.activitySubtitle}>
+                    {formatDate(item.date)}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </AppCard>
+        ) : (
+          <EmptyState
+            icon="briefcase-outline"
+            title="No sales activity yet"
+            description="Create an invoice or estimate to start your sales workspace."
+          />
+        )}
         <View style={styles.manageSection}>
           <SectionHeader title="Sales workspace" />
           <AppCard style={styles.manageCard}>
             {[
-              { label: "Customers", detail: "Contacts and billing details", icon: "people-outline" as const, tone: "blue" as const, onPress: () => navigation.navigate("SalesCustomers") },
-              { label: "Items & Services", detail: "Products, services, and rates", icon: "cube-outline" as const, tone: "amber" as const, onPress: () => navigation.navigate("SalesItems") },
-              { label: "Business Profile", detail: "Identity shown on sales documents", icon: "business-outline" as const, tone: "mint" as const, onPress: () => navigation.navigate("BusinessProfile") },
-              { label: "Invoice Settings", detail: "Currency, tax, terms, and numbering", icon: "options-outline" as const, tone: "purple" as const, onPress: () => navigation.navigate("InvoiceSettings") },
-            ].map((item, index, rows) => <Pressable key={item.label} onPress={item.onPress} style={[styles.manageRow, index !== rows.length - 1 && styles.rowDivider]} accessibilityRole="button"><IconTile icon={item.icon} tone={item.tone} size={36} /><View style={styles.activityMain}><Text style={styles.activityTitle}>{item.label}</Text><Text style={styles.activitySubtitle}>{item.detail}</Text></View><Ionicons name="chevron-forward" size={18} color={colors.gray400} /></Pressable>)}
+              {
+                label: "Customers",
+                detail: "Contacts and billing details",
+                icon: "people-outline" as const,
+                tone: "blue" as const,
+                onPress: () => navigation.navigate("SalesCustomers"),
+              },
+              {
+                label: "Items & Services",
+                detail: "Products, services, and rates",
+                icon: "cube-outline" as const,
+                tone: "amber" as const,
+                onPress: () => navigation.navigate("SalesItems"),
+              },
+              {
+                label: "Business Profile",
+                detail: "Identity shown on sales documents",
+                icon: "business-outline" as const,
+                tone: "mint" as const,
+                onPress: () => navigation.navigate("BusinessProfile"),
+              },
+              {
+                label: "Invoice Settings",
+                detail: "Currency, tax, terms, and numbering",
+                icon: "options-outline" as const,
+                tone: "purple" as const,
+                onPress: () => navigation.navigate("InvoiceSettings"),
+              },
+            ].map((item, index, rows) => (
+              <Pressable
+                key={item.label}
+                onPress={item.onPress}
+                style={[
+                  styles.manageRow,
+                  index !== rows.length - 1 && styles.rowDivider,
+                ]}
+                accessibilityRole="button"
+              >
+                <IconTile icon={item.icon} tone={item.tone} size={36} />
+                <View style={styles.activityMain}>
+                  <Text style={styles.activityTitle}>{item.label}</Text>
+                  <Text style={styles.activitySubtitle}>{item.detail}</Text>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={colors.gray400}
+                />
+              </Pressable>
+            ))}
           </AppCard>
         </View>
       </ScrollView>
@@ -123,72 +483,296 @@ function SalesList({ kind }: { kind: ListKind }) {
   const [filter, setFilter] = useState("All");
   const [selected, setSelected] = useState<Document | null>(null);
   const source: Document[] = [];
-  const filters = kind === "invoice" ? ["All", "Draft", "Sent", "Paid", "Overdue"] : ["All", "Draft", "Sent", "Accepted", "Expired"];
-  const rows = useMemo(() => source.filter((item) => (filter === "All" || item.status === filter.toLowerCase()) && (item.id.toLowerCase().includes(search.trim().toLowerCase()) || item.customer.toLowerCase().includes(search.trim().toLowerCase()))), [source, filter, search]);
+  const filters =
+    kind === "invoice"
+      ? ["All", "Draft", "Sent", "Paid", "Overdue"]
+      : ["All", "Draft", "Sent", "Accepted", "Expired"];
+  const rows = useMemo(
+    () =>
+      source.filter(
+        (item) =>
+          (filter === "All" || item.status === filter.toLowerCase()) &&
+          (item.id.toLowerCase().includes(search.trim().toLowerCase()) ||
+            item.customer.toLowerCase().includes(search.trim().toLowerCase())),
+      ),
+    [source, filter, search],
+  );
   const title = kind === "invoice" ? "Invoices" : "Estimates";
   return (
     <ScreenContainer>
-      <ScreenHeader title={title} back rightIcon="add-circle" onRightPress={() => navigation.navigate(kind === "invoice" ? "InvoiceCreate" : "EstimateCreate")} />
+      <ScreenHeader
+        title={title}
+        back
+        rightIcon="add-circle"
+        onRightPress={() =>
+          navigation.navigate(
+            kind === "invoice" ? "InvoiceCreate" : "EstimateCreate",
+          )
+        }
+      />
       <FlatList
         data={rows}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         keyboardShouldPersistTaps="handled"
-        ListHeaderComponent={<><SearchInput value={search} onChangeText={setSearch} placeholder={`Search ${title.toLowerCase()} or customers`} /><View style={styles.filters}><SegmentedTabs options={filters} value={filter} onChange={setFilter} /></View></>}
-        renderItem={({ item }) => <DocumentRow item={item} kind={kind} formatMoney={formatMoney} formatDate={formatDate} onPress={() => setSelected(item)} onConvert={() => Alert.alert("Estimate conversion", "Conversion will be connected when the estimate and invoice builders are implemented.")} />}
-        ListEmptyComponent={<EmptyState icon="document-outline" title={`No ${title.toLowerCase()} found`} description="Try another search or status filter." />}
+        ListHeaderComponent={
+          <>
+            <SearchInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder={`Search ${title.toLowerCase()} or customers`}
+            />
+            <View style={styles.filters}>
+              <SegmentedTabs
+                options={filters}
+                value={filter}
+                onChange={setFilter}
+              />
+            </View>
+          </>
+        }
+        renderItem={({ item }) => (
+          <DocumentRow
+            item={item}
+            kind={kind}
+            formatMoney={formatMoney}
+            formatDate={formatDate}
+            onPress={() => setSelected(item)}
+            onConvert={() =>
+              Alert.alert(
+                "Estimate conversion",
+                "Conversion will be connected when the estimate and invoice builders are implemented.",
+              )
+            }
+          />
+        )}
+        ListEmptyComponent={
+          <EmptyState
+            icon="document-outline"
+            title={`No ${title.toLowerCase()} found`}
+            description="Try another search or status filter."
+          />
+        }
       />
-      <DocumentSheet item={selected} kind={kind} formatMoney={formatMoney} formatDate={formatDate} onClose={() => setSelected(null)} />
+      <DocumentSheet
+        item={selected}
+        kind={kind}
+        formatMoney={formatMoney}
+        formatDate={formatDate}
+        onClose={() => setSelected(null)}
+      />
     </ScreenContainer>
   );
 }
 
-export function SalesInvoicesScreen() { return <SalesList kind="invoice" />; }
-export function SalesEstimatesScreen() { return <SalesList kind="estimate" />; }
+export function SalesInvoicesScreen() {
+  return <SalesList kind="invoice" />;
+}
+export function SalesEstimatesScreen() {
+  return <SalesList kind="estimate" />;
+}
 
 const styles = StyleSheet.create({
   pageContent: { padding: spacing.lg, paddingBottom: spacing.xxxl },
-  periodRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginBottom: spacing.sm },
-  previewBanner: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.mintSoft, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 4, marginBottom: spacing.md },
-  previewText: { color: colors.primary, fontSize: uiType.caption, fontWeight: "700" },
+  periodRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  previewBanner: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: colors.mintSoft,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    marginBottom: spacing.md,
+  },
+  previewText: {
+    color: colors.primary,
+    fontSize: uiType.caption,
+    fontWeight: "700",
+  },
   kpiRow: { flexDirection: "row", gap: spacing.sm, marginBottom: spacing.sm },
   kpiPress: { flex: 1, minWidth: 0 },
-  shortcuts: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm, marginBottom: spacing.xl },
-  shortcut: { flex: 1, minWidth: 0, minHeight: 112, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.large, alignItems: "center", justifyContent: "center", padding: spacing.sm },
-  shortcutIcon: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: 7 },
-  shortcutLabel: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "800", textAlign: "center" },
-  shortcutHint: { color: colors.textMuted, fontSize: 10, marginTop: 2, textAlign: "center" },
+  shortcuts: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xl,
+  },
+  shortcut: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 112,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: radius.large,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing.sm,
+  },
+  shortcutLabel: {
+    color: colors.textPrimary,
+    fontSize: uiType.secondary,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  shortcutHint: {
+    color: colors.textMuted,
+    fontSize: 10,
+    marginTop: 2,
+    textAlign: "center",
+  },
   activityCard: { paddingVertical: 0, paddingHorizontal: spacing.sm },
-  activityRow: { minHeight: 62, flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingVertical: spacing.sm },
+  activityRow: {
+    minHeight: 62,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
   rowDivider: { borderBottomWidth: 1, borderBottomColor: colors.divider },
   activityMain: { flex: 1, minWidth: 0 },
-  activityTitle: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "700" },
-  activitySubtitle: { color: colors.gray500, fontSize: uiType.caption, marginTop: 2 },
-  activityValue: { alignItems: "flex-end" },
-  activityAmount: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "700" },
+  activityTitle: {
+    color: colors.textPrimary,
+    fontSize: uiType.secondary,
+    fontWeight: "700",
+  },
+  activitySubtitle: {
+    color: colors.gray500,
+    fontSize: uiType.caption,
+    marginTop: 2,
+  },
+  activityValue: { width: 132, alignItems: "flex-end" },
+  activityAmount: {
+    width: "100%",
+    color: colors.textPrimary,
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: -0.15,
+    textAlign: "right",
+  },
   manageSection: { marginTop: spacing.xl },
   manageCard: { paddingVertical: 0, paddingHorizontal: spacing.sm },
-  manageRow: { minHeight: 62, flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingVertical: spacing.sm },
-  listContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xxxl },
+  manageRow: {
+    minHeight: 62,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  listContent: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xxxl,
+  },
   filters: { marginTop: spacing.md },
-  documentRow: { minHeight: 73, flexDirection: "row", alignItems: "center", gap: spacing.sm, borderBottomColor: colors.divider, borderBottomWidth: 1, paddingHorizontal: 2, paddingVertical: spacing.sm, backgroundColor: colors.surface },
-  documentBlock: { backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.divider },
-  convertButton: { alignSelf: "center", borderColor: "#b9d7fa", borderWidth: 1, borderRadius: radius.small, paddingHorizontal: spacing.lg, paddingVertical: 5, marginBottom: spacing.sm },
-  convertText: { color: colors.blue600, fontSize: uiType.caption, fontWeight: "700" },
+  documentRow: {
+    minHeight: 73,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    borderBottomColor: colors.divider,
+    borderBottomWidth: 1,
+    paddingHorizontal: 2,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+  },
+  documentBlock: {
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+  convertButton: {
+    alignSelf: "center",
+    borderColor: "#b9d7fa",
+    borderWidth: 1,
+    borderRadius: radius.small,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 5,
+    marginBottom: spacing.sm,
+  },
+  convertText: {
+    color: colors.blue600,
+    fontSize: uiType.caption,
+    fontWeight: "700",
+  },
   documentMain: { flex: 1, minWidth: 0 },
-  documentId: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "800" },
-  documentMeta: { color: colors.gray600, fontSize: uiType.caption, marginTop: 2 },
-  documentDate: { color: colors.gray500, fontSize: uiType.caption, marginTop: 2 },
+  documentId: {
+    color: colors.textPrimary,
+    fontSize: uiType.secondary,
+    fontWeight: "800",
+  },
+  documentMeta: {
+    color: colors.gray600,
+    fontSize: uiType.caption,
+    marginTop: 2,
+  },
+  documentDate: {
+    color: colors.gray500,
+    fontSize: uiType.caption,
+    marginTop: 2,
+  },
   documentRight: { alignItems: "flex-end", gap: 4, maxWidth: 105 },
-  documentAmount: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "700" },
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(15,23,42,0.42)", justifyContent: "flex-end" },
-  modalPanel: { backgroundColor: colors.surface, borderTopLeftRadius: radius.extraLarge, borderTopRightRadius: radius.extraLarge, padding: spacing.xl, paddingBottom: spacing.xxxl },
-  modalHandle: { width: 32, height: 4, borderRadius: 2, backgroundColor: colors.gray400, alignSelf: "center", marginBottom: spacing.xl },
-  modalHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  modalTitle: { fontSize: uiType.screenTitle, fontWeight: "800", color: colors.textPrimary },
-  modalId: { fontSize: uiType.body, color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.sm },
-  modalLine: { flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: colors.divider, paddingVertical: spacing.md },
+  documentAmount: {
+    color: colors.textPrimary,
+    fontSize: uiType.secondary,
+    fontWeight: "700",
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(15,23,42,0.42)",
+    justifyContent: "flex-end",
+  },
+  modalPanel: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.extraLarge,
+    borderTopRightRadius: radius.extraLarge,
+    padding: spacing.xl,
+    paddingBottom: spacing.xxxl,
+  },
+  modalHandle: {
+    width: 32,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.gray400,
+    alignSelf: "center",
+    marginBottom: spacing.xl,
+  },
+  modalHeading: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: uiType.screenTitle,
+    fontWeight: "800",
+    color: colors.textPrimary,
+  },
+  modalId: {
+    fontSize: uiType.body,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  modalLine: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+    paddingVertical: spacing.md,
+  },
   modalLabel: { color: colors.gray600, fontSize: uiType.body },
   modalValue: { color: colors.textPrimary, fontSize: uiType.body },
-  modalNote: { color: colors.gray500, fontSize: uiType.secondary, lineHeight: 18, marginTop: spacing.lg },
+  modalNote: {
+    color: colors.gray500,
+    fontSize: uiType.secondary,
+    lineHeight: 18,
+    marginTop: spacing.lg,
+  },
 });

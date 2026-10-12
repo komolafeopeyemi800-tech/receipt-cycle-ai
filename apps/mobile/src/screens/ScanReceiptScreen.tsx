@@ -131,7 +131,7 @@ export function ScanReceiptScreen() {
     if (!token || (subscriptionState && !subscriptionState.canUseAiFeatures)) {
       Alert.alert(
         "Scanner unavailable",
-        !token ? "Sign in to scan receipts." : subscriptionState?.blockReason ?? "Upgrade to use Pro or an active trial slot.",
+        !token ? "Sign in to scan receipts." : "Receipt scanning is not included with your current access.",
       );
       return;
     }
@@ -226,7 +226,7 @@ export function ScanReceiptScreen() {
     if (!token || (subscriptionState && !subscriptionState.canUseAiFeatures)) {
       Alert.alert(
         "Scanner unavailable",
-        !token ? "Sign in to scan receipts." : subscriptionState?.blockReason ?? "Upgrade to use Pro or an active trial slot.",
+        !token ? "Sign in to scan receipts." : "Receipt scanning is not included with your current access.",
       );
       return;
     }
@@ -323,7 +323,7 @@ export function ScanReceiptScreen() {
       {scanBlocked ? (
         <View style={[styles.blockBanner, { top: topBarH }]}>
           <Text style={styles.blockBannerTxt}>
-            {!token ? "Sign in to scan receipts." : subscriptionState?.blockReason ?? "Upgrade to use the scanner."}
+            {!token ? "Sign in to scan receipts." : "Receipt scanning is not included with your current access."}
           </Text>
         </View>
       ) : null}

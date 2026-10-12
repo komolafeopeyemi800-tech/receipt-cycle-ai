@@ -8,7 +8,7 @@ import { useSalesSetup } from "./SalesSetupContext";
 import { useWorkspace } from "./WorkspaceContext";
 
 type InvoiceFlowState = { draft: InvoiceDraft; invoices: SavedInvoice[] };
-export type InvoiceConversionSource = Pick<InvoiceDraft, "customerId" | "items" | "discountType" | "discountValue" | "taxRate" | "taxLabel" | "shipping" | "notes" | "terms" | "signatureEnabled" | "signatureText" | "attachment">;
+export type InvoiceConversionSource = Pick<InvoiceDraft, "customerId" | "items" | "discountType" | "discountValue" | "taxRate" | "taxLabel" | "shipping" | "notes" | "terms" | "signatureEnabled" | "signatureText" | "attachment"> & Partial<Pick<InvoiceDraft, "recurringEnabled" | "recurrenceFrequency" | "recurrenceStartDate" | "automatedReminders">>;
 type ContextValue = InvoiceFlowState & {
   ready: boolean;
   startNewInvoice: () => void;
@@ -17,6 +17,7 @@ type ContextValue = InvoiceFlowState & {
   removeLineItem: (id: string) => void;
   saveDraft: (status?: InvoiceStatus) => SavedInvoice | null;
   loadInvoice: (invoiceNumber: string) => boolean;
+  duplicateInvoice: (invoiceNumber: string) => SavedInvoice | null;
   convertToInvoice: (source: InvoiceConversionSource) => SavedInvoice | null;
   applyPayment: (invoiceNumber: string, amount: number) => void;
   deleteInvoice: (invoiceNumber: string) => void;
@@ -96,6 +97,35 @@ export function InvoiceFlowProvider({ children }: { children: ReactNode }) {
       const { customerName: _customerName, status: _status, total: _total, updatedAt: _updatedAt, sentAt: _sentAt, ...draft } = invoice;
       update((current) => ({ ...current, draft }));
       return true;
+    },
+    duplicateInvoice: (invoiceNumber) => {
+      const source = state.invoices.find((item) => item.invoiceNumber === invoiceNumber);
+      if (!source) return null;
+      const base = createInvoiceDraft(invoiceSettings, state.invoices);
+      const draft: InvoiceDraft = {
+        ...base,
+        customerId: source.customerId,
+        items: source.items.map((item) => ({ ...item, id: `invoice-line-${Date.now()}-${Math.random()}` })),
+        discountType: source.discountType,
+        discountValue: source.discountValue,
+        taxRate: source.taxRate,
+        taxLabel: source.taxLabel,
+        shipping: source.shipping,
+        notes: source.notes,
+        terms: source.terms,
+        signatureEnabled: source.signatureEnabled,
+        signatureText: source.signatureText,
+        attachment: source.attachment,
+        recurringEnabled: source.recurringEnabled ?? base.recurringEnabled,
+        recurrenceFrequency: source.recurrenceFrequency ?? base.recurrenceFrequency,
+        recurrenceStartDate: source.recurrenceStartDate ?? base.recurrenceStartDate,
+        automatedReminders: source.automatedReminders ?? base.automatedReminders,
+      };
+      const customer = customers.find((item) => item.id === draft.customerId);
+      if (!customer) return null;
+      const invoice = createSavedInvoice(draft, customer, "draft");
+      update((current) => ({ draft, invoices: [invoice, ...current.invoices] }));
+      return invoice;
     },
     convertToInvoice: (source) => {
       const customer = customers.find((item) => item.id === source.customerId);

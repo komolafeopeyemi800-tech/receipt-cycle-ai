@@ -34,6 +34,9 @@ BETTER_AUTH_URL = "https://api.receiptcycle.com"
 # Email + password sign-in (no email confirmation needed). Uses fast PBKDF2 hashing so it fits the free plan.
 PASSWORD_AUTH_ENABLED = "true"
 # Public Google OAuth web client id (safe to commit; it ships in the website anyway).
+# The Android client below is accepted as a second token audience so web and
+# mobile sign-ins resolve to the same Receipt Cycle user and database records.
+GOOGLE_ANDROID_CLIENT_ID = "257702962892-70qo6qmjlhloqv08h9kb4bfakk732uka.apps.googleusercontent.com"
 GOOGLE_WEB_CLIENT_ID = "257702962892-m2m0terd11tbn8049umc5bltp5sjqqr1.apps.googleusercontent.com"
 # Browser addresses allowed to call the auth endpoints (the live site, www, and Cloudflare preview versions).
 TRUSTED_ORIGINS = "https://www.receiptcycle.com,https://receipt-cycle-ai.komolafebamidele.workers.dev,https://*-receipt-cycle-ai.komolafebamidele.workers.dev"

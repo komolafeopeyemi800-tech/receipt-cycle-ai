@@ -1,4 +1,4 @@
-import type { InvoiceAttachment, InvoiceDraft, InvoiceLineItem, DiscountType } from "../invoices/model";
+import type { InvoiceAttachment, InvoiceDraft, InvoiceLineItem, DiscountType, RecurrenceFrequency } from "../invoices/model";
 import { calculateInvoiceTotals, parsePercent, todayYmd, addDaysYmd } from "../invoices/model";
 import type { InvoiceSettings, SalesCustomer } from "../sales/setupData";
 
@@ -6,6 +6,7 @@ export type EstimateStatus = "draft" | "sent" | "accepted" | "expired";
 
 export type EstimateDraft = {
   estimateNumber: string;
+  title?: string;
   estimateDate: string;
   validUntil: string;
   customerId: string | null;
@@ -21,6 +22,10 @@ export type EstimateDraft = {
   customerSignatureEnabled: boolean;
   signatureText: string;
   attachments: InvoiceAttachment[];
+  recurringEnabled: boolean;
+  recurrenceFrequency: RecurrenceFrequency;
+  recurrenceStartDate: string;
+  automatedReminders: boolean;
 };
 
 export type SavedEstimate = EstimateDraft & {
@@ -52,19 +57,19 @@ function nextEstimateNumber(saved: SavedEstimate[]) {
 export function createEstimateDraft(settings: InvoiceSettings, saved: SavedEstimate[]): EstimateDraft {
   const estimateDate = todayYmd();
   return {
-    estimateNumber: nextEstimateNumber(saved), estimateDate, validUntil: addDaysYmd(estimateDate, 30), customerId: null, reference: "", items: [],
+    estimateNumber: nextEstimateNumber(saved), title: "", estimateDate, validUntil: addDaysYmd(estimateDate, 30), customerId: null, reference: "", items: [],
     discountType: "percentage", discountValue: 0, taxRate: parsePercent(settings.defaultTaxRate), taxLabel: settings.taxLabel || "Sales Tax",
     notes: "Thank you for your consideration!", terms: "This estimate is valid for 30 days from the issue date. Prices are subject to change after this period.",
-    validityDays: 30, customerSignatureEnabled: false, signatureText: "", attachments: [],
+    validityDays: 30, customerSignatureEnabled: false, signatureText: "", attachments: [], recurringEnabled: false, recurrenceFrequency: "monthly", recurrenceStartDate: estimateDate, automatedReminders: true,
   };
 }
 
 export function estimateAsInvoiceDraft(estimate: EstimateDraft): InvoiceDraft {
   return {
-    invoiceNumber: estimate.estimateNumber, issueDate: estimate.estimateDate, dueDate: estimate.validUntil, customerId: estimate.customerId,
+    invoiceNumber: estimate.estimateNumber, title: estimate.title, issueDate: estimate.estimateDate, dueDate: estimate.validUntil, customerId: estimate.customerId,
     items: estimate.items, discountType: estimate.discountType, discountValue: estimate.discountValue, taxRate: estimate.taxRate, taxLabel: estimate.taxLabel,
     shipping: 0, notes: estimate.notes, terms: estimate.terms, signatureEnabled: estimate.customerSignatureEnabled, signatureText: estimate.signatureText,
-    attachment: estimate.attachments[0] ?? null,
+    attachment: estimate.attachments[0] ?? null, recurringEnabled: estimate.recurringEnabled, recurrenceFrequency: estimate.recurrenceFrequency, recurrenceStartDate: estimate.recurrenceStartDate, automatedReminders: estimate.automatedReminders,
   };
 }
 
@@ -78,14 +83,14 @@ export function createSavedEstimate(draft: EstimateDraft, customer: SalesCustome
 
 export function createAcceptedPreviewEstimate(customerId: string): SavedEstimate {
   const base: EstimateDraft = {
-    estimateNumber: "EST-2026-001", estimateDate: "2026-09-10", validUntil: "2026-10-10", customerId, reference: "Website Project",
+    estimateNumber: "EST-2026-001", title: "Website Project", estimateDate: "2026-09-10", validUntil: "2026-10-10", customerId, reference: "Website Project",
     items: [
       { id: "preview-web", name: "Website Design", description: "Custom responsive design", quantity: 1, rate: 2500 },
       { id: "preview-dev", name: "Development", description: "Frontend and backend development", quantity: 40, rate: 120 },
       { id: "preview-content", name: "Content Setup", description: "Page content and SEO setup", quantity: 8, rate: 85 },
     ],
     discountType: "percentage", discountValue: 0, taxRate: 0, taxLabel: "Sales Tax", notes: "Thank you for your consideration!",
-    terms: "Net 30", validityDays: 30, customerSignatureEnabled: true, signatureText: "Customer approval", attachments: [],
+    terms: "Net 30", validityDays: 30, customerSignatureEnabled: true, signatureText: "Customer approval", attachments: [], recurringEnabled: false, recurrenceFrequency: "monthly", recurrenceStartDate: "2026-09-10", automatedReminders: true,
   };
   return { ...base, customerName: "Acme Corp", status: "accepted", total: 8000, updatedAt: "2026-09-12T12:00:00.000Z", acceptedAt: "2026-09-12T12:00:00.000Z" };
 }

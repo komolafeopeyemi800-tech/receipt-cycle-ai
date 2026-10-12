@@ -11,18 +11,18 @@ import type { InvoiceStatus } from "../features/invoices/model";
 import type { RootStackParamList } from "../navigation/types";
 import { colors, radius, spacing, uiType } from "../theme/tokens";
 
-type Filter = "Draft" | "Sent" | "Paid" | "Overdue";
+type Filter = "All" | "Draft" | "Sent" | "Partial" | "Paid" | "Overdue";
 type ListRow = { invoiceNumber: string; customerName: string; issuedAt: string; amount: number; status: InvoiceStatus };
 
 export function InvoiceListScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { invoices, startNewInvoice, loadInvoice, deleteInvoice } = useInvoiceFlow();
   const { formatMoney, formatDate } = usePreferences();
-  const [filter, setFilter] = useState<Filter>("Draft");
+  const [filter, setFilter] = useState<Filter>("All");
   const [search, setSearch] = useState("");
   const rows = useMemo<ListRow[]>(() => invoices
     .map((invoice) => ({ invoiceNumber: invoice.invoiceNumber, customerName: invoice.customerName, issuedAt: invoice.issueDate, amount: invoice.total, status: invoice.status }))
-    .filter((invoice) => invoice.status === filter.toLowerCase() && (!search.trim() || `${invoice.invoiceNumber} ${invoice.customerName}`.toLowerCase().includes(search.trim().toLowerCase()))), [filter, invoices, search]);
+    .filter((invoice) => (filter === "All" || invoice.status === (filter === "Partial" ? "partially_paid" : filter.toLowerCase())) && (!search.trim() || `${invoice.invoiceNumber} ${invoice.customerName}`.toLowerCase().includes(search.trim().toLowerCase()))), [filter, invoices, search]);
 
   function createInvoice() {
     startNewInvoice();
@@ -46,7 +46,7 @@ export function InvoiceListScreen() {
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
       ListHeaderComponent={<View style={styles.headerContent}>
-        <SegmentedTabs options={["Draft", "Sent", "Paid", "Overdue"] as const} value={filter} onChange={setFilter} />
+        <SegmentedTabs options={["All", "Draft", "Sent", "Paid", "Overdue"] as const} value={filter} onChange={setFilter} />
         <SearchInput value={search} onChangeText={setSearch} placeholder="Search invoices or customers" />
       </View>}
       renderItem={({ item }) => <Pressable onPress={() => openInvoice(item)} onLongPress={() => askDelete(item)} style={({ pressed }) => [styles.row, pressed && { opacity: 0.72 }]} accessibilityRole="button" accessibilityLabel={`${item.invoiceNumber}, ${item.customerName}, ${formatMoney(item.amount)}, ${item.status}`}>

@@ -68,7 +68,7 @@ export default function About() {
 
         <section className="mt-14">
           <h2 className="font-display text-2xl font-bold text-slate-900">Who it's for</h2>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 grid-cols-1">
             {[
               { t: "Freelancers and contractors", d: "One person, many clients, very little patience for spreadsheets." },
               { t: "Independent professionals", d: "Lawyers, designers, photographers, consultants — people whose income depends on billable time, not bookkeeping." },

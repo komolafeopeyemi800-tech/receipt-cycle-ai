@@ -70,35 +70,35 @@ export type SubscriptionComputed = ReturnType<typeof computeSubscriptionState>;
 
 export function sessionErrorMessage(phase: SubscriptionComputed["phase"]): string | null {
   if (phase === "expired") {
-    return "Your 7-day trial ended. Upgrade to Pro to add transactions, scan, use voice and smart helpers, edit data, and export CSV.";
+    return "Your current access no longer includes adding or editing records, scanning, voice tools, smart helpers, or CSV export.";
   }
   if (phase === "trial_exhausted") {
-    return `You've used all ${TRIAL_MAX_TRANSACTIONS} trial transactions. Upgrade to Pro for unlimited records, optional smart helpers, and CSV export.`;
+    return `You've used all ${TRIAL_MAX_TRANSACTIONS} included trial transactions. You can still view your saved records.`;
   }
   return null;
 }
 
-/** HTTP 402 so clients can show the upgrade prompt. */
+/** HTTP 402 so clients can explain that the current account does not include this action. */
 const paywall = (message: string) => new ApiError(402, message);
 
 export function assertCanCreateTransaction(state: SubscriptionComputed): void {
   if (state.canCreateTransaction) return;
-  throw paywall(sessionErrorMessage(state.phase) ?? "Upgrade to Pro to add transactions.");
+  throw paywall(sessionErrorMessage(state.phase) ?? "Adding transactions is not included with your current access.");
 }
 
 export function assertCanEditTransaction(state: SubscriptionComputed): void {
   if (state.canEditOrDeleteTransaction) return;
-  throw paywall("Your trial ended. Upgrade to Pro to edit or delete transactions. You can still view your records.");
+  throw paywall("Editing and deleting transactions are not included with your current access. You can still view your records.");
 }
 
 export function assertCanExportCsv(state: SubscriptionComputed): void {
   if (state.canExportCsv) return;
-  throw paywall("CSV export is available for Pro subscribers. Upgrade to download all your transactions.");
+  throw paywall("CSV export is not included with your current access.");
 }
 
 export function assertCanMutateBudget(state: SubscriptionComputed): void {
   if (state.canMutateBudgets) return;
-  throw paywall(sessionErrorMessage(state.phase) ?? "Upgrade to Pro to manage budgets.");
+  throw paywall(sessionErrorMessage(state.phase) ?? "Budget management is not included with your current access.");
 }
 
 /** Shape returned by GET /api/subscription (same fields the Convex query returned). */

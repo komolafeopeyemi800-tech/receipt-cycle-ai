@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import { TransactionGlyph } from "../components/ui/PremiumIcon";
 import { useNavigation } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import type { CompositeNavigationProp } from "@react-navigation/native";
@@ -37,8 +38,8 @@ import { useRecordsFilters } from "../contexts/RecordsFilterContext";
 import type { MainTabParamList, RootStackParamList } from "../navigation/types";
 
 type Nav = CompositeNavigationProp<
-    BottomTabNavigationProp<MainTabParamList, "Records">,
-    NativeStackNavigationProp<RootStackParamList>
+  BottomTabNavigationProp<MainTabParamList, "Records">,
+  NativeStackNavigationProp<RootStackParamList>
 >;
 
 export function TransactionsListScreen() {
@@ -69,7 +70,8 @@ export function TransactionsListScreen() {
       : "skip",
   );
   const filter = filters.type;
-  const setFilter = (type: "all" | "expense" | "income") => setFilters({ ...filters, type, category: null });
+  const setFilter = (type: "all" | "expense" | "income") =>
+    setFilters({ ...filters, type, category: null });
 
   const summary = useMemo(() => buildSummary((all ?? []) as DocTx[]), [all]);
 
@@ -81,11 +83,22 @@ export function TransactionsListScreen() {
   const list = useMemo(() => {
     const search = filters.search.trim().toLowerCase();
     const result = baseFiltered.filter((t) => {
-      if (filters.category && (t.category?.trim() || "Uncategorized") !== filters.category) return false;
-      if (filters.accountId && String(t.accountId) !== filters.accountId) return false;
+      if (
+        filters.category &&
+        (t.category?.trim() || "Uncategorized") !== filters.category
+      )
+        return false;
+      if (filters.accountId && String(t.accountId) !== filters.accountId)
+        return false;
       if (filters.startDate && t.date < filters.startDate) return false;
       if (filters.endDate && t.date > filters.endDate) return false;
-      if (search && ![t.merchant, t.category, t.description, String(t.amount)].some((value) => value?.toLowerCase().includes(search))) return false;
+      if (
+        search &&
+        ![t.merchant, t.category, t.description, String(t.amount)].some(
+          (value) => value?.toLowerCase().includes(search),
+        )
+      )
+        return false;
       return true;
     });
     return result.sort((a, b) => {
@@ -97,14 +110,19 @@ export function TransactionsListScreen() {
   }, [baseFiltered, filters]);
 
   const groupedByDate = useMemo(() => {
-    if (filters.sort === "amount_high" || filters.sort === "amount_low") return list.map((tx): [string, DocTx[]] => [tx.date, [tx]]);
+    if (filters.sort === "amount_high" || filters.sort === "amount_low")
+      return list.map((tx): [string, DocTx[]] => [tx.date, [tx]]);
     const map = new Map<string, DocTx[]>();
     for (const tx of list) {
       const d = tx.date;
       if (!map.has(d)) map.set(d, []);
       map.get(d)!.push(tx);
     }
-    return Array.from(map.entries()).sort((a, b) => filters.sort === "oldest" ? a[0].localeCompare(b[0]) : b[0].localeCompare(a[0]));
+    return Array.from(map.entries()).sort((a, b) =>
+      filters.sort === "oldest"
+        ? a[0].localeCompare(b[0])
+        : b[0].localeCompare(a[0]),
+    );
   }, [list, filters.sort]);
 
   useEffect(() => {
@@ -126,7 +144,8 @@ export function TransactionsListScreen() {
           onModeChange={(m) => {
             setPeriod(m);
             if (m === "month") setSelectedYm(todayYm());
-            if (m === "month" && (filters.startDate || filters.endDate)) setFilters({ ...filters, startDate: null, endDate: null });
+            if (m === "month" && (filters.startDate || filters.endDate))
+              setFilters({ ...filters, startDate: null, endDate: null });
           }}
           monthLabel={formatMonthYearLabel(selectedYm)}
           onPrevMonth={() => setSelectedYm((ym) => addMonthsYm(ym, -1))}
@@ -142,9 +161,35 @@ export function TransactionsListScreen() {
         <SectionHeader title="Quick Actions" />
         <QuickActionsRow />
 
-        <AppButton label="Add transaction" icon="add" onPress={() => navigation.getParent()?.navigate("AddTransaction" as never)} style={{ marginBottom: 18 }} />
-        <SectionHeader title="Recent Transactions" actionLabel="Filters" onAction={() => navigation.navigate("RecordsFilters")} />
-        {filters.search || filters.category || filters.startDate || filters.endDate || filters.accountId || filters.sort !== "newest" ? <Pressable style={styles.activeFilter} onPress={() => navigation.navigate("RecordsFilters")}><Ionicons name="funnel-outline" size={15} color={colors.primary} /><Text style={styles.activeFilterText}>Filters applied · Edit filters</Text></Pressable> : null}
+        <AppButton
+          label="Add transaction"
+          icon="add"
+          onPress={() =>
+            navigation.getParent()?.navigate("AddTransaction" as never)
+          }
+          style={{ marginBottom: 18 }}
+        />
+        <SectionHeader
+          title="Recent Transactions"
+          actionLabel="Filters"
+          onAction={() => navigation.navigate("RecordsFilters")}
+        />
+        {filters.search ||
+        filters.category ||
+        filters.startDate ||
+        filters.endDate ||
+        filters.accountId ||
+        filters.sort !== "newest" ? (
+          <Pressable
+            style={styles.activeFilter}
+            onPress={() => navigation.navigate("RecordsFilters")}
+          >
+            <Ionicons name="funnel-outline" size={15} color={colors.primary} />
+            <Text style={styles.activeFilterText}>
+              Filters applied · Edit filters
+            </Text>
+          </Pressable>
+        ) : null}
 
         {loading ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
@@ -169,11 +214,20 @@ export function TransactionsListScreen() {
                   key={tx.id}
                   containerStyle={styles.rowWrap}
                   style={styles.rowPressTarget}
-                  onPress={() => navigation.navigate("TransactionDetail", { transactionId: tx.id })}
+                  onPress={() =>
+                    navigation.navigate("TransactionDetail", {
+                      transactionId: tx.id,
+                    })
+                  }
                   pressedScale={0.985}
                 >
                   <View style={styles.row}>
-                    <IconTile icon={tx.type === "income" ? "cash-outline" : "receipt-outline"} tone={tx.type === "income" ? "mint" : "amber"} size={36} />
+                    <TransactionGlyph
+                      merchant={tx.merchant}
+                      category={tx.category}
+                      type={tx.type}
+                      size={36}
+                    />
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={styles.merchant} numberOfLines={1}>
                         {tx.merchant || tx.category}
@@ -183,13 +237,22 @@ export function TransactionsListScreen() {
                       </Text>
                     </View>
                     <Text
-                      style={[styles.amt, tx.type === "expense" ? styles.expense : styles.income]}
+                      style={[
+                        styles.amt,
+                        tx.type === "expense" ? styles.expense : styles.income,
+                      ]}
                       numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.58}
                     >
                       {tx.type === "expense" ? "-" : "+"}
                       {formatMoney(tx.amount)}
                     </Text>
-                    <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={colors.gray400}
+                    />
                   </View>
                 </AnimatedPressable>
               ))}
@@ -199,7 +262,9 @@ export function TransactionsListScreen() {
         {!loading && list.length > 0 ? (
           <View style={styles.listEnd}>
             <Text style={styles.listEndTxt}>
-              {list.length === 1 ? "1 transaction" : `${list.length} transactions`}
+              {list.length === 1
+                ? "1 transaction"
+                : `${list.length} transactions`}
             </Text>
           </View>
         ) : null}
@@ -212,8 +277,22 @@ export function TransactionsListScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   pad: { padding: 16 },
-  activeFilter: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", backgroundColor: colors.mintSoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7, marginBottom: 10 },
-  activeFilterText: { color: colors.primary, fontSize: typeScale.sm, fontWeight: "700" },
+  activeFilter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    backgroundColor: colors.mintSoft,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    marginBottom: 10,
+  },
+  activeFilterText: {
+    color: colors.primary,
+    fontSize: typeScale.sm,
+    fontWeight: "700",
+  },
   sectionLbl: {
     fontSize: typeScale.sm,
     fontWeight: "700",
@@ -235,7 +314,12 @@ const styles = StyleSheet.create({
   },
   addBtnTxt: { color: "#fff", fontWeight: "700", fontSize: typeScale.body },
   catBlock: { marginBottom: 12 },
-  chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingVertical: 4 },
+  chipWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    paddingVertical: 4,
+  },
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -278,9 +362,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  merchant: { fontSize: typeScale.bodyStrong, fontWeight: "600", color: colors.gray900 },
+  merchant: {
+    fontSize: typeScale.bodyStrong,
+    fontWeight: "600",
+    color: colors.gray900,
+  },
   meta: { fontSize: typeScale.md, color: colors.gray500, marginTop: 2 },
-  amt: { fontSize: typeScale.bodyStrong, fontWeight: "700", marginRight: 4, maxWidth: 120, textAlign: "right" },
+  amt: {
+    width: 136,
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: -0.15,
+    marginRight: 4,
+    textAlign: "right",
+  },
   listEnd: {
     marginTop: 12,
     paddingVertical: 12,
@@ -288,10 +383,24 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.gray200,
   },
-  listEndTxt: { fontSize: typeScale.xs, color: colors.gray500, fontWeight: "600" },
+  listEndTxt: {
+    fontSize: typeScale.xs,
+    color: colors.gray500,
+    fontWeight: "600",
+  },
   expense: { color: colors.rose600 },
   income: { color: colors.primary },
   empty: { alignItems: "center", padding: 28 },
-  emptyTitle: { fontSize: typeScale.title, fontWeight: "700", color: colors.gray900, marginTop: 10 },
-  emptySub: { fontSize: typeScale.body, color: colors.gray600, textAlign: "center", marginTop: 6 },
+  emptyTitle: {
+    fontSize: typeScale.title,
+    fontWeight: "700",
+    color: colors.gray900,
+    marginTop: 10,
+  },
+  emptySub: {
+    fontSize: typeScale.body,
+    color: colors.gray600,
+    textAlign: "center",
+    marginTop: 6,
+  },
 });

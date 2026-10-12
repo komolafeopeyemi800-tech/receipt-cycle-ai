@@ -13,7 +13,7 @@ type Props = { title: string; subtitle: string; children: ReactNode };
 /** Shared look for sign in, sign up and password pages: brand panel on large screens, clean card everywhere. */
 export function AuthLayout({ title, subtitle, children }: Props) {
   return (
-    <div className="grid min-h-screen bg-slate-50 lg:grid-cols-[1.05fr_1fr]">
+    <div className="grid min-h-screen bg-slate-50 lg:grid-cols-[1.05fr_1fr] grid-cols-1">
       <aside className="relative hidden overflow-hidden bg-gradient-to-br from-teal-800 via-teal-700 to-emerald-600 p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-2xl" aria-hidden />
         <div className="pointer-events-none absolute -bottom-32 -left-16 h-80 w-80 rounded-full bg-emerald-300/20 blur-3xl" aria-hidden />

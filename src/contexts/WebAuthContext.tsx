@@ -89,18 +89,6 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
 
   /** Stale token or an unreachable server leaves `me` stuck as `undefined` → AppChrome spins forever. */
   useEffect(() => {
-    if (!hydrated || !token) return;
-    if (me !== undefined) return;
-    const id = window.setTimeout(() => {
-      clearWebSessionToken();
-      clearWebSessionUser();
-      setToken(null);
-      setCachedUser(null);
-    }, 12_000);
-    return () => window.clearTimeout(id);
-  }, [hydrated, token, me]);
-
-  useEffect(() => {
     if (!me || typeof me !== "object" || !("id" in me)) return;
     const nextUser: WebAuthUser = {
       id: me.id as string,

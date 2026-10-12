@@ -2,11 +2,14 @@ import { useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Sharing from "expo-sharing";
+import * as Clipboard from "expo-clipboard";
+import * as MailComposer from "expo-mail-composer";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { AppButton, AppCard, EmptyState, IconTile, ScreenContainer, SegmentedTabs, StatusBadge } from "../components/ui/FinanceUI";
-import { DocumentPreviewCard } from "../components/ui/SalesDocumentUI";
+import { DocumentPreviewCard, SendOptionRow } from "../components/ui/SalesDocumentUI";
+import { SafeActionFooter } from "../components/ui/SafeActionFooter";
 import { ContactAction, InitialsAvatar } from "../components/ui/SalesSetupUI";
 import { useEstimateFlow } from "../contexts/EstimateFlowContext";
 import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
@@ -14,6 +17,8 @@ import { usePreferences } from "../contexts/PreferencesContext";
 import { useSalesSetup } from "../contexts/SalesSetupContext";
 import { calculateEstimateTotals, estimateAsInvoiceDraft, type SavedEstimate } from "../features/estimates/model";
 import { createInvoicePdf } from "../features/invoices/pdf";
+import { apiClient } from "../lib/apiClient";
+import { useWorkspace } from "../contexts/WorkspaceContext";
 import type { BusinessProfile, SalesCustomer } from "../features/sales/setupData";
 import type { RootStackParamList } from "../navigation/types";
 import { colors, radius, spacing, uiType } from "../theme/tokens";
@@ -63,8 +68,67 @@ export function EstimatePreviewScreen() {
         <DetailLine label={draft.taxLabel} value={formatMoney(totals.taxAmount)} />
         <DetailLine label="Total" value={formatMoney(totals.total)} strong />
       </AppCard>}
-      <View style={styles.previewActions}><AppButton label="Back" icon="arrow-back" variant="secondary" onPress={() => navigation.goBack()} style={{ flex: 0.7 }} /><AppButton label="Send Estimate" icon="paper-plane-outline" onPress={() => void share(true)} style={{ flex: 1.6 }} /></View>
+      <View style={styles.previewActions}><AppButton label="Back" icon="arrow-back" variant="secondary" onPress={() => navigation.goBack()} style={{ flex: 0.7 }} /><AppButton label="Continue to Send" icon="paper-plane-outline" onPress={() => navigation.navigate("EstimateSend")} style={{ flex: 1.6 }} /></View>
     </ScrollView>
+  </ScreenContainer>;
+}
+
+export function EstimateSendScreen() {
+  const navigation = useNavigation<RootNav>();
+  const { draft, saveEstimate } = useEstimateFlow();
+  const { customers, businessProfile } = useSalesSetup();
+  const { currency } = usePreferences();
+  const { workspace } = useWorkspace();
+  const customer = customers.find((item) => item.id === draft.customerId);
+
+  if (!customer) return <ScreenContainer><ScreenHeader title="Send Estimate" back /><EmptyState icon="person-outline" title="Customer missing" description="Return to the estimate and select a customer." /></ScreenContainer>;
+  const summary = `Estimate ${draft.estimateNumber} from ${businessProfile.businessName || "Receipt Cycle"} for ${customer.name}.`;
+  const pdfUri = () => createInvoicePdf(estimateAsInvoiceDraft(draft), businessProfile, customer, currency, "ESTIMATE");
+
+  async function sharePdf(title = `Share ${draft.estimateNumber}`) {
+    if (!(await Sharing.isAvailableAsync())) throw new Error("Sharing is not available on this device.");
+    await Sharing.shareAsync(pdfUri(), { mimeType: "application/pdf", dialogTitle: title, UTI: "com.adobe.pdf" });
+  }
+
+  async function email() {
+    try {
+      if (!customer?.email.trim()) { Alert.alert("Customer email required", "Add an email address to this customer before sending the estimate."); return; }
+      if (!(await MailComposer.isAvailableAsync())) { Alert.alert("Email unavailable", "No email app is configured. Use Share PDF and select an email app instead."); return; }
+      await MailComposer.composeAsync({ recipients: [customer.email.trim()], subject: `Estimate ${draft.estimateNumber}`, body: `${summary}\n\nThe estimate PDF is attached.`, attachments: [pdfUri()] });
+    } catch (error) { Alert.alert("Could not prepare email", error instanceof Error ? error.message : "Please try again."); }
+  }
+
+  async function link() {
+    try {
+      const saved = saveEstimate("sent");
+      if (!saved) throw new Error("Save the estimate before creating a link.");
+      const result = await apiClient.request<{ url: string }>("POST", "/api/public-documents", { body: { workspace, kind: "estimate", documentId: `est:${saved.estimateNumber}` } });
+      await Clipboard.setStringAsync(result.url);
+      Alert.alert("Link copied", "Anyone with this link can view the estimate without signing in.");
+    } catch (error) { Alert.alert("Could not create link", error instanceof Error ? error.message : "Please try again."); }
+  }
+
+  async function whatsapp() {
+    try { await Clipboard.setStringAsync(summary); await sharePdf("Send estimate with WhatsApp"); }
+    catch (error) { Alert.alert("Could not share estimate", error instanceof Error ? error.message : "Please try again."); }
+  }
+
+  function finish() {
+    const saved = saveEstimate("sent");
+    if (!saved) return;
+    navigation.popTo("Main", { screen: "Sales", params: { screen: "SalesEstimates" } } as never);
+  }
+
+  return <ScreenContainer>
+    <ScreenHeader title="Send Estimate" back />
+    <ScrollView contentContainerStyle={styles.sendContent} showsVerticalScrollIndicator={false}>
+      <View style={styles.sendHero}><View style={styles.sendHalo}><Ionicons name="paper-plane" size={42} color={colors.primary} /></View><Text style={styles.convertTitle}>Estimate Ready to Send</Text><Text style={styles.convertCopy}>{draft.estimateNumber} is ready for {customer.name}.</Text></View>
+      <SendOptionRow icon="mail-outline" tone="blue" title="Send by Email" subtitle="Attach the estimate PDF to an email" onPress={() => void email()} />
+      <SendOptionRow icon="document-text-outline" tone="rose" title="Share PDF" subtitle="Share or save the PDF file" onPress={() => void sharePdf().catch((error) => Alert.alert("Could not share PDF", error instanceof Error ? error.message : "Please try again."))} />
+      <SendOptionRow icon="link-outline" tone="blue" title="Copy Link" subtitle="Anyone with the link can view this estimate" onPress={() => void link()} />
+      <SendOptionRow icon="logo-whatsapp" tone="green" title="Send via WhatsApp" subtitle="Share the estimate PDF with WhatsApp" onPress={() => void whatsapp()} />
+    </ScrollView>
+    <SafeActionFooter><AppButton label="Mark Estimate Sent" icon="checkmark" onPress={finish} /></SafeActionFooter>
   </ScreenContainer>;
 }
 
@@ -79,6 +143,7 @@ export function EstimateDetailScreen() {
   const { convertToInvoice } = useInvoiceFlow();
   const { customers, businessProfile } = useSalesSetup();
   const { currency, formatMoney, formatDate } = usePreferences();
+  const { workspace } = useWorkspace();
   const estimate = useMemo(() => estimates.find((item) => item.estimateNumber === route.params.estimateNumber) ?? null, [estimates, route.params.estimateNumber]);
   const customer = estimate ? customers.find((item) => item.id === estimate.customerId) : undefined;
 
@@ -111,9 +176,10 @@ export function EstimateDetailScreen() {
       { text: "Mark Accepted", onPress: () => setEstimateStatus(estimate!.estimateNumber, "accepted") },
       { text: "Mark Expired", onPress: () => setEstimateStatus(estimate!.estimateNumber, "expired") },
       { text: "Convert to Invoice", onPress: convert },
+      { text: "Copy public link", onPress: () => void copyPublicLink() },
       { text: "Delete estimate", style: "destructive" as const, onPress: () => Alert.alert("Delete estimate?", "This also removes it from your web app.", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => { deleteEstimate(estimate!.estimateNumber); navigation.goBack(); } }]) },
     ];
-    Alert.alert("Estimate actions", estimate!.estimateNumber, [...actions, { text: "Cancel", style: "cancel" }]);
+    Alert.alert("Estimate actions", estimate!.estimateNumber, [...actions, { text: "Cancel", style: "cancel" }], { cancelable: true });
   }
 
   async function pdf() {
@@ -121,9 +187,17 @@ export function EstimateDetailScreen() {
     catch (error) { Alert.alert("Could not share PDF", error instanceof Error ? error.message : "Please try again."); }
   }
 
+  async function copyPublicLink() {
+    try {
+      const result = await apiClient.request<{ url: string }>("POST", "/api/public-documents", { body: { workspace, kind: "estimate", documentId: `est:${estimate!.estimateNumber}` } });
+      await Clipboard.setStringAsync(result.url);
+      Alert.alert("Link copied", "Anyone with this link can view the estimate without signing in.");
+    } catch (error) { Alert.alert("Could not create link", error instanceof Error ? error.message : "Please try again."); }
+  }
+
   return <ScreenContainer>
     <ScreenHeader title="Estimate Detail" back rightIcon="ellipsis-vertical" onRightPress={more} />
-    <ScrollView contentContainerStyle={styles.detailContent} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={styles.detailContent} showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic" nestedScrollEnabled>
       {estimate.status === "accepted" ? <AppCard style={styles.acceptedBanner}><View style={styles.acceptedIcon}><Ionicons name="checkmark" size={23} color="#fff" /></View><View style={{ flex: 1 }}><Text style={styles.acceptedTitle}>Accepted</Text><Text style={styles.acceptedCopy}>This estimate was accepted on {formatDate((estimate.acceptedAt ?? estimate.updatedAt).slice(0, 10))}.</Text></View></AppCard> : null}
       <View style={styles.documentHero}><View style={{ flex: 1 }}><Text style={styles.documentNumber}>{estimate.estimateNumber}</Text><Text style={styles.documentCustomer}>{estimate.customerName}</Text><Text style={styles.documentDate}>{formatDate(estimate.estimateDate)} · Valid until {formatDate(estimate.validUntil)}</Text></View><Text style={styles.documentAmount}>{formatMoney(estimate.total)}</Text></View>
       <View style={styles.actions}><ContactAction icon="paper-plane-outline" label="Send" onPress={() => loadAndNavigate("EstimatePreview")} /><ContactAction icon="pencil-outline" label="Edit" onPress={() => loadAndNavigate("EstimateCreate")} /><ContactAction icon="copy-outline" label="Duplicate" onPress={duplicate} /><ContactAction icon="ellipsis-horizontal" label="More" onPress={more} /></View>
@@ -137,8 +211,8 @@ export function EstimateDetailScreen() {
         <DetailLine label="Terms" value={estimate.terms} />
       </AppCard>
       <AppButton label="View Estimate PDF" icon="document-text-outline" variant="secondary" onPress={() => void pdf()} style={styles.pdfButton} />
-      {estimate.status === "accepted" ? <AppButton label="Convert to Invoice" icon="swap-horizontal-outline" onPress={convert} style={styles.convertButton} /> : null}
     </ScrollView>
+    {estimate.status === "accepted" ? <SafeActionFooter><AppButton label="Convert to Invoice" icon="swap-horizontal-outline" onPress={convert} /></SafeActionFooter> : null}
   </ScreenContainer>;
 }
 
@@ -170,6 +244,9 @@ export function EstimateConvertScreen() {
 const styles = StyleSheet.create({
   previewContent: { padding: spacing.lg, paddingBottom: spacing.xxxl },
   previewActions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.lg },
+  sendContent: { padding: spacing.lg, paddingBottom: spacing.xxxl },
+  sendHero: { alignItems: "center", paddingVertical: spacing.xl },
+  sendHalo: { width: 92, height: 92, borderRadius: 46, backgroundColor: colors.mintSoft, alignItems: "center", justifyContent: "center", marginBottom: spacing.md },
   detailsCard: { paddingVertical: 0 },
   detailLine: { minHeight: 50, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.divider },
   detailLabel: { color: colors.gray600, fontSize: uiType.secondary },

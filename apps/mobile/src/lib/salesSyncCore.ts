@@ -124,7 +124,14 @@ export class SalesSyncEngine {
     await this.loaded;
     const known = new Set(this.meta.known);
     const pending = new Set(this.meta.pending.map((o) => keyOf(o.kind, o.id)));
-    for (const rec of handler.getLocal()) {
+    const local = handler.getLocal();
+    const localKeys = new Set(local.map((rec) => keyOf(rec.kind, rec.id)));
+    // App upgrades or an interrupted local write can leave a collection cache empty while the
+    // sync cursor still says it is current. Force one full pull so unchanged server records are
+    // restored instead of appearing to have been deleted. Pending local writes still win below.
+    const knownOwnedRecordMissingLocally = [...known].some((key) => handler.kinds.includes(key.split("|")[0] as SalesKind) && !localKeys.has(key) && !pending.has(key));
+    if (knownOwnedRecordMissingLocally) this.meta.since = 0;
+    for (const rec of local) {
       const key = keyOf(rec.kind, rec.id);
       if (!known.has(key) && !pending.has(key)) this.queue({ op: "put", kind: rec.kind, id: rec.id, data: rec.data });
     }

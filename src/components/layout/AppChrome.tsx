@@ -3,6 +3,9 @@ import { useConnectionState } from "@mobile-lib/api";
 import { Link, useLocation } from "react-router-dom";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import { useWebAuth } from "@/contexts/WebAuthContext";
+import { useSubscriptionState } from "@/hooks/use-subscription-state";
+import { DashboardUpgradeModal } from "@/components/pricing/DashboardUpgradeModal";
+import { yearlyDiscountPercent } from "@mobile-lib/pricingPaywall";
 
 type AppChromeProps = {
   children: ReactNode;
@@ -13,6 +16,37 @@ export function AppChrome({ children }: AppChromeProps) {
   const conn = useConnectionState();
   const [showStuckHint, setShowStuckHint] = useState(false);
   const location = useLocation();
+  const subscription = useSubscriptionState();
+  const [pricingOpen, setPricingOpen] = useState(false);
+  const [promoVisible, setPromoVisible] = useState(() => typeof window === "undefined" || sessionStorage.getItem("receipt-cycle:promo-dismissed") !== "1");
+  const [nudgeVisible, setNudgeVisible] = useState(false);
+
+  useEffect(() => {
+    const open = () => setPricingOpen(true);
+    window.addEventListener("receipt-cycle:open-pricing", open);
+    return () => window.removeEventListener("receipt-cycle:open-pricing", open);
+  }, []);
+
+  useEffect(() => {
+    if (!user || !subscription || subscription.pro) return;
+    const day = new Date().toISOString().slice(0, 10);
+    const key = `receipt-cycle:upgrade-impressions:${user.id}:${day}`;
+    const count = Number(localStorage.getItem(key) ?? 0);
+    if (count >= 2) return;
+    const id = window.setTimeout(() => {
+      localStorage.setItem(key, String(count + 1));
+      setPricingOpen(true);
+    }, 900);
+    return () => window.clearTimeout(id);
+  }, [user, subscription]);
+
+  useEffect(() => {
+    if (!user || !subscription || subscription.pro) return;
+    const key = `receipt-cycle:nudge-shown:${user.id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    setNudgeVisible(true);
+  }, [user, subscription]);
 
   useEffect(() => {
     if (!loading) {
@@ -92,9 +126,15 @@ export function AppChrome({ children }: AppChromeProps) {
       children
     );
 
-  return (
-    <ResponsiveLayout variant="app" showSidebar={true} mobileContent={inner}>
-      {inner}
-    </ResponsiveLayout>
-  );
+  return <>
+    {user && promoVisible && !subscription?.pro ? <div className="fixed inset-x-0 top-0 z-[80] flex h-10 items-center justify-between gap-2 bg-gradient-to-r from-teal-950 via-teal-800 to-emerald-700 px-3 text-white shadow-lg sm:px-5">
+      <button onClick={() => setPricingOpen(true)} className="flex min-w-0 flex-1 items-center justify-center gap-2 overflow-hidden text-left text-[11px] font-bold sm:text-sm"><span className="shrink-0 rounded-full bg-amber-300 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-slate-950 sm:text-[10px]">Special offer</span><span className="min-w-0 truncate">Save {yearlyDiscountPercent()}% with Receipt Cycle yearly Pro</span><span className="hidden rounded-full bg-white px-3 py-1 text-xs font-black text-teal-900 md:inline">View offer</span></button>
+      <button onClick={() => { sessionStorage.setItem("receipt-cycle:promo-dismissed", "1"); setPromoVisible(false); }} aria-label="Dismiss offer" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-white/10"><i className="fas fa-xmark" /></button>
+    </div> : null}
+    <div onClickCapture={(event) => { const anchor = (event.target as HTMLElement).closest("a"); if (user && anchor?.getAttribute("href") === "/pricing") { event.preventDefault(); setPricingOpen(true); } }}>
+      <ResponsiveLayout variant="app" showSidebar={true} mobileContent={inner} promoOffset={Boolean(user && promoVisible && !subscription?.pro)}>{inner}</ResponsiveLayout>
+    </div>
+    {user && !subscription?.pro && nudgeVisible ? <div className="fixed bottom-4 right-3 z-[30] flex max-w-[calc(100vw-24px)] items-center gap-3 rounded-2xl border border-teal-900/10 bg-slate-950 px-4 py-3 text-white shadow-2xl sm:right-5"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-300 text-slate-950"><i className="fas fa-crown" /></span><button onClick={() => setPricingOpen(true)} className="text-left"><strong className="block text-sm">Unlock full access</strong><span className="text-xs text-slate-300">Upgrade without leaving your dashboard</span></button><button onClick={() => setPricingOpen(true)} className="rounded-lg bg-teal-400 px-3 py-2 text-xs font-black text-slate-950">Upgrade</button><button onClick={() => setNudgeVisible(false)} aria-label="Dismiss upgrade reminder" className="text-slate-400 hover:text-white"><i className="fas fa-xmark" /></button></div> : null}
+    <DashboardUpgradeModal open={pricingOpen} onClose={() => setPricingOpen(false)} />
+  </>;
 }

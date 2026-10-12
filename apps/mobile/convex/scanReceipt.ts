@@ -6,6 +6,7 @@ import { anyOcrProviderConfigured, openRouterApiKey } from "./_ocrEnv";
 import { api, internal } from "./_generated/api";
 
 type ExtractedShape = {
+  transaction_type?: "expense" | "income";
   merchant_name?: string;
   total_amount?: number;
   subtotal?: number | null;
@@ -16,7 +17,14 @@ type ExtractedShape = {
   payment_method?: string;
   category?: string;
   currency?: string;
-  items?: Array<{ name?: string; quantity?: number; price?: number }>;
+  merchant_address?: string;
+  receipt_number?: string;
+  country?: string;
+  card_type?: string;
+  card_last4?: string;
+  description?: string;
+  taxes?: Array<{ type?: string; amount?: number; registration_number?: string }>;
+  items?: Array<{ name?: string; quantity?: number; unit_price?: number; price?: number; total?: number; category?: string }>;
   /** Classifier for output template + tags */
   document_type?: string;
   /** BCP-47 or readable language names */
@@ -35,7 +43,10 @@ const EXTENDED_SCHEMA_PROMPT = `Return ONE JSON object with:
 - tags: string[] of short flags like "not_a_receipt", "partially_illegible", "no_total_visible", "multi_currency", "tax_included" — use [] if none
 - formatted_receipt_text: REQUIRED. Multi-line plain text that LOOKS like a printed receipt or official block. Keep merchant/item names in their original language/script. Use simple separators (---, ═══). If NOT a purchase slip, use header "DOCUMENT SUMMARY" and describe content.
 - ocr_confidence: "high" | "medium" | "low"
-- merchant_name, total_amount (number > 0 when a clear total exists; else omit or 0), subtotal (number|null), tax_amount (number|null), date (YYYY-MM-DD or ""), time (HH:MM 24h or exact string printed on slip; omit if not visible), payment_method, category (Food & Dining, Shopping, Transportation, Entertainment, Bills, Health, Education, Other), currency (3-letter ISO), items (array of {name, quantity, price}).`;
+- transaction_type: "expense" for purchases, bills, supplier invoices, and money paid; "income" only when the document clearly proves money received. Retail and restaurant receipts are always expenses.
+- merchant_name, merchant_address, receipt_number, country, description, total_amount (number > 0 when a clear total exists; else omit or 0), subtotal (number|null), tax_amount (number|null), date (YYYY-MM-DD or ""), time (HH:MM 24h or exact string printed on slip; omit if not visible), payment_method, card_type, card_last4, category (Food & Dining, Shopping, Transportation, Entertainment, Bills, Health, Education, Other), currency (3-letter ISO).
+- taxes: every printed tax line as {type, amount, registration_number}; preserve printed labels or use a standard tax label such as Sales Tax, State Tax, County Tax, City Tax, Local Tax, Occupancy Tax, Meals Tax, Liquor Tax, VAT, GST, HST, PST, QST, RST, CGST, SGST, IGST, UGST, Service Tax, Consumption Tax, PBT, ICMS, ISS, IPI, PIS, COFINS, or Other.
+- items: every purchased line as {name, quantity, unit_price, price, total, category}. Suggest a category for each item.`;
 
 /** Primary path: OpenAI vision — multilingual OCR + receipt-formatted output */
 const OPENAI_ADVANCED_PROMPT = `You are an elite multilingual document OCR and layout analyst for Receipt Cycle.

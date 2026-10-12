@@ -21,10 +21,7 @@ import { getIsoCountries } from "../lib/isoCountries";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { VOICE_INPUT_LANGUAGE_OPTIONS, normalizeVoiceInputLanguage } from "../lib/preferences";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
-import { PRICING_PLANS } from "../constants/pricing";
-import { useBillingActions } from "../lib/billing";
 import { openHttpsOrExternalUrl } from "../lib/openExternalUrl";
-import type { PaywallPlanId } from "../lib/pricingPaywall";
 
 const ONBOARDING_DATA_KEY = "onboardingData";
 
@@ -88,7 +85,7 @@ export function OnboardingScreen({ onDone }: Props) {
   const [currencyQuery, setCurrencyQuery] = useState("");
   const [countryQuery, setCountryQuery] = useState("");
 
-  const pct = useMemo(() => Math.round((step / 7) * 100), [step]);
+  const pct = useMemo(() => Math.round((step / 3) * 100), [step]);
 
   const currencyRows = useMemo<CurrencyRow[]>(() => {
     return ISO_CURRENCY_DATA.map((c) => ({
@@ -124,13 +121,6 @@ export function OnboardingScreen({ onDone }: Props) {
   const toggle = (arr: string[], id: string, set: (v: string[]) => void) => {
     set(arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]);
   };
-
-  const { startCheckout } = useBillingActions();
-  const openPlanCheckout = useCallback(async (planId: PaywallPlanId) => {
-    if (planId === "free") return;
-    // Errors are ignored here; the Pricing screen has richer error messaging.
-    await startCheckout(planId);
-  }, [startCheckout]);
 
   const persistAndFinish = useCallback(async () => {
     const lang = normalizeVoiceInputLanguage(voiceLang);
@@ -178,7 +168,7 @@ export function OnboardingScreen({ onDone }: Props) {
   }, [setCurrency, setVoiceInputLanguage, onDone]);
 
   const next = () => {
-    if (step < 7) setStep((s) => s + 1);
+    if (step < 3) setStep((s) => s + 1);
     else void persistAndFinish();
   };
 
@@ -207,7 +197,7 @@ export function OnboardingScreen({ onDone }: Props) {
 
         <View style={styles.progressWrap}>
           <View style={styles.progressTop}>
-            <Text style={styles.stepLbl}>Step {step} of 7</Text>
+            <Text style={styles.stepLbl}>Step {step} of 3</Text>
             <Text style={styles.pctLbl}>{pct}%</Text>
           </View>
           <View style={styles.track}>
@@ -251,6 +241,15 @@ export function OnboardingScreen({ onDone }: Props) {
                 </View>
                 <Ionicons name="chevron-forward" size={22} color={colors.gray400} />
               </Pressable>
+              <Text style={[styles.h2, { marginTop: 22 }]}>Country or region</Text>
+              <Text style={styles.p}>Choose the location used for regional preferences.</Text>
+              <Pressable style={styles.choiceCard} onPress={() => setCountryModal(true)}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.choiceLbl}>Selected</Text>
+                  <Text style={styles.choiceVal} numberOfLines={2}>{countryLabel}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={22} color={colors.gray400} />
+              </Pressable>
             </>
           )}
 
@@ -278,6 +277,17 @@ export function OnboardingScreen({ onDone }: Props) {
                   />
                 </Pressable>
               ))}
+              <Text style={[styles.h2, { marginTop: 20 }]}>What will you use most?</Text>
+              <Text style={styles.p}>Choose the jobs you expect to handle regularly.</Text>
+              {USECASES.map((u) => (
+                <Pressable key={u.id} style={[styles.card, usecases.includes(u.id) && styles.cardOn]} onPress={() => toggle(usecases, u.id, setUsecases)}>
+                  <View style={styles.cardLeft}>
+                    <Ionicons name={u.icon} size={22} color={usecases.includes(u.id) ? colors.primary : colors.gray500} />
+                    <View style={{ flex: 1, minWidth: 0 }}><Text style={styles.cardTitle}>{u.title}</Text><Text style={styles.cardSub}>{u.sub}</Text></View>
+                  </View>
+                  <Ionicons name={usecases.includes(u.id) ? "checkmark-circle" : "ellipse-outline"} size={24} color={usecases.includes(u.id) ? colors.primary : colors.gray400} />
+                </Pressable>
+              ))}
             </>
           )}
 
@@ -294,6 +304,16 @@ export function OnboardingScreen({ onDone }: Props) {
                 <Text style={[styles.bigSub, { textAlign: "center" }]}>
                   Sign in to sync securely across your devices. Export CSV anytime from Settings.
                 </Text>
+              </View>
+              <Text style={[styles.h2, { marginTop: 20 }]}>Your industry</Text>
+              <Text style={styles.p}>Choose the closest match. You can change this later.</Text>
+              <View style={styles.industryGrid}>
+                {INDUSTRIES.map((i) => (
+                  <Pressable key={i.id} style={[styles.industryChip, industry === i.id && styles.industryChipOn]} onPress={() => setIndustry(i.id)}>
+                    <Ionicons name={i.icon} size={20} color={industry === i.id ? "#fff" : colors.primary} />
+                    <Text style={[styles.industryTxt, industry === i.id && styles.industryTxtOn]} numberOfLines={2}>{i.label}</Text>
+                  </Pressable>
+                ))}
               </View>
             </>
           )}
@@ -374,23 +394,6 @@ export function OnboardingScreen({ onDone }: Props) {
                 <Text style={styles.doneTitle}>Setup complete</Text>
                 <Text style={styles.cardSub}>You can change currency and date format anytime in Settings.</Text>
               </View>
-              <Text style={styles.pricingTitle}>Premium pricing</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pricingRow}>
-                {PRICING_PLANS.map((p) => (
-                  <View key={p.id} style={styles.pricingCard}>
-                    <Text style={styles.pricingName}>{p.name}</Text>
-                    <Text style={styles.pricingPrice}>
-                      {p.price}
-                      <Text style={styles.pricingPeriod}>{p.period}</Text>
-                    </Text>
-                    <Text style={styles.pricingBlurb}>{p.blurb}</Text>
-                  </View>
-                ))}
-              </ScrollView>
-              <Pressable style={styles.pricingCta} onPress={() => void openPlanCheckout("yearly")}>
-                <Text style={styles.pricingCtaText}>View full pricing now</Text>
-                <Ionicons name="arrow-forward" size={18} color={colors.primary} />
-              </Pressable>
             </>
           )}
           <View style={{ height: 120 }} />
@@ -398,7 +401,7 @@ export function OnboardingScreen({ onDone }: Props) {
 
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 14) }]}>
           <Pressable style={styles.mainBtn} onPress={next}>
-            <Text style={styles.mainBtnTxt}>{step === 7 ? "Get started" : "Next"}</Text>
+            <Text style={styles.mainBtnTxt}>{step === 3 ? "Open dashboard" : "Continue"}</Text>
             <Ionicons name="arrow-forward" size={20} color="#fff" />
           </Pressable>
         </View>

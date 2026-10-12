@@ -43,7 +43,7 @@ export function PaymentInvoiceDetailScreen() {
   }
 
   return <ScreenContainer>
-    <ScreenHeader title="Invoice Details" back rightIcon="ellipsis-vertical" onRightPress={() => Alert.alert("Invoice actions", invoice.invoiceNumber, [{ text: "Record Payment", onPress: record }, { text: "Send Reminder", onPress: () => void reminder() }, { text: "Cancel", style: "cancel" }])} />
+    <ScreenHeader title="Invoice Details" back rightIcon="ellipsis-vertical" onRightPress={() => Alert.alert("Invoice actions", invoice.invoiceNumber, [{ text: "Record Payment", onPress: record }, { text: "Send Reminder", onPress: () => void reminder() }, { text: "Cancel", style: "cancel" }], { cancelable: true })} />
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <AppCard style={styles.invoiceCard}>
         <View style={styles.invoiceHead}><View><StatusBadge status={balance === 0 ? "paid" : paid > 0 ? "partially_paid" : invoice.status === "overdue" ? "overdue" : "sent"} /><Text style={styles.invoiceNumber}>{invoice.invoiceNumber}</Text></View><Text style={styles.issueDate}>{formatDate(invoice.issueDate)}</Text></View>
@@ -134,7 +134,7 @@ export function ReceiptShareScreen() {
       { text: "Email", onPress: () => void Linking.openURL(`mailto:${payment!.customerEmail}?subject=${encodeURIComponent(`Receipt ${payment!.receiptNumber}`)}&body=${encodeURIComponent(summary)}`) },
       { text: "WhatsApp", onPress: () => void Linking.openURL(`https://wa.me/?text=${encodeURIComponent(summary)}`) },
       { text: "Cancel", style: "cancel" },
-    ]);
+    ], { cancelable: true });
   }
 
   return <ScreenContainer>

@@ -3,7 +3,10 @@
     "name": "Receipt Cycle Invoice Manager",
     "slug": "receipt-cycle-mobile",
     "version": "1.0.2",
-    "scheme": "receiptcycle",
+    "scheme": [
+      "receiptcycle",
+      "com.receiptcycle.mobile"
+    ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -30,7 +33,7 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.anonymous.receiptcyclemobile"
+      "package": "com.receiptcycle.mobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -48,7 +51,8 @@
       "@react-native-community/datetimepicker",
       "expo-web-browser",
       "expo-background-fetch",
-      "expo-font"
+      "expo-font",
+      "expo-mail-composer"
     ],
     "extra": {
       "eas": {

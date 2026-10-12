@@ -1,82 +1,44 @@
-import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ScreenHeader } from "../components/ScreenHeader";
-import { AppButton, AppCard, IconTile, ScreenContainer, SegmentedTabs } from "../components/ui/FinanceUI";
-import { useBillingActions } from "../lib/billing";
+import { AppCard, IconTile, ScreenContainer } from "../components/ui/FinanceUI";
 import { useSubscriptionState } from "../hooks/useSubscriptionState";
-import { openHttpsOrExternalUrl } from "../lib/openExternalUrl";
-import { equivalentMonthlyFromYearly, formatUsd, PAYWALL_PRICING, PAYWALL_TIER_FEATURES, type PaywallPlanId, yearlyDiscountPercent } from "../lib/pricingPaywall";
-import type { RootStackParamList } from "../navigation/types";
-import { colors, radius, spacing, uiType } from "../theme/tokens";
-
-type PaidPlan = "monthly" | "yearly";
+import { colors, spacing, uiType } from "../theme/tokens";
 
 export function PricingScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const subscription = useSubscriptionState();
-  const [plan, setPlan] = useState<PaidPlan>("yearly");
-  const { startCheckout, openPortal } = useBillingActions();
-  const [busy, setBusy] = useState(false);
-
-  async function openCheckout(target: PaywallPlanId = plan) {
-    if (target === "free") {
-      navigation.navigate("Main");
-      return;
-    }
-    setBusy(true);
-    const problem = await startCheckout(target);
-    setBusy(false);
-    if (problem) Alert.alert("Could not open checkout", problem);
-  }
-
-  async function openManage() {
-    setBusy(true);
-    const problem = await openPortal();
-    setBusy(false);
-    if (problem) Alert.alert("Could not open billing", problem);
-  }
-
-  const price = plan === "yearly" ? formatUsd(PAYWALL_PRICING.yearlyUsd) : formatUsd(PAYWALL_PRICING.monthlyUsd);
-  const period = plan === "yearly" ? "/ year" : "/ month";
   const usage = subscription?.pro ? "Unlimited" : `${subscription?.trialAddsUsed ?? 0} / ${subscription?.trialAddsLimit ?? 25}`;
+  const accessLabel = subscription?.pro ? "Pro access" : subscription?.phase === "trial" ? "Trial access" : "Free access";
 
   return (
     <ScreenContainer>
-      <ScreenHeader title="Go Premium" back />
+      <ScreenHeader title="Plan & Access" back />
       <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <IconTile icon="diamond-outline" tone="amber" size={58} />
-          <Text style={styles.title}>Unlock More with Receipt Cycle Pro</Text>
-          <Text style={styles.subtitle}>Powerful tools for growing businesses</Text>
+          <IconTile icon={subscription?.pro ? "diamond" : "person-outline"} tone={subscription?.pro ? "amber" : "mint"} size={58} />
+          <Text style={styles.title}>{accessLabel}</Text>
+          <Text style={styles.subtitle}>Your access is synchronized securely across Receipt Cycle.</Text>
         </View>
 
-        {subscription?.pro ? <AppCard style={styles.activeCard}><Ionicons name="checkmark-circle" size={22} color={colors.success} /><View style={styles.flex}><Text style={styles.activeTitle}>Your Pro plan is active</Text><Text style={styles.activeText}>You have unlimited records and full feature access.</Text></View></AppCard> : null}
-
-        <SegmentedTabs options={["monthly", "yearly"] as const} value={plan} onChange={setPlan} />
-        <AppCard style={styles.planCard}>
-          <View style={styles.planHeading}>
-            <View><Text style={styles.planName}>Pro Plan</Text><View style={styles.priceRow}><Text style={styles.price}>{price}</Text><Text style={styles.period}>{period}</Text></View></View>
-            {plan === "yearly" ? <View style={styles.saveBadge}><Text style={styles.saveText}>Save {yearlyDiscountPercent()}%</Text></View> : null}
-          </View>
-          <Text style={styles.billing}>{plan === "yearly" ? `About ${equivalentMonthlyFromYearly()} per month, billed annually after a ${PAYWALL_PRICING.trialDays}-day trial.` : "Flexible monthly billing. Cancel anytime."}</Text>
-          <AppButton label={subscription?.pro ? "Manage subscription" : plan === "yearly" ? "Start your free week" : "Upgrade to Pro"} icon={subscription?.pro ? "settings-outline" : "sparkles-outline"} onPress={() => void (subscription?.pro ? openManage() : openCheckout())} style={styles.cta} />
-          <View style={styles.features}>
-            {PAYWALL_TIER_FEATURES.monthly.map((feature) => <View key={feature} style={styles.featureRow}><Ionicons name="checkmark-circle" size={18} color={colors.primary} /><Text style={styles.featureText}>{feature}</Text></View>)}
+        <AppCard style={styles.activeCard}>
+          <Ionicons name={subscription?.pro ? "checkmark-circle" : "information-circle-outline"} size={22} color={subscription?.pro ? colors.success : colors.primary} />
+          <View style={styles.flex}>
+            <Text style={styles.activeTitle}>{subscription?.pro ? "Pro is active" : subscription?.phase === "trial" ? "Your trial is active" : "Free plan"}</Text>
+            <Text style={styles.activeText}>{subscription?.pro ? "Unlimited records and eligible Pro features are available on this device." : "You can continue using the features included with your current account."}</Text>
           </View>
         </AppCard>
 
         <AppCard style={styles.usageCard}>
           <Text style={styles.usageTitle}>Your usage</Text>
           <UsageRow label="Transactions" value={usage} />
-          <UsageRow label="AI features" value={subscription?.canUseAiFeatures ? "Available" : "Locked"} />
-          <UsageRow label="CSV export" value={subscription?.canExportCsv ? "Available" : "Pro only"} />
+          <UsageRow label="AI features" value={subscription?.canUseAiFeatures ? "Available" : "Not included"} />
+          <UsageRow label="CSV export" value={subscription?.canExportCsv ? "Available" : "Not included"} />
         </AppCard>
 
-        {!subscription?.pro ? <Pressable onPress={() => void openCheckout("free")} style={styles.textButton}><Text style={styles.textButtonLabel}>Continue with Free</Text></Pressable> : null}
-        <Pressable onPress={() => void openManage()} style={styles.textButton}><Text style={styles.manageLabel}>Manage subscription and invoices</Text></Pressable>
+        <View style={styles.notice}>
+          <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
+          <Text style={styles.noticeText}>Subscription purchases and billing changes are not available inside this Android app.</Text>
+        </View>
       </ScrollView>
     </ScreenContainer>
   );
@@ -87,33 +49,19 @@ function UsageRow({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  page: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xxxl },
+  page: { padding: spacing.lg, paddingBottom: spacing.xxxl },
   hero: { alignItems: "center", paddingVertical: spacing.lg },
-  title: { color: colors.textPrimary, fontSize: 22, fontWeight: "900", lineHeight: 28, textAlign: "center", marginTop: spacing.md, maxWidth: 310 },
-  subtitle: { color: colors.textSecondary, fontSize: uiType.body, textAlign: "center", marginTop: spacing.xs },
-  activeCard: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.emerald50, marginBottom: spacing.md },
+  title: { color: colors.textPrimary, fontSize: 22, fontWeight: "900", lineHeight: 28, textAlign: "center", marginTop: spacing.md },
+  subtitle: { color: colors.textSecondary, fontSize: uiType.body, lineHeight: 21, textAlign: "center", marginTop: spacing.xs, maxWidth: 320 },
+  activeCard: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm, backgroundColor: colors.emerald50, marginBottom: spacing.md },
   flex: { flex: 1 },
   activeTitle: { color: colors.textPrimary, fontSize: uiType.body, fontWeight: "800" },
-  activeText: { color: colors.textSecondary, fontSize: uiType.caption, marginTop: 2 },
-  planCard: { backgroundColor: "#f7fbff", borderColor: "#d8e7f5", padding: spacing.lg },
-  planHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  planName: { color: colors.textPrimary, fontSize: uiType.sectionTitle, fontWeight: "800" },
-  priceRow: { flexDirection: "row", alignItems: "baseline", marginTop: 2 },
-  price: { color: colors.textPrimary, fontSize: 26, fontWeight: "900" },
-  period: { color: colors.gray600, fontSize: uiType.secondary, marginLeft: 4 },
-  saveBadge: { borderRadius: radius.pill, backgroundColor: colors.emerald50, paddingHorizontal: spacing.sm, paddingVertical: 5 },
-  saveText: { color: colors.success, fontSize: uiType.caption, fontWeight: "800" },
-  billing: { color: colors.textSecondary, fontSize: uiType.caption, lineHeight: 17, marginTop: spacing.sm },
-  cta: { marginTop: spacing.md },
-  features: { marginTop: spacing.lg, gap: spacing.sm },
-  featureRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
-  featureText: { flex: 1, color: colors.textPrimary, fontSize: uiType.secondary, lineHeight: 18 },
-  usageCard: { marginTop: spacing.md, backgroundColor: colors.surfaceSoft },
+  activeText: { color: colors.textSecondary, fontSize: uiType.caption, lineHeight: 18, marginTop: 2 },
+  usageCard: { backgroundColor: colors.surfaceSoft, marginBottom: spacing.md },
   usageTitle: { color: colors.textPrimary, fontSize: uiType.body, fontWeight: "800", marginBottom: spacing.sm },
-  usageRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 5 },
+  usageRow: { flexDirection: "row", justifyContent: "space-between", gap: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.divider },
   usageLabel: { color: colors.textSecondary, fontSize: uiType.secondary },
-  usageValue: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "700" },
-  textButton: { alignItems: "center", paddingVertical: spacing.md },
-  textButtonLabel: { color: colors.primary, fontSize: uiType.body, fontWeight: "700" },
-  manageLabel: { color: colors.gray600, fontSize: uiType.secondary, fontWeight: "600", textDecorationLine: "underline" },
+  usageValue: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "700", textAlign: "right", flexShrink: 1 },
+  notice: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm, backgroundColor: colors.emerald50, borderRadius: 16, padding: spacing.md },
+  noticeText: { flex: 1, color: colors.textSecondary, fontSize: uiType.caption, lineHeight: 18 },
 });

@@ -20,6 +20,8 @@ export type ApiClientOptions = {
   baseUrl: string;
   /** Public website origin; used for password-reset links. */
   webAppUrl?: string;
+  /** Native application origin sent to CSRF-protected auth endpoints. Browsers add their own Origin header. */
+  requestOrigin?: string;
   /** Injected for tests or non-browser runtimes. */
   fetch?: typeof fetch;
 };
@@ -61,10 +63,12 @@ export class ApiClient {
   private token: string | null = null;
   private listeners = new Set<(token: string | null) => void>();
   private readonly fetchImpl: typeof fetch;
+  private readonly requestOrigin?: string;
 
   constructor(opts: ApiClientOptions) {
     this.baseUrl = opts.baseUrl.replace(/\/+$/, "");
     this.webAppUrl = (opts.webAppUrl ?? "https://receiptcycle.com").replace(/\/+$/, "");
+    this.requestOrigin = opts.requestOrigin?.trim() || undefined;
     this.fetchImpl = opts.fetch ?? ((input, init) => fetch(input, init));
   }
 
@@ -90,6 +94,7 @@ export class ApiClient {
       if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
     }
     const headers: Record<string, string> = { Accept: "application/json" };
+    if (this.requestOrigin) headers.Origin = this.requestOrigin;
     const token = opts.anonymous ? null : (opts.token?.trim() || this.token);
     if (token) headers.Authorization = `Bearer ${token}`;
     if (opts.adminSecret) headers["x-admin-secret"] = opts.adminSecret;

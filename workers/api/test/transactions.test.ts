@@ -100,7 +100,7 @@ describe("transactions", () => {
     expect((await api("POST", "/api/transactions", { token, body: txn() })).status).toBe(201);
     const blocked = await api("POST", "/api/transactions", { token, body: txn() });
     expect(blocked.status).toBe(402);
-    expect(blocked.json.error).toMatch(/used all 25 trial transactions/);
+    expect(blocked.json.error).toMatch(/used all 25 included trial transactions/);
     const sub = await api("GET", "/api/subscription", { token });
     expect(sub.json).toMatchObject({ phase: "trial_exhausted", trialAddsUsed: 25 });
   });

@@ -26,6 +26,8 @@ export type Transaction = {
   is_recurring: boolean | null;
   receipt_url: string | null;
   receipt_data: unknown;
+  evidence_url?: string | null;
+  entry_source?: EntrySource;
   created_at: string;
   updated_at: string;
 };
@@ -172,6 +174,7 @@ export type AuditLog = { id: string; action: string; actor: string; details: str
 // ---- AI --------------------------------------------------------------------
 
 export type ScanExtracted = {
+  transaction_type?: "expense" | "income";
   merchant_name?: string;
   total_amount?: number;
   subtotal?: number | null;
@@ -181,7 +184,14 @@ export type ScanExtracted = {
   payment_method?: string;
   category?: string;
   currency?: string;
-  items?: { name?: string; quantity?: number; price?: number }[];
+  merchant_address?: string;
+  receipt_number?: string;
+  country?: string;
+  card_type?: string;
+  card_last4?: string;
+  description?: string;
+  taxes?: { type?: string; amount?: number; registration_number?: string }[];
+  items?: { name?: string; quantity?: number; unit_price?: number; price?: number; total?: number; category?: string }[];
   document_type?: string;
   detected_languages?: string[];
   tags?: string[];

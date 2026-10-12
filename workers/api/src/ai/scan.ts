@@ -20,6 +20,7 @@ function base64ToBytes(b64: string): Uint8Array {
 }
 
 export type ExtractedShape = {
+  transaction_type?: "expense" | "income";
   merchant_name?: string;
   total_amount?: number;
   subtotal?: number | null;
@@ -30,7 +31,14 @@ export type ExtractedShape = {
   payment_method?: string;
   category?: string;
   currency?: string;
-  items?: Array<{ name?: string; quantity?: number; price?: number }>;
+  merchant_address?: string;
+  receipt_number?: string;
+  country?: string;
+  card_type?: string;
+  card_last4?: string;
+  description?: string;
+  taxes?: Array<{ type?: string; amount?: number; registration_number?: string }>;
+  items?: Array<{ name?: string; quantity?: number; unit_price?: number; price?: number; total?: number; category?: string }>;
   /** Classifier for output template + tags */
   document_type?: string;
   /** BCP-47 or readable language names */
@@ -49,7 +57,10 @@ const EXTENDED_SCHEMA_PROMPT = `Return ONE JSON object with:
 - tags: string[] of short flags like "not_a_receipt", "partially_illegible", "no_total_visible", "multi_currency", "tax_included" — use [] if none
 - formatted_receipt_text: REQUIRED. Multi-line plain text that LOOKS like a printed receipt or official block. Keep merchant/item names in their original language/script. Use simple separators (---, ═══). If NOT a purchase slip, use header "DOCUMENT SUMMARY" and describe content.
 - ocr_confidence: "high" | "medium" | "low"
-- merchant_name, total_amount (number > 0 when a clear total exists; else omit or 0), subtotal (number|null), tax_amount (number|null), date (YYYY-MM-DD or ""), time (HH:MM 24h or exact string printed on slip; omit if not visible), payment_method, category (Food & Dining, Shopping, Transportation, Entertainment, Bills, Health, Education, Other), currency (3-letter ISO), items (array of {name, quantity, price}).`;
+- transaction_type: "expense" for a purchase receipt, bill, supplier invoice, or money paid; "income" only when the document clearly proves money received, a sale, deposit, or customer payment. Ordinary retail and restaurant receipts are always expenses.
+- merchant_name, merchant_address, receipt_number, country, description, total_amount (number > 0 when a clear total exists; else omit or 0), subtotal (number|null), tax_amount (number|null), date (YYYY-MM-DD or ""), time (HH:MM 24h or exact string printed on slip; omit if not visible), payment_method, card_type, card_last4, category (Food & Dining, Shopping, Transportation, Entertainment, Bills, Health, Education, Other), currency (3-letter ISO).
+- taxes: every tax line printed on the document as {type, amount, registration_number}. Use the printed label when visible; otherwise infer the closest standard label from Sales Tax, State Tax, County Tax, City Tax, Local Tax, Occupancy Tax, Meals Tax, Liquor Tax, VAT, GST, HST, PST, QST, RST, CGST, SGST, IGST, UGST, Service Tax, Consumption Tax, PBT, ICMS, ISS, IPI, PIS, COFINS, or Other.
+- items: every purchased line as {name, quantity, unit_price, price, total, category}. price and unit_price are the per-unit price; total is quantity multiplied by unit price. Suggest a category for every item.`;
 
 /** Primary path: OpenAI vision — multilingual OCR + receipt-formatted output */
 const OPENAI_ADVANCED_PROMPT = `You are an elite multilingual document OCR and layout analyst for Receipt Cycle.
@@ -457,10 +468,24 @@ export async function landingAiExtract(env: Env, base64: string, mime: string): 
     type: "object",
     properties: {
       merchant_name: { type: "string" },
+      transaction_type: { type: "string", enum: ["expense", "income"] },
       total_amount: { type: "number" },
       date: { type: "string" },
       payment_method: { type: "string" },
       category: { type: "string" },
+      currency: { type: "string" },
+      subtotal: { type: "number" },
+      tax_amount: { type: "number" },
+      merchant_address: { type: "string" },
+      receipt_number: { type: "string" },
+      country: { type: "string" },
+      card_type: { type: "string" },
+      card_last4: { type: "string" },
+      description: { type: "string" },
+      taxes: {
+        type: "array",
+        items: { type: "object", properties: { type: { type: "string" }, amount: { type: "number" }, registration_number: { type: "string" } } },
+      },
       items: {
         type: "array",
         items: {
@@ -469,6 +494,9 @@ export async function landingAiExtract(env: Env, base64: string, mime: string): 
             name: { type: "string" },
             quantity: { type: "number" },
             price: { type: "number" },
+            unit_price: { type: "number" },
+            total: { type: "number" },
+            category: { type: "string" },
           },
         },
       },

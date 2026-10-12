@@ -14,6 +14,7 @@ export interface Transaction {
   tags: string[] | null;
   is_recurring: boolean | null;
   receipt_url: string | null;
+  evidence_url?: string | null;
   receipt_data: unknown;
   created_at: string;
   updated_at: string;

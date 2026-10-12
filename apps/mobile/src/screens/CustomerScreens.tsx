@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
-import { Alert, FlatList, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, FlatList, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Audio } from "expo-av";
+import { readAsStringAsync } from "expo-file-system/legacy";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ScreenHeader } from "../components/ScreenHeader";
@@ -11,6 +13,8 @@ import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
 import { useEstimateFlow } from "../contexts/EstimateFlowContext";
 import { usePaymentFlow } from "../contexts/PaymentFlowContext";
 import { useSalesSetup } from "../contexts/SalesSetupContext";
+import { useAuth } from "../contexts/AuthContext";
+import { useAction, api } from "../lib/api";
 import type { CustomerStatus } from "../features/sales/setupData";
 import type { RootStackParamList } from "../navigation/types";
 import { colors, spacing, uiType } from "../theme/tokens";
@@ -81,7 +85,7 @@ export function CustomerDetailScreen() {
       { text: nextStatus === "active" ? "Mark active" : "Mark inactive", onPress: () => setCustomerStatus(customerId, nextStatus) },
       { text: "Delete customer", style: "destructive", onPress: () => Alert.alert("Delete customer?", "This also removes the customer from your web app. Their invoices stay.", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => { deleteCustomer(customerId); navigation.goBack(); } }]) },
       { text: "Cancel", style: "cancel" },
-    ]);
+    ], { cancelable: true });
   }
 
   return <ScreenContainer>
@@ -119,6 +123,9 @@ export function CustomerFormScreen() {
   const navigation = useNavigation<RootNav>();
   const route = useRoute<RouteProp<RootStackParamList, "SalesCustomerForm">>();
   const { customers, saveCustomer } = useSalesSetup();
+  const { token } = useAuth();
+  const parseCustomerText = useAction(api.voiceFinance.parseTransactionFromSpeech);
+  const parseCustomerVoice = useAction(api.voiceFinance.voiceTransactionFromAudio);
   const existing = route.params?.customerId ? customers.find((item) => item.id === route.params?.customerId) : undefined;
   const [name, setName] = useState(existing?.name ?? "");
   const [businessName, setBusinessName] = useState(existing?.businessName ?? "");
@@ -127,6 +134,55 @@ export function CustomerFormScreen() {
   const [billingAddress, setBillingAddress] = useState(existing?.billingAddress ?? "");
   const [taxId, setTaxId] = useState(existing?.taxId ?? "");
   const [notes, setNotes] = useState(existing?.notes ?? "");
+  const [smartOpen, setSmartOpen] = useState(false);
+  const [smartText, setSmartText] = useState("");
+  const [smartBusy, setSmartBusy] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const recordingRef = useRef<Audio.Recording | null>(null);
+
+  function applySmartResult(value: Record<string, unknown>, sourceText: string) {
+    const emailMatch = sourceText.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/)?.[0] ?? "";
+    const phoneMatch = sourceText.match(/(?:\+?\d[\d ()-]{7,}\d)/)?.[0] ?? "";
+    const candidate = String(value.customerName ?? value.merchant ?? value.description ?? "").trim();
+    if (candidate) setName(candidate);
+    if (String(value.customerEmail ?? emailMatch).trim()) setEmail(String(value.customerEmail ?? emailMatch).trim());
+    if (phoneMatch) setPhone(phoneMatch.trim());
+    setNotes((current) => current || sourceText.trim());
+    setSmartOpen(false);
+  }
+
+  async function fillFromText() {
+    if (!token || !smartText.trim()) { Alert.alert("Customer AI", token ? "Describe the customer first." : "Sign in to use AI customer entry."); return; }
+    setSmartBusy(true);
+    try {
+      const result = await parseCustomerText({ text: `Create a customer contact from this note: ${smartText}`, sessionToken: token, hints: {} });
+      if (!result.ok || !result.draft) throw new Error(result.error || "Could not understand the customer details.");
+      applySmartResult(result.draft as unknown as Record<string, unknown>, smartText);
+    } catch (error) { Alert.alert("Customer AI", error instanceof Error ? error.message : "Could not fill the customer."); }
+    finally { setSmartBusy(false); }
+  }
+
+  async function toggleCustomerVoice() {
+    if (recording && recordingRef.current) {
+      setRecording(false); setSmartBusy(true);
+      try {
+        await recordingRef.current.stopAndUnloadAsync();
+        const uri = recordingRef.current.getURI(); recordingRef.current = null;
+        if (!uri || !token) throw new Error("Sign in to use voice entry.");
+        const audioBase64 = await readAsStringAsync(uri, { encoding: "base64" });
+        const result = await parseCustomerVoice({ audioBase64, mimeType: "audio/m4a", language: "auto", sessionToken: token, hints: {} });
+        if (!result.ok || !result.draft) throw new Error(result.error || "Could not understand the recording.");
+        const transcript = result.transcript ?? ""; setSmartText(transcript); applySmartResult(result.draft as unknown as Record<string, unknown>, transcript);
+      } catch (error) { Alert.alert("Customer voice", error instanceof Error ? error.message : "Could not fill the customer."); }
+      finally { setSmartBusy(false); }
+      return;
+    }
+    const permission = await Audio.requestPermissionsAsync();
+    if (!permission.granted) { Alert.alert("Microphone", "Allow microphone access to add a customer by voice."); return; }
+    await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+    const created = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+    recordingRef.current = created.recording; setRecording(true); setSmartOpen(true);
+  }
 
   function onSave() {
     if (!name.trim()) { Alert.alert("Customer name required", "Enter a customer name before saving."); return; }
@@ -137,6 +193,7 @@ export function CustomerFormScreen() {
   return <ScreenContainer>
     <ScreenHeader title={existing ? "Edit Customer" : "Add Customer"} back />
     <ScrollView contentContainerStyle={styles.formContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      {!existing ? <AppCard style={styles.customerAiCard}><View style={styles.customerAiHead}><View><Text style={styles.customerAiTitle}>Add with AI</Text><Text style={styles.customerAiCopy}>Speak or type the customer details, then review them.</Text></View><View style={styles.customerAiActions}><Pressable onPress={() => void toggleCustomerVoice()} style={[styles.customerAiIcon, recording && styles.customerAiRecording]}><Ionicons name={recording ? "stop" : "mic"} size={20} color={recording ? colors.rose600 : colors.primary} /></Pressable><Pressable onPress={() => setSmartOpen((value) => !value)} style={styles.customerAiIcon}><Ionicons name="create-outline" size={20} color={colors.blue600} /></Pressable></View></View>{smartOpen ? <View style={styles.customerAiInputRow}><TextInput value={smartText} onChangeText={setSmartText} placeholder="Sarah Chen, sarah@bright.co, +1 555 0100" placeholderTextColor={colors.gray400} multiline style={styles.customerAiInput} /> <Pressable onPress={() => void fillFromText()} disabled={smartBusy} style={styles.customerAiSend}>{smartBusy ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="arrow-forward" size={18} color="#fff" />}</Pressable></View> : null}</AppCard> : null}
       <FormField label="Customer Name" icon="person-outline" value={name} onChangeText={setName} placeholder="Enter customer name" required />
       <FormField label="Business Name" icon="business-outline" value={businessName} onChangeText={setBusinessName} placeholder="Enter business name (optional)" />
       <FormField label="Email Address" icon="mail-outline" value={email} onChangeText={setEmail} placeholder="name@company.com" keyboardType="email-address" autoCapitalize="none" />
@@ -173,4 +230,14 @@ const styles = StyleSheet.create({
   documentAmount: { color: colors.textPrimary, fontSize: uiType.caption, fontWeight: "800" },
   formContent: { padding: spacing.lg, paddingBottom: spacing.xxxl },
   formButton: { marginTop: spacing.md },
+  customerAiCard: { marginBottom: spacing.lg, backgroundColor: colors.purpleSoft, borderColor: colors.border },
+  customerAiHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm },
+  customerAiTitle: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "800" },
+  customerAiCopy: { color: colors.gray600, fontSize: uiType.caption, marginTop: 3, maxWidth: 205 },
+  customerAiActions: { flexDirection: "row", gap: 7 },
+  customerAiIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
+  customerAiRecording: { backgroundColor: colors.roseSoft, borderColor: colors.rose600 },
+  customerAiInputRow: { flexDirection: "row", alignItems: "flex-end", gap: 8, marginTop: spacing.md },
+  customerAiInput: { flex: 1, minHeight: 72, maxHeight: 110, borderWidth: 1, borderColor: colors.border, borderRadius: 10, backgroundColor: colors.surface, color: colors.textPrimary, padding: 10, fontSize: uiType.secondary },
+  customerAiSend: { width: 42, height: 42, borderRadius: 10, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
 });

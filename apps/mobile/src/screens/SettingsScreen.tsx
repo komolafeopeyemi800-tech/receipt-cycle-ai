@@ -55,10 +55,11 @@ export function SettingsScreen() {
   }
 
   function buildCsv(rows: NonNullable<typeof backupRows>) {
-    const header = ["date", "type", "category", "amount", "merchant", "description", "payment_method", "workspace"].join(",");
+    const header = ["date", "type", "category", "amount", "merchant", "description", "payment_method", "workspace", "subtotal", "tax", "currency", "line_items", "evidence_url"].join(",");
     const body = rows
-      .map((t: (typeof rows)[number]) =>
-        [
+      .map((t: (typeof rows)[number]) => {
+        const data = t.receipt_data && typeof t.receipt_data === "object" ? t.receipt_data as { subtotal?: number; tax_amount?: number; currency?: string; items?: unknown[] } : null;
+        return [
           csvValue(t.date),
           csvValue(t.type),
           csvValue(t.category),
@@ -67,8 +68,13 @@ export function SettingsScreen() {
           csvValue(t.description),
           csvValue(t.payment_method),
           csvValue(t.workspace),
-        ].join(","),
-      )
+          csvValue(data?.subtotal),
+          csvValue(data?.tax_amount),
+          csvValue(data?.currency),
+          csvValue(data?.items ? JSON.stringify(data.items) : ""),
+          csvValue(t.evidence_url),
+        ].join(",");
+      })
       .join("\r\n");
 
     // BOM helps Excel open UTF-8 CSV cleanly.
@@ -83,10 +89,9 @@ export function SettingsScreen() {
     if (sub && !sub.canExportCsv) {
       Alert.alert(
         "Pro feature",
-        "CSV export is included with Pro. Upgrade to download all your transactions.",
+        "CSV export is not included with your current access.",
         [
-          { text: "Not now", style: "cancel" },
-          { text: "View plans", onPress: () => navigation.navigate("Pricing") },
+          { text: "OK" },
         ],
       );
       return;
@@ -194,14 +199,14 @@ export function SettingsScreen() {
           <RowNav
             icon="download-outline"
             title="Export Data"
-            sub={runtime?.exportEnabled === false ? "Disabled by admin" : sub && !sub.canExportCsv ? "Pro only — upgrade to export CSV" : "Download your transaction spreadsheet"}
+            sub={runtime?.exportEnabled === false ? "Disabled by admin" : sub && !sub.canExportCsv ? "Not included with your current access" : "Download your transaction spreadsheet"}
             onPress={() => void exportCsvDownload()}
           />
           <Divider />
           <RowNav
             icon="diamond-outline"
-            title="Manage Subscription"
-            sub={sub?.pro ? "Pro plan active" : sub?.phase === "trial" ? "Free trial active" : "Free plan · View plans and billing"}
+            title="Plan & Access"
+            sub={sub?.pro ? "Pro access active" : sub?.phase === "trial" ? "Trial access active" : "Free access"}
             onPress={() => navigation.navigate("Pricing")}
           />
           <Divider />

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useMutation } from "../lib/api";
 import { useNavigation } from "@react-navigation/native";
@@ -70,6 +71,7 @@ export function PaymentCreateScreen() {
 }
 
 function InvoicePicker({ visible, invoices, selected, onClose, onSelect }: { visible: boolean; invoices: PaymentInvoice[]; selected: string | null; onClose: () => void; onSelect: (invoiceNumber: string) => void }) {
+  const insets = useSafeAreaInsets();
   const { formatMoney, formatDate } = usePreferences();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"Open" | "Overdue" | "All">("Open");
@@ -77,7 +79,7 @@ function InvoicePicker({ visible, invoices, selected, onClose, onSelect }: { vis
   useEffect(() => { if (visible) setChoice(selected); }, [selected, visible]);
   const rows = useMemo(() => invoices.filter((invoice) => (filter === "All" || filter === "Open" && invoice.status !== "overdue" || filter === "Overdue" && invoice.status === "overdue") && (!search.trim() || `${invoice.invoiceNumber} ${invoice.customerName}`.toLowerCase().includes(search.trim().toLowerCase()))), [filter, invoices, search]);
   return <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-    <Pressable style={styles.backdrop} onPress={onClose}><Pressable style={styles.sheet} onPress={(event) => event.stopPropagation()}>
+    <Pressable style={styles.backdrop} onPress={onClose}><Pressable style={[styles.sheet, { paddingBottom: Math.max(insets.bottom + spacing.sm, Platform.OS === "android" ? 44 : spacing.lg) }]} onPress={(event) => event.stopPropagation()}>
       <View style={styles.handle} /><View style={styles.sheetHead}><Text style={styles.sheetTitle}>Choose Invoice</Text><Pressable onPress={onClose} accessibilityLabel="Close invoice picker"><Ionicons name="close" size={23} color={colors.gray600} /></Pressable></View>
       <SearchInput value={search} onChangeText={setSearch} placeholder="Search invoices or customers" />
       <View style={{ marginTop: spacing.md }}><SegmentedTabs options={["Open", "Overdue", "All"] as const} value={filter} onChange={setFilter} /></View>

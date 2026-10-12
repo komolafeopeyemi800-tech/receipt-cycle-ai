@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@mobile-lib/api";
 import { api, type StatementRow } from "@mobile-lib/api";
 import { parseStatementCsv } from "@mobile-lib/statementCsv";
@@ -20,17 +20,23 @@ function defaultCategory(type: "expense" | "income") {
 
 /** Web: statement import (CSV, Excel, PDF, Word). Every file is read in the browser; the API is only asked for AI help as a last resort. */
 function ConvexUploadStatementInner() {
+  const navigate = useNavigate();
   const { workspace, ready } = useWorkspace();
   const { user, token } = useWebAuth();
   const userId = user!.id;
   const runtime = useQuery(api.admin.publicConfig, {});
   const bulkImport = useMutation(api.transactions.bulkImport);
+  const uploadReceipt = useMutation(api.receipts.upload);
 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   const runImport = useCallback(
     async (file: File) => {
+      if (file.type.startsWith("image/")) {
+        navigate("/transactions#upload-document", { state: { uploadFile: file } });
+        return;
+      }
       if (!ready) {
         setMsg("Workspace loading…");
         return;
@@ -90,10 +96,11 @@ function ConvexUploadStatementInner() {
         }
 
         const total = rows.length;
+        const evidenceKey = (await uploadReceipt({ file, fileName: file.name })).key;
         const res = await importInChunks(
           rows,
           (chunk) =>
-            bulkImport({ workspace, userId, token, rows: chunk.map((r) => ({ ...r, payment_method: "Import" })) }),
+            bulkImport({ workspace, userId, token, receipt_url: evidenceKey, rows: chunk.map((r) => ({ ...r, payment_method: "Import" })) }),
           (done) => setMsg(`Importing… ${done} of ${total}`),
         );
         setMsg(`Imported ${res.inserted} transaction(s).${note ? ` ${note}` : ""}`);
@@ -103,13 +110,13 @@ function ConvexUploadStatementInner() {
         setBusy(false);
       }
     },
-    [ready, workspace, userId, token, bulkImport, runtime?.maintenanceMode, runtime?.uploadEnabled],
+    [ready, workspace, userId, token, bulkImport, uploadReceipt, runtime?.maintenanceMode, runtime?.uploadEnabled, navigate],
   );
 
   const onPick = () => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".csv,.xlsx,.ods,.pdf,.docx,.odt,text/csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    input.accept = ".jpg,.jpeg,.png,.webp,.csv,.xlsx,.xls,.ods,.pdf,.docx,.odt,image/*,text/csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     input.onchange = () => {
       const f = input.files?.[0];
       if (f) void runImport(f);
@@ -119,7 +126,7 @@ function ConvexUploadStatementInner() {
 
   return (
     <div style={{ color: "#0f172a" }}>
-      <div style={{ maxWidth: 520, margin: "0 auto" }}>
+      <div style={{ maxWidth: 960, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <Link to="/" style={{ fontSize: 13, color: primary, fontWeight: 600 }}>
             ← Back
@@ -128,19 +135,28 @@ function ConvexUploadStatementInner() {
             Transactions →
           </Link>
         </div>
-        <h1 style={{ fontSize: 17, fontWeight: 700, margin: "0 0 8px" }}>Upload statement</h1>
+        <h1 style={{ fontSize: 28, fontWeight: 800, margin: "0 0 8px" }}>Add documents</h1>
         <p style={{ fontSize: 12, color: "#64748b", marginBottom: 16, lineHeight: 1.45 }}>
-          Upload a bank statement or sales report as Excel (.xlsx), CSV or PDF. Files with Date, Description and
-          Amount (or Debit/Credit) columns are read instantly and free. Scanned PDFs need the AI helper.
+          Upload one source and Receipt Cycle will choose the right extraction flow for receipts, invoices, statements, spreadsheets and PDFs.
         </p>
         <div
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => {
+            event.preventDefault();
+            const file = event.dataTransfer.files?.[0];
+            if (file) void runImport(file);
+          }}
           style={{
-            border: "1px solid #e2e8f0",
-            borderRadius: 12,
-            padding: 16,
+            border: "2px dashed #cbd5e1",
+            borderRadius: 8,
+            padding: "96px 24px",
             textAlign: "center",
+            background: "#f8fafc",
           }}
         >
+          <div style={{ color: "#94a3b8", fontSize: 58, lineHeight: 1, marginBottom: 22 }}><i className="far fa-folder-open" /></div>
+          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Upload your files</h2>
+          <p style={{ margin: "10px 0 20px", color: "#64748b", fontSize: 16 }}>Drag and drop files or browse</p>
           <button
             type="button"
             onClick={onPick}
@@ -152,8 +168,8 @@ function ConvexUploadStatementInner() {
               background: busy || !ready ? "#94a3b8" : primary,
               color: "#fff",
               border: "none",
-              borderRadius: 10,
-              padding: "10px 18px",
+              borderRadius: 6,
+              padding: "13px 24px",
               fontWeight: 700,
               fontSize: 13,
               cursor: busy || !ready ? "not-allowed" : "pointer",
@@ -161,6 +177,8 @@ function ConvexUploadStatementInner() {
           >
             {busy ? "Importing…" : "Choose file"}
           </button>
+          <p style={{ marginTop: 22, color: "#64748b", fontSize: 14 }}>Upload any <span style={{ color: "#2563eb", background: "#eff6ff", padding: "4px 8px", borderRadius: 5 }}>receipt</span> · <span style={{ color: "#7c3aed", background: "#f5f3ff", padding: "4px 8px", borderRadius: 5 }}>invoice</span> · <span style={{ color: "#c2410c", background: "#fff7ed", padding: "4px 8px", borderRadius: 5 }}>credit card statement</span> or <span style={{ color: "#047857", background: "#ecfdf5", padding: "4px 8px", borderRadius: 5 }}>bank statement</span></p>
+          <p style={{ marginTop: 14, color: "#94a3b8", fontSize: 13, fontWeight: 600 }}>PDF, JPG, PNG, CSV, Excel or Word</p>
           {msg && (
             <p style={{ fontSize: 12, color: msg.startsWith("Imported") ? primary : "#b91c1c", marginTop: 12, lineHeight: 1.4 }}>
               {msg}

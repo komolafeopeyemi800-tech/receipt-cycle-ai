@@ -14,7 +14,7 @@ import {
   computeSubscriptionState,
 } from "../lib/subscription";
 import { requireUser } from "../middleware/auth";
-import { deleteReceiptQuietly, ownsReceipt } from "./receipts";
+import { deleteReceiptQuietly, ownsReceipt, receiptEvidenceUrl } from "./receipts";
 import type { AppEnv, AuthedUser, Db } from "../types";
 
 const MAX_BULK_IMPORT = 500;
@@ -38,6 +38,7 @@ function toClientShape(r: TxnRow) {
     is_recurring: r.isRecurring ?? null,
     receipt_url: r.receiptUrl ?? null,
     receipt_data: r.receiptData ?? null,
+    entry_source: r.entrySource ?? "manual",
     created_at: new Date(r.createdAt).toISOString(),
     updated_at: new Date(r.updatedAt).toISOString(),
   };
@@ -104,6 +105,7 @@ const createBody = z.object({
 const updateBody = z.object(txnFields);
 const bulkBody = z.object({
   workspace: z.string().min(1),
+  receipt_url: z.string().nullish(),
   rows: z.array(
     z.object({
       amount: z.number().finite(),
@@ -134,7 +136,11 @@ transactionRoutes.get("/", async (c) => {
     .from(transactions)
     .where(and(...conds))
     .orderBy(desc(transactions.date), desc(transactions.createdAt));
-  return c.json(rows.map(toClientShape));
+  const origin = c.env.BETTER_AUTH_URL || new URL(c.req.url).origin;
+  return c.json(await Promise.all(rows.map(async (row) => ({
+    ...toClientShape(row),
+    evidence_url: row.receiptUrl ? await receiptEvidenceUrl(c.env.BETTER_AUTH_SECRET, origin, row.receiptUrl) : null,
+  }))));
 });
 
 /** Full export for CSV / Drive backup (all workspaces). Pro only. */
@@ -147,7 +153,11 @@ transactionRoutes.get("/export", async (c) => {
     .from(transactions)
     .where(eq(transactions.userId, u.id))
     .orderBy(desc(transactions.date));
-  return c.json(rows.map(toClientShape));
+  const origin = c.env.BETTER_AUTH_URL || new URL(c.req.url).origin;
+  return c.json(await Promise.all(rows.map(async (row) => ({
+    ...toClientShape(row),
+    evidence_url: row.receiptUrl ? await receiptEvidenceUrl(c.env.BETTER_AUTH_SECRET, origin, row.receiptUrl) : null,
+  }))));
 });
 
 transactionRoutes.get("/:id", async (c) => {
@@ -158,7 +168,11 @@ transactionRoutes.get("/:id", async (c) => {
     .where(and(eq(transactions.id, c.req.param("id")), eq(transactions.userId, c.get("user").id)))
     .get();
   if (!row) throw new ApiError(404, "Transaction not found");
-  return c.json(toClientShape(row));
+  const origin = c.env.BETTER_AUTH_URL || new URL(c.req.url).origin;
+  return c.json({
+    ...toClientShape(row),
+    evidence_url: row.receiptUrl ? await receiptEvidenceUrl(c.env.BETTER_AUTH_SECRET, origin, row.receiptUrl) : null,
+  });
 });
 
 transactionRoutes.post("/", async (c) => {
@@ -238,7 +252,7 @@ transactionRoutes.put("/:id", async (c) => {
         accountId: body.accountId ?? null,
         tags: body.tags ?? null,
         isRecurring: body.is_recurring ?? null,
-        receiptData: body.receipt_data ?? null,
+        receiptData: body.receipt_data === undefined ? old.receiptData : body.receipt_data,
         updatedAt: Date.now(),
       })
       .where(eq(transactions.id, old.id)),
@@ -277,6 +291,7 @@ transactionRoutes.post("/bulk-import", async (c) => {
   const db = c.get("db");
   const u = c.get("user");
   const body = await parseBody(c, bulkBody);
+  if (body.receipt_url && !ownsReceipt(u.id, body.receipt_url)) throw new ApiError(400, "That evidence file does not belong to this account.");
 
   const cfg = await getRuntimeConfig(db);
   if (cfg.maintenanceMode) throw new ApiError(503, "System is in maintenance mode. Please try again later.");
@@ -288,7 +303,7 @@ transactionRoutes.post("/bulk-import", async (c) => {
   if (!state.pro && slice.length > state.trialAddsRemaining) {
     throw new ApiError(
       402,
-      `This import has ${slice.length} rows but your trial has ${state.trialAddsRemaining} transaction slot(s) left. Upgrade to Pro for unlimited imports, or reduce the file.`,
+      `This import has ${slice.length} rows but your account currently has ${state.trialAddsRemaining} transaction slot(s) available. Reduce the file and try again.`,
     );
   }
   if (slice.length > 0) assertCanCreateTransaction(state);
@@ -312,13 +327,13 @@ transactionRoutes.post("/bulk-import", async (c) => {
     c.env.DB.prepare(
       `INSERT INTO transactions
          (id, user_id, workspace, amount, type, category, merchant, date, description, payment_method,
-          tags, is_recurring, entry_source, created_at, updated_at)
+          tags, is_recurring, receipt_url, entry_source, created_at, updated_at)
        SELECT json_extract(value, '$.id'), ?1, ?2,
               json_extract(value, '$.amount'), json_extract(value, '$.type'), json_extract(value, '$.category'),
               json_extract(value, '$.merchant'), json_extract(value, '$.date'), json_extract(value, '$.description'),
-              json_extract(value, '$.payment_method'), '["import"]', 0, 'upload', ?3, ?3
+              json_extract(value, '$.payment_method'), '["import"]', 0, ?5, 'upload', ?3, ?3
        FROM json_each(?4)`,
-    ).bind(u.id, body.workspace, now, payload),
+    ).bind(u.id, body.workspace, now, payload, body.receipt_url ?? null),
     c.env.DB.prepare(
       `UPDATE profile SET trial_lifetime_adds = coalesce(trial_lifetime_adds, 0) + ?1
        WHERE user_id = ?2 AND pro_subscription_active = 0`,

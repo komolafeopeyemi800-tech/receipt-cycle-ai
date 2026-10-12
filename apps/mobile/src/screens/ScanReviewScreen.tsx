@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { CommonActions, useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
@@ -29,6 +29,8 @@ export function ScanReviewScreen() {
   const [amountStr, setAmountStr] = useState(
     initial.total_amount != null && initial.total_amount > 0 ? String(initial.total_amount) : "",
   );
+  const [categorizeItems, setCategorizeItems] = useState(true);
+  const [showMore, setShowMore] = useState(true);
 
   const hasTotal = amountStr.trim().length > 0 && Number.isFinite(parseFloat(amountStr)) && parseFloat(amountStr) > 0;
   const notReceipt = draft.tags?.some((x) => x.toLowerCase().includes("not_a_receipt"));
@@ -80,7 +82,7 @@ export function ScanReviewScreen() {
       <ScrollView contentContainerStyle={styles.pad} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={styles.reviewSuccess}><Ionicons name="sparkles-outline" size={19} color={colors.primary} /><View style={{ flex: 1 }}><Text style={styles.reviewSuccessTitle}>AI extracted this information</Text><Text style={styles.reviewSuccessSub}>Review and edit before saving</Text></View><Ionicons name="checkmark-circle" size={20} color={colors.success} /></View>
         <View style={styles.previewRow}>
-          <View style={styles.receiptPreview}><Text style={styles.receiptPreviewText} numberOfLines={8}>{draft.formatted_receipt_text?.trim() || `${draft.merchant_name || "Receipt"}\n${draft.date || ""}\n${amountStr || ""}`}</Text></View>
+          <View style={styles.receiptPreview}>{route.params.receiptUri ? <Image source={{ uri: route.params.receiptUri }} resizeMode="contain" style={styles.previewImage} /> : <Text style={styles.receiptPreviewText} numberOfLines={8}>{draft.formatted_receipt_text?.trim() || `${draft.merchant_name || "Receipt"}\n${draft.date || ""}\n${amountStr || ""}`}</Text>}</View>
           <View style={styles.receiptPreview}><Ionicons name="receipt-outline" size={25} color={colors.gray500} /><Text style={styles.receiptPreviewLabel}>Extracted text</Text></View>
         </View>
 
@@ -194,10 +196,26 @@ export function ScanReviewScreen() {
           placeholderTextColor={colors.gray400}
         />
 
-        {itemsLine ? (
+        <View style={styles.card}>
+          <View style={styles.toggleRow}><View style={{ flex: 1 }}><Text style={styles.cardHdr}>Line-item categorization</Text><Text style={styles.hintTxt}>Assign a separate category to every item.</Text></View><Switch value={categorizeItems} onValueChange={setCategorizeItems} trackColor={{ false: colors.gray200, true: colors.primary }} /></View>
+        </View>
+
+        <Pressable style={styles.detailsButton} onPress={() => setShowMore((value) => !value)}><Ionicons name={showMore ? "chevron-up" : "chevron-down"} size={16} color={colors.primary} /><Text style={styles.detailsButtonText}>{showMore ? "Hide" : "Show"} additional details</Text></Pressable>
+        {showMore ? <View style={styles.card}>
+          <Text style={styles.cardHdr}>Vendor and payment details</Text>
+          <Text style={styles.fieldLbl}>Vendor address</Text><TextInput style={styles.input} value={draft.merchant_address ?? ""} onChangeText={(merchant_address) => setDraft((d) => ({ ...d, merchant_address }))} placeholder="Address on receipt" placeholderTextColor={colors.gray400} />
+          <Text style={styles.fieldLbl}>Receipt number</Text><TextInput style={styles.input} value={draft.receipt_number ?? ""} onChangeText={(receipt_number) => setDraft((d) => ({ ...d, receipt_number }))} placeholder="Order or receipt number" placeholderTextColor={colors.gray400} />
+          <Text style={styles.fieldLbl}>Country / currency</Text><View style={styles.inlineFields}><TextInput style={[styles.input, { flex: 1 }]} value={draft.country ?? ""} onChangeText={(country) => setDraft((d) => ({ ...d, country }))} placeholder="Country" placeholderTextColor={colors.gray400} /><TextInput style={[styles.input, { flex: 1 }]} value={draft.currency ?? ""} onChangeText={(currency) => setDraft((d) => ({ ...d, currency }))} placeholder="USD" placeholderTextColor={colors.gray400} /></View>
+          <Text style={styles.fieldLbl}>Card type / last 4</Text><View style={styles.inlineFields}><TextInput style={[styles.input, { flex: 1 }]} value={draft.card_type ?? ""} onChangeText={(card_type) => setDraft((d) => ({ ...d, card_type }))} placeholder="Visa" placeholderTextColor={colors.gray400} /><TextInput style={[styles.input, { flex: 1 }]} value={draft.card_last4 ?? ""} onChangeText={(card_last4) => setDraft((d) => ({ ...d, card_last4 }))} placeholder="Last 4" placeholderTextColor={colors.gray400} keyboardType="number-pad" /></View>
+          <Text style={styles.cardHdr}>Tax lines</Text>
+          {(draft.taxes ?? (draft.tax_amount != null ? [{ type: "Sales Tax", amount: draft.tax_amount }] : [])).map((tax, index, taxes) => <View key={`${tax.type}-${index}`} style={styles.taxRow}><TextInput style={[styles.input, { flex: 1 }]} value={tax.type ?? ""} onChangeText={(type) => setDraft((d) => ({ ...d, taxes: taxes.map((row, rowIndex) => rowIndex === index ? { ...row, type } : row) }))} placeholder="Tax type" placeholderTextColor={colors.gray400} /><TextInput style={[styles.input, { width: 95 }]} value={tax.amount == null ? "" : String(tax.amount)} onChangeText={(amount) => setDraft((d) => ({ ...d, taxes: taxes.map((row, rowIndex) => rowIndex === index ? { ...row, amount: Number(amount) } : row) }))} keyboardType="decimal-pad" /><Pressable onPress={() => setDraft((d) => ({ ...d, taxes: taxes.filter((_, rowIndex) => rowIndex !== index) }))}><Ionicons name="trash-outline" size={19} color={colors.rose600} /></Pressable></View>)}
+          <Pressable onPress={() => setDraft((d) => ({ ...d, taxes: [...(d.taxes ?? []), { type: "Sales Tax", amount: 0 }] }))}><Text style={styles.addLine}>+ Add tax line</Text></Pressable>
+        </View> : null}
+
+        {draft.items?.length ? (
           <View style={styles.card}>
             <Text style={styles.cardHdr}>Line items (from scan)</Text>
-            <Text style={styles.itemsTxt}>{itemsLine}</Text>
+            {draft.items.map((item, index) => <View key={`${item.name}-${index}`} style={styles.itemEditor}><View style={{ flex: 1 }}><Text style={styles.itemsTxt}>{item.name} ×{item.quantity ?? 1} · {formatMoney(item.total ?? (item.price ?? 0) * (item.quantity ?? 1))}</Text>{categorizeItems ? <TextInput style={styles.itemCategory} value={item.category ?? draft.category ?? ""} onChangeText={(category) => setDraft((d) => ({ ...d, items: d.items?.map((row, rowIndex) => rowIndex === index ? { ...row, category } : row) }))} placeholder="Item category" placeholderTextColor={colors.gray400} /> : null}</View><Pressable onPress={() => setDraft((d) => ({ ...d, items: d.items?.filter((_, rowIndex) => rowIndex !== index) }))}><Ionicons name="trash-outline" size={19} color={colors.rose600} /></Pressable></View>)}
           </View>
         ) : null}
 
@@ -233,6 +251,7 @@ const styles = StyleSheet.create({
   receiptPreview: { flex: 1, minHeight: 100, maxHeight: 120, borderRadius: 10, borderColor: colors.border, borderWidth: 1, backgroundColor: "#f7f9fa", padding: 8, alignItems: "center", justifyContent: "center" },
   receiptPreviewText: { color: colors.gray700, fontSize: 9, lineHeight: 12, textAlign: "center", fontFamily: Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" }) },
   receiptPreviewLabel: { color: colors.gray500, fontSize: 11, marginTop: 4 },
+  previewImage: { width: "100%", height: "100%" },
   syncNote: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -333,6 +352,14 @@ const styles = StyleSheet.create({
   },
   cardHdr: { fontSize: typeScale.xs, fontWeight: "700", color: colors.gray500, marginBottom: 6 },
   itemsTxt: { fontSize: typeScale.sm, color: colors.gray700, lineHeight: 18 },
+  toggleRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  detailsButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, borderWidth: 1, borderColor: colors.gray200, borderRadius: 10, paddingVertical: 11, marginBottom: 10, backgroundColor: colors.surface },
+  detailsButtonText: { fontSize: typeScale.sm, color: colors.primary, fontWeight: "700" },
+  inlineFields: { flexDirection: "row", gap: 8 },
+  taxRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  addLine: { color: colors.primary, fontSize: typeScale.sm, fontWeight: "700", paddingVertical: 8 },
+  itemEditor: { flexDirection: "row", alignItems: "center", gap: 10, borderTopWidth: 1, borderTopColor: colors.gray100, paddingVertical: 10 },
+  itemCategory: { borderWidth: 1, borderColor: colors.gray200, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7, marginTop: 7, color: colors.gray900, fontSize: typeScale.sm },
   primary: {
     backgroundColor: colors.primary,
     paddingVertical: 10,

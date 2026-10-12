@@ -146,9 +146,9 @@ describe("money data calls", () => {
     ]);
   });
 
-  it("export is Pro only and says so", async () => {
+  it("explains when export is not included", async () => {
     const { client } = await signedIn();
-    await expect(client.query(api.transactions.exportForBackup, {})).rejects.toThrow(/CSV export is available for Pro/);
+    await expect(client.query(api.transactions.exportForBackup, {})).rejects.toThrow(/CSV export is not included with your current access/);
   });
 
   it("preferences and workspaces", async () => {

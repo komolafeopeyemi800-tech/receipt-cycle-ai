@@ -233,7 +233,7 @@ export default function EstimateQuotationSoftwareLanding() {
 
       <section className="relative overflow-hidden bg-white py-14 sm:py-20 lg:py-24">
         <div className="absolute -right-32 top-8 h-72 w-72 rounded-full bg-teal-100/70 blur-3xl" />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 sm:px-8 lg:grid-cols-[0.84fr_1.16fr] lg:gap-16">
+        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 sm:px-8 lg:grid-cols-[0.84fr_1.16fr] lg:gap-16 grid-cols-1">
           <div className="max-w-xl">
             <h1 className="text-balance font-display text-4xl font-bold leading-[1.04] tracking-[-0.04em] sm:text-5xl lg:text-[3.5rem]"><span className="block text-slate-950">Estimate software for </span><span className="mt-1 block text-teal-700">service businesses and independent contractors</span></h1>
             <p className="mt-6 max-w-lg text-lg leading-8 text-slate-600">Create a detailed estimate, send it for review, and turn accepted work into an editable invoice without entering the job twice.</p>
@@ -246,7 +246,7 @@ export default function EstimateQuotationSoftwareLanding() {
       <section id="features" className="scroll-mt-28 bg-[#eef8f5] py-20 sm:py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Price the work before you bill for it</h2><p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg">Whether you call it estimating software or quotation software, its job is different from invoice software. It helps a customer understand the proposed scope, price, and timing before either side treats the work as approved.</p></div>
-          <div className="mt-12 grid gap-4 md:grid-cols-6">
+          <div className="mt-12 grid gap-4 md:grid-cols-6 grid-cols-1">
             {benefitCards.map((card, index) => <article key={card.title} className={`${card.tone} rounded-2xl p-6 text-white shadow-sm ${index < 3 ? "md:col-span-2" : "md:col-span-3"}`}><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-teal-50"><i className={`fas ${card.icon}`} aria-hidden /></span><h3 className="mt-5 font-display text-xl font-bold">{card.title}</h3><p className="mt-3 text-sm leading-6 text-teal-50/85">{card.body}</p></article>)}
           </div>
         </div>
@@ -255,7 +255,7 @@ export default function EstimateQuotationSoftwareLanding() {
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Estimate tools for every stage before invoicing</h2><p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg">A useful quotation maker does more than format a document. Receipt Cycle brings creation, pricing, preview, status, validity, and invoice conversion into one practical sales workflow.</p></div>
-          <div className="mt-12 grid gap-5 lg:grid-cols-12">
+          <div className="mt-12 grid gap-5 lg:grid-cols-12 grid-cols-1">
             <article className="overflow-hidden rounded-3xl bg-[#eef8f5] p-5 sm:p-7 lg:col-span-7">
               <EstimateBuilderPreview />
               <div className="mx-auto max-w-xl pb-1 pt-7"><h3 className="font-display text-2xl font-bold">Build the estimate one part at a time</h3><p className="mt-3 text-sm leading-7 text-slate-600">Choose the customer and dates first. Then add services, descriptions, quantities, rates, tax, discounts, notes, and terms before opening the final preview.</p></div>
@@ -274,7 +274,7 @@ export default function EstimateQuotationSoftwareLanding() {
             </article>
 
             <article className="rounded-3xl bg-[#dff5ef] p-5 sm:p-7 lg:col-span-7">
-              <div className="grid items-center gap-6 sm:grid-cols-[0.95fr_1.05fr]">
+              <div className="grid items-center gap-6 sm:grid-cols-[0.95fr_1.05fr] grid-cols-1">
                 <div><h3 className="font-display text-2xl font-bold">Separate drafts from customer decisions</h3><p className="mt-3 text-sm leading-7 text-slate-600">Draft, sent, accepted, and expired records should not look like identical files in a folder. Status shows which quotations are still being prepared and which can move forward.</p></div>
                 <EstimateStatusPreview />
               </div>
@@ -287,7 +287,7 @@ export default function EstimateQuotationSoftwareLanding() {
             </article>
 
             <article className="rounded-3xl bg-teal-700 p-6 text-white sm:p-8 lg:col-span-7">
-              <div className="grid items-center gap-6 sm:grid-cols-[1fr_auto_1fr]">
+              <div className="grid items-center gap-6 sm:grid-cols-[1fr_auto_1fr] grid-cols-1">
                 <div className="rounded-2xl bg-white/10 p-5"><p className="text-[10px] font-bold uppercase tracking-wider text-teal-100">Accepted estimate</p><p className="mt-2 font-display text-2xl font-bold">EST-0047</p><p className="mt-2 text-xs text-teal-50/80">Customer, items, rates, tax, discount, and terms</p></div>
                 <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-teal-800"><i className="fas fa-arrow-right" aria-hidden /></span>
                 <div className="rounded-2xl bg-white p-5 text-slate-900"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Editable invoice draft</p><p className="mt-2 font-display text-2xl font-bold">INV-0054</p><p className="mt-2 text-xs text-slate-500">Ready for a final review before sending</p></div>
@@ -305,7 +305,7 @@ export default function EstimateQuotationSoftwareLanding() {
 
       <section id="workflow" className="scroll-mt-28 bg-white py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid items-stretch gap-12 lg:grid-cols-[1fr_0.88fr]">
+          <div className="grid items-stretch gap-12 lg:grid-cols-[1fr_0.88fr] grid-cols-1">
             <div>
               <h2 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">From estimate to accepted work to invoice</h2>
               <p className="mt-5 text-base leading-7 text-slate-600">Online estimate software and online quotation software should do more than produce a document. They should keep the customer response connected to what happens next.</p>
@@ -323,7 +323,7 @@ export default function EstimateQuotationSoftwareLanding() {
 
       <section className="bg-[#f7faf9] py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr]">
+          <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] grid-cols-1">
             <div><h2 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Why a structured estimate beats another loose file</h2><p className="mt-5 text-base leading-7 text-slate-600">A document template can produce a presentable page. A spreadsheet can calculate a total. A generic estimate generator, quote generator, or quote maker may combine those two jobs, but it can still leave the customer decision disconnected from invoicing.</p><p className="mt-4 text-base leading-7 text-slate-600">Receipt Cycle keeps the estimate number, customer, dates, proposed work, totals, status, and future invoice relationship together. That makes it easier to reopen the record, understand what was offered, and continue after approval.</p></div>
             <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
               <div className="grid grid-cols-[1fr_1fr] bg-slate-950 px-5 py-4 text-xs font-extrabold text-white sm:px-7"><span>Documents and spreadsheets</span><span>Receipt Cycle estimate workspace</span></div>
@@ -342,7 +342,7 @@ export default function EstimateQuotationSoftwareLanding() {
       <section className="py-20 sm:py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">What a professional estimate should explain</h2><p className="mt-4 text-base leading-7 text-slate-600">A polished layout matters, but the document must also answer the practical questions a customer has before approving the work.</p></div>
-          <div className="mt-10 grid gap-5 lg:grid-cols-3">
+          <div className="mt-10 grid gap-5 lg:grid-cols-3 grid-cols-1">
             <article className="overflow-hidden rounded-3xl border border-teal-100 bg-white shadow-sm">
               <div className="bg-teal-900 p-7 text-white"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15"><i className="fas fa-clipboard-list" aria-hidden /></span><h3 className="mt-5 font-display text-xl font-bold">What work is being proposed?</h3></div>
               <div className="space-y-4 p-7 text-sm leading-7 text-slate-600"><p>Give every service or product its own line item. The description names the deliverable or task.</p><p>Quantity and rate show how the price was built. When the scope changes, update the estimate before recording acceptance.</p></div>
@@ -362,7 +362,7 @@ export default function EstimateQuotationSoftwareLanding() {
       <section className="bg-teal-950 py-20 text-white sm:py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-3xl font-bold sm:text-4xl">Product evidence instead of inflated promises</h2><p className="mt-4 text-base leading-7 text-teal-100/80">Receipt Cycle does not need invented ratings or vague claims to explain this workflow. These capabilities are present in the estimate experience today.</p></div>
-          <div className="mt-10 grid gap-4 md:grid-cols-2">
+          <div className="mt-10 grid gap-4 md:grid-cols-2 grid-cols-1">
             {[
               ["Four-step estimate builder", "Basic information, line items, totals, and preview are separated into a guided sequence so each task has an obvious place."],
               ["Visible quotation status", "Quotation management software earns its place when draft, sent, accepted, and expired records can be separated instead of living as indistinguishable files in a folder."],
@@ -376,7 +376,7 @@ export default function EstimateQuotationSoftwareLanding() {
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Estimate software for the way service businesses work</h2><p className="mt-4 text-base leading-7 text-slate-600">Choose the type of work you sell to see how a quotation can support the conversation before billing starts.</p></div>
-          <div className="mt-12 grid items-stretch gap-5 lg:grid-cols-[1.35fr_0.65fr]">
+          <div className="mt-12 grid items-stretch gap-5 lg:grid-cols-[1.35fr_0.65fr] grid-cols-1">
             <div id="estimate-audience-panel" role="tabpanel" aria-labelledby={`estimate-audience-tab-${activeAudience.id}`} className="min-w-0 overflow-hidden rounded-3xl border border-teal-100 bg-[#f8f5ee] shadow-sm">
               <img key={activeAudience.image} src={activeAudience.image} alt={activeAudience.alt} width="1586" height="992" loading="lazy" decoding="async" sizes="(min-width: 1024px) 720px, (min-width: 640px) 90vw, 100vw" className="block h-auto w-full" />
             </div>
@@ -412,15 +412,15 @@ export default function EstimateQuotationSoftwareLanding() {
 
       <section className="bg-[#eef8f5] py-20 sm:py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 lg:grid-cols-2">
+          <div className="grid overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 lg:grid-cols-2 grid-cols-1">
             <div className="p-8 sm:p-10"><h2 className="font-display text-3xl font-bold text-slate-950">Get help before the quotation goes out</h2><p className="mt-4 text-base leading-7 text-slate-600">If the total, validity date, customer decision, or invoice conversion needs another look, check the relevant estimate guide first. For an account-specific problem, tell the Receipt Cycle team which estimate and step need attention.</p><div className="mt-7 flex flex-wrap gap-3"><Link to="/contact" className="inline-flex min-h-11 items-center rounded-xl bg-teal-700 px-5 text-sm font-bold text-white">Contact us</Link><Link to="/faq" className="inline-flex min-h-11 items-center rounded-xl border border-slate-300 px-5 text-sm font-bold text-slate-700">Visit the FAQ</Link></div></div>
-            <div className="grid gap-px bg-slate-200 sm:grid-cols-3 lg:grid-cols-1">{[["fa-list-ol", "Estimate setup", "Check the customer, dates, line items, totals, and terms before opening the final preview."], ["fa-file-circle-check", "Invoice conversion", "See which accepted estimate details carry into the editable invoice draft."], ["fa-envelope", "Quotation support", "Send support@receiptcycle.com the estimate number and describe where the workflow stopped."]].map(([icon, title, body]) => <div key={title} className="bg-[#f8faf9] p-6"><i className={`fas ${icon} text-teal-700`} aria-hidden /><h3 className="mt-3 text-sm font-extrabold">{title}</h3><p className="mt-2 text-xs leading-5 text-slate-500">{body}</p></div>)}</div>
+            <div className="grid gap-px bg-slate-200 sm:grid-cols-3 lg:grid-cols-1 grid-cols-1">{[["fa-list-ol", "Estimate setup", "Check the customer, dates, line items, totals, and terms before opening the final preview."], ["fa-file-circle-check", "Invoice conversion", "See which accepted estimate details carry into the editable invoice draft."], ["fa-envelope", "Quotation support", "Send support@receiptcycle.com the estimate number and describe where the workflow stopped."]].map(([icon, title, body]) => <div key={title} className="bg-[#f8faf9] p-6"><i className={`fas ${icon} text-teal-700`} aria-hidden /><h3 className="mt-3 text-sm font-extrabold">{title}</h3><p className="mt-2 text-xs leading-5 text-slate-500">{body}</p></div>)}</div>
           </div>
         </div>
       </section>
 
       <section className="py-20 sm:py-24">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6"><h2 className="text-center font-display text-3xl font-bold text-slate-950 sm:text-4xl">Continue with the right Receipt Cycle resource</h2><div className="mt-10 grid gap-5 md:grid-cols-3">{resources.map((resource) => <article key={resource.title} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 text-teal-700"><i className={`fas ${resource.icon}`} aria-hidden /></span><h3 className="mt-5 font-display text-xl font-bold">{resource.title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{resource.description}</p><Link to={resource.href} className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-extrabold text-teal-700 hover:text-teal-900">Open resource<i className="fas fa-arrow-right text-xs" aria-hidden /></Link></article>)}</div></div>
+        <div className="mx-auto max-w-6xl px-4 sm:px-6"><h2 className="text-center font-display text-3xl font-bold text-slate-950 sm:text-4xl">Continue with the right Receipt Cycle resource</h2><div className="mt-10 grid gap-5 md:grid-cols-3 grid-cols-1">{resources.map((resource) => <article key={resource.title} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 text-teal-700"><i className={`fas ${resource.icon}`} aria-hidden /></span><h3 className="mt-5 font-display text-xl font-bold">{resource.title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{resource.description}</p><Link to={resource.href} className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-extrabold text-teal-700 hover:text-teal-900">Open resource<i className="fas fa-arrow-right text-xs" aria-hidden /></Link></article>)}</div></div>
       </section>
 
       <section id="faq" className="scroll-mt-28 bg-[#f8f5ee] py-20 sm:py-24">
@@ -428,7 +428,7 @@ export default function EstimateQuotationSoftwareLanding() {
       </section>
 
       <section className="bg-gradient-to-br from-teal-800 via-teal-700 to-emerald-600 py-16 text-white">
-        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 text-center sm:px-6 lg:grid-cols-[1fr_auto] lg:text-left"><div><h2 className="font-display text-3xl font-bold sm:text-4xl">Create the estimate before the work becomes an invoice</h2><p className="mt-3 max-w-2xl text-base leading-7 text-teal-50/90">Give the customer a defined scope, price, validity period, and next step. Keep accepted details ready when billing begins.</p></div><LandingPrimaryCta to={primaryCta} inverse>Create your first estimate</LandingPrimaryCta></div>
+        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 text-center sm:px-6 lg:grid-cols-[1fr_auto] lg:text-left grid-cols-1"><div><h2 className="font-display text-3xl font-bold sm:text-4xl">Create the estimate before the work becomes an invoice</h2><p className="mt-3 max-w-2xl text-base leading-7 text-teal-50/90">Give the customer a defined scope, price, validity period, and next step. Keep accepted details ready when billing begins.</p></div><LandingPrimaryCta to={primaryCta} inverse>Create your first estimate</LandingPrimaryCta></div>
       </section>
     </CommercialLandingLayout>
   );

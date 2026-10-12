@@ -237,7 +237,7 @@ export function CommercialFooter() {
   return (
     <footer className="border-t border-slate-200 bg-white py-14 text-slate-900">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)] grid-cols-1">
           <div>
             <ReceiptCycleLogo />
             <p className="mt-4 max-w-sm text-sm leading-6 text-slate-500">

@@ -1,5 +1,4 @@
 import { useAction, useApiClient, useMutation, useQuery } from "../lib/api";
-import * as Linking from "expo-linking";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "../lib/api";
 import { formatAuthError } from "../lib/authErrors";
@@ -92,39 +91,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void bootstrapSubscription({ token }).catch(() => {
       /* non-fatal */
     });
-  }, [token, bootstrapSubscription]);
-
-  function checkoutReturnSignalsUrl(url: string | null): boolean {
-    if (!url) return false;
-    return (
-      url.includes("post-checkout") ||
-      url.includes("status=success") ||
-      url.includes("checkout=success")
-    );
-  }
-
-  useEffect(() => {
-    if (!token) return;
-    void (async () => {
-      try {
-        const initial = await Linking.getInitialURL();
-        if (checkoutReturnSignalsUrl(initial)) {
-          await bootstrapSubscription({ token });
-        }
-      } catch {
-        /* ignore */
-      }
-    })();
-  }, [token, bootstrapSubscription]);
-
-  useEffect(() => {
-    if (!token) return;
-    const sub = Linking.addEventListener("url", (e) => {
-      if (checkoutReturnSignalsUrl(e.url)) {
-        void bootstrapSubscription({ token }).catch(() => {});
-      }
-    });
-    return () => sub.remove();
   }, [token, bootstrapSubscription]);
 
   const signIn = useCallback(

@@ -50,7 +50,7 @@ export function MoreHubScreen() {
     { title: "Ask AI", description: "Questions grounded in your records", icon: "sparkles-outline", tone: "purple", action: () => openRoot("FinanceCoach") },
     { title: "Notifications & Reminders", description: "Control business alerts", icon: "notifications-outline", tone: "rose", action: () => openRoot("Notifications") },
     { title: "Profile & Account", description: "Security, exports and preferences", icon: "person-circle-outline", tone: "blue", action: () => openRoot("Settings") },
-    { title: "Go Premium", description: "Unlimited records, AI and exports", icon: "diamond-outline", tone: "amber", action: () => openRoot("Pricing") },
+    { title: "Plan & Access", description: "View your current access and usage", icon: "diamond-outline", tone: "amber", action: () => openRoot("Pricing") },
   ];
   const support: Entry[] = [
     { title: "Help & Support", description: "FAQs and customer support", icon: "help-buoy-outline", tone: "blue", action: () => void openWeb("https://receiptcycle.com/faq", "Help & Support") },

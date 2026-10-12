@@ -16,7 +16,7 @@ describe("AI routes", () => {
     const { token } = await makeUser({ createdAt: Date.now() - 9 * 24 * 60 * 60 * 1000 });
     const res = await api("POST", "/api/ai/scan", { token, body: scanBody });
     expect(res.json).toMatchObject({ success: false, pipeline: "blocked" });
-    expect(res.json.error).toMatch(/7-day trial ended/);
+    expect(res.json.error).toMatch(/current access no longer includes/);
     expect((await api("POST", "/api/ai/coach", { token, body: { periodLabel: "x", rows: [], messages: [] } })).json.ok).toBe(false);
   });
 

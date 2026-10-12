@@ -7,9 +7,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "convex:dev": "convex dev",
-    "convex:codegen": "convex codegen",
-    "test:ocr": "convex run ocrHealth:checkProviders --push"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@expo/react-native-action-sheet": "^4.1.1",
@@ -21,7 +19,6 @@
     "@react-navigation/native-stack": "^7.14.6",
     "@tanstack/react-query": "^5.94.5",
     "bcryptjs": "^3.0.3",
-    "convex": "^1.34.0",
     "countries-list": "^3.3.0",
     "currency-codes": "^2.2.0",
     "expo": "~54.0.0",
@@ -37,6 +34,7 @@
     "expo-image-picker": "~17.0.10",
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.11",
+    "expo-mail-composer": "~15.0.8",
     "expo-secure-store": "~15.0.8",
     "expo-sensors": "~15.0.8",
     "expo-sharing": "~14.0.8",
@@ -54,7 +52,8 @@
     "react-native-screens": "~4.16.0",
     "react-native-svg": "15.12.1",
     "react-native-web": "^0.21.0",
-    "react-native-worklets": "0.5.1"
+    "react-native-worklets": "0.5.1",
+    "simple-icons": "^16.34.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

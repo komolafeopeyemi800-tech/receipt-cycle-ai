@@ -58,7 +58,7 @@ aiRoutes.use("*", requireUser);
 /** Receipt photo to structured data. Provider order: OpenAI, then Gemini (OpenRouter or Google), then Landing AI. */
 aiRoutes.post("/scan", async (c) => {
   const body = await parseBody(c, z.object({ imageBase64: z.string().min(1), mimeType: z.string().optional() }));
-  const gate = aiGate(c.get("user"), "Upgrade to Pro or use a trial slot to scan receipts.");
+  const gate = aiGate(c.get("user"), "Receipt scanning is not included with your current access.");
   if (gate) return c.json(blocked(gate));
   const cfg = await getRuntimeConfig(c.get("db"));
   if (cfg.maintenanceMode) return c.json(blocked("System is in maintenance mode."));
@@ -114,7 +114,7 @@ aiRoutes.post("/scan", async (c) => {
 /** Text already pulled from a PDF/CSV/statement to structured data (OpenAI text model only). */
 aiRoutes.post("/scan-text", async (c) => {
   const { text } = await parseBody(c, z.object({ text: z.string() }));
-  const gate = aiGate(c.get("user"), "Upgrade to Pro or use a trial slot for upload scanning.");
+  const gate = aiGate(c.get("user"), "Upload scanning is not included with your current access.");
   if (gate) return c.json(blocked(gate));
   const cfg = await getRuntimeConfig(c.get("db"));
   if (cfg.maintenanceMode) return c.json(blocked("System is in maintenance mode."));
@@ -144,7 +144,7 @@ aiRoutes.post("/scan-text", async (c) => {
 aiRoutes.post("/money-leaks", async (c) => {
   const body = await parseBody(c, z.object({ periodLabel: z.string(), rows: z.array(ledgerRow) }));
   const empty = { summary: "", findings: [], tips: [] as string[] };
-  const gate = aiGate(c.get("user"), "Upgrade to use optional entry highlights.");
+  const gate = aiGate(c.get("user"), "Optional entry highlights are not included with your current access.");
   if (gate) return c.json({ ok: false as const, error: gate, ...empty });
   const out = await analyzeMoneyLeaks(c.env, body);
   return c.json(out.ok ? { ...out, error: undefined } : { ok: false as const, error: out.error, ...empty });
@@ -155,7 +155,7 @@ aiRoutes.post("/voice/transcribe", async (c) => {
     c,
     z.object({ audioBase64: z.string().min(1), mimeType: z.string().optional(), language: z.string().optional() }),
   );
-  const gate = aiGate(c.get("user"), "Upgrade to use voice entry and Ask AI during an active trial or on Pro.");
+  const gate = aiGate(c.get("user"), "Voice entry and Ask AI are not included with your current access.");
   if (gate) return c.json({ ok: false as const, error: gate, text: "" });
   const tr = await whisperTranscribe(c.env, body.audioBase64, (body.mimeType ?? "audio/m4a").trim() || "audio/m4a", body.language);
   return c.json(tr.ok ? { ok: true as const, text: tr.text } : { ok: false as const, error: tr.error, text: "" });
@@ -163,7 +163,7 @@ aiRoutes.post("/voice/transcribe", async (c) => {
 
 aiRoutes.post("/voice/parse", async (c) => {
   const body = await parseBody(c, z.object({ text: z.string(), hints }));
-  const gate = aiGate(c.get("user"), "Upgrade to use voice entry and Ask AI during an active trial or on Pro.");
+  const gate = aiGate(c.get("user"), "Voice entry and Ask AI are not included with your current access.");
   if (gate) return c.json({ ok: false as const, error: gate, draft: null });
   const t = body.text.trim();
   if (!t) return c.json({ ok: false as const, error: "Say or type what you bought.", draft: null });
@@ -176,7 +176,7 @@ aiRoutes.post("/voice/transaction", async (c) => {
     c,
     z.object({ audioBase64: z.string().min(1), mimeType: z.string().optional(), language: z.string().optional(), hints }),
   );
-  const gate = aiGate(c.get("user"), "Upgrade to use voice entry and Ask AI during an active trial or on Pro.");
+  const gate = aiGate(c.get("user"), "Voice entry and Ask AI are not included with your current access.");
   if (gate) return c.json({ ok: false as const, error: gate, transcript: "", draft: null });
   const tr = await whisperTranscribe(c.env, body.audioBase64, (body.mimeType ?? "audio/m4a").trim() || "audio/m4a", body.language);
   if (!tr.ok) return c.json({ ok: false as const, error: tr.error, transcript: "", draft: null });
@@ -194,7 +194,7 @@ aiRoutes.post("/coach", async (c) => {
       messages: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string() })),
     }),
   );
-  const gate = aiGate(c.get("user"), "Upgrade to use voice entry and Ask AI during an active trial or on Pro.");
+  const gate = aiGate(c.get("user"), "Voice entry and Ask AI are not included with your current access.");
   if (gate) return c.json({ ok: false as const, error: gate, reply: "" });
   const out = await financeCoachChat(c.env, body);
   return c.json(out.ok ? { ok: true as const, reply: out.reply } : { ok: false as const, error: out.error, reply: "" });

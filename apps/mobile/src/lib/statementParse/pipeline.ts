@@ -195,7 +195,7 @@ async function fromTables(tables: NamedGrid[], opts: ParseOptions, fileType: str
   if (rows.length === 0) {
     result.message = opts.ai && !aiNote
       ? "Could not find a table of transactions in this file."
-      : "Could not tell which columns are the date and amount. Use a file with headers like Date, Description and Amount, or upgrade to let the AI helper read it.";
+      : "Could not tell which columns are the date and amount. Use a file with headers such as Date, Description and Amount.";
   }
   return finish(result);
 }
@@ -227,7 +227,7 @@ async function fromText(text: string, opts: ParseOptions, fileType: string): Pro
     }
   }
   if (flowing.rows.length && (!opts.ai || aiRefused)) {
-    warnings.push("Low confidence: please check these rows. Upgrade or start a trial to let the AI helper double-check statements like this.");
+    warnings.push("Low confidence: please check these rows carefully before importing them.");
   }
   const result = base({ fileType, rows: flowing.rows, warnings });
   if (!flowing.rows.length) result.message = "Could not find transactions in this document.";
@@ -278,7 +278,7 @@ export async function parseStatement(bytes: Uint8Array, opts: ParseOptions): Pro
           ? `This PDF is scanned and has ${needsOcr.pageCount} pages (the limit for scanned PDFs is ${MAX_OCR_PAGES}). Download the statement as Excel/CSV from your bank, or split the PDF.`
           : opts.ai
             ? "This PDF is scanned. Try uploading photos of the pages with the camera scanner instead."
-            : "This PDF is scanned (pictures of text). Reading it needs the AI helper: upgrade or start a trial, or upload an Excel/CSV version.",
+            : "This scanned PDF contains pictures of text. Upload an Excel or CSV version instead.",
       });
     }
     const message =

@@ -4,6 +4,24 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+}
+
 /* Receipt Cycle Design System — Inter / Space Grotesk via index.html */
 
 @layer base {
@@ -248,4 +266,44 @@
     90% { opacity: 1; }
     100% { transform: translateY(100%); opacity: 0; }
   }
+}
+
+/* Phone and tablet comfort (layout-neutral): nothing here changes colours, fonts or spacing on desktop. */
+@media (max-width: 767px) {
+  /* iOS Safari zooms the whole page when a field smaller than 16px gets focus, which makes screens look cut off. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Long words and email addresses wrap instead of pushing the page sideways. */
+.prose a,
+.prose li,
+.prose p {
+  overflow-wrap: anywhere;
+}
+
+/* Footer links are easier to hit with a finger on touch screens. */
+@media (pointer: coarse) {
+  footer a {
+    display: inline-block;
+    max-width: 100%;
+    padding-block: 0.4rem;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Form fields may shrink with their container instead of forcing it wider than the screen. */
+input,
+select,
+textarea {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Grid children may shrink below their content width, so one long line cannot widen the whole page. */
+.grid > * {
+  min-width: 0;
 }

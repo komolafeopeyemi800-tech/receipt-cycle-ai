@@ -17,12 +17,23 @@ import {
   ymToDateRange,
   type DocTx,
 } from "@/lib/transactionMath";
-import { FinancialPeriodSummaryWeb, type PeriodMode, type TxFilter } from "@/components/dashboard/FinancialPeriodSummaryWeb";
-import { VoiceQuickAddWeb, type VoiceDraft } from "@/components/dashboard/VoiceQuickAddWeb";
-import { FinanceCoachDialog, type CoachRow } from "@/components/dashboard/FinanceCoachDialog";
+import {
+  FinancialPeriodSummaryWeb,
+  type PeriodMode,
+  type TxFilter,
+} from "@/components/dashboard/FinancialPeriodSummaryWeb";
+import {
+  VoiceQuickAddWeb,
+  type VoiceDraft,
+} from "@/components/dashboard/VoiceQuickAddWeb";
+import {
+  FinanceCoachDialog,
+  type CoachRow,
+} from "@/components/dashboard/FinanceCoachDialog";
 import { useSubscriptionState } from "@/hooks/use-subscription-state";
 import type { Transaction } from "@/types/transaction";
 import { TransactionEditDialog } from "@/components/transactions/TransactionEditDialog";
+import { MerchantIconBox } from "@/components/workspace/MerchantIconBox";
 
 /** Matches `apps/mobile/src/theme/tokens.ts` */
 const primary = "#0f766e";
@@ -72,8 +83,12 @@ function ConvexDashboardInner() {
 
   const voiceHints = useMemo(
     () => ({
-      expenseCategories: (catRows ?? []).filter((c) => c.kind === "expense").map((c) => c.name),
-      incomeCategories: (catRows ?? []).filter((c) => c.kind === "income").map((c) => c.name),
+      expenseCategories: (catRows ?? [])
+        .filter((c) => c.kind === "expense")
+        .map((c) => c.name),
+      incomeCategories: (catRows ?? [])
+        .filter((c) => c.kind === "income")
+        .map((c) => c.name),
       accountNames: (accRows ?? []).map((a) => a.name),
     }),
     [catRows, accRows],
@@ -83,12 +98,22 @@ function ConvexDashboardInner() {
 
   const recent = useMemo(() => {
     const raw = (all ?? []) as Transaction[];
-    const f = txFilter === "all" ? raw : raw.filter((t) => t.type.toLowerCase() === txFilter);
-    return f.slice(0, 5);
+    const f =
+      txFilter === "all"
+        ? raw
+        : raw.filter((t) => t.type.toLowerCase() === txFilter);
+    return [...f]
+      .sort((a, b) => {
+        const byDate = b.date.localeCompare(a.date);
+        return byDate || String(b.created_at ?? "").localeCompare(String(a.created_at ?? ""));
+      })
+      .slice(0, 5);
   }, [all, txFilter]);
 
   const periodLabel =
-    period === "month" ? formatMonthYearLabel(selectedYm) : "All loaded transactions";
+    period === "month"
+      ? formatMonthYearLabel(selectedYm)
+      : "All loaded transactions";
 
   const rowsForAi = useMemo((): CoachRow[] => {
     const raw = (all ?? []) as DocTx[];
@@ -103,21 +128,31 @@ function ConvexDashboardInner() {
   }, [all]);
 
   const hour = new Date().getHours();
-  const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const greet =
+    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const displayName = user?.name?.trim().split(/\s+/)[0] || "there";
 
   const listLoading = ready && Boolean(user?.id) && all === undefined;
-  const connProblem = conn.hasEverConnected && !conn.isWebSocketConnected && conn.connectionRetries > 2;
+  const connProblem =
+    conn.hasEverConnected &&
+    !conn.isWebSocketConnected &&
+    conn.connectionRetries > 2;
 
   const onVoiceParsed = useCallback(
     async (draft: VoiceDraft) => {
-      if (draft.intent === "budget" && draft.budgetLimit != null && draft.budgetLimit > 0 && user?.id) {
+      if (
+        draft.intent === "budget" &&
+        draft.budgetLimit != null &&
+        draft.budgetLimit > 0 &&
+        user?.id
+      ) {
         if (sub && !sub.canMutateBudgets) {
           toast.error(sub.blockReason ?? "Upgrade to set budgets.");
           return;
         }
         const month = draft.budgetMonth ?? selectedYm;
-        const cat = (draft.budgetCategory || draft.category || "Other").trim() || "Other";
+        const cat =
+          (draft.budgetCategory || draft.category || "Other").trim() || "Other";
         try {
           await budgetUpsert({
             workspace,
@@ -126,9 +161,13 @@ function ConvexDashboardInner() {
             month,
             limitAmount: draft.budgetLimit,
           });
-          toast.success(`Budget for “${cat}” set to ${formatMoney(draft.budgetLimit)} (${month}).`);
+          toast.success(
+            `Budget for “${cat}” set to ${formatMoney(draft.budgetLimit)} (${month}).`,
+          );
         } catch (e) {
-          toast.error(e instanceof Error ? e.message : "Could not save budget.");
+          toast.error(
+            e instanceof Error ? e.message : "Could not save budget.",
+          );
         }
         return;
       }
@@ -139,7 +178,8 @@ function ConvexDashboardInner() {
 
   const saveParsedDraft = useCallback(async () => {
     if (parsedDraft?.intent !== "transaction") return;
-    if (!parsedDraft?.amount || parsedDraft.amount <= 0 || !user?.id || !token) return;
+    if (!parsedDraft?.amount || parsedDraft.amount <= 0 || !user?.id || !token)
+      return;
     if (sub && !sub.canCreateTransaction) return;
     if (runtime?.maintenanceMode || runtime?.manualAddEnabled === false) return;
     setVoiceSaveBusy(true);
@@ -161,13 +201,26 @@ function ConvexDashboardInner() {
       });
       setParsedDraft(null);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not save transaction.");
+      toast.error(
+        e instanceof Error ? e.message : "Could not save transaction.",
+      );
     } finally {
       setVoiceSaveBusy(false);
     }
-  }, [parsedDraft, user?.id, token, workspace, createTx, runtime?.maintenanceMode, runtime?.manualAddEnabled, sub]);
+  }, [
+    parsedDraft,
+    user?.id,
+    token,
+    workspace,
+    createTx,
+    runtime?.maintenanceMode,
+    runtime?.manualAddEnabled,
+    sub,
+  ]);
 
-  const voiceBlocked = Boolean(sub && (!sub.canUseAiFeatures || !sub.canCreateTransaction));
+  const voiceBlocked = Boolean(
+    sub && (!sub.canUseAiFeatures || !sub.canCreateTransaction),
+  );
   const addBlocked = Boolean(sub && !sub.canCreateTransaction);
   const budgetBlocked = Boolean(sub && !sub.canMutateBudgets);
   return (
@@ -177,16 +230,22 @@ function ConvexDashboardInner() {
           <h1 className="text-2xl font-black tracking-tight text-slate-900">
             {greet}, {displayName}
           </h1>
-          <p className="mt-1 text-sm text-slate-600">Here&apos;s your financial snapshot for today.</p>
+          <p className="mt-1 text-sm text-slate-600">
+            Here&apos;s your financial snapshot for today.
+          </p>
         </div>
 
-        {sub && !sub.pro && sub.trialTimeActive && sub.canCreateTransaction ? (
+        {false && sub && !sub.pro && sub.trialTimeActive && sub.canCreateTransaction ? (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50/90 px-3 py-2.5 text-[12px] text-emerald-950">
             <p className="font-semibold">Pro trial</p>
             <p className="mt-0.5 text-emerald-900/90">
-              {sub.trialAddsUsed} of {sub.trialAddsLimit} transactions used · AI and add share this limit.
+              {sub.trialAddsUsed} of {sub.trialAddsLimit} transactions used · AI
+              and add share this limit.
             </p>
-            <Link to="/pricing" className="mt-1 inline-block text-xs font-bold text-emerald-800 underline">
+            <Link
+              to="/pricing"
+              className="mt-1 inline-block text-xs font-bold text-emerald-800 underline"
+            >
               Upgrade anytime
             </Link>
           </div>
@@ -196,7 +255,10 @@ function ConvexDashboardInner() {
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12px] text-amber-950">
             <p className="font-semibold">Subscription</p>
             <p className="mt-0.5 text-amber-900/90">{sub.blockReason}</p>
-            <Link to="/pricing" className="mt-1 inline-block text-xs font-bold text-amber-900 underline">
+            <Link
+              to="/pricing"
+              className="mt-1 inline-block text-xs font-bold text-amber-900 underline"
+            >
               View plans
             </Link>
           </div>
@@ -206,12 +268,16 @@ function ConvexDashboardInner() {
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
             <p className="font-semibold">Connection interrupted</p>
             <p className="mt-1 text-amber-900/90">
-              Check your internet connection and refresh the page. If this keeps happening, try again in a few minutes.
+              Check your internet connection and refresh the page. If this keeps
+              happening, try again in a few minutes.
             </p>
           </div>
         ) : listLoading ? (
           <div className="flex flex-col items-center justify-center gap-2 py-10">
-            <div className="h-24 w-full animate-pulse rounded-xl bg-slate-100" aria-hidden />
+            <div
+              className="h-24 w-full animate-pulse rounded-xl bg-slate-100"
+              aria-hidden
+            />
           </div>
         ) : (
           <>
@@ -245,34 +311,47 @@ function ConvexDashboardInner() {
 
             {parsedDraft ? (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 shadow-sm">
-                <p className="text-[13px] font-extrabold text-slate-900">Parsed transaction</p>
+                <p className="text-[13px] font-extrabold text-slate-900">
+                  Parsed transaction
+                </p>
                 <p className="mt-1 text-[11px] text-slate-600">
-                  Confidence: {parsedDraft.confidence}. Edit on Records if needed — or save here.
+                  Confidence: {parsedDraft.confidence}. Edit on Records if
+                  needed — or save here.
                 </p>
                 <dl className="mt-3 grid gap-2 text-[13px]">
                   <div className="flex justify-between gap-2">
                     <dt className="text-slate-500">Type</dt>
-                    <dd className="font-semibold capitalize text-slate-900">{parsedDraft.type}</dd>
+                    <dd className="font-semibold capitalize text-slate-900">
+                      {parsedDraft.type}
+                    </dd>
                   </div>
                   <div className="flex justify-between gap-2">
                     <dt className="text-slate-500">Amount</dt>
                     <dd className="font-bold tabular-nums text-slate-900">
-                      {parsedDraft.amount != null ? formatMoney(parsedDraft.amount) : "—"}
+                      {parsedDraft.amount != null
+                        ? formatMoney(parsedDraft.amount)
+                        : "—"}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-2">
                     <dt className="text-slate-500">Category</dt>
-                    <dd className="text-right font-semibold text-slate-900">{parsedDraft.category}</dd>
+                    <dd className="text-right font-semibold text-slate-900">
+                      {parsedDraft.category}
+                    </dd>
                   </div>
                   {parsedDraft.merchant ? (
                     <div className="flex justify-between gap-2">
                       <dt className="text-slate-500">Merchant</dt>
-                      <dd className="text-right font-semibold text-slate-900">{parsedDraft.merchant}</dd>
+                      <dd className="text-right font-semibold text-slate-900">
+                        {parsedDraft.merchant}
+                      </dd>
                     </div>
                   ) : null}
                   <div className="flex justify-between gap-2">
                     <dt className="text-slate-500">Date</dt>
-                    <dd className="font-semibold text-slate-900">{parsedDraft.date || "Today"}</dd>
+                    <dd className="font-semibold text-slate-900">
+                      {parsedDraft.date || "Today"}
+                    </dd>
                   </div>
                 </dl>
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -322,10 +401,17 @@ function ConvexDashboardInner() {
                 <i className="fas fa-comments text-lg" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-slate-900">Open finance coach</p>
-                <p className="text-xs text-slate-500">Ask questions about this period — typed or by voice.</p>
+                <p className="text-sm font-bold text-slate-900">
+                  Open finance coach
+                </p>
+                <p className="text-xs text-slate-500">
+                  Ask questions about this period — typed or by voice.
+                </p>
               </div>
-              <i className="fas fa-chevron-right text-xs text-slate-400" aria-hidden />
+              <i
+                className="fas fa-chevron-right text-xs text-slate-400"
+                aria-hidden
+              />
             </button>
 
             <FinanceCoachDialog
@@ -337,46 +423,44 @@ function ConvexDashboardInner() {
             />
 
             <section>
-              <h2 className="mb-2.5 text-sm font-bold text-slate-900">Quick Actions</h2>
-              <div className="grid grid-cols-4 gap-1 px-0.5 sm:gap-2">
-                <Link
-                  to={addBlocked ? "/pricing" : "/transactions"}
-                  className="flex flex-col items-center gap-1 rounded-lg py-1 transition hover:opacity-90"
-                >
-                  <div
-                    className="mb-1 flex h-11 w-11 items-center justify-center rounded-full text-white shadow-sm"
-                    style={{ background: `linear-gradient(135deg, ${primary}, ${teal600})` }}
-                  >
-                    <i className="fas fa-camera text-[15px]" />
-                  </div>
-                  <span className="text-center text-[10px] font-semibold text-slate-600">Scan</span>
-                </Link>
+              <h2 className="mb-2.5 text-sm font-bold text-slate-900">
+                Quick Actions
+              </h2>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                 <Link
                   to={addBlocked ? "/pricing" : "/upload-statement"}
-                  className="flex flex-col items-center gap-1 rounded-lg py-1 transition hover:opacity-90"
+                  className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-slate-200 bg-white p-3 transition hover:border-teal-300 hover:shadow-sm"
                 >
-                  <div className="mb-1 flex h-11 w-11 items-center justify-center rounded-full border border-blue-200 bg-blue-100 text-blue-600">
-                    <i className="fas fa-cloud-upload-alt text-[15px]" />
+                  <div className="flex h-11 w-11 items-center justify-center rounded-md bg-blue-100 text-blue-600">
+                    <i className="fas fa-folder-open text-[15px]" />
                   </div>
-                  <span className="text-center text-[10px] font-semibold text-slate-600">Upload</span>
+                  <span className="text-center text-xs font-bold text-slate-700">
+                    Upload document
+                  </span>
                 </Link>
                 <Link
-                  to={addBlocked ? "/pricing" : "/transactions#add-transaction"}
-                  className="flex flex-col items-center gap-1 rounded-lg py-1 transition hover:opacity-90"
+                  to={addBlocked ? "/pricing" : "/transactions#add-manual"}
+                  className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-slate-200 bg-white p-3 transition hover:border-teal-300 hover:shadow-sm"
                 >
-                  <div className="mb-1 flex h-11 w-11 items-center justify-center rounded-full border border-purple-200 bg-purple-100 text-purple-600">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-md bg-purple-100 text-purple-600">
                     <i className="fas fa-plus-circle text-[15px]" />
                   </div>
-                  <span className="text-center text-[10px] font-semibold text-slate-600">Add</span>
+                  <span className="text-center text-xs font-bold text-slate-700">
+                    Add transaction
+                  </span>
                 </Link>
+                <Link to="/invoices?create=1" className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-slate-200 bg-white p-3 transition hover:border-teal-300 hover:shadow-sm"><div className="flex h-11 w-11 items-center justify-center rounded-md bg-teal-50 text-teal-700"><i className="fas fa-file-invoice" /></div><span className="text-center text-xs font-bold text-slate-700">Invoice</span></Link>
+                <Link to="/estimates?create=1" className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-slate-200 bg-white p-3 transition hover:border-teal-300 hover:shadow-sm"><div className="flex h-11 w-11 items-center justify-center rounded-md bg-emerald-50 text-emerald-700"><i className="fas fa-file-signature" /></div><span className="text-center text-xs font-bold text-slate-700">Estimate</span></Link>
                 <Link
                   to={budgetBlocked ? "/pricing" : "/budgets"}
-                  className="flex flex-col items-center gap-1 rounded-lg py-1 transition hover:opacity-90"
+                  className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-slate-200 bg-white p-3 transition hover:border-teal-300 hover:shadow-sm"
                 >
-                  <div className="mb-1 flex h-11 w-11 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-600">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-md bg-amber-50 text-amber-600">
                     <i className="fas fa-chart-pie text-[15px]" />
                   </div>
-                  <span className="text-center text-[10px] font-semibold text-slate-600">Budget</span>
+                  <span className="text-center text-xs font-bold text-slate-700">
+                    Budget
+                  </span>
                 </Link>
               </div>
             </section>
@@ -384,13 +468,21 @@ function ConvexDashboardInner() {
             {summary.categoryBreakdown.length > 0 ? (
               <section>
                 <div className="mb-2.5 flex items-center justify-between gap-2">
-                  <h2 className="text-sm font-bold text-slate-900">Spending Overview</h2>
-                  <Link to="/insights" className="text-xs font-semibold hover:underline" style={{ color: primary }}>
+                  <h2 className="text-sm font-bold text-slate-900">
+                    Spending Overview
+                  </h2>
+                  <Link
+                    to="/insights"
+                    className="text-xs font-semibold hover:underline"
+                    style={{ color: primary }}
+                  >
                     View All
                   </Link>
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm">
-                  <p className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500">TOP CATEGORIES</p>
+                  <p className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500">
+                    TOP CATEGORIES
+                  </p>
                   <ul className="space-y-1.5">
                     {summary.categoryBreakdown.slice(0, 3).map((cat) => (
                       <li key={cat.category}>
@@ -401,16 +493,28 @@ function ConvexDashboardInner() {
                         >
                           <div className="flex min-w-0 items-center gap-2.5">
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-slate-200 bg-white">
-                              <i className="fas fa-tag text-xs" style={{ color: primary }} />
+                              <i
+                                className="fas fa-tag text-xs"
+                                style={{ color: primary }}
+                              />
                             </div>
                             <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-slate-900">{cat.category}</p>
-                              <p className="text-xs text-slate-500">{cat.count} transactions</p>
+                              <p className="truncate text-sm font-semibold text-slate-900">
+                                {cat.category}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {cat.count} transactions
+                              </p>
                             </div>
                           </div>
                           <span className="flex shrink-0 items-center gap-2">
-                            <span className="text-sm font-bold tabular-nums text-slate-900">{formatMoney(cat.amount)}</span>
-                            <i className="fas fa-chevron-right text-[10px] text-slate-400" aria-hidden />
+                            <span className="text-sm font-bold tabular-nums text-slate-900">
+                              {formatMoney(cat.amount)}
+                            </span>
+                            <i
+                              className="fas fa-chevron-right text-[10px] text-slate-400"
+                              aria-hidden
+                            />
                           </span>
                         </Link>
                       </li>
@@ -421,15 +525,25 @@ function ConvexDashboardInner() {
             ) : (
               <div className="rounded-2xl border border-slate-200 bg-white px-5 py-8 text-center shadow-sm">
                 <i className="fas fa-chart-pie text-3xl text-slate-400" />
-                <p className="mt-2.5 text-sm font-bold text-slate-900">No spending data yet</p>
-                <p className="mt-1 text-sm text-slate-600">Add your first transaction to see spending insights</p>
+                <p className="mt-2.5 text-sm font-bold text-slate-900">
+                  No spending data yet
+                </p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Add your first transaction to see spending insights
+                </p>
               </div>
             )}
 
             <section>
               <div className="mb-2.5 flex items-center justify-between gap-2">
-                <h2 className="text-sm font-bold text-slate-900">Recent Transactions</h2>
-                <Link to="/transactions" className="text-xs font-semibold hover:underline" style={{ color: primary }}>
+                <h2 className="text-sm font-bold text-slate-900">
+                  Recent Transactions
+                </h2>
+                <Link
+                  to="/transactions"
+                  className="text-xs font-semibold hover:underline"
+                  style={{ color: primary }}
+                >
                   View All
                 </Link>
               </div>
@@ -453,21 +567,26 @@ function ConvexDashboardInner() {
                       }}
                       className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm outline-none ring-primary/30 transition hover:border-teal-200 hover:bg-teal-50/30 focus-visible:ring-2"
                     >
-                      <div
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                        style={{ backgroundColor: "rgb(236 253 245)" }}
-                      >
-                        <i className="fas fa-receipt text-sm" style={{ color: primary }} />
-                      </div>
+                      <MerchantIconBox
+                        merchant={tx.merchant}
+                        category={tx.category}
+                        type={tx.type === "income" ? "income" : "expense"}
+                      />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-slate-900">{tx.merchant || tx.category}</p>
+                        <p className="truncate text-sm font-semibold text-slate-900">
+                          {tx.merchant || tx.category}
+                        </p>
                         <p className="mt-0.5 text-xs text-slate-500">
                           {tx.category} · {tx.date}
                         </p>
                       </div>
                       <span
                         className={`shrink-0 text-sm font-bold tabular-nums ${tx.type === "expense" ? "text-rose-600" : ""}`}
-                        style={tx.type !== "expense" ? { color: green600 } : undefined}
+                        style={
+                          tx.type !== "expense"
+                            ? { color: green600 }
+                            : undefined
+                        }
                       >
                         {tx.type === "expense" ? "-" : "+"}
                         {formatMoney(tx.amount)}
@@ -498,7 +617,9 @@ function Unavailable() {
     <div className="p-8">
       <h1 className="text-xl font-bold">Dashboard unavailable</h1>
       <p className="mt-2 text-sm text-slate-600">
-        {runtime?.maintenanceMode ? "System is in maintenance mode." : "Dashboard page is disabled by admin."}
+        {runtime?.maintenanceMode
+          ? "System is in maintenance mode."
+          : "Dashboard page is disabled by admin."}
       </p>
     </div>
   );

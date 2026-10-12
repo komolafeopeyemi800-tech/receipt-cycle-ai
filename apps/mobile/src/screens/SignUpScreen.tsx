@@ -16,8 +16,6 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../contexts/AuthContext";
 import { GoogleSignInButton } from "../components/GoogleSignInButton";
-import { EmailCodeForm } from "../components/EmailCodeForm";
-import { api, useQuery } from "../lib/api";
 import { getRememberedEmailAsync } from "../lib/rememberedEmail";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
@@ -30,7 +28,6 @@ export function SignUpScreen() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const passwordsOn = useQuery(api.admin.publicConfig, {})?.passwordAuthEnabled === true;
 
   useEffect(() => {
     void (async () => {
@@ -62,12 +59,15 @@ export function SignUpScreen() {
             <Ionicons name="chevron-back" size={22} color={colors.gray900} />
           </Pressable>
           <Text style={styles.title}>Create account</Text>
-          <Text style={styles.sub}>Create an account with your email, or continue with Google below.</Text>
+          <Text style={styles.sub}>Continue with Google or create an account with your email and password.</Text>
 
-          {!passwordsOn ? <EmailCodeForm mode="signup" initialEmail={email} /> : null}
-          {err && !passwordsOn ? <Text style={styles.err}>{err}</Text> : null}
-          {passwordsOn ? (
-          <>
+          <GoogleSignInButton onError={onGoogleError} />
+
+          <View style={styles.orRow}>
+            <View style={styles.orLine} />
+            <Text style={styles.orTxt}>or create with email</Text>
+            <View style={styles.orLine} />
+          </View>
           <View style={styles.field}>
             <Text style={styles.lbl}>Name (optional)</Text>
             <TextInput
@@ -105,16 +105,6 @@ export function SignUpScreen() {
           <Pressable style={[styles.btn, busy && { opacity: 0.7 }]} onPress={onSubmit} disabled={busy}>
             {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnTxt}>Sign up</Text>}
           </Pressable>
-          </>
-          ) : null}
-
-          <View style={styles.orRow}>
-            <View style={styles.orLine} />
-            <Text style={styles.orTxt}>or Google</Text>
-            <View style={styles.orLine} />
-          </View>
-
-          <GoogleSignInButton onError={onGoogleError} />
 
           <Pressable style={styles.linkRow} onPress={() => navigation.navigate("SignIn")}>
             <Text style={styles.link}>Already have an account? Sign in</Text>

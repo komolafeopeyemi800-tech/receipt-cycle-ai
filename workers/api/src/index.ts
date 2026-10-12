@@ -14,9 +14,10 @@ import { webhookRoutes } from "./routes/webhooks";
 import { meRoutes, socialRoutes } from "./routes/session";
 import { billingRoutes } from "./routes/billing";
 import { salesRoutes } from "./routes/sales";
-import { receiptRoutes } from "./routes/receipts";
+import { receiptEvidenceRoutes, receiptRoutes } from "./routes/receipts";
 import { uploadRoutes } from "./routes/uploads";
 import { workspaceRoutes } from "./routes/workspaces";
+import { publicDocumentRoutes } from "./routes/publicDocuments";
 import type { AppEnv } from "./types";
 
 export const app = new Hono<AppEnv>();
@@ -76,6 +77,8 @@ app.route("/api/workspaces", workspaceRoutes);
 app.route("/api/preferences", preferenceRoutes);
 app.route("/api/subscription", subscriptionRoutes);
 app.route("/api/sales", salesRoutes);
+app.route("/public/documents", publicDocumentRoutes);
+app.route("/api/public-documents", publicDocumentRoutes);
 /** Which billing settings are present (yes/no only, never the values). Lets setup be checked without exposing secrets. */
 app.get("/api/billing/status", (c) => {
   const has = (v: string | undefined) => Boolean(v?.trim());
@@ -97,6 +100,7 @@ app.route("/api/admin", adminRoutes);
 app.route("/api/ai", aiRoutes);
 app.route("/api/contact", contactRoutes);
 app.route("/api/uploads", uploadRoutes);
+app.route("/api/receipt-evidence", receiptEvidenceRoutes);
 app.route("/api/receipts", receiptRoutes);
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));

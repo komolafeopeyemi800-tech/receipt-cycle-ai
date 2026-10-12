@@ -63,7 +63,7 @@ describe("AI helper routes", () => {
     const expired = await makeUser({ createdAt: Date.now() - 9 * 24 * 60 * 60 * 1000 });
     const blocked = await post(expired.token, "/api/uploads/ai/extract", { text: "2026-10-01 Coffee 4.50" });
     expect(blocked.status).toBe(402);
-    expect(blocked.json.error).toMatch(/7-day trial ended/);
+    expect(blocked.json.error).toMatch(/current access no longer includes/);
 
     const { token } = await makeUser();
     expect((await post(token, "/api/uploads/ai/extract", { text: "2026-10-01 Coffee 4.50" }, env)).status).toBe(503);

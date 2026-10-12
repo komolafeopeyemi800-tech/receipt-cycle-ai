@@ -89,10 +89,11 @@ function ConvexSettingsInner() {
       window.alert("No transactions to export yet.");
       return;
     }
-    const header = ["date", "type", "category", "amount", "merchant", "description", "payment_method", "workspace"].join(",");
+    const header = ["date", "type", "category", "amount", "merchant", "description", "payment_method", "workspace", "subtotal", "tax", "currency", "line_items", "evidence_url"].join(",");
     const body = backupRows
-      .map((t) =>
-        [
+      .map((t) => {
+        const data = t.receipt_data && typeof t.receipt_data === "object" ? t.receipt_data as { subtotal?: number; tax_amount?: number; currency?: string; items?: unknown[] } : null;
+        return [
           csvValue(t.date),
           csvValue(t.type),
           csvValue(t.category),
@@ -101,8 +102,13 @@ function ConvexSettingsInner() {
           csvValue(t.description),
           csvValue(t.payment_method),
           csvValue(t.workspace),
-        ].join(","),
-      )
+          csvValue(data?.subtotal),
+          csvValue(data?.tax_amount),
+          csvValue(data?.currency),
+          csvValue(data?.items ? JSON.stringify(data.items) : ""),
+          csvValue(t.evidence_url),
+        ].join(",");
+      })
       .join("\r\n");
     const csv = `\uFEFF${header}\r\n${body}`;
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -176,8 +182,8 @@ function ConvexSettingsInner() {
             >
               {(user.email ?? "?").slice(0, 1).toUpperCase()}
             </div>
-            <div>
-              <p className="font-semibold text-slate-900">{user.email}</p>
+            <div className="min-w-0">
+              <p className="break-all font-semibold text-slate-900">{user.email}</p>
               <p className="text-xs text-slate-500">Signed in</p>
             </div>
           </div>
@@ -338,7 +344,7 @@ function ConvexSettingsInner() {
         <section>
           <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Saved locations</p>
           <div className="rounded-xl border border-slate-200 bg-white p-4">
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2 sm:grid-cols-2 grid-cols-1">
               <input
                 className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
                 placeholder="Label"

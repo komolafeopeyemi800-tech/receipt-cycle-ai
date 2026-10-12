@@ -19,6 +19,7 @@ import { colors, gradients, type as typeScale } from "../theme/tokens";
 import { buildSummary, filterByMonth } from "../utils/transactionMath";
 import type { MainTabParamList, RootStackParamList } from "../navigation/types";
 import { QuickActionsRow } from "../components/QuickActionsRow";
+import { TransactionGlyph } from "../components/ui/PremiumIcon";
 import type { DocTx } from "../types/transaction";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -35,21 +36,29 @@ export function DashboardScreen() {
   const { user } = useAuth();
   const { formatMoney } = usePreferences();
 
-  const all = useQuery(api.transactions.list, ready ? { workspace, userId: user?.id } : "skip");
+  const all = useQuery(
+    api.transactions.list,
+    ready ? { workspace, userId: user?.id } : "skip",
+  );
 
   const { monthly, recent, summary } = useMemo(() => {
     const list = (all ?? []) as DocTx[];
     const monthlyTx = filterByMonth(list);
+    const newest = [...list].sort((a, b) => {
+      const byDate = b.date.localeCompare(a.date);
+      return byDate || String(b.created_at ?? "").localeCompare(String(a.created_at ?? ""));
+    });
     return {
       monthly: monthlyTx,
-      recent: list.slice(0, 5),
+      recent: newest.slice(0, 5),
       summary: buildSummary(monthlyTx),
     };
   }, [all]);
 
   const displayName = "there";
   const hour = new Date().getHours();
-  const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const greet =
+    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   const loading = !ready || all === undefined;
 
@@ -59,16 +68,32 @@ export function DashboardScreen() {
         <Text style={styles.statusTime}>9:41</Text>
         <View style={styles.statusIcons}>
           <Ionicons name="cellular-outline" size={11} color={colors.gray900} />
-          <Ionicons name="wifi-outline" size={11} color={colors.gray900} style={{ marginLeft: 6 }} />
-          <Ionicons name="battery-full-outline" size={11} color={colors.gray900} style={{ marginLeft: 6 }} />
+          <Ionicons
+            name="wifi-outline"
+            size={11}
+            color={colors.gray900}
+            style={{ marginLeft: 6 }}
+          />
+          <Ionicons
+            name="battery-full-outline"
+            size={11}
+            color={colors.gray900}
+            style={{ marginLeft: 6 }}
+          />
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.stickyHeader}>
           <View style={styles.headerRow}>
             <View style={styles.headerLeft}>
-              <LinearGradient colors={[...gradients.heroIcon]} style={styles.logoSm}>
+              <LinearGradient
+                colors={[...gradients.heroIcon]}
+                style={styles.logoSm}
+              >
                 <Ionicons name="sync-outline" size={14} color="#fff" />
               </LinearGradient>
               <View>
@@ -77,11 +102,29 @@ export function DashboardScreen() {
               </View>
             </View>
             <View style={styles.headerRight}>
-              <Pressable style={styles.iconBtn} onPress={() => navigation.getParent()?.navigate("Notifications")}>
-                <Ionicons name="notifications-outline" size={18} color={colors.gray700} />
+              <Pressable
+                style={styles.iconBtn}
+                onPress={() =>
+                  navigation.getParent()?.navigate("Notifications")
+                }
+              >
+                <Ionicons
+                  name="notifications-outline"
+                  size={18}
+                  color={colors.gray700}
+                />
               </Pressable>
-              <Pressable style={styles.avatar} onPress={() => navigation.getParent()?.navigate("Settings" as never)}>
-                <Ionicons name="person-outline" size={18} color={colors.gray600} />
+              <Pressable
+                style={styles.avatar}
+                onPress={() =>
+                  navigation.getParent()?.navigate("Settings" as never)
+                }
+              >
+                <Ionicons
+                  name="person-outline"
+                  size={18}
+                  color={colors.gray600}
+                />
               </Pressable>
             </View>
           </View>
@@ -91,14 +134,23 @@ export function DashboardScreen() {
           <Text style={styles.greetTitle}>
             {greet}, {displayName}
           </Text>
-          <Text style={styles.greetSub}>Here&apos;s your snapshot for today</Text>
+          <Text style={styles.greetSub}>
+            Here&apos;s your snapshot for today
+          </Text>
         </View>
 
         {loading ? (
-          <ActivityIndicator color={colors.primary} style={{ marginVertical: 20 }} />
+          <ActivityIndicator
+            color={colors.primary}
+            style={{ marginVertical: 20 }}
+          />
         ) : (
           <>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.metricsRow}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.metricsRow}
+            >
               <LinearGradient
                 colors={[...gradients.primaryBtn]}
                 start={{ x: 0, y: 0 }}
@@ -107,8 +159,15 @@ export function DashboardScreen() {
               >
                 <View style={styles.metricTop}>
                   <View>
-                    <Text style={styles.metricLabelLight}>Net (this month)</Text>
-                    <Text style={styles.metricValueLight} numberOfLines={1} adjustsFontSizeToFit>
+                    <Text style={styles.metricLabelLight}>
+                      Net (this month)
+                    </Text>
+                    <Text
+                      style={styles.metricValueLight}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.48}
+                    >
                       {formatMoney(summary.netBalance)}
                     </Text>
                   </View>
@@ -121,11 +180,15 @@ export function DashboardScreen() {
                     {summary.savingsRate !== null ? (
                       <>
                         <Ionicons
-                          name={summary.savingsRate >= 0 ? "arrow-up" : "arrow-down"}
+                          name={
+                            summary.savingsRate >= 0 ? "arrow-up" : "arrow-down"
+                          }
                           size={11}
                           color="#fff"
                         />
-                        <Text style={styles.rateText}>{Math.abs(summary.savingsRate).toFixed(1)}%</Text>
+                        <Text style={styles.rateText}>
+                          {Math.abs(summary.savingsRate).toFixed(1)}%
+                        </Text>
                       </>
                     ) : (
                       <Text style={styles.rateText}>—</Text>
@@ -139,31 +202,65 @@ export function DashboardScreen() {
                 <View style={styles.metricTop}>
                   <View>
                     <Text style={styles.metricLabel}>Total Expenses</Text>
-                    <Text style={styles.metricValueDark} numberOfLines={1} adjustsFontSizeToFit>
+                    <Text
+                      style={styles.metricValueDark}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.48}
+                    >
                       {formatMoney(summary.totalExpenses)}
                     </Text>
                   </View>
-                  <View style={[styles.metricIconBg, { backgroundColor: "#ffe4e6" }]}>
-                    <Ionicons name="card-outline" size={18} color={colors.rose600} />
+                  <View
+                    style={[
+                      styles.metricIconBg,
+                      { backgroundColor: "#ffe4e6" },
+                    ]}
+                  >
+                    <Ionicons
+                      name="card-outline"
+                      size={18}
+                      color={colors.rose600}
+                    />
                   </View>
                 </View>
-                <Text style={styles.metricFoot}>{summary.transactionCount} transactions</Text>
+                <Text style={styles.metricFoot}>
+                  {summary.transactionCount} transactions
+                </Text>
               </View>
 
               <View style={styles.metricCard}>
                 <View style={styles.metricTop}>
                   <View>
                     <Text style={styles.metricLabel}>Total Income</Text>
-                    <Text style={styles.metricValueDark} numberOfLines={1} adjustsFontSizeToFit>
+                    <Text
+                      style={styles.metricValueDark}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.48}
+                    >
                       {formatMoney(summary.totalIncome)}
                     </Text>
                   </View>
-                  <View style={[styles.metricIconBg, { backgroundColor: "#dcfce7" }]}>
-                    <Ionicons name="cash-outline" size={18} color={colors.green600} />
+                  <View
+                    style={[
+                      styles.metricIconBg,
+                      { backgroundColor: "#dcfce7" },
+                    ]}
+                  >
+                    <Ionicons
+                      name="cash-outline"
+                      size={18}
+                      color={colors.green600}
+                    />
                   </View>
                 </View>
                 <View style={styles.rateRow}>
-                  <Ionicons name="checkmark-circle-outline" size={12} color={colors.primary} />
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={12}
+                    color={colors.primary}
+                  />
                   <Text style={styles.thisMonth}>This month</Text>
                 </View>
               </View>
@@ -188,11 +285,17 @@ export function DashboardScreen() {
                     <View key={cat.category} style={styles.catRow}>
                       <View style={styles.catLeft}>
                         <View style={styles.tagIcon}>
-                          <Ionicons name="pricetag-outline" size={14} color={colors.primary} />
+                          <Ionicons
+                            name="pricetag-outline"
+                            size={14}
+                            color={colors.primary}
+                          />
                         </View>
                         <View>
                           <Text style={styles.catName}>{cat.category}</Text>
-                          <Text style={styles.catCount}>{cat.count} transactions</Text>
+                          <Text style={styles.catCount}>
+                            {cat.count} transactions
+                          </Text>
                         </View>
                       </View>
                       <Text style={styles.catAmt} numberOfLines={1}>
@@ -204,9 +307,15 @@ export function DashboardScreen() {
               </View>
             ) : (
               <View style={styles.emptyCard}>
-                <Ionicons name="pie-chart-outline" size={32} color={colors.gray400} />
+                <Ionicons
+                  name="pie-chart-outline"
+                  size={32}
+                  color={colors.gray400}
+                />
                 <Text style={styles.emptyTitle}>No spending data yet</Text>
-                <Text style={styles.emptySub}>Add your first transaction to see spending insights</Text>
+                <Text style={styles.emptySub}>
+                  Add your first transaction to see spending insights
+                </Text>
               </View>
             )}
 
@@ -219,21 +328,36 @@ export function DashboardScreen() {
               </View>
               {recent.length === 0 ? (
                 <View style={styles.emptyCard}>
-                  <Text style={styles.emptySub}>No transactions yet — scan a receipt or add one.</Text>
+                  <Text style={styles.emptySub}>
+                    No transactions yet — scan a receipt or add one.
+                  </Text>
                 </View>
               ) : (
                 recent.map((tx) => (
                   <View key={tx.id} style={styles.txCard}>
-                    <View style={styles.txIcon}>
-                      <Ionicons name="receipt-outline" size={16} color={colors.primary} />
-                    </View>
+                    <TransactionGlyph
+                      merchant={tx.merchant}
+                      category={tx.category}
+                      type={tx.type}
+                      size={36}
+                    />
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.txMerchant}>{tx.merchant || tx.category}</Text>
+                      <Text style={styles.txMerchant}>
+                        {tx.merchant || tx.category}
+                      </Text>
                       <Text style={styles.txMeta}>
                         {tx.category} · {tx.date}
                       </Text>
                     </View>
-                    <Text style={[styles.txAmt, tx.type === "expense" ? styles.txExpense : styles.txIncome]} numberOfLines={1}>
+                    <Text
+                      style={[
+                        styles.txAmt,
+                        tx.type === "expense"
+                          ? styles.txExpense
+                          : styles.txIncome,
+                      ]}
+                      numberOfLines={1}
+                    >
                       {tx.type === "expense" ? "-" : "+"}
                       {formatMoney(tx.amount)}
                     </Text>
@@ -245,7 +369,6 @@ export function DashboardScreen() {
         )}
         <View style={{ height: 100 }} />
       </ScrollView>
-
     </LinearGradient>
   );
 }
@@ -260,7 +383,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "rgba(255,255,255,0.92)",
   },
-  statusTime: { fontSize: typeScale.md, fontWeight: "600", color: colors.gray900 },
+  statusTime: {
+    fontSize: typeScale.md,
+    fontWeight: "600",
+    color: colors.gray900,
+  },
   statusIcons: { flexDirection: "row", alignItems: "center" },
   scroll: { paddingBottom: 24 },
   stickyHeader: {
@@ -270,7 +397,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.gray200,
   },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   headerLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
   logoSm: {
     width: 36,
@@ -279,7 +410,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  headerTitle: { fontSize: typeScale.title, fontWeight: "700", color: colors.gray900 },
+  headerTitle: {
+    fontSize: typeScale.title,
+    fontWeight: "700",
+    color: colors.gray900,
+  },
   headerSub: { fontSize: typeScale.md, color: colors.gray500, marginTop: 1 },
   headerRight: { flexDirection: "row", alignItems: "center", gap: 6 },
   iconBtn: {
@@ -301,7 +436,11 @@ const styles = StyleSheet.create({
     borderColor: colors.gray200,
   },
   greeting: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12 },
-  greetTitle: { fontSize: typeScale.headline, fontWeight: "700", color: colors.gray900 },
+  greetTitle: {
+    fontSize: typeScale.headline,
+    fontWeight: "700",
+    color: colors.gray900,
+  },
   greetSub: { fontSize: typeScale.body, color: colors.gray600, marginTop: 4 },
   metricsRow: { paddingHorizontal: 16, gap: 10, paddingBottom: 6 },
   metricCardPrimary: {
@@ -319,11 +458,37 @@ const styles = StyleSheet.create({
     borderColor: colors.gray200,
     marginRight: 4,
   },
-  metricTop: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
-  metricLabelLight: { fontSize: typeScale.sm, color: "rgba(255,255,255,0.88)", fontWeight: "600" },
-  metricValueLight: { fontSize: typeScale.display, fontWeight: "700", color: "#fff", marginTop: 2 },
-  metricLabel: { fontSize: typeScale.sm, color: colors.gray500, fontWeight: "600" },
-  metricValueDark: { fontSize: 18, fontWeight: "700", color: colors.gray900, marginTop: 2 },
+  metricTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  metricLabelLight: {
+    fontSize: typeScale.sm,
+    color: "rgba(255,255,255,0.88)",
+    fontWeight: "600",
+  },
+  metricValueLight: {
+    width: "100%",
+    fontSize: 18,
+    fontWeight: "700",
+    letterSpacing: -0.3,
+    color: "#fff",
+    marginTop: 2,
+  },
+  metricLabel: {
+    fontSize: typeScale.sm,
+    color: colors.gray500,
+    fontWeight: "600",
+  },
+  metricValueDark: {
+    width: "100%",
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: -0.25,
+    color: colors.gray900,
+    marginTop: 2,
+  },
   metricIconBubble: {
     width: 36,
     height: 36,
@@ -352,7 +517,11 @@ const styles = StyleSheet.create({
   },
   rateText: { fontSize: typeScale.sm, fontWeight: "700", color: "#fff" },
   rateHint: { fontSize: typeScale.sm, color: "rgba(255,255,255,0.88)" },
-  thisMonth: { fontSize: typeScale.sm, color: colors.primary, fontWeight: "600" },
+  thisMonth: {
+    fontSize: typeScale.sm,
+    color: colors.primary,
+    fontWeight: "600",
+  },
   section: { paddingHorizontal: 16, marginBottom: 16 },
   sectionHead: {
     flexDirection: "row",
@@ -360,7 +529,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
-  sectionTitle: { fontSize: typeScale.bodyStrong, fontWeight: "700", color: colors.gray900 },
+  sectionTitle: {
+    fontSize: typeScale.bodyStrong,
+    fontWeight: "700",
+    color: colors.gray900,
+  },
   link: { fontSize: typeScale.md, fontWeight: "600", color: colors.primary },
   card: {
     backgroundColor: colors.surface,
@@ -369,7 +542,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.gray200,
   },
-  cardTitle: { fontSize: typeScale.bodyStrong, fontWeight: "700", color: colors.gray900 },
+  cardTitle: {
+    fontSize: typeScale.bodyStrong,
+    fontWeight: "700",
+    color: colors.gray900,
+  },
   subheading: {
     fontSize: typeScale.xs,
     fontWeight: "700",
@@ -397,9 +574,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.gray200,
   },
-  catName: { fontSize: typeScale.bodyStrong, fontWeight: "600", color: colors.gray900 },
+  catName: {
+    fontSize: typeScale.bodyStrong,
+    fontWeight: "600",
+    color: colors.gray900,
+  },
   catCount: { fontSize: typeScale.md, color: colors.gray500, marginTop: 1 },
-  catAmt: { fontSize: typeScale.bodyStrong, fontWeight: "700", color: colors.gray900 },
+  catAmt: {
+    fontSize: typeScale.bodyStrong,
+    fontWeight: "700",
+    color: colors.gray900,
+  },
   emptyCard: {
     marginHorizontal: 16,
     padding: 20,
@@ -410,8 +595,18 @@ const styles = StyleSheet.create({
     borderColor: colors.gray200,
     marginBottom: 16,
   },
-  emptyTitle: { fontSize: typeScale.bodyStrong, fontWeight: "700", color: colors.gray900, marginTop: 10 },
-  emptySub: { fontSize: typeScale.body, color: colors.gray600, textAlign: "center", marginTop: 4 },
+  emptyTitle: {
+    fontSize: typeScale.bodyStrong,
+    fontWeight: "700",
+    color: colors.gray900,
+    marginTop: 10,
+  },
+  emptySub: {
+    fontSize: typeScale.body,
+    color: colors.gray600,
+    textAlign: "center",
+    marginTop: 4,
+  },
   txCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -431,7 +626,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  txMerchant: { fontSize: typeScale.bodyStrong, fontWeight: "600", color: colors.gray900 },
+  txMerchant: {
+    fontSize: typeScale.bodyStrong,
+    fontWeight: "600",
+    color: colors.gray900,
+  },
   txMeta: { fontSize: typeScale.md, color: colors.gray500, marginTop: 2 },
   txAmt: { fontSize: typeScale.bodyStrong, fontWeight: "700" },
   txExpense: { color: colors.rose600 },

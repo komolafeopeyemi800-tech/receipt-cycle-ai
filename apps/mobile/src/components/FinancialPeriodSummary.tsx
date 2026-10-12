@@ -46,9 +46,9 @@ export function FinancialPeriodSummary({ mode, onModeChange, monthLabel, onPrevM
       <KpiCard title="Total Expense" value={formatCompact(expense)} tone="negative" />
     </View> : <AppCard style={styles.totalsCard}>
       <View style={styles.totalsRow}>
-        <View style={styles.totalCol}><Text style={styles.totalLabel}>EXPENSE</Text><Text style={[styles.totalValue, { color: colors.danger }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{formatCompact(expense)}</Text></View>
-        <View style={styles.totalCol}><Text style={styles.totalLabel}>INCOME</Text><Text style={[styles.totalValue, { color: colors.success }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{formatCompact(income)}</Text></View>
-        <View style={styles.totalCol}><Text style={styles.totalLabel}>TOTAL</Text><Text style={[styles.totalValue, { color: total < 0 ? colors.danger : colors.textPrimary }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{total < 0 ? "-" : ""}{formatCompact(Math.abs(total))}</Text></View>
+        <View style={styles.totalCol}><Text style={styles.totalLabel}>EXPENSE</Text><Text style={[styles.totalValue, { color: colors.danger }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>{formatCompact(expense)}</Text></View>
+        <View style={styles.totalCol}><Text style={styles.totalLabel}>INCOME</Text><Text style={[styles.totalValue, { color: colors.success }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>{formatCompact(income)}</Text></View>
+        <View style={styles.totalCol}><Text style={styles.totalLabel}>TOTAL</Text><Text style={[styles.totalValue, { color: total < 0 ? colors.danger : colors.textPrimary }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>{total < 0 ? "-" : ""}{formatCompact(Math.abs(total))}</Text></View>
       </View>
     </AppCard>}
     {hasFilter ? <Modal visible={filterOpen} transparent animationType="fade" onRequestClose={() => setFilterOpen(false)}><Pressable style={styles.backdrop} onPress={() => setFilterOpen(false)}><Pressable style={styles.modal} onPress={(event) => event.stopPropagation()}><Text style={styles.modalTitle}>Show transactions</Text>{(["all", "expense", "income"] as const).map((item) => <Pressable key={item} style={[styles.modalRow, filter === item && styles.modalRowActive]} onPress={() => { onFilterChange(item); setFilterOpen(false); }}><Text style={styles.modalRowText}>{item === "all" ? "All" : item === "expense" ? "Expenses only" : "Income only"}</Text>{filter === item ? <Ionicons name="checkmark" size={18} color={colors.primary} /> : null}</Pressable>)}<Pressable onPress={() => setFilterOpen(false)} style={styles.close}><Text style={styles.closeText}>Close</Text></Pressable></Pressable></Pressable></Modal> : null}
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   totalsRow: { flexDirection: "row", gap: spacing.xs },
   totalCol: { flex: 1, minWidth: 0, alignItems: "center" },
   totalLabel: { color: colors.gray500, fontSize: 10, fontWeight: "700", marginBottom: spacing.xs },
-  totalValue: { width: "100%", textAlign: "center", fontSize: uiType.secondary, fontWeight: "800" },
+  totalValue: { width: "100%", textAlign: "center", fontSize: 11, fontWeight: "800", letterSpacing: -0.15 },
   analysisCards: { flexDirection: "row", gap: spacing.sm },
   backdrop: { flex: 1, backgroundColor: "rgba(15,23,42,0.45)", justifyContent: "center", padding: spacing.xxl },
   modal: { backgroundColor: colors.surface, borderRadius: radius.large, padding: spacing.lg },

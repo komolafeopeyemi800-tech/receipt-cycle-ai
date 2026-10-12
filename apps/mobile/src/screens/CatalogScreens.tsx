@@ -78,7 +78,7 @@ export function ItemServiceFormScreen() {
 
   function choose(title: string, options: string[], current: string, onSelect: (value: string) => void) {
     const labels = [...options, "Cancel"];
-    showActionSheetWithOptions({ title, options: labels, cancelButtonIndex: labels.length - 1 }, (index) => {
+    showActionSheetWithOptions({ title, options: labels, cancelButtonIndex: labels.length - 1, useModal: true, containerStyle: { paddingBottom: 40 } }, (index) => {
       if (index === undefined || index === labels.length - 1) return;
       onSelect(options[index] ?? current);
     });

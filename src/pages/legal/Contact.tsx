@@ -64,7 +64,7 @@ export default function Contact() {
 
       <h2>Send us a message</h2>
       <form onSubmit={handleSubmit} className="not-prose mt-4 grid gap-4" noValidate>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 grid-cols-1">
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-slate-700">Your name</span>
             <input

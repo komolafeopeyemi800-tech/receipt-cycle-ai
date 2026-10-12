@@ -9,9 +9,12 @@ interface DesktopNavProps {
   /** When true, show menu button to open the app sidebar (narrow viewports). */
   showSidebarTrigger?: boolean;
   onSidebarTrigger?: () => void;
+  promoOffset?: boolean;
+  sidebarCollapsed?: boolean;
+  onSidebarCollapse?: () => void;
 }
 
-const DesktopNav = ({ variant = "landing", showSidebarTrigger, onSidebarTrigger }: DesktopNavProps) => {
+const DesktopNav = ({ variant = "landing", showSidebarTrigger, onSidebarTrigger, promoOffset = false, sidebarCollapsed, onSidebarCollapse }: DesktopNavProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const inAdmin = location.pathname.startsWith("/admin");
@@ -36,7 +39,7 @@ const DesktopNav = ({ variant = "landing", showSidebarTrigger, onSidebarTrigger 
   
   if (variant === 'app') {
     return (
-      <header className="fixed top-0 left-0 right-0 z-50 h-16 border-b border-gray-100 bg-white/95 shadow-sm backdrop-blur-md">
+      <header className={`fixed left-0 right-0 z-50 h-16 border-b border-gray-100 bg-white/95 shadow-sm backdrop-blur-md ${promoOffset ? "top-10" : "top-0"}`}>
         <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-2 px-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-2 sm:gap-8">
             {showSidebarTrigger ? (
@@ -48,7 +51,7 @@ const DesktopNav = ({ variant = "landing", showSidebarTrigger, onSidebarTrigger 
               >
                 <i className="fas fa-bars text-lg" />
               </button>
-            ) : null}
+            ) : <button type="button" onClick={onSidebarCollapse} className="hidden h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 lg:flex" aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}><i className={`fas ${sidebarCollapsed ? "fa-angles-right" : "fa-angles-left"} text-xs`} /></button>}
             <div
               className="flex min-w-0 cursor-pointer items-center gap-2 sm:gap-3"
               onClick={() => navigate("/dashboard")}
@@ -63,11 +66,7 @@ const DesktopNav = ({ variant = "landing", showSidebarTrigger, onSidebarTrigger 
             <nav className={showSidebarTrigger ? "hidden" : "hidden items-center gap-1 md:flex"}>
               <NavLink 
                 to={inAdmin ? "/admin" : "/dashboard"} 
-                className={({ isActive }) => 
-                  `px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:bg-gray-50'
-                  }`
-                }
+                className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-primary"
               >
                 <i className="fas fa-home mr-2"></i>Dashboard
               </NavLink>
@@ -91,16 +90,13 @@ const DesktopNav = ({ variant = "landing", showSidebarTrigger, onSidebarTrigger 
               >
                 <i className="fas fa-chart-line mr-2"></i>Analysis
               </NavLink>
-              <NavLink 
-                to="/pricing" 
-                className={({ isActive }) => 
-                  `px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:bg-gray-50'
-                  }`
-                }
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new Event("receipt-cycle:open-pricing"))}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-50"
               >
                 <i className="fas fa-tag mr-2"></i>Pricing
-              </NavLink>
+              </button>
             </nav>
           </div>
           

@@ -346,3 +346,18 @@ export const salesRecords = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.scope, t.kind, t.id] }), index("sales_records_scope_updated_idx").on(t.scope, t.updatedAt)],
 );
+
+/** Opaque bearer links for customer-facing invoice and estimate snapshots. */
+export const publicDocumentLinks = sqliteTable(
+  "public_document_links",
+  {
+    token: text("token").primaryKey(),
+    scope: text("scope").notNull(),
+    kind: text("kind", { enum: ["invoice", "estimate"] }).notNull(),
+    documentId: text("document_id").notNull(),
+    snapshot: text("snapshot").notNull(),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+  },
+  (t) => [uniqueIndex("public_document_scope_kind_id_idx").on(t.scope, t.kind, t.documentId)],
+);

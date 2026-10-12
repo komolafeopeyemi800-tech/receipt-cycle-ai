@@ -13,4 +13,5 @@ if (!baseUrl) {
 export const apiClient = new ApiClient({
   baseUrl,
   webAppUrl: process.env.EXPO_PUBLIC_WEB_APP_URL || "https://receiptcycle.com",
+  requestOrigin: "receiptcycle://",
 });

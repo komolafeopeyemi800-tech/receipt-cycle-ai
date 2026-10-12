@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,8 +17,6 @@ import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../contexts/AuthContext";
 import { GoogleSignInButton } from "../components/GoogleSignInButton";
-import { EmailCodeForm } from "../components/EmailCodeForm";
-import { api, useQuery } from "../lib/api";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
 import { getRememberedEmailAsync } from "../lib/rememberedEmail";
@@ -31,7 +28,6 @@ export function SignInScreen() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const passwordsOn = useQuery(api.admin.publicConfig, {})?.passwordAuthEnabled === true;
 
   useEffect(() => {
     void (async () => {
@@ -65,33 +61,16 @@ export function SignInScreen() {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.hero}>
-              <View style={styles.logoMark}>
-                <Image source={require("../../assets/icon.png")} style={styles.logoImg} resizeMode="contain" />
-              </View>
-              <Text style={styles.brand}>Receipt Cycle</Text>
-              <Text style={styles.title}>Sign in</Text>
-              <Text style={styles.sub}>
-                Your session stays on this device until you sign out. Use the same email on web and mobile.
-              </Text>
+              <Text style={styles.title}>Welcome back</Text>
+              <Text style={styles.sub}>Sign in to continue with the same account you use on the web.</Text>
             </View>
 
             <View style={styles.card}>
               <GoogleSignInButton onError={onGoogleError} />
-              {err && !passwordsOn ? <Text style={styles.err}>{err}</Text> : null}
 
               <View style={styles.orRow}>
                 <View style={styles.orLine} />
-                <Text style={styles.orTxt}>or with your email</Text>
-                <View style={styles.orLine} />
-              </View>
-
-              <EmailCodeForm mode="signin" initialEmail={email} />
-
-              {passwordsOn ? (
-              <>
-              <View style={styles.orRow}>
-                <View style={styles.orLine} />
-                <Text style={styles.orTxt}>or password</Text>
+                <Text style={styles.orTxt}>or sign in with email</Text>
                 <View style={styles.orLine} />
               </View>
 
@@ -128,8 +107,6 @@ export function SignInScreen() {
               <Pressable style={styles.forgotRow} onPress={() => navigation.navigate("ForgotPassword")}>
                 <Text style={styles.forgot}>Forgot password?</Text>
               </Pressable>
-              </>
-              ) : null}
             </View>
 
             <Pressable style={styles.linkRow} onPress={() => navigation.navigate("SignUp")}>
@@ -153,22 +130,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   hero: { alignItems: "center", marginBottom: 22 },
-  logoMark: {
-    width: 64,
-    height: 64,
-    borderRadius: 18,
-    backgroundColor: "transparent",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  logoImg: { width: 64, height: 64, borderRadius: 18 },
-  brand: { fontSize: 13, fontWeight: "700", color: colors.gray500, letterSpacing: 0.6, marginBottom: 4 },
   title: { fontSize: 26, fontWeight: "800", color: colors.gray900 },
   sub: {
     fontSize: typeScale.sm,

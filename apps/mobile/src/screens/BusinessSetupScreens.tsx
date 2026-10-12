@@ -22,7 +22,7 @@ function useOptionPicker() {
   const { showActionSheetWithOptions } = useActionSheet();
   return (title: string, options: string[], onSelect: (value: string) => void) => {
     const labels = [...options, "Cancel"];
-    showActionSheetWithOptions({ title, options: labels, cancelButtonIndex: labels.length - 1 }, (index) => {
+    showActionSheetWithOptions({ title, options: labels, cancelButtonIndex: labels.length - 1, useModal: true, containerStyle: { paddingBottom: 40 } }, (index) => {
       if (index === undefined || index === labels.length - 1) return;
       const value = options[index];
       if (value) onSelect(value);

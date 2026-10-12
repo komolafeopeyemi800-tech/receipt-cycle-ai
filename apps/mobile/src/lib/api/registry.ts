@@ -243,11 +243,11 @@ export const api = {
     remove: fn<SessionArgs & { id: string }, void>("mutation", "transactions.remove", async (c, a) => {
       await c.request("DELETE", `/api/transactions/${enc(a.id)}`, { token: tok(a) });
     }),
-    bulkImport: fn<SessionArgs & { workspace: string; rows: BulkRow[] }, { inserted: number; truncated: boolean }>(
+    bulkImport: fn<SessionArgs & { workspace: string; rows: BulkRow[]; receipt_url?: string | null }, { inserted: number; truncated: boolean }>(
       "mutation",
       "transactions.bulkImport",
       (c, a) =>
-        c.request("POST", "/api/transactions/bulk-import", { token: tok(a), body: { workspace: a.workspace, rows: a.rows } }),
+        c.request("POST", "/api/transactions/bulk-import", { token: tok(a), body: { workspace: a.workspace, rows: a.rows, receipt_url: a.receipt_url } }),
     ),
     /** Adds one sample row (the old version inserted an ownerless row nobody could see). */
     seedDemo: fn<SessionArgs & { workspace?: string }, void>("mutation", "transactions.seedDemo", async (c, a) => {
@@ -447,6 +447,9 @@ export const api = {
     }),
     download: fn<{ key: string }, Blob>("action", "receipts.download", (c, a) =>
       c.requestBlob("/api/receipts/file", { query: { key: a.key } }),
+    ),
+    link: fn<{ key: string }, { url: string }>("query", "receipts.link", (c, a) =>
+      c.request("GET", "/api/receipts/link", { query: { key: a.key } }),
     ),
   },
   email: {

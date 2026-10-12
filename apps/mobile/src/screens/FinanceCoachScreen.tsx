@@ -323,9 +323,6 @@ export function FinanceCoachScreen() {
         {sub && !aiOk && sub.blockReason ? (
           <View style={styles.coachWarn}>
             <Text style={styles.coachWarnTxt}>{sub.blockReason}</Text>
-            <Pressable onPress={() => navigation.navigate("Pricing")} style={{ marginTop: 6 }}>
-              <Text style={styles.coachWarnLink}>View plans</Text>
-            </Pressable>
           </View>
         ) : null}
 

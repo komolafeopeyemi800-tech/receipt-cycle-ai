@@ -2,7 +2,11 @@ import type { ScannedExtracted } from "../types/transaction";
 
 export type EntrySource = "camera" | "upload" | "manual";
 /** `receiptUri` is where the photo is on this device; it is uploaded to private storage when the transaction is saved. */
-export type ScanReviewParams = { scannedData: ScannedExtracted; source: Exclude<EntrySource, "manual">; receiptUri?: string };
+export type ScanReviewParams = {
+  scannedData: ScannedExtracted;
+  source: Exclude<EntrySource, "manual">;
+  receiptUri?: string;
+};
 
 export type MainTabParamList = {
   Home: undefined;
@@ -30,8 +34,26 @@ export type SalesStackParamList = {
 };
 
 export type RootStackParamList = {
-  Main: { screen?: keyof MainTabParamList; params?: { screen?: keyof MoreStackParamList | keyof SalesStackParamList } } | undefined;
-  AddTransaction: { scannedData?: ScannedExtracted; receiptUri?: string; transactionId?: string; source?: EntrySource; initialType?: "expense" | "income"; initialMode?: "ai" } | undefined;
+  Main:
+    | {
+        screen?: keyof MainTabParamList;
+        params?: {
+          screen?: keyof MoreStackParamList | keyof SalesStackParamList;
+        };
+      }
+    | undefined;
+  AddTransaction:
+    | {
+        scannedData?: ScannedExtracted;
+        receiptUri?: string;
+        transactionId?: string;
+        source?: EntrySource;
+        initialType?: "expense" | "income";
+        initialMode?: "ai";
+        initialAiMode?: "Voice" | "Quick Text";
+        initialAiText?: string;
+      }
+    | undefined;
   RecordsFilters: undefined;
   TransactionDetail: { transactionId: string };
   CategoryBreakdown: { category: string };
@@ -39,7 +61,9 @@ export type RootStackParamList = {
   BudgetSet: { category: string; month: string; kind: "expense" | "income" };
   BudgetDetail: { category: string; month: string; kind: "expense" | "income" };
   AccountForm: { accountId?: string } | undefined;
-  CategoryEditor: { categoryId?: string; initialKind?: "expense" | "income" } | undefined;
+  CategoryEditor:
+    | { categoryId?: string; initialKind?: "expense" | "income" }
+    | undefined;
   SalesCustomerDetail: { customerId: string };
   SalesCustomerForm: { customerId?: string } | undefined;
   SalesItemForm: { itemId?: string } | undefined;
@@ -56,6 +80,7 @@ export type RootStackParamList = {
   EstimateTotals: undefined;
   EstimateExtras: undefined;
   EstimatePreview: undefined;
+  EstimateSend: undefined;
   EstimateDetail: { estimateNumber: string };
   EstimateConvert: { estimateNumber: string; invoiceNumber: string };
   PaymentCreate: undefined;

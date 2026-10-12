@@ -13,9 +13,10 @@ type Props = {
 };
 
 /**
- * Native Google sign-in → ID token for Convex `signInWithGoogle`.
- * Requires EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID / EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID and the redirect
- * URI `receiptcycle://google-signin` registered for that OAuth client.
+ * Native Google sign-in to an ID token accepted by the Cloudflare API.
+ * Requires EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID / EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID.
+ * Expo's installed-app redirect is used on Android (`com.receiptcycle.mobile:/oauthredirect`),
+ * which is handled by MainActivity and returns the browser session to this component.
  */
 export function GoogleSignInButton({ onError }: Props) {
   const { signInWithGoogle } = useAuth();
@@ -23,10 +24,10 @@ export function GoogleSignInButton({ onError }: Props) {
   const androidId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID?.trim() ?? "";
   const configured = Platform.OS === "ios" ? Boolean(iosId) : Platform.OS === "android" ? Boolean(androidId) : false;
 
-  const [request, response, promptAsync] = useIdTokenAuthRequest(
-    { iosClientId: iosId, androidClientId: androidId },
-    { scheme: "receiptcycle", path: "google-signin" },
-  );
+  const [request, response, promptAsync] = useIdTokenAuthRequest({
+    iosClientId: iosId,
+    androidClientId: androidId,
+  });
 
   const [busy, setBusy] = useState(false);
 
@@ -65,13 +66,17 @@ export function GoogleSignInButton({ onError }: Props) {
     void handleParsedResponse(idToken);
   }, [response, onError, handleParsedResponse]);
 
-  if (!configured) return null;
-
   return (
     <Pressable
-      style={[styles.btn, (!request || busy) && styles.btnDisabled]}
-      disabled={!request || busy}
-      onPress={() => void promptAsync()}
+      style={[styles.btn, (busy || (configured && !request)) && styles.btnDisabled]}
+      disabled={busy || (configured && !request)}
+      onPress={() => {
+        if (!configured) {
+          onError("Google sign-in needs the Android OAuth client ID for com.receiptcycle.mobile.");
+          return;
+        }
+        void promptAsync();
+      }}
     >
       {busy ? (
         <ActivityIndicator color={colors.gray800} />

@@ -3,6 +3,7 @@ import type { InvoiceSettings, SalesCustomer } from "../sales/setupData";
 
 export type InvoiceStatus = Extract<SalesStatus, "draft" | "sent" | "paid" | "partially_paid" | "overdue">;
 export type DiscountType = "percentage" | "fixed";
+export type RecurrenceFrequency = "weekly" | "monthly" | "quarterly" | "yearly";
 
 export type InvoiceLineItem = {
   id: string;
@@ -21,6 +22,7 @@ export type InvoiceAttachment = {
 
 export type InvoiceDraft = {
   invoiceNumber: string;
+  title?: string;
   issueDate: string;
   dueDate: string;
   customerId: string | null;
@@ -35,6 +37,10 @@ export type InvoiceDraft = {
   signatureEnabled: boolean;
   signatureText: string;
   attachment: InvoiceAttachment | null;
+  recurringEnabled: boolean;
+  recurrenceFrequency: RecurrenceFrequency;
+  recurrenceStartDate: string;
+  automatedReminders: boolean;
 };
 
 export type SavedInvoice = InvoiceDraft & {
@@ -99,6 +105,7 @@ export function createInvoiceDraft(settings: InvoiceSettings, saved: SavedInvoic
   const issueDate = todayYmd();
   return {
     invoiceNumber: nextInvoiceNumber(settings.invoicePrefix, saved),
+    title: "",
     issueDate,
     dueDate: addDaysYmd(issueDate, paymentTermsDays(settings.paymentTerms)),
     customerId: null,
@@ -113,6 +120,10 @@ export function createInvoiceDraft(settings: InvoiceSettings, saved: SavedInvoic
     signatureEnabled: false,
     signatureText: "",
     attachment: null,
+    recurringEnabled: false,
+    recurrenceFrequency: "monthly",
+    recurrenceStartDate: issueDate,
+    automatedReminders: true,
   };
 }
 

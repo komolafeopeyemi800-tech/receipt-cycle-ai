@@ -13,7 +13,46 @@ const TYPES: Record<string, string> = {
   "image/webp": "webp",
   "image/heic": "heic",
   "application/pdf": "pdf",
+  "text/csv": "csv",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "application/vnd.oasis.opendocument.text": "odt",
+  "application/vnd.oasis.opendocument.spreadsheet": "ods",
 };
+
+const base64Url = (bytes: Uint8Array) =>
+  btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+
+export async function receiptEvidenceSignature(secret: string | undefined, key: string): Promise<string> {
+  if (!secret?.trim()) throw new ApiError(503, "Evidence links are not configured.");
+  const cryptoKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return base64Url(new Uint8Array(await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(key))));
+}
+
+export async function receiptEvidenceUrl(secret: string | undefined, origin: string, key: string): Promise<string> {
+  const sig = await receiptEvidenceSignature(secret, key);
+  return `${origin.replace(/\/+$/, "")}/api/receipt-evidence?key=${encodeURIComponent(key)}&sig=${encodeURIComponent(sig)}`;
+}
+
+/** Public bearer-link endpoint. The unguessable HMAC lets a tax preparer open exported evidence without an account. */
+export const receiptEvidenceRoutes = new Hono<AppEnv>();
+receiptEvidenceRoutes.get("/", async (c) => {
+  const key = c.req.query("key") ?? "";
+  const sig = c.req.query("sig") ?? "";
+  if (!key.startsWith("receipts/") || key.includes("..")) throw new ApiError(404, "Evidence not found");
+  const expected = await receiptEvidenceSignature(c.env.BETTER_AUTH_SECRET, key);
+  if (sig.length !== expected.length || sig !== expected) throw new ApiError(404, "Evidence not found");
+  const obj = await c.env.FILES.get(key);
+  if (!obj) throw new ApiError(404, "Evidence not found");
+  return new Response(obj.body, { headers: {
+    "Content-Type": obj.httpMetadata?.contentType ?? "application/octet-stream",
+    "Content-Length": String(obj.size),
+    "Cache-Control": "private, max-age=3600",
+    "Content-Disposition": `inline; filename="${(obj.customMetadata?.originalName || "receipt").replace(/["\\]/g, "")}"`,
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+  }});
+});
 
 /** Every receipt a user owns lives under this prefix; ownership is just a prefix check. */
 export const receiptPrefix = (userId: string) => `receipts/${userId}/`;
@@ -91,6 +130,13 @@ receiptRoutes.get("/file", async (c) => {
       "X-Content-Type-Options": "nosniff",
     },
   });
+});
+
+receiptRoutes.get("/link", async (c) => {
+  const key = c.req.query("key");
+  if (!ownsReceipt(c.get("user").id, key)) throw new ApiError(404, "Receipt not found");
+  const origin = c.env.BETTER_AUTH_URL || new URL(c.req.url).origin;
+  return c.json({ url: await receiptEvidenceUrl(c.env.BETTER_AUTH_SECRET, origin, key) });
 });
 
 receiptRoutes.delete("/", async (c) => {

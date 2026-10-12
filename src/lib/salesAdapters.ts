@@ -113,6 +113,7 @@ export const invoiceToShared = (inv: DesktopInvoice, customers: DesktopCustomer[
   return {
     ...r,
     invoiceNumber: inv.number,
+    reference: inv.title ?? str(r.reference),
     issueDate: inv.issueDate,
     dueDate: inv.dueDate,
     customerId: inv.customerId || null,
@@ -127,6 +128,10 @@ export const invoiceToShared = (inv: DesktopInvoice, customers: DesktopCustomer[
     signatureEnabled: r.signatureEnabled === true,
     signatureText: str(r.signatureText),
     attachment: r.attachment ?? null,
+    recurringEnabled: inv.recurringEnabled === true,
+    recurrenceFrequency: inv.recurrenceFrequency ?? "monthly",
+    recurrenceStartDate: inv.recurrenceStartDate || inv.issueDate,
+    automatedReminders: inv.automatedReminders !== false,
     status: inv.status,
     total: documentTotal(inv),
     amountPaid: inv.paidAmount,
@@ -136,6 +141,7 @@ export const invoiceToShared = (inv: DesktopInvoice, customers: DesktopCustomer[
 export const invoiceFromShared = (d: SalesData): DesktopInvoice => ({
   id: invoiceSyncId(str(d.invoiceNumber)),
   number: str(d.invoiceNumber),
+  title: str(d.reference),
   customerId: str(d.customerId),
   issueDate: str(d.issueDate),
   dueDate: str(d.dueDate),
@@ -146,6 +152,10 @@ export const invoiceFromShared = (d: SalesData): DesktopInvoice => ({
   shipping: numeric(d.shipping),
   paidAmount: numeric(d.amountPaid),
   notes: str(d.notes),
+  recurringEnabled: d.recurringEnabled === true,
+  recurrenceFrequency: (["weekly", "monthly", "quarterly", "yearly"].includes(str(d.recurrenceFrequency)) ? d.recurrenceFrequency : "monthly") as DesktopInvoice["recurrenceFrequency"],
+  recurrenceStartDate: str(d.recurrenceStartDate, str(d.issueDate)),
+  automatedReminders: d.automatedReminders !== false,
   _raw: d,
 });
 
@@ -158,7 +168,7 @@ export const estimateToShared = (est: DesktopEstimate, customers: DesktopCustome
     validUntil: est.validUntil,
     customerId: est.customerId || null,
     customerName: customers.find((c) => c.id === est.customerId)?.name ?? str(r.customerName),
-    reference: str(r.reference),
+    reference: est.title ?? str(r.reference),
     items: linesToShared(est.items, r.items),
     ...discountToShared(est),
     taxRate: est.taxPct,
@@ -170,6 +180,10 @@ export const estimateToShared = (est: DesktopEstimate, customers: DesktopCustome
     customerSignatureEnabled: r.customerSignatureEnabled === true,
     signatureText: str(r.signatureText),
     attachments: Array.isArray(r.attachments) ? r.attachments : [],
+    recurringEnabled: est.recurringEnabled === true,
+    recurrenceFrequency: est.recurrenceFrequency ?? "monthly",
+    recurrenceStartDate: est.recurrenceStartDate || est.issueDate,
+    automatedReminders: est.automatedReminders !== false,
     status: est.status,
     total: documentTotal(est),
     updatedAt: now,
@@ -178,6 +192,7 @@ export const estimateToShared = (est: DesktopEstimate, customers: DesktopCustome
 export const estimateFromShared = (d: SalesData): DesktopEstimate => ({
   id: estimateSyncId(str(d.estimateNumber)),
   number: str(d.estimateNumber),
+  title: str(d.reference),
   customerId: str(d.customerId),
   issueDate: str(d.estimateDate),
   validUntil: str(d.validUntil),
@@ -187,6 +202,10 @@ export const estimateFromShared = (d: SalesData): DesktopEstimate => ({
   taxPct: numeric(d.taxRate),
   shipping: numeric(d.shipping),
   terms: str(d.terms),
+  recurringEnabled: d.recurringEnabled === true,
+  recurrenceFrequency: (["weekly", "monthly", "quarterly", "yearly"].includes(str(d.recurrenceFrequency)) ? d.recurrenceFrequency : "monthly") as DesktopEstimate["recurrenceFrequency"],
+  recurrenceStartDate: str(d.recurrenceStartDate, str(d.estimateDate)),
+  automatedReminders: d.automatedReminders !== false,
   _raw: d,
 });
 

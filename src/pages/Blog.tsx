@@ -32,7 +32,7 @@ export default function Blog() {
           Learn how to capture receipts, organize expenses, prepare for tax-time review, and spend less time reconstructing business activity.
         </p>
 
-        <div className="mt-12 grid gap-6 sm:grid-cols-2">
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 grid-cols-1">
           {BLOG_POSTS.map((post) => (
             <article
               key={post.slug}

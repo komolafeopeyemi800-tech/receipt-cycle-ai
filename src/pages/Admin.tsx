@@ -302,7 +302,7 @@ export default function Admin() {
         </div>
 
         <form onSubmit={onAuthSubmit} className="bg-white rounded-2xl p-4 border border-gray-100 mb-6">
-          <div className="grid md:grid-cols-[1fr_1fr_auto] gap-3">
+          <div className="grid md:grid-cols-[1fr_1fr_auto] gap-3 grid-cols-1">
             <input
               value={adminEmailInput}
               onChange={(e) => setAdminEmailInput(e.target.value)}
@@ -330,7 +330,7 @@ export default function Admin() {
           <div className="bg-white rounded-2xl p-6 border border-gray-100">Unlock admin to load live analytics and controls.</div>
         ) : (
           <>
-            <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6 grid-cols-1">
               <StatCard title="Total Users" value={stats ? fmtNum(stats.totals.users) : "--"} sub={stats ? `+${fmtNum(stats.growth.users30)} this month` : "Loading..."} icon="fa-users" />
               <StatCard
                 title="Paying customers"
@@ -343,7 +343,7 @@ export default function Admin() {
               <StatCard title="User Growth" value={stats ? pct(stats.growth.userGrowthPct) : "--"} sub="vs previous 30d" icon="fa-arrow-trend-up" />
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className="grid md:grid-cols-2 gap-6 mb-6 grid-cols-1">
               <div className="bg-white rounded-2xl p-6 border border-gray-100">
                 <h2 className="text-lg font-bold text-gray-900 mb-4">User Growth (Live)</h2>
                 <div className="h-56 bg-gradient-to-t from-primary/10 to-transparent rounded-xl border border-gray-100 p-4">
@@ -379,7 +379,7 @@ export default function Admin() {
               </div>
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-6 mb-6">
+            <div className="grid lg:grid-cols-2 gap-6 mb-6 grid-cols-1">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -388,7 +388,7 @@ export default function Admin() {
                 className="bg-white rounded-2xl p-5 border border-gray-100"
               >
                 <h3 className="text-lg font-bold text-gray-900 mb-3">Controls (Web + Mobile)</h3>
-                <div className="grid md:grid-cols-2 gap-3 mb-3">
+                <div className="grid md:grid-cols-2 gap-3 mb-3 grid-cols-1">
                   <Toggle label="Maintenance" checked={draft.maintenanceMode} onChange={(v) => setDraft((d) => ({ ...d, maintenanceMode: v }))} />
                   <Toggle label="Scanner" checked={draft.scannerEnabled} onChange={(v) => setDraft((d) => ({ ...d, scannerEnabled: v }))} />
                   <Toggle label="Upload" checked={draft.uploadEnabled} onChange={(v) => setDraft((d) => ({ ...d, uploadEnabled: v }))} />
@@ -403,7 +403,7 @@ export default function Admin() {
                   <Toggle label="Mobile Add Page" checked={draft.mobileAddPageEnabled} onChange={(v) => setDraft((d) => ({ ...d, mobileAddPageEnabled: v }))} />
                 </div>
                 <h4 className="text-sm font-bold text-gray-900 mb-2">Settings Governance</h4>
-                <div className="grid md:grid-cols-2 gap-3 mb-3">
+                <div className="grid md:grid-cols-2 gap-3 mb-3 grid-cols-1">
                   <Toggle label="Admin-managed preferences" checked={draft.adminManagedPreferences} onChange={(v) => setDraft((d) => ({ ...d, adminManagedPreferences: v }))} />
                   <Toggle label="Reimbursements" checked={draft.prefReimbursements} onChange={(v) => setDraft((d) => ({ ...d, prefReimbursements: v }))} />
                   <Toggle label="Transaction Number" checked={draft.prefTxnNumber} onChange={(v) => setDraft((d) => ({ ...d, prefTxnNumber: v }))} />

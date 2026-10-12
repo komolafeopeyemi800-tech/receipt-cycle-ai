@@ -1,12 +1,11 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import type { CompositeNavigationProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { colors, gradients, type as typeScale } from "../theme/tokens";
+import { colors, type as typeScale } from "../theme/tokens";
 import type { MainTabParamList, RootStackParamList } from "../navigation/types";
+import { PremiumIcon } from "./ui/PremiumIcon";
 
 type Nav = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, "Records">,
@@ -20,28 +19,42 @@ const actions = [
     icon: "camera-outline" as const,
     label: "Scan",
     scheme: "scan" as const,
-    variant: "hero" as const,
+    tone: "mint" as const,
   },
   {
     id: "upload",
     icon: "cloud-upload-outline" as const,
     label: "Upload",
     scheme: "statement" as const,
-    variant: "blue" as const,
+    tone: "blue" as const,
   },
   {
     id: "manual",
     icon: "add-circle-outline" as const,
     label: "Add",
     scheme: "manual" as const,
-    variant: "purple" as const,
+    tone: "purple" as const,
   },
   {
     id: "budget",
     icon: "pie-chart-outline" as const,
     label: "Budget",
     scheme: "budget" as const,
-    variant: "amber" as const,
+    tone: "amber" as const,
+  },
+  {
+    id: "invoice",
+    icon: "document-text-outline" as const,
+    label: "Invoice",
+    scheme: "invoice" as const,
+    tone: "blue" as const,
+  },
+  {
+    id: "estimate",
+    icon: "clipboard-outline" as const,
+    label: "Estimate",
+    scheme: "estimate" as const,
+    tone: "mint" as const,
   },
 ];
 
@@ -62,8 +75,13 @@ export function QuickActionsRow() {
       return;
     }
     if (scheme === "budget") {
-      navigation.getParent()?.navigate("Main", { screen: "More", params: { screen: "Budgets" } });
+      navigation
+        .getParent()
+        ?.navigate("Main", { screen: "More", params: { screen: "Budgets" } });
+      return;
     }
+    if (scheme === "invoice") navigation.getParent()?.navigate("InvoiceCreate" as never);
+    if (scheme === "estimate") navigation.getParent()?.navigate("EstimateCreate" as never);
   };
 
   return (
@@ -74,32 +92,7 @@ export function QuickActionsRow() {
           onPress={() => onPress(a.scheme)}
           style={({ pressed }) => [styles.item, pressed && { opacity: 0.9 }]}
         >
-          {a.variant === "hero" ? (
-            <LinearGradient colors={[...gradients.heroIcon]} style={styles.circle}>
-              <Ionicons name={a.icon} size={18} color="#fff" />
-            </LinearGradient>
-          ) : (
-            <View
-              style={[
-                styles.circle,
-                a.variant === "blue" && { backgroundColor: "#dbeafe", borderColor: "#bfdbfe" },
-                a.variant === "purple" && { backgroundColor: "#f3e8ff", borderColor: "#e9d5ff" },
-                a.variant === "amber" && { backgroundColor: "#fffbeb", borderColor: "#fde68a" },
-              ]}
-            >
-              <Ionicons
-                name={a.icon}
-                size={18}
-                color={
-                  a.variant === "blue"
-                    ? colors.blue600
-                    : a.variant === "purple"
-                      ? colors.purple600
-                      : colors.amber600
-                }
-              />
-            </View>
-          )}
+          <PremiumIcon icon={a.icon} tone={a.tone} size={44} />
           <Text style={styles.lbl} numberOfLines={1}>
             {a.label}
           </Text>
@@ -112,27 +105,16 @@ export function QuickActionsRow() {
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "flex-start",
     justifyContent: "space-between",
     marginBottom: 10,
     paddingHorizontal: 2,
   },
   item: {
-    flex: 1,
+    width: "33.333%",
     alignItems: "center",
-    maxWidth: "25%",
-    paddingVertical: 2,
-  },
-  circle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.gray100,
-    borderWidth: 1,
-    borderColor: colors.gray200,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 4,
+    paddingVertical: 8,
   },
   lbl: {
     fontSize: typeScale.xs,

@@ -23,7 +23,11 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+  type RouteProp,
+} from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { colors, gradients } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
@@ -37,20 +41,45 @@ import { useEstimateFlow } from "../contexts/EstimateFlowContext";
 import { useSalesSetup } from "../contexts/SalesSetupContext";
 import { AnimatedPressable } from "../components/AnimatedPressable";
 import { todayYm } from "../utils/transactionMath";
-import { userFacingError, userFacingErrorFromUnknown } from "../lib/userFacingErrors";
-import { FormField, SelectField, SegmentedTabs } from "../components/ui/FinanceUI";
+import {
+  userFacingError,
+  userFacingErrorFromUnknown,
+} from "../lib/userFacingErrors";
+import {
+  FormField,
+  SelectField,
+  SegmentedTabs,
+} from "../components/ui/FinanceUI";
 import type { ScannedExtracted } from "../types/transaction";
 
-const CAT_COLORS = ["#0f766e", "#2563eb", "#7c3aed", "#ea580c", "#db2777", "#64748b"];
-type CategoryRow = { id: Id<"categories">; name: string; kind: "expense" | "income"; color: string };
-type AccountRow = { id: Id<"accounts">; name: string; balance: number; iconKey: string };
+const CAT_COLORS = [
+  "#0f766e",
+  "#2563eb",
+  "#7c3aed",
+  "#ea580c",
+  "#db2777",
+  "#64748b",
+];
+type CategoryRow = {
+  id: Id<"categories">;
+  name: string;
+  kind: "expense" | "income";
+  color: string;
+};
+type AccountRow = {
+  id: Id<"accounts">;
+  name: string;
+  balance: number;
+  iconKey: string;
+};
 
 function formatYmd(d: Date) {
   return d.toISOString().split("T")[0]!;
 }
 
 export function AddTransactionScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const route = useRoute<RouteProp<RootStackParamList, "AddTransaction">>();
   const createTx = useMutation(api.transactions.create);
@@ -77,14 +106,18 @@ export function AddTransactionScreen() {
   const canSaveNew = !sub || sub.canCreateTransaction;
   const canSaveEdit = !sub || sub.canEditOrDeleteTransaction;
 
-  const editId = route.params?.transactionId ? (route.params.transactionId as Id<"transactions">) : undefined;
+  const editId = route.params?.transactionId
+    ? (route.params.transactionId as Id<"transactions">)
+    : undefined;
   const existing = useQuery(
     api.transactions.get,
     editId && user?.id ? { id: editId, userId: user.id } : "skip",
   );
   const runtime = useQuery(api.admin.publicConfig, {});
 
-  const [transactionType, setTransactionType] = useState<"expense" | "income">(route.params?.initialType ?? "expense");
+  const [transactionType, setTransactionType] = useState<"expense" | "income">(
+    route.params?.initialType ?? "expense",
+  );
   const [amount, setAmount] = useState("");
   const [merchant, setMerchant] = useState("");
   const [category, setCategory] = useState("Food & Dining");
@@ -96,13 +129,24 @@ export function AddTransactionScreen() {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [attachmentBusy, setAttachmentBusy] = useState(false);
-  const [attachedScan, setAttachedScan] = useState<ScannedExtracted | null>(null);
-  const [aiCapture, setAiCapture] = useState(route.params?.initialMode === "ai");
-  const [aiMode, setAiMode] = useState<"Voice" | "Quick Text">("Voice");
+  const [attachedScan, setAttachedScan] = useState<ScannedExtracted | null>(
+    null,
+  );
+  const [attachedReceiptUri, setAttachedReceiptUri] = useState<string | null>(
+    route.params?.receiptUri ?? null,
+  );
+  const [aiCapture, setAiCapture] = useState(
+    route.params?.initialMode === "ai",
+  );
+  const [aiMode, setAiMode] = useState<"Voice" | "Quick Text">(
+    route.params?.initialAiMode ?? "Voice",
+  );
 
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [voiceRecording, setVoiceRecording] = useState(false);
-  const [voicePhrase, setVoicePhrase] = useState("");
+  const [voicePhrase, setVoicePhrase] = useState(
+    route.params?.initialAiText ?? "",
+  );
   const voiceRecRef = useRef<Audio.Recording | null>(null);
 
   const [catModal, setCatModal] = useState(false);
@@ -111,15 +155,26 @@ export function AddTransactionScreen() {
   const [newAccName, setNewAccName] = useState("");
   const keyboardLift = useMemo(() => new Animated.Value(0), []);
 
-  const cats = useQuery(api.categories.list, ready ? { workspace } : "skip") as CategoryRow[] | undefined;
-  const accounts = useQuery(api.accounts.list, ready ? { workspace } : "skip") as AccountRow[] | undefined;
+  const cats = useQuery(api.categories.list, ready ? { workspace } : "skip") as
+    | CategoryRow[]
+    | undefined;
+  const accounts = useQuery(
+    api.accounts.list,
+    ready ? { workspace } : "skip",
+  ) as AccountRow[] | undefined;
 
   const voiceHints = useMemo(() => {
-    const cRows = (cats ?? []).filter((row) => !appearance.archivedCategoryIds.includes(row.id));
+    const cRows = (cats ?? []).filter(
+      (row) => !appearance.archivedCategoryIds.includes(row.id),
+    );
     const aRows = accounts ?? [];
     return {
-      expenseCategories: cRows.filter((row) => row.kind === "expense").map((row) => row.name),
-      incomeCategories: cRows.filter((row) => row.kind === "income").map((row) => row.name),
+      expenseCategories: cRows
+        .filter((row) => row.kind === "expense")
+        .map((row) => row.name),
+      incomeCategories: cRows
+        .filter((row) => row.kind === "income")
+        .map((row) => row.name),
       accountNames: aRows.map((row) => row.name),
     };
   }, [cats, accounts, appearance.archivedCategoryIds]);
@@ -132,7 +187,12 @@ export function AddTransactionScreen() {
 
   const filteredCats = useMemo(() => {
     const rows = cats ?? [];
-    return rows.filter((c) => c.kind === (transactionType === "expense" ? "expense" : "income") && (!appearance.archivedCategoryIds.includes(c.id) || Boolean(editId && c.name === category)));
+    return rows.filter(
+      (c) =>
+        c.kind === (transactionType === "expense" ? "expense" : "income") &&
+        (!appearance.archivedCategoryIds.includes(c.id) ||
+          Boolean(editId && c.name === category)),
+    );
   }, [cats, transactionType, appearance.archivedCategoryIds, editId, category]);
 
   useEffect(() => {
@@ -156,7 +216,9 @@ export function AddTransactionScreen() {
       return;
     }
     if (accountId && list.some((a) => a.id === accountId)) return;
-    const byName = paymentMethod ? list.find((a) => a.name === paymentMethod) : undefined;
+    const byName = paymentMethod
+      ? list.find((a) => a.name === paymentMethod)
+      : undefined;
     if (byName) {
       setAccountId(byName.id);
       return;
@@ -170,7 +232,9 @@ export function AddTransactionScreen() {
     if (editId) return;
     const s = route.params?.scannedData;
     if (!s) return;
-    if (s.total_amount != null && s.total_amount > 0) setAmount(String(s.total_amount));
+    setTransactionType(s.transaction_type === "income" ? "income" : "expense");
+    if (s.total_amount != null && s.total_amount > 0)
+      setAmount(String(s.total_amount));
     if (s.merchant_name) setMerchant(s.merchant_name);
     if (s.category) setCategory(s.category);
     if (s.date) {
@@ -178,7 +242,12 @@ export function AddTransactionScreen() {
       const p = new Date(s.date + "T12:00:00");
       if (!Number.isNaN(p.getTime())) setDateObj(p);
     }
-    if (s.payment_method) setPaymentMethod(s.payment_method);
+    if (s.payment_method) {
+      setPaymentMethod(s.payment_method);
+      const payment = s.payment_method.toLowerCase();
+      const matched = (accounts ?? []).find((account) => /visa|mastercard|amex|card|credit|debit/.test(payment) ? account.iconKey === "credit-card" || /card/.test(account.name.toLowerCase()) : /cash/.test(payment) ? account.iconKey === "money-bill-wave" || /cash/.test(account.name.toLowerCase()) : account.name.toLowerCase().includes(payment));
+      if (matched) setAccountId(matched.id);
+    }
     const noteParts: string[] = [];
     if (s.time?.trim()) noteParts.push(`Time: ${s.time.trim()}`);
     const body = s.formatted_receipt_text?.trim();
@@ -187,7 +256,7 @@ export function AddTransactionScreen() {
       noteParts.push(s.items.map((i) => `${i.name}: $${i.price}`).join("\n"));
     }
     if (noteParts.length) setNotes(noteParts.join("\n\n"));
-  }, [route.params, editId]);
+  }, [route.params, editId, accounts]);
 
   useEffect(() => {
     if (!existing || !editId) return;
@@ -204,8 +273,10 @@ export function AddTransactionScreen() {
   }, [existing, editId]);
 
   useEffect(() => {
-    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
     const onShow = Keyboard.addListener(showEvent, (event) => {
       const h = event.endCoordinates?.height ?? 0;
       const lift = Math.min(h * 0.24, 54);
@@ -270,15 +341,42 @@ export function AddTransactionScreen() {
       const itemName = draft.itemName?.trim() || draft.description?.trim();
       const rate = draft.rate ?? draft.amount;
       if (!customerName || !itemName || rate == null || rate < 0) {
-        Alert.alert("More detail needed", `Say the customer, the ${draft.intent === "invoice" ? "work being billed" : "work being quoted"}, and the price.`);
+        Alert.alert(
+          "More detail needed",
+          `Say the customer, the ${draft.intent === "invoice" ? "work being billed" : "work being quoted"}, and the price.`,
+        );
         return;
       }
-      let customerId = customers.find((row) => row.name.toLowerCase() === customerName.toLowerCase() || row.businessName.toLowerCase() === customerName.toLowerCase())?.id;
-      if (!customerId) customerId = saveCustomer({ name: customerName, businessName: customerName, email: draft.customerEmail?.trim() ?? "", phone: "", billingAddress: "", taxId: "", notes: "Created with AI Capture", status: "prospect" });
-      const line = { id: `voice-line-${Date.now()}`, name: itemName, description: draft.description?.trim() ?? "", quantity: draft.quantity && draft.quantity > 0 ? draft.quantity : 1, rate };
+      let customerId = customers.find(
+        (row) =>
+          row.name.toLowerCase() === customerName.toLowerCase() ||
+          row.businessName.toLowerCase() === customerName.toLowerCase(),
+      )?.id;
+      if (!customerId)
+        customerId = saveCustomer({
+          name: customerName,
+          businessName: customerName,
+          email: draft.customerEmail?.trim() ?? "",
+          phone: "",
+          billingAddress: "",
+          taxId: "",
+          notes: "Created with AI Capture",
+          status: "prospect",
+        });
+      const line = {
+        id: `voice-line-${Date.now()}`,
+        name: itemName,
+        description: draft.description?.trim() ?? "",
+        quantity: draft.quantity && draft.quantity > 0 ? draft.quantity : 1,
+        rate,
+      };
       if (draft.intent === "invoice") {
         invoiceFlow.startNewInvoice();
-        invoiceFlow.updateDraft({ customerId, items: [line], ...(draft.dueDate ? { dueDate: draft.dueDate } : {}) });
+        invoiceFlow.updateDraft({
+          customerId,
+          items: [line],
+          ...(draft.dueDate ? { dueDate: draft.dueDate } : {}),
+        });
         setAiCapture(false);
         navigation.navigate("InvoicePreview");
       } else {
@@ -289,17 +387,27 @@ export function AddTransactionScreen() {
       }
       return;
     }
-    if (draft.intent === "budget" && draft.budgetLimit != null && draft.budgetLimit > 0 && user?.id) {
+    if (
+      draft.intent === "budget" &&
+      draft.budgetLimit != null &&
+      draft.budgetLimit > 0 &&
+      user?.id
+    ) {
       if (sub && !sub.canMutateBudgets) {
-        Alert.alert("Upgrade needed", sub.blockReason ?? "Pro or active trial required to edit budgets.");
+        Alert.alert(
+          "Feature unavailable",
+          "Budget editing is not included with your current access.",
+        );
         return;
       }
       const month = draft.budgetMonth ?? todayYm();
-      const catRaw = (draft.budgetCategory || draft.category || "Other").trim() || "Other";
+      const catRaw =
+        (draft.budgetCategory || draft.category || "Other").trim() || "Other";
       const list = cats ?? [];
       const has = list.some((c) => c.name === catRaw && c.kind === "expense");
       if (!has) {
-        const color = CAT_COLORS[Math.floor(Math.random() * CAT_COLORS.length)]!;
+        const color =
+          CAT_COLORS[Math.floor(Math.random() * CAT_COLORS.length)]!;
         await createCat({ workspace, name: catRaw, kind: "expense", color });
       }
       await budgetUpsert({
@@ -309,7 +417,10 @@ export function AddTransactionScreen() {
         month,
         limitAmount: draft.budgetLimit,
       });
-      Alert.alert("Budget updated", `“${catRaw}” limit ${draft.budgetLimit} for ${month}.`);
+      Alert.alert(
+        "Budget updated",
+        `“${catRaw}” limit ${draft.budgetLimit} for ${month}.`,
+      );
       setAiCapture(false);
       return;
     }
@@ -334,12 +445,17 @@ export function AddTransactionScreen() {
     if (pm) {
       setPaymentMethod(pm);
       const accList = accounts ?? [];
-      const acc = accList.find((a) => a.name.toLowerCase() === pm.toLowerCase());
+      const acc = accList.find(
+        (a) => a.name.toLowerCase() === pm.toLowerCase(),
+      );
       if (acc) setAccountId(acc.id);
     }
 
     const catName = draft.category.trim();
-    if (!catName) { setAiCapture(false); return; }
+    if (!catName) {
+      setAiCapture(false);
+      return;
+    }
     const expKind = draft.type === "income" ? "income" : "expense";
     const list = cats ?? [];
     const has = list.some((c) => c.name === catName && c.kind === expKind);
@@ -354,7 +470,10 @@ export function AddTransactionScreen() {
   async function runParseFromText() {
     const t = voicePhrase.trim();
     if (!t) {
-      Alert.alert("Voice / text", 'Tap the mic and speak, or type something like "12 dollars coffee at Starbucks yesterday".');
+      Alert.alert(
+        "Voice / text",
+        'Tap the mic and speak, or type something like "12 dollars coffee at Starbucks yesterday".',
+      );
       return;
     }
     if (!token) {
@@ -363,7 +482,11 @@ export function AddTransactionScreen() {
     }
     setVoiceBusy(true);
     try {
-      const out = await parseFromText({ text: t, sessionToken: token, hints: voiceHints });
+      const out = await parseFromText({
+        text: t,
+        sessionToken: token,
+        hints: voiceHints,
+      });
       if (!out.ok || !out.draft) {
         Alert.alert("Could not parse", userFacingError(out.error || undefined));
         return;
@@ -432,14 +555,19 @@ export function AddTransactionScreen() {
     try {
       const perm = await Audio.requestPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert("Microphone", "Allow microphone access to add transactions by voice.");
+        Alert.alert(
+          "Microphone",
+          "Allow microphone access to add transactions by voice.",
+        );
         return;
       }
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
       });
-      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY,
+      );
       voiceRecRef.current = recording;
       setVoiceRecording(true);
     } catch (e) {
@@ -449,7 +577,11 @@ export function AddTransactionScreen() {
 
   async function closeAiCapture() {
     if (voiceRecRef.current) {
-      try { await voiceRecRef.current.stopAndUnloadAsync(); } catch { /* recording may already have stopped */ }
+      try {
+        await voiceRecRef.current.stopAndUnloadAsync();
+      } catch {
+        /* recording may already have stopped */
+      }
       voiceRecRef.current = null;
       setVoiceRecording(false);
     }
@@ -457,10 +589,25 @@ export function AddTransactionScreen() {
   }
 
   async function attachReceiptFromGallery() {
-    if (!token) { Alert.alert("Sign in", "Sign in to attach a receipt."); return; }
-    if (!voiceAiOk) { Alert.alert("Upgrade needed", sub?.blockReason ?? "Receipt extraction requires Pro or an active trial slot."); return; }
-    if (runtime?.maintenanceMode || runtime?.uploadEnabled === false) { Alert.alert("Unavailable", "Receipt upload is currently unavailable."); return; }
-    const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
+    if (!token) {
+      Alert.alert("Sign in", "Sign in to attach a receipt.");
+      return;
+    }
+    if (!voiceAiOk) {
+      Alert.alert(
+        "Feature unavailable",
+        "Receipt extraction is not included with your current access.",
+      );
+      return;
+    }
+    if (runtime?.maintenanceMode || runtime?.uploadEnabled === false) {
+      Alert.alert("Unavailable", "Receipt upload is currently unavailable.");
+      return;
+    }
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
     if (picked.canceled || !picked.assets[0]) return;
     setAttachmentBusy(true);
     try {
@@ -469,35 +616,76 @@ export function AddTransactionScreen() {
       const blob = await response.blob();
       const imageBase64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
-        reader.onloadend = () => { const data = String(reader.result ?? ""); resolve(data.includes(",") ? data.split(",")[1]! : data); };
+        reader.onloadend = () => {
+          const data = String(reader.result ?? "");
+          resolve(data.includes(",") ? data.split(",")[1]! : data);
+        };
         reader.onerror = () => reject(reader.error);
         reader.readAsDataURL(blob);
       });
-      const output = await scanImage({ imageBase64, mimeType: asset.mimeType ?? "image/jpeg", sessionToken: token });
+      const output = await scanImage({
+        imageBase64,
+        mimeType: asset.mimeType ?? "image/jpeg",
+        sessionToken: token,
+      });
       const result = output as { extracted_data?: unknown; error?: string };
-      let extracted = result.extracted_data as Record<string, unknown> | null | undefined;
-      if (extracted && typeof extracted === "object" && "data" in extracted && (extracted as { data?: unknown }).data) extracted = (extracted as { data: Record<string, unknown> }).data;
-      if (result.error || !extracted || Object.keys(extracted).length === 0) { Alert.alert("Receipt", userFacingError(result.error ?? "Could not read this image.")); return; }
+      let extracted = result.extracted_data as
+        | Record<string, unknown>
+        | null
+        | undefined;
+      if (
+        extracted &&
+        typeof extracted === "object" &&
+        "data" in extracted &&
+        (extracted as { data?: unknown }).data
+      )
+        extracted = (extracted as { data: Record<string, unknown> }).data;
+      if (result.error || !extracted || Object.keys(extracted).length === 0) {
+        Alert.alert(
+          "Receipt",
+          userFacingError(result.error ?? "Could not read this image."),
+        );
+        return;
+      }
       const receipt = extracted as ScannedExtracted;
       setAttachedScan(receipt);
-      if (!amount.trim() && receipt.total_amount) setAmount(String(receipt.total_amount));
-      if (!merchant.trim() && receipt.merchant_name) setMerchant(receipt.merchant_name);
-      Alert.alert("Receipt attached", "Review the fields, then save the transaction.");
+      setAttachedReceiptUri(asset.uri);
+      setTransactionType(receipt.transaction_type === "income" ? "income" : "expense");
+      if (!amount.trim() && receipt.total_amount)
+        setAmount(String(receipt.total_amount));
+      if (!merchant.trim() && receipt.merchant_name)
+        setMerchant(receipt.merchant_name);
+      if (receipt.category) setCategory(receipt.category);
+      if (receipt.payment_method) {
+        setPaymentMethod(receipt.payment_method);
+        const payment = receipt.payment_method.toLowerCase();
+        const matched = (accounts ?? []).find((account) => /visa|mastercard|amex|card|credit|debit/.test(payment) ? account.iconKey === "credit-card" || /card/.test(account.name.toLowerCase()) : /cash/.test(payment) ? account.iconKey === "money-bill-wave" || /cash/.test(account.name.toLowerCase()) : account.name.toLowerCase().includes(payment));
+        if (matched) setAccountId(matched.id);
+      }
+      Alert.alert(
+        "Receipt attached",
+        "Review the fields, then save the transaction.",
+      );
     } catch (error) {
       Alert.alert("Receipt", userFacingErrorFromUnknown(error));
-    } finally { setAttachmentBusy(false); }
+    } finally {
+      setAttachmentBusy(false);
+    }
   }
 
   async function save() {
     if (!user?.id || !token) {
-      Alert.alert("Sign in required", "Sign in to save transactions to your account.");
+      Alert.alert(
+        "Sign in required",
+        "Sign in to save transactions to your account.",
+      );
       return;
     }
     if (editId ? !canSaveEdit : !canSaveNew) {
       Alert.alert(
-        "Upgrade needed",
-        sub?.blockReason ?? "Upgrade to Pro to add or edit transactions.",
-        [{ text: "OK" }, { text: "Pricing", onPress: () => navigation.navigate("Pricing") }],
+        "Feature unavailable",
+        "Adding or editing transactions is not included with your current access.",
+        [{ text: "OK" }],
       );
       return;
     }
@@ -509,7 +697,9 @@ export function AddTransactionScreen() {
     setSaving(true);
     try {
       const scanned = attachedScan ?? route.params?.scannedData;
-      const entrySource = attachedScan ? "upload" : route.params?.source ?? (scanned ? "upload" : "manual");
+      const entrySource = attachedScan
+        ? "upload"
+        : (route.params?.source ?? (scanned ? "upload" : "manual"));
       if (runtime?.maintenanceMode) {
         Alert.alert("Unavailable", "System is in maintenance mode.");
         return;
@@ -519,15 +709,27 @@ export function AddTransactionScreen() {
         return;
       }
       if (entrySource === "manual" && runtime?.manualAddEnabled === false) {
-        Alert.alert("Unavailable", "Manual add is currently disabled by admin.");
+        Alert.alert(
+          "Unavailable",
+          "Manual add is currently disabled by admin.",
+        );
         return;
       }
-      const scanTags = scanned?.tags?.filter((t) => t.length > 0 && t.length < 48) ?? [];
-      const mergedTags = [...new Set(scanned ? [...scanTags, "scan"] : scanTags)].slice(0, 16);
+      const scanTags =
+        scanned?.tags?.filter((t) => t.length > 0 && t.length < 48) ?? [];
+      const mergedTags = [
+        ...new Set(scanned ? [...scanTags, "scan"] : scanTags),
+      ].slice(0, 16);
 
       if (editId) {
         const rd = scanned
-          ? { ...scanned, formatted_receipt_text: scanned.formatted_receipt_text?.slice(0, 12000) }
+          ? {
+              ...scanned,
+              formatted_receipt_text: scanned.formatted_receipt_text?.slice(
+                0,
+                12000,
+              ),
+            }
           : (existing?.receipt_data as Record<string, unknown> | undefined);
         await updateTx({
           id: editId,
@@ -542,22 +744,34 @@ export function AddTransactionScreen() {
           description: notes || undefined,
           payment_method: paymentMethod,
           accountId: accountId ?? undefined,
-          tags: Array.isArray(existing?.tags) ? (existing.tags as string[]) : [],
+          tags: Array.isArray(existing?.tags)
+            ? (existing.tags as string[])
+            : [],
           is_recurring: false,
           receipt_data: rd,
         });
       } else {
         // Keep the original picture with the entry. A failed upload must never block saving the transaction.
         let receiptKey: string | undefined;
-        const receiptUri = route.params?.receiptUri;
+        const receiptUri = attachedReceiptUri ?? route.params?.receiptUri;
         if (receiptUri) {
           try {
             const lower = receiptUri.toLowerCase();
-            const type = lower.endsWith(".png") ? "image/png" : lower.endsWith(".webp") ? "image/webp" : lower.endsWith(".heic") ? "image/heic" : "image/jpeg";
+            const type = lower.endsWith(".png")
+              ? "image/png"
+              : lower.endsWith(".webp")
+                ? "image/webp"
+                : lower.endsWith(".heic")
+                  ? "image/heic"
+                  : "image/jpeg";
             const file =
               Platform.OS === "web"
                 ? await (await fetch(receiptUri)).blob()
-                : { uri: receiptUri, name: `receipt.${type.split("/")[1]}`, type };
+                : {
+                    uri: receiptUri,
+                    name: `receipt.${type.split("/")[1]}`,
+                    type,
+                  };
             receiptKey = (await uploadReceipt({ file })).key;
           } catch {
             receiptKey = undefined;
@@ -580,7 +794,10 @@ export function AddTransactionScreen() {
           receipt_data: scanned
             ? {
                 ...scanned,
-                formatted_receipt_text: scanned.formatted_receipt_text?.slice(0, 12000),
+                formatted_receipt_text: scanned.formatted_receipt_text?.slice(
+                  0,
+                  12000,
+                ),
               }
             : undefined,
           entrySource,
@@ -619,7 +836,12 @@ export function AddTransactionScreen() {
       Alert.alert("Account", "Enter at least 2 characters.");
       return;
     }
-    const id = await createAcc({ workspace, name: n, balance: 0, iconKey: "wallet" });
+    const id = await createAcc({
+      workspace,
+      name: n,
+      balance: 0,
+      iconKey: "wallet",
+    });
     setPaymentMethod(n);
     setAccountId(id);
     setNewAccName("");
@@ -659,33 +881,152 @@ export function AddTransactionScreen() {
   }
 
   if (aiCapture && !editId) {
-    return <LinearGradient colors={[...gradients.page]} style={styles.flex}>
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <Pressable onPress={() => void closeAiCapture()} hitSlop={12} accessibilityLabel="Back to transaction"><Ionicons name="arrow-back" size={22} color={colors.textPrimary} /></Pressable>
-        <Text style={styles.headerTitle}>AI Capture</Text>
-        <View style={{ width: 22 }} />
-      </View>
-      <ScrollView contentContainerStyle={styles.aiPad} keyboardShouldPersistTaps="handled">
-        <SegmentedTabs options={["Voice", "Quick Text"] as const} value={aiMode} onChange={(mode) => { if (voiceRecording) { Alert.alert("Recording", "Stop the recording before switching modes."); return; } setAiMode(mode); }} />
-        <View style={styles.aiHero}>
-          {aiMode === "Voice" ? <Pressable style={[styles.aiMicHalo, voiceRecording && { backgroundColor: colors.roseSoft }]} onPress={() => void toggleVoiceRecording()} disabled={voiceBusy || !voiceAiOk || !token} accessibilityLabel={voiceRecording ? "Stop recording" : "Start recording"}>
-            {voiceBusy && !voiceRecording ? <ActivityIndicator color={colors.primary} /> : <Ionicons name={voiceRecording ? "stop" : "mic"} size={40} color={voiceRecording ? colors.rose600 : colors.primary} />}
-          </Pressable> : <View style={styles.aiMicHalo}><Ionicons name="chatbubble-ellipses-outline" size={40} color={colors.primary} /></View>}
-          <Text style={styles.aiTitle}>{voiceRecording ? "Listening… tap to stop" : aiMode === "Voice" ? "Tap to start speaking" : "Describe a transaction"}</Text>
-          <Text style={styles.aiQuote}>“I just bought lunch at Starbucks for $6.45 yesterday”</Text>
-          {voiceRecording ? <View style={styles.waveform}>{[8, 16, 11, 25, 17, 30, 14, 22, 9, 18, 12, 27, 14].map((height, i) => <View key={i} style={[styles.waveBar, { height }]} />)}</View> : null}
-          {voiceBusy ? <Text style={styles.aiStatus}>Processing your entry…</Text> : voiceRecording ? <Text style={styles.aiStatus}>Listening…</Text> : null}
+    return (
+      <LinearGradient colors={[...gradients.page]} style={styles.flex}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+          <Pressable
+            onPress={() => void closeAiCapture()}
+            hitSlop={12}
+            accessibilityLabel="Back to transaction"
+          >
+            <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
+          </Pressable>
+          <Text style={styles.headerTitle}>AI Capture</Text>
+          <View style={{ width: 22 }} />
         </View>
-        <Text style={styles.aiFieldTitle}>Or type a description</Text>
-        <View style={styles.aiTextBox}>
-          <TextInput style={styles.aiInput} value={voicePhrase} onChangeText={setVoicePhrase} placeholder="Starbucks coffee $6.45 yesterday" placeholderTextColor={colors.gray400} multiline editable={!voiceBusy && voiceAiOk && Boolean(token)} accessibilityLabel="Transaction description" />
-          <Pressable style={[styles.aiSend, (!voicePhrase.trim() || voiceBusy || !voiceAiOk || !token) && { opacity: 0.5 }]} onPress={() => void runParseFromText()} disabled={!voicePhrase.trim() || voiceBusy || !voiceAiOk || !token} accessibilityLabel="Parse description"><Ionicons name="arrow-forward" size={19} color="#fff" /></Pressable>
-        </View>
-        {!voiceAiOk || !token ? <Pressable onPress={() => navigation.navigate("Pricing")}><Text style={styles.aiLocked}>AI capture needs an active trial slot or Pro. View plans</Text></Pressable> : null}
-        <Text style={styles.aiExamplesTitle}>Try these examples</Text>
-        {["Lunch at Chipotle for $12.50", "Uber ride $18.20 on Apr 9", "Office supplies at Amazon $45"].map((example) => <Pressable key={example} style={styles.aiExample} onPress={() => { setVoicePhrase(example); setAiMode("Quick Text"); }}><Ionicons name="sparkles-outline" size={16} color={colors.primary} /><Text style={styles.aiExampleText}>{example}</Text></Pressable>)}
-      </ScrollView>
-    </LinearGradient>;
+        <ScrollView
+          contentContainerStyle={styles.aiPad}
+          keyboardShouldPersistTaps="handled"
+        >
+          <SegmentedTabs
+            options={["Voice", "Quick Text"] as const}
+            value={aiMode}
+            onChange={(mode) => {
+              if (voiceRecording) {
+                Alert.alert(
+                  "Recording",
+                  "Stop the recording before switching modes.",
+                );
+                return;
+              }
+              setAiMode(mode);
+            }}
+          />
+          <View style={styles.aiHero}>
+            {aiMode === "Voice" ? (
+              <Pressable
+                style={[
+                  styles.aiMicHalo,
+                  voiceRecording && { backgroundColor: colors.roseSoft },
+                ]}
+                onPress={() => void toggleVoiceRecording()}
+                disabled={voiceBusy || !voiceAiOk || !token}
+                accessibilityLabel={
+                  voiceRecording ? "Stop recording" : "Start recording"
+                }
+              >
+                {voiceBusy && !voiceRecording ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : (
+                  <Ionicons
+                    name={voiceRecording ? "stop" : "mic"}
+                    size={40}
+                    color={voiceRecording ? colors.rose600 : colors.primary}
+                  />
+                )}
+              </Pressable>
+            ) : (
+              <View style={styles.aiMicHalo}>
+                <Ionicons
+                  name="chatbubble-ellipses-outline"
+                  size={40}
+                  color={colors.primary}
+                />
+              </View>
+            )}
+            <Text style={styles.aiTitle}>
+              {voiceRecording
+                ? "Listening… tap to stop"
+                : aiMode === "Voice"
+                  ? "Tap to start speaking"
+                  : "Describe a transaction"}
+            </Text>
+            <Text style={styles.aiQuote}>
+              “I just bought lunch at Starbucks for $6.45 yesterday”
+            </Text>
+            {voiceRecording ? (
+              <View style={styles.waveform}>
+                {[8, 16, 11, 25, 17, 30, 14, 22, 9, 18, 12, 27, 14].map(
+                  (height, i) => (
+                    <View key={i} style={[styles.waveBar, { height }]} />
+                  ),
+                )}
+              </View>
+            ) : null}
+            {voiceBusy ? (
+              <Text style={styles.aiStatus}>Processing your entry…</Text>
+            ) : voiceRecording ? (
+              <Text style={styles.aiStatus}>Listening…</Text>
+            ) : null}
+          </View>
+          <Text style={styles.aiFieldTitle}>Or type a description</Text>
+          <View style={styles.aiTextBox}>
+            <TextInput
+              style={styles.aiInput}
+              value={voicePhrase}
+              onChangeText={setVoicePhrase}
+              placeholder="Starbucks coffee $6.45 yesterday"
+              placeholderTextColor={colors.gray400}
+              multiline
+              editable={!voiceBusy && voiceAiOk && Boolean(token)}
+              accessibilityLabel="Transaction description"
+            />
+            <Pressable
+              style={[
+                styles.aiSend,
+                (!voicePhrase.trim() || voiceBusy || !voiceAiOk || !token) && {
+                  opacity: 0.5,
+                },
+              ]}
+              onPress={() => void runParseFromText()}
+              disabled={
+                !voicePhrase.trim() || voiceBusy || !voiceAiOk || !token
+              }
+              accessibilityLabel="Parse description"
+            >
+              <Ionicons name="arrow-forward" size={19} color="#fff" />
+            </Pressable>
+          </View>
+          {!voiceAiOk || !token ? (
+            <Text style={styles.aiLocked}>
+              AI capture is not included with your current access.
+            </Text>
+          ) : null}
+          <Text style={styles.aiExamplesTitle}>Try these examples</Text>
+          {[
+            "Lunch at Chipotle for $12.50",
+            "Uber ride $18.20 on Apr 9",
+            "Office supplies at Amazon $45",
+          ].map((example) => (
+            <Pressable
+              key={example}
+              style={styles.aiExample}
+              onPress={() => {
+                setVoicePhrase(example);
+                setAiMode("Quick Text");
+              }}
+            >
+              <Ionicons
+                name="sparkles-outline"
+                size={16}
+                color={colors.primary}
+              />
+              <Text style={styles.aiExampleText}>{example}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </LinearGradient>
+    );
   }
 
   return (
@@ -694,83 +1035,238 @@ export function AddTransactionScreen() {
         <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
           <Ionicons name="chevron-back" size={24} color={colors.gray900} />
         </Pressable>
-        <Text style={styles.headerTitle}>{editId ? "Edit Transaction" : transactionType === "income" ? "Add Income" : "Add Expense"}</Text>
-        {!editId ? <Pressable onPress={() => setAiCapture(true)} hitSlop={8} accessibilityLabel="Open AI capture"><Ionicons name="sparkles-outline" size={21} color={colors.primary} /></Pressable> : <View style={{ width: 24 }} />}
+        <Text style={styles.headerTitle}>
+          {editId
+            ? "Edit Transaction"
+            : transactionType === "income"
+              ? "Add Income"
+              : "Add Expense"}
+        </Text>
+        {!editId ? (
+          <Pressable
+            onPress={() => setAiCapture(true)}
+            hitSlop={8}
+            accessibilityLabel="Open AI capture"
+          >
+            <Ionicons
+              name="sparkles-outline"
+              size={21}
+              color={colors.primary}
+            />
+          </Pressable>
+        ) : (
+          <View style={{ width: 24 }} />
+        )}
       </View>
       <ScrollView contentContainerStyle={styles.pad}>
         {sub && !sub.pro && sub.trialTimeActive && sub.canCreateTransaction ? (
           <View style={styles.subBannerTrial}>
             <Text style={styles.subBannerTitle}>Pro trial</Text>
             <Text style={styles.subBannerTxt}>
-              {sub.trialAddsUsed} of {sub.trialAddsLimit} transactions used (all entry types count).
+              {sub.trialAddsUsed} of {sub.trialAddsLimit} transactions used (all
+              entry types count).
             </Text>
           </View>
         ) : null}
         {sub && !sub.pro && sub.blockReason ? (
           <View style={styles.subBannerWarn}>
-            <Text style={styles.subBannerTitle}>Subscription</Text>
-            <Text style={styles.subBannerTxt}>{sub.blockReason}</Text>
-            <Pressable style={styles.subBannerBtn} onPress={() => navigation.navigate("Pricing")}>
-              <Text style={styles.subBannerBtnTxt}>View plans</Text>
-            </Pressable>
+            <Text style={styles.subBannerTitle}>Current access</Text>
+            <Text style={styles.subBannerTxt}>
+              This action is not included with your current access.
+            </Text>
           </View>
         ) : null}
 
         <View style={styles.typeRow}>
           <Pressable
-            style={[styles.typeChip, transactionType === "expense" && styles.typeChipOn]}
+            style={[
+              styles.typeChip,
+              transactionType === "expense" && styles.typeChipOn,
+            ]}
             onPress={() => setTransactionType("expense")}
           >
-            <Text style={[styles.typeTxt, transactionType === "expense" && styles.typeTxtOn]}>Expense</Text>
+            <Text
+              style={[
+                styles.typeTxt,
+                transactionType === "expense" && styles.typeTxtOn,
+              ]}
+            >
+              Expense
+            </Text>
           </Pressable>
           <Pressable
-            style={[styles.typeChip, transactionType === "income" && styles.typeChipOn]}
+            style={[
+              styles.typeChip,
+              transactionType === "income" && styles.typeChipOn,
+            ]}
             onPress={() => setTransactionType("income")}
           >
-            <Text style={[styles.typeTxt, transactionType === "income" && styles.typeTxtOn]}>Income</Text>
+            <Text
+              style={[
+                styles.typeTxt,
+                transactionType === "income" && styles.typeTxtOn,
+              ]}
+            >
+              Income
+            </Text>
           </Pressable>
         </View>
 
-        {!editId ? <Pressable style={styles.aiEntry} onPress={() => setAiCapture(true)}><Ionicons name="sparkles-outline" size={19} color={colors.primary} /><View style={{ flex: 1 }}><Text style={styles.aiEntryTitle}>AI Capture</Text><Text style={styles.aiEntryText}>Speak or type to fill this form</Text></View><Ionicons name="chevron-forward" size={18} color={colors.gray500} /></Pressable> : null}
-        <FormField label="Amount" icon="cash-outline" prefix={currency === "USD" ? "$" : currency} value={amount} onChangeText={setAmount} placeholder="0.00" keyboardType="decimal-pad" required />
-        <FormField label={transactionType === "income" ? "Source" : "Merchant"} icon={transactionType === "income" ? "person-circle-outline" : "storefront-outline"} value={merchant} onChangeText={setMerchant} placeholder={transactionType === "income" ? "Income source" : "Store name"} />
-        <SelectField label="Category" icon="pricetag-outline" value={category} onPress={() => setCatModal(true)} />
-        <SelectField label="Date" icon="calendar-outline" value={date} onPress={() => setShowDatePicker(true)} />
+        {!editId ? (
+          <Pressable style={styles.aiEntry} onPress={() => setAiCapture(true)}>
+            <View style={styles.aiEntryModes}><View style={styles.aiEntryMode}><Ionicons name="mic" size={18} color={colors.primary} /></View><View style={styles.aiEntryMode}><Ionicons name="create-outline" size={17} color={colors.blue600} /></View></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.aiEntryTitle}>AI Capture</Text>
+              <Text style={styles.aiEntryText}>
+                Use your voice or write a description to fill this form
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.gray500} />
+          </Pressable>
+        ) : null}
+        <FormField
+          label="Amount"
+          icon="cash-outline"
+          prefix={currency === "USD" ? "$" : currency}
+          value={amount}
+          onChangeText={setAmount}
+          placeholder="0.00"
+          keyboardType="decimal-pad"
+          required
+        />
+        <FormField
+          label={transactionType === "income" ? "Source" : "Merchant"}
+          icon={
+            transactionType === "income"
+              ? "person-circle-outline"
+              : "storefront-outline"
+          }
+          value={merchant}
+          onChangeText={setMerchant}
+          placeholder={
+            transactionType === "income" ? "Income source" : "Store name"
+          }
+        />
+        <SelectField
+          label="Category"
+          icon="pricetag-outline"
+          value={category}
+          onPress={() => setCatModal(true)}
+        />
+        <SelectField
+          label="Date"
+          icon="calendar-outline"
+          value={date}
+          onPress={() => setShowDatePicker(true)}
+        />
         {showDatePicker && (
-          <DateTimePicker value={dateObj} mode="date" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onDateChange} />
+          <DateTimePicker
+            value={dateObj}
+            mode="date"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={onDateChange}
+          />
         )}
         {Platform.OS === "ios" && showDatePicker && (
-          <Pressable style={styles.doneBtn} onPress={() => setShowDatePicker(false)}>
+          <Pressable
+            style={styles.doneBtn}
+            onPress={() => setShowDatePicker(false)}
+          >
             <Text style={styles.doneBtnTxt}>Done</Text>
           </Pressable>
         )}
 
-        <SelectField label={transactionType === "income" ? "Receive into account" : "Paid from / account"} icon="card-outline" value={paymentMethod} onPress={() => setAccModal(true)} />
-        <FormField label="Notes (optional)" icon="document-text-outline" value={notes} onChangeText={setNotes} placeholder="Add a note..." multiline />
-        {attachedScan || route.params?.scannedData || (editId && existing?.receipt_data) ? <View style={styles.attached}><Ionicons name="receipt-outline" size={18} color={colors.primary} /><Text style={styles.attachedText}>Receipt details attached</Text><Ionicons name="checkmark-circle" size={18} color={colors.success} /></View> : !editId ? <Pressable style={styles.attachLink} onPress={() => void attachReceiptFromGallery()} disabled={attachmentBusy}>{attachmentBusy ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="attach-outline" size={18} color={colors.primary} />}<Text style={styles.attachLinkText}>{attachmentBusy ? "Reading receipt…" : "Attach receipt image (optional)"}</Text></Pressable> : null}
+        <SelectField
+          label={
+            transactionType === "income"
+              ? "Receive into account"
+              : "Paid from / account"
+          }
+          icon="card-outline"
+          value={paymentMethod}
+          onPress={() => setAccModal(true)}
+        />
+        <FormField
+          label="Notes (optional)"
+          icon="document-text-outline"
+          value={notes}
+          onChangeText={setNotes}
+          placeholder="Add a note..."
+          multiline
+        />
+        {attachedScan ||
+        route.params?.scannedData ||
+        (editId && existing?.receipt_data) ? (
+          <View style={styles.attached}>
+            <Ionicons name="receipt-outline" size={18} color={colors.primary} />
+            <Text style={styles.attachedText}>Receipt details attached</Text>
+            <Ionicons
+              name="checkmark-circle"
+              size={18}
+              color={colors.success}
+            />
+          </View>
+        ) : !editId ? (
+          <Pressable
+            style={styles.attachLink}
+            onPress={() => void attachReceiptFromGallery()}
+            disabled={attachmentBusy}
+          >
+            {attachmentBusy ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Ionicons
+                name="attach-outline"
+                size={18}
+                color={colors.primary}
+              />
+            )}
+            <Text style={styles.attachLinkText}>
+              {attachmentBusy
+                ? "Reading receipt…"
+                : "Attach receipt image (optional)"}
+            </Text>
+          </Pressable>
+        ) : null}
 
         <Animated.View style={{ transform: [{ translateY: keyboardLift }] }}>
           <AnimatedPressable
             style={[
               styles.saveBtn,
-              (saving || attachmentBusy || (editId ? !canSaveEdit : !canSaveNew)) && { opacity: 0.55 },
+              (saving ||
+                attachmentBusy ||
+                (editId ? !canSaveEdit : !canSaveNew)) && { opacity: 0.55 },
             ]}
             onPress={save}
-            disabled={saving || attachmentBusy || (editId ? !canSaveEdit : !canSaveNew)}
+            disabled={
+              saving || attachmentBusy || (editId ? !canSaveEdit : !canSaveNew)
+            }
             pressedScale={0.985}
           >
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.saveTxt}>{editId ? "Save changes" : transactionType === "income" ? "Save income" : "Save expense"}</Text>
-          )}
+            {saving ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.saveTxt}>
+                {editId
+                  ? "Save changes"
+                  : transactionType === "income"
+                    ? "Save income"
+                    : "Save expense"}
+              </Text>
+            )}
           </AnimatedPressable>
         </Animated.View>
       </ScrollView>
 
       <Modal visible={catModal} transparent animationType="fade">
-        <Pressable style={styles.modalBackdrop} onPress={() => setCatModal(false)}>
-          <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setCatModal(false)}
+        >
+          <Pressable
+            style={styles.modalCard}
+            onPress={(e) => e.stopPropagation()}
+          >
             <Text style={styles.modalTitle}>Categories</Text>
             <ScrollView style={{ maxHeight: 220 }}>
               {filteredCats.map((c) => (
@@ -782,9 +1278,17 @@ export function AddTransactionScreen() {
                     setCatModal(false);
                   }}
                 >
-                  <View style={[styles.colorDot, { backgroundColor: c.color }]} />
+                  <View
+                    style={[styles.colorDot, { backgroundColor: c.color }]}
+                  />
                   <Text style={styles.modalRowTxt}>{c.name}</Text>
-                  {category === c.name && <Ionicons name="checkmark" size={20} color={colors.primary} />}
+                  {category === c.name && (
+                    <Ionicons
+                      name="checkmark"
+                      size={20}
+                      color={colors.primary}
+                    />
+                  )}
                 </Pressable>
               ))}
             </ScrollView>
@@ -796,10 +1300,16 @@ export function AddTransactionScreen() {
               onChangeText={setNewCatName}
               placeholderTextColor={colors.gray400}
             />
-            <Pressable style={styles.modalPrimary} onPress={() => void addCategory()}>
+            <Pressable
+              style={styles.modalPrimary}
+              onPress={() => void addCategory()}
+            >
               <Text style={styles.modalPrimaryTxt}>Add category</Text>
             </Pressable>
-            <Pressable style={styles.modalGhost} onPress={() => setCatModal(false)}>
+            <Pressable
+              style={styles.modalGhost}
+              onPress={() => setCatModal(false)}
+            >
               <Text style={styles.modalGhostTxt}>Cancel</Text>
             </Pressable>
           </Pressable>
@@ -807,8 +1317,14 @@ export function AddTransactionScreen() {
       </Modal>
 
       <Modal visible={accModal} transparent animationType="fade">
-        <Pressable style={styles.modalBackdrop} onPress={() => setAccModal(false)}>
-          <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setAccModal(false)}
+        >
+          <Pressable
+            style={styles.modalCard}
+            onPress={(e) => e.stopPropagation()}
+          >
             <Text style={styles.modalTitle}>Accounts</Text>
             <ScrollView style={{ maxHeight: 220 }}>
               {(accounts ?? []).map((a) => (
@@ -821,9 +1337,19 @@ export function AddTransactionScreen() {
                     setAccModal(false);
                   }}
                 >
-                  <Ionicons name="wallet-outline" size={20} color={colors.gray600} />
+                  <Ionicons
+                    name="wallet-outline"
+                    size={20}
+                    color={colors.gray600}
+                  />
                   <Text style={styles.modalRowTxt}>{a.name}</Text>
-                  {accountId === a.id && <Ionicons name="checkmark" size={20} color={colors.primary} />}
+                  {accountId === a.id && (
+                    <Ionicons
+                      name="checkmark"
+                      size={20}
+                      color={colors.primary}
+                    />
+                  )}
                 </Pressable>
               ))}
             </ScrollView>
@@ -835,10 +1361,16 @@ export function AddTransactionScreen() {
               onChangeText={setNewAccName}
               placeholderTextColor={colors.gray400}
             />
-            <Pressable style={styles.modalPrimary} onPress={() => void addAccount()}>
+            <Pressable
+              style={styles.modalPrimary}
+              onPress={() => void addAccount()}
+            >
               <Text style={styles.modalPrimaryTxt}>Add account</Text>
             </Pressable>
-            <Pressable style={styles.modalGhost} onPress={() => setAccModal(false)}>
+            <Pressable
+              style={styles.modalGhost}
+              onPress={() => setAccModal(false)}
+            >
               <Text style={styles.modalGhostTxt}>Cancel</Text>
             </Pressable>
           </Pressable>
@@ -863,28 +1395,147 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 18, fontWeight: "700", color: colors.gray900 },
   pad: { padding: 16, paddingBottom: 48 },
-  aiEntry: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.purpleSoft, padding: 12, marginBottom: 16 },
+  aiEntry: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.purpleSoft,
+    padding: 12,
+    marginBottom: 16,
+  },
+  aiEntryModes: { flexDirection: "row", alignItems: "center" },
+  aiEntryMode: { width: 32, height: 32, marginRight: 4, borderRadius: 9, backgroundColor: "#fff", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.border },
   aiEntryTitle: { color: colors.textPrimary, fontSize: 13, fontWeight: "700" },
   aiEntryText: { color: colors.gray600, fontSize: 11, marginTop: 2 },
   aiPad: { padding: 16, paddingBottom: 36 },
   aiHero: { alignItems: "center", paddingTop: 34, paddingBottom: 28 },
-  aiMicHalo: { width: 106, height: 106, borderRadius: 53, backgroundColor: colors.mintSoft, borderWidth: 9, borderColor: "#d5f4ef", alignItems: "center", justifyContent: "center" },
-  aiTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: "700", marginTop: 14 },
-  aiQuote: { color: colors.gray600, fontSize: 13, fontStyle: "italic", textAlign: "center", lineHeight: 19, marginTop: 8, maxWidth: 230 },
-  waveform: { height: 36, flexDirection: "row", alignItems: "center", gap: 4, marginTop: 18 },
+  aiMicHalo: {
+    width: 106,
+    height: 106,
+    borderRadius: 53,
+    backgroundColor: colors.mintSoft,
+    borderWidth: 9,
+    borderColor: "#d5f4ef",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  aiTitle: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: "700",
+    marginTop: 14,
+  },
+  aiQuote: {
+    color: colors.gray600,
+    fontSize: 13,
+    fontStyle: "italic",
+    textAlign: "center",
+    lineHeight: 19,
+    marginTop: 8,
+    maxWidth: 230,
+  },
+  waveform: {
+    height: 36,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 18,
+  },
   waveBar: { width: 3, borderRadius: 3, backgroundColor: colors.primary },
-  aiStatus: { color: colors.primary, backgroundColor: colors.mintSoft, borderRadius: 99, paddingHorizontal: 16, paddingVertical: 7, marginTop: 14, fontSize: 12, fontWeight: "700" },
-  aiFieldTitle: { color: colors.textPrimary, fontSize: 13, fontWeight: "700", marginBottom: 7 },
-  aiTextBox: { flexDirection: "row", borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, padding: 7, alignItems: "center", minHeight: 76 },
-  aiInput: { flex: 1, minHeight: 56, paddingHorizontal: 8, color: colors.textPrimary, fontSize: 13, textAlignVertical: "top" },
-  aiSend: { width: 33, height: 33, borderRadius: 17, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
-  aiLocked: { color: colors.primary, fontSize: 12, fontWeight: "600", marginTop: 10 },
-  aiExamplesTitle: { color: colors.textPrimary, fontSize: 12, fontWeight: "700", marginTop: 18, marginBottom: 5 },
-  aiExample: { flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "flex-start", backgroundColor: colors.surface, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 9, marginTop: 8, borderWidth: 1, borderColor: colors.border },
+  aiStatus: {
+    color: colors.primary,
+    backgroundColor: colors.mintSoft,
+    borderRadius: 99,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    marginTop: 14,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  aiFieldTitle: {
+    color: colors.textPrimary,
+    fontSize: 13,
+    fontWeight: "700",
+    marginBottom: 7,
+  },
+  aiTextBox: {
+    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    padding: 7,
+    alignItems: "center",
+    minHeight: 76,
+  },
+  aiInput: {
+    flex: 1,
+    minHeight: 56,
+    paddingHorizontal: 8,
+    color: colors.textPrimary,
+    fontSize: 13,
+    textAlignVertical: "top",
+  },
+  aiSend: {
+    width: 33,
+    height: 33,
+    borderRadius: 17,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  aiLocked: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 10,
+  },
+  aiExamplesTitle: {
+    color: colors.textPrimary,
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: 18,
+    marginBottom: 5,
+  },
+  aiExample: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    alignSelf: "flex-start",
+    backgroundColor: colors.surface,
+    borderRadius: 99,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   aiExampleText: { color: colors.gray700, fontSize: 12 },
-  attached: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, padding: 12, backgroundColor: colors.mintSoft, marginBottom: 14 },
-  attachedText: { color: colors.textPrimary, fontSize: 12, flex: 1, fontWeight: "600" },
-  attachLink: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 12, paddingVertical: 8 },
+  attached: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: colors.mintSoft,
+    marginBottom: 14,
+  },
+  attachedText: {
+    color: colors.textPrimary,
+    fontSize: 12,
+    flex: 1,
+    fontWeight: "600",
+  },
+  attachLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginBottom: 12,
+    paddingVertical: 8,
+  },
   attachLinkText: { color: colors.primary, fontSize: 12, fontWeight: "700" },
   subBannerTrial: {
     borderRadius: 12,
@@ -903,10 +1554,22 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   subBannerTitle: { fontSize: 13, fontWeight: "800", color: colors.gray900 },
-  subBannerTxt: { fontSize: 12, color: colors.gray700, marginTop: 4, lineHeight: 17 },
+  subBannerTxt: {
+    fontSize: 12,
+    color: colors.gray700,
+    marginTop: 4,
+    lineHeight: 17,
+  },
   subBannerBtn: { marginTop: 10, alignSelf: "flex-start" },
   subBannerBtnTxt: { fontSize: 13, fontWeight: "700", color: colors.primary },
-  typeRow: { flexDirection: "row", gap: 3, marginBottom: 16, padding: 3, borderRadius: 999, backgroundColor: "#edf3f9" },
+  typeRow: {
+    flexDirection: "row",
+    gap: 3,
+    marginBottom: 16,
+    padding: 3,
+    borderRadius: 999,
+    backgroundColor: "#edf3f9",
+  },
   typeChip: {
     flex: 1,
     paddingVertical: 12,
@@ -918,7 +1581,12 @@ const styles = StyleSheet.create({
   typeChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   typeTxt: { fontWeight: "700", color: colors.gray700 },
   typeTxtOn: { color: "#fff" },
-  label: { fontSize: 13, fontWeight: "600", color: colors.gray600, marginBottom: 6 },
+  label: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.gray600,
+    marginBottom: 6,
+  },
   input: {
     borderWidth: 1,
     borderColor: colors.gray200,
@@ -941,7 +1609,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     gap: 8,
   },
-  selectTxt: { flex: 1, fontSize: 16, color: colors.gray900, fontWeight: "600" },
+  selectTxt: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.gray900,
+    fontWeight: "600",
+  },
   doneBtn: { alignSelf: "flex-end", marginBottom: 12 },
   doneBtnTxt: { color: colors.primary, fontWeight: "700" },
   saveBtn: {
@@ -964,7 +1637,12 @@ const styles = StyleSheet.create({
     padding: 16,
     maxHeight: "80%",
   },
-  modalTitle: { fontSize: 17, fontWeight: "700", color: colors.gray900, marginBottom: 10 },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: colors.gray900,
+    marginBottom: 10,
+  },
   modalRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -975,7 +1653,13 @@ const styles = StyleSheet.create({
   },
   colorDot: { width: 12, height: 12, borderRadius: 6 },
   modalRowTxt: { flex: 1, fontSize: 16, color: colors.gray900 },
-  modalLbl: { fontSize: 12, fontWeight: "700", color: colors.gray600, marginTop: 8, marginBottom: 6 },
+  modalLbl: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.gray600,
+    marginTop: 8,
+    marginBottom: 6,
+  },
   modalPrimary: {
     backgroundColor: colors.primary,
     borderRadius: 12,

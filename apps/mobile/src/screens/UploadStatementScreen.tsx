@@ -64,6 +64,7 @@ export function UploadStatementScreen() {
   const aiScanOk = Boolean(token && (!sub || sub.canUseAiFeatures));
   const canImportRows = Boolean(user?.id && (!sub || sub.canCreateTransaction));
   const bulkImport = useMutation(api.transactions.bulkImport);
+  const uploadReceipt = useMutation(api.receipts.upload);
   const ensureCats = useMutation(api.categories.ensureSeed);
   const scanImage = useAction(api.scanReceipt.scanFromBase64);
   const scanText = useAction(api.scanReceipt.scanFromDocumentText);
@@ -158,7 +159,7 @@ export function UploadStatementScreen() {
       return;
     }
     if (sub && !sub.canUseAiFeatures) {
-      Alert.alert("Upgrade needed", sub.blockReason ?? "Smart read on uploads requires Pro or an active trial slot.");
+      Alert.alert("Feature unavailable", "Smart document reading is not included with your current access.");
       return;
     }
     setBusy(true);
@@ -214,7 +215,7 @@ export function UploadStatementScreen() {
       return;
     }
     if (sub && !sub.canCreateTransaction) {
-      Alert.alert("Upgrade needed", sub.blockReason ?? "Importing rows requires Pro or an available trial slot.");
+      Alert.alert("Feature unavailable", "Statement importing is not included with your current access.");
       return;
     }
     setBusy(true);
@@ -250,6 +251,10 @@ export function UploadStatementScreen() {
       }
 
       const total = rows.length;
+      const sourceFile = Platform.OS === "web"
+        ? await (await fetch(picked.uri)).blob()
+        : { uri: picked.uri, name: picked.name, type: picked.mime || "text/csv" };
+      const evidenceKey = (await uploadReceipt({ file: sourceFile, fileName: picked.name })).key;
       const out = await importInChunks(
         rows,
         (chunk) =>
@@ -257,6 +262,7 @@ export function UploadStatementScreen() {
             workspace,
             userId: user.id,
             token: token!,
+            receipt_url: evidenceKey,
             rows: chunk.map((r) => ({ ...r, payment_method: "Import" })),
           }),
         (done) => setStatus(`Importing… ${done} of ${total}`),
@@ -273,7 +279,7 @@ export function UploadStatementScreen() {
     } finally {
       setBusy(false);
     }
-  }, [picked, ready, workspace, user?.id, token, ensureCats, bulkImport, navigation, reset, sub]);
+  }, [picked, ready, workspace, user?.id, token, ensureCats, bulkImport, uploadReceipt, navigation, reset, sub]);
 
   const canPick = () => {
     if (!ready || busy) return false;
@@ -327,10 +333,12 @@ export function UploadStatementScreen() {
       {!picked ? (
         <View style={styles.uploadContent}>
           <View style={styles.dropZone}>
-            <Ionicons name="cloud-upload-outline" size={42} color={colors.primary} />
-            <Text style={styles.title}>Upload a document</Text>
-            <Text style={styles.sub}>Choose a receipt image or a CSV statement</Text>
-            <Pressable style={styles.chooseButton} onPress={onPick} disabled={busy || !ready}><Text style={styles.chooseText}>Choose files</Text></Pressable>
+            <View style={styles.folderIcon}><Ionicons name="folder-open-outline" size={48} color={colors.gray500} /></View>
+            <Text style={styles.title}>Upload your files</Text>
+            <Text style={styles.sub}>Choose a file to browse and extract</Text>
+            <View style={styles.documentKinds}><Text style={[styles.kindChip, styles.receiptChip]}>receipt</Text><Text style={[styles.kindChip, styles.invoiceChip]}>invoice</Text><Text style={[styles.kindChip, styles.cardChip]}>card statement</Text><Text style={[styles.kindChip, styles.bankChip]}>bank statement</Text></View>
+            <Text style={styles.fileTypes}>PDF, CSV, XLSX, JPG or PNG · up to 12 MB</Text>
+            <Pressable style={styles.chooseButton} onPress={onPick} disabled={busy || !ready}><Ionicons name="cloud-upload-outline" size={17} color="#fff" /><Text style={styles.chooseText}>Browse files</Text></Pressable>
           </View>
           <View style={styles.tileGrid}>
             <Pressable style={[styles.tile, { backgroundColor: colors.blueSoft }]} onPress={() => void onPickGallery()}><Ionicons name="images-outline" size={27} color={colors.blue600} /><Text style={styles.tileText}>Gallery</Text></Pressable>
@@ -338,7 +346,7 @@ export function UploadStatementScreen() {
             <Pressable style={[styles.tile, { backgroundColor: colors.roseSoft }]} onPress={onPick}><Ionicons name="document-text-outline" size={27} color={colors.rose600} /><Text style={styles.tileText}>PDF / Excel</Text></Pressable>
             <Pressable style={[styles.tile, { backgroundColor: colors.mintSoft }]} onPress={() => void onPickGallery()}><Ionicons name="image-outline" size={27} color={colors.primary} /><Text style={styles.tileText}>Image</Text></Pressable>
           </View>
-          <View style={styles.infoCard}><Ionicons name="bulb-outline" size={19} color={colors.amber600} /><Text style={styles.infoText}>AI extracts key details from receipt images. CSV statements import as transaction rows on your phone; Excel and PDF statements are imported from the web app.</Text></View>
+          <View style={styles.infoCard}><Ionicons name="sparkles-outline" size={19} color={colors.primary} /><Text style={styles.infoText}>Receipt images open with a visual evidence preview and editable extracted fields. Statements are prepared as transaction rows for review.</Text></View>
         </View>
       ) : (
         <View style={styles.card}>
@@ -418,9 +426,17 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: typeScale.headline, fontWeight: "700", color: colors.gray900 },
   uploadContent: { paddingHorizontal: 16, paddingTop: 16, gap: 16 },
-  dropZone: { minHeight: 222, borderWidth: 1.5, borderStyle: "dashed", borderColor: "#8ed8d0", borderRadius: 16, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: 20, gap: 8 },
-  chooseButton: { backgroundColor: colors.blueSoft, borderRadius: 12, minHeight: 38, minWidth: 170, alignItems: "center", justifyContent: "center", marginTop: 10 },
-  chooseText: { color: colors.primary, fontSize: 13, fontWeight: "700" },
+  dropZone: { minHeight: 330, borderWidth: 1.5, borderStyle: "dashed", borderColor: colors.gray200, borderRadius: 14, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: 20, gap: 8 },
+  folderIcon: { width: 72, height: 64, alignItems: "center", justifyContent: "center", marginBottom: 2 },
+  documentKinds: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 6, marginTop: 10 },
+  kindChip: { overflow: "hidden", borderRadius: 5, paddingHorizontal: 8, paddingVertical: 4, fontSize: 11, fontWeight: "700" },
+  receiptChip: { color: colors.blue600, backgroundColor: colors.blueSoft },
+  invoiceChip: { color: "#7c3aed", backgroundColor: colors.purpleSoft },
+  cardChip: { color: colors.rose600, backgroundColor: colors.roseSoft },
+  bankChip: { color: colors.primary, backgroundColor: colors.mintSoft },
+  fileTypes: { color: colors.gray400, fontSize: 11, fontWeight: "600", marginTop: 4 },
+  chooseButton: { flexDirection: "row", gap: 8, backgroundColor: colors.primary, borderRadius: 8, minHeight: 42, minWidth: 170, alignItems: "center", justifyContent: "center", marginTop: 12 },
+  chooseText: { color: "#fff", fontSize: 13, fontWeight: "800" },
   tileGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   tile: { width: "48%", minHeight: 110, borderRadius: 12, alignItems: "center", justifyContent: "center", gap: 6 },
   tileText: { color: colors.textPrimary, fontSize: 13, fontWeight: "700" },

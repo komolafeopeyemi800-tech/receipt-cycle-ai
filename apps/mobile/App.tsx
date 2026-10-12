@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, AppState, View } from "react-native";
+import { ActivityIndicator, AppState, Text, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Linking from "expo-linking";
 import { StatusBar } from "expo-status-bar";
@@ -44,7 +44,7 @@ import { CategoryEditorScreen } from "./src/screens/CategoryEditorScreen";
 import { SalesHubScreen } from "./src/screens/SalesScreens";
 import { EstimateListScreen } from "./src/screens/EstimateListScreen";
 import { EstimateBasicScreen, EstimateExtrasScreen, EstimateItemsScreen, EstimateTotalsScreen } from "./src/screens/EstimateBuilderScreens";
-import { EstimateConvertScreen, EstimateDetailScreen, EstimatePreviewScreen } from "./src/screens/EstimateReviewScreens";
+import { EstimateConvertScreen, EstimateDetailScreen, EstimatePreviewScreen, EstimateSendScreen } from "./src/screens/EstimateReviewScreens";
 import { PaymentListScreen } from "./src/screens/PaymentListScreen";
 import { PaymentCreateScreen, PaymentMethodScreen } from "./src/screens/PaymentEntryScreens";
 import { PaymentConfirmationScreen, PaymentInvoiceDetailScreen, ReceiptPreviewScreen, ReceiptShareScreen } from "./src/screens/PaymentReviewScreens";
@@ -73,9 +73,10 @@ import { FinanceCoachScreen } from "./src/screens/FinanceCoachScreen";
 import { CashFlowReportScreen, OverdueInvoicesReportScreen, ReportsHomeScreen } from "./src/screens/ReportsScreens";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { colors } from "./src/theme/tokens";
+import { ReceiptCycleLogo } from "./src/components/ReceiptCycleLogo";
 import type { RootStackParamList } from "./src/navigation/types";
 
-/** v2: 7-step flow aligned with web onboarding */
+/** v2 is retained so completed users are not forced through setup again. */
 const ONBOARDING_KEY = "receiptcycle_onboarding_v2";
 /** Legacy: first mobile onboarding flag — migrate so existing users aren’t forced through v2 again */
 const ONBOARDING_LEGACY = "receiptcycle_onboarding_v1";
@@ -107,23 +108,6 @@ function extractResetTokenFromUrl(url: string): string | null {
   }
 }
 
-type CheckoutTarget = "Records" | "Analysis" | "Budgets" | "Accounts" | "Categories";
-
-function extractCheckoutTargetFromUrl(url: string): CheckoutTarget | null {
-  if (!url.includes("post-checkout") && !url.includes("dashboard")) return null;
-  try {
-    const q = url.indexOf("?");
-    const search = q >= 0 ? url.slice(q + 1) : "";
-    const screen = new URLSearchParams(search).get("screen");
-    if (screen === "Analysis" || screen === "Budgets" || screen === "Accounts" || screen === "Categories") {
-      return screen;
-    }
-    return "Records";
-  } catch {
-    return "Records";
-  }
-}
-
 function navigateToResetIfNeeded(url: string | null) {
   if (!url) return;
   const token = extractResetTokenFromUrl(url);
@@ -131,32 +115,18 @@ function navigateToResetIfNeeded(url: string | null) {
   navigationRef.navigate("ResetPassword", { token });
 }
 
-function navigateAfterCheckoutIfNeeded(url: string | null) {
-  if (!url || !navigationRef.isReady()) return;
-  const target = extractCheckoutTargetFromUrl(url);
-  if (!target) return;
-  if (target === "Budgets" || target === "Accounts" || target === "Categories") {
-    navigationRef.navigate("Main", { screen: "More", params: { screen: target } });
-  } else {
-    navigationRef.navigate("Main", { screen: target });
-  }
-}
-
 function PasswordResetDeepLinks() {
   const { user, loading } = useAuth();
-  /** Post-checkout deep links must run even when signed in; password reset only on the guest stack. */
   useEffect(() => {
     if (loading) return;
     void Linking.getInitialURL().then((url) => {
       if (!url) return;
-      navigateAfterCheckoutIfNeeded(url);
       if (!user) navigateToResetIfNeeded(url);
     });
   }, [loading, user]);
 
   useEffect(() => {
     const sub = Linking.addEventListener("url", (e) => {
-      navigateAfterCheckoutIfNeeded(e.url);
       if (!user) navigateToResetIfNeeded(e.url);
     });
     return () => sub.remove();
@@ -230,6 +200,7 @@ function MainStackNavigator() {
       <Stack.Screen name="EstimateTotals" component={EstimateTotalsScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="EstimateExtras" component={EstimateExtrasScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="EstimatePreview" component={EstimatePreviewScreen} options={{ presentation: "card" }} />
+      <Stack.Screen name="EstimateSend" component={EstimateSendScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="EstimateDetail" component={EstimateDetailScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="EstimateConvert" component={EstimateConvertScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="PaymentCreate" component={PaymentCreateScreen} options={{ presentation: "card" }} />
@@ -271,8 +242,14 @@ function onboardingUserKey(userId: string) {
 
 function RootGate() {
   const { loading, user } = useAuth();
+  const [launchComplete, setLaunchComplete] = useState(false);
   const [gateReady, setGateReady] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLaunchComplete(true), 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (loading) return;
@@ -307,10 +284,12 @@ function RootGate() {
     })();
   }, [loading, user?.id]);
 
-  if (loading || !gateReady) {
+  if (!launchComplete || loading || !gateReady) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" }}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f2fbf8", gap: 18 }}>
+        <ReceiptCycleLogo size={88} />
+        <Text style={{ color: colors.gray900, fontSize: 24, fontWeight: "800", letterSpacing: -0.4 }}>Receipt Cycle</Text>
+        <ActivityIndicator size="small" color={colors.primary} />
       </View>
     );
   }

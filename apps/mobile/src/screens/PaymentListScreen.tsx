@@ -51,7 +51,7 @@ export function PaymentListScreen() {
       renderItem={({ item }) => <Pressable onPress={() => open(item)} style={({ pressed }) => [styles.row, pressed && { opacity: 0.72 }]} accessibilityRole="button" accessibilityLabel={`${item.customerName}, ${formatMoney(item.amount)}, ${item.status}`}>
         <IconTile icon="cash-outline" tone={item.status === "refunded" ? "rose" : item.status === "partial" ? "blue" : "mint"} size={39} />
         <View style={styles.main}><Text style={styles.customer}>{item.customerName}</Text><Text style={styles.meta}>{item.invoiceNumber}</Text><Text style={styles.meta}>{formatDate(item.paymentDate)}</Text></View>
-        <View style={styles.right}><Text style={styles.amount}>{formatMoney(item.amount)}</Text><StatusBadge status={item.status} /></View>
+      <View style={styles.right}><Text style={styles.amount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.58}>{formatMoney(item.amount)}</Text><StatusBadge status={item.status} /></View>
       </Pressable>}
       ListEmptyComponent={<EmptyState icon="card-outline" title={`No ${filter.toLowerCase()} payments`} description="Record a payment or choose another status." />}
       ListFooterComponent={<AppButton label="Add Payment" icon="add" onPress={create} style={styles.addButton} />}
@@ -70,6 +70,6 @@ const styles = StyleSheet.create({
   customer: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "800" },
   meta: { color: colors.gray500, fontSize: uiType.caption, marginTop: 2 },
   right: { alignItems: "flex-end", gap: 5 },
-  amount: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "900" },
+  amount: { width: 132, color: colors.textPrimary, fontSize: 12, fontWeight: "900", letterSpacing: -0.15, textAlign: "right" },
   addButton: { marginTop: spacing.lg },
 });

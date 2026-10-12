@@ -17,6 +17,7 @@ import { usePreferences } from "../contexts/PreferencesContext";
 import { useSalesSetup } from "../contexts/SalesSetupContext";
 import { calculateEstimateTotals } from "../features/estimates/model";
 import { addDaysYmd, type DiscountType } from "../features/invoices/model";
+import { inferCatalogKind, normalizedCatalogName } from "../features/sales/catalogInference";
 import type { RootStackParamList } from "../navigation/types";
 import { colors, radius, spacing, uiType } from "../theme/tokens";
 import { CustomerPickerSheet } from "./InvoiceBasicScreen";
@@ -27,7 +28,7 @@ function usePicker() {
   const { showActionSheetWithOptions } = useActionSheet();
   return (title: string, options: string[], onSelect: (value: string) => void) => {
     const labels = [...options, "Cancel"];
-    showActionSheetWithOptions({ title, options: labels, cancelButtonIndex: labels.length - 1 }, (index) => {
+    showActionSheetWithOptions({ title, options: labels, cancelButtonIndex: labels.length - 1, useModal: true, containerStyle: { paddingBottom: 40 } }, (index) => {
       if (index === undefined || index === labels.length - 1 || !options[index]) return;
       onSelect(options[index]!);
     });
@@ -72,6 +73,7 @@ export function EstimateBasicScreen() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <FormField label="Estimate Number" icon="document-outline" value={draft.estimateNumber} onChangeText={(estimateNumber) => updateDraft({ estimateNumber })} required />
+        <FormField label="Estimate Title (Optional)" icon="create-outline" value={draft.title ?? ""} onChangeText={(title) => updateDraft({ title })} placeholder="e.g. Website design proposal" />
         <DateRow label="Estimate Date" value={formatDate(draft.estimateDate)} onPress={() => setDateOpen(true)} />
         <SelectField label="Customer" icon="person-outline" value={customer?.name ?? "Select a customer"} onPress={() => setCustomerOpen(true)} required />
         {customer ? <AppCard style={styles.customerCard}><InitialsAvatar name={customer.name} size={40} /><View style={{ flex: 1 }}><Text style={styles.customerName}>{customer.name}</Text><Text style={styles.customerMeta}>{customer.billingAddress || customer.email}</Text></View><StatusBadge status={customer.status} /></AppCard> : null}
@@ -87,20 +89,42 @@ export function EstimateBasicScreen() {
 export function EstimateItemsScreen() {
   const navigation = useNavigation<RootNav>();
   const { draft, addItem, updateItem, removeItem } = useEstimateFlow();
-  const { items } = useSalesSetup();
+  const { items, saveItem } = useSalesSetup();
   const { currency, formatMoney } = usePreferences();
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [rate, setRate] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   function add() {
     const qty = Number(quantity);
     const unitRate = Number(rate.replace(/,/g, ""));
     if (!name.trim() || !Number.isFinite(qty) || qty <= 0 || !Number.isFinite(unitRate) || unitRate < 0) { Alert.alert("Check item details", "Enter a name, quantity above zero, and a valid rate."); return; }
-    addItem({ id: `estimate-line-${Date.now()}`, name: name.trim(), description: description.trim(), quantity: qty, rate: unitRate });
-    setName(""); setDescription(""); setQuantity("1"); setRate(""); setAdding(false);
+    const cleanName = name.trim();
+    const cleanDescription = description.trim();
+    const existingCatalog = items.find((item) => normalizedCatalogName(item.name) === normalizedCatalogName(cleanName));
+    const catalogItemId = existingCatalog?.id ?? saveItem({ kind: inferCatalogKind(cleanName, cleanDescription), name: cleanName, description: cleanDescription, unitPrice: unitRate, taxRate: "0%", category: "Uncategorized", isDefault: false, active: true });
+    const line = { id: editingId ?? `estimate-line-${Date.now()}`, catalogItemId, name: cleanName, description: cleanDescription, quantity: qty, rate: unitRate };
+    if (editingId) updateItem(editingId, line); else addItem(line);
+    setEditingId(null); setName(""); setDescription(""); setQuantity("1"); setRate(""); setAdding(false);
+  }
+
+  function edit(id: string) {
+    const item = draft.items.find((row) => row.id === id);
+    if (!item) return;
+    setEditingId(id); setName(item.name); setDescription(item.description); setQuantity(String(item.quantity)); setRate(String(item.rate)); setAdding(true);
+  }
+
+  function itemMenu(id: string) {
+    const item = draft.items.find((row) => row.id === id);
+    if (!item) return;
+    Alert.alert("Item actions", item.name, [
+      { text: "Edit item", onPress: () => edit(id) },
+      { text: "Remove item", style: "destructive", onPress: () => removeItem(id) },
+      { text: "Cancel", style: "cancel" },
+    ], { cancelable: true });
   }
 
   function addCatalog(itemId: string) {
@@ -114,15 +138,15 @@ export function EstimateItemsScreen() {
     <DocumentProgress active={2} labels={estimateProgressLabels} />
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       {draft.items.map((item) => <AppCard key={item.id} style={styles.itemCard}>
-        <View style={styles.itemHead}><IconTile icon={item.catalogItemId ? "cube-outline" : "code-slash-outline"} tone="blue" size={38} /><View style={{ flex: 1 }}><Text style={styles.itemName}>{item.name}</Text><Text style={styles.itemMeta} numberOfLines={2}>{item.description || "No description"}</Text></View><Pressable onPress={() => Alert.alert("Remove item?", item.name, [{ text: "Cancel", style: "cancel" }, { text: "Remove", style: "destructive", onPress: () => removeItem(item.id) }])}><Ionicons name="ellipsis-vertical" size={19} color={colors.gray500} /></Pressable></View>
+        <View style={styles.itemHead}><IconTile icon={item.catalogItemId ? "cube-outline" : "code-slash-outline"} tone="blue" size={38} /><Pressable style={{ flex: 1 }} onPress={() => edit(item.id)}><Text style={styles.itemName}>{item.name}</Text><Text style={styles.itemMeta} numberOfLines={2}>{item.description || "No description"}</Text></Pressable><Pressable onPress={() => itemMenu(item.id)}><Ionicons name="ellipsis-vertical" size={19} color={colors.gray500} /></Pressable></View>
         <View style={styles.itemMath}><TextInput value={String(item.quantity)} onChangeText={(value) => updateItem(item.id, { quantity: Math.max(0, Number(value) || 0) })} keyboardType="decimal-pad" style={styles.mathInput} accessibilityLabel={`${item.name} quantity`} /><Text style={styles.times}>×</Text><TextInput value={String(item.rate)} onChangeText={(value) => updateItem(item.id, { rate: Math.max(0, Number(value.replace(/,/g, "")) || 0) })} keyboardType="decimal-pad" style={[styles.mathInput, styles.rateInput]} accessibilityLabel={`${item.name} rate`} /><Text style={styles.equals}>=</Text><Text style={styles.lineAmount}>{formatMoney(item.quantity * item.rate)}</Text></View>
       </AppCard>)}
       {!adding ? <AppButton label="Add Item" icon="add" variant="secondary" onPress={() => setAdding(true)} /> : <AppCard style={styles.addCard}>
-        <Text style={styles.sectionTitle}>Add a custom item</Text>
+        <Text style={styles.sectionTitle}>{editingId ? "Edit item" : "Add a custom item"}</Text>
         <FormField label="Service or Product Name" icon="cube-outline" value={name} onChangeText={setName} placeholder="Website Design" required />
         <View style={styles.twoColumns}><View style={{ flex: 1 }}><FormField label="Quantity" icon="layers-outline" value={quantity} onChangeText={setQuantity} keyboardType="decimal-pad" required /></View><View style={{ flex: 1 }}><FormField label={`Rate (${currency})`} icon="cash-outline" value={rate} onChangeText={setRate} keyboardType="decimal-pad" required /></View></View>
         <FormField label="Description" icon="document-text-outline" value={description} onChangeText={setDescription} multiline />
-        <View style={styles.inlineButtons}><AppButton label="Cancel" variant="secondary" onPress={() => setAdding(false)} style={{ flex: 1 }} /><AppButton label="Add" icon="add" onPress={add} style={{ flex: 1 }} /></View>
+        <View style={styles.inlineButtons}><AppButton label="Cancel" variant="secondary" onPress={() => { setEditingId(null); setAdding(false); }} style={{ flex: 1 }} /><AppButton label={editingId ? "Save" : "Add"} icon={editingId ? "checkmark" : "add"} onPress={add} style={{ flex: 1 }} /></View>
       </AppCard>}
       <Text style={styles.sectionTitle}>Items & Services</Text>
       <AppCard style={styles.catalogCard}>{items.filter((item) => item.active).slice(0, 4).map((item, index, rows) => <Pressable key={item.id} onPress={() => addCatalog(item.id)} style={[styles.catalogRow, index < rows.length - 1 && styles.divider]}><View style={{ flex: 1 }}><Text style={styles.itemName}>{item.name}</Text><Text style={styles.itemMeta}>{formatMoney(item.unitPrice)} / {item.kind === "service" ? "hour" : "unit"}</Text></View><View style={styles.addSmall}><Ionicons name="add" size={18} color={colors.primary} /></View></Pressable>)}</AppCard>
@@ -138,6 +162,7 @@ export function EstimateTotalsScreen() {
   const { currency, formatMoney } = usePreferences();
   const pick = usePicker();
   const [discount, setDiscount] = useState(draft.discountValue ? String(draft.discountValue) : "");
+  const [taxInput, setTaxInput] = useState(draft.taxRate ? String(draft.taxRate) : "");
   const totals = calculateEstimateTotals(draft);
   const numberValue = (value: string) => { const parsed = Number(value.replace(/,/g, "")); return Number.isFinite(parsed) ? Math.max(0, parsed) : 0; };
 
@@ -149,7 +174,8 @@ export function EstimateTotalsScreen() {
       <Text style={styles.label}>Discount</Text>
       <SegmentedTabs options={["Percentage", "Fixed"] as const} value={draft.discountType === "percentage" ? "Percentage" : "Fixed"} onChange={(value) => updateDraft({ discountType: (value === "Percentage" ? "percentage" : "fixed") as DiscountType })} />
       <View style={styles.discountRow}><View style={{ flex: 1 }}><FormField label="Value" icon="pricetag-outline" value={discount} onChangeText={(value) => { setDiscount(value); updateDraft({ discountValue: numberValue(value) }); }} keyboardType="decimal-pad" suffix={draft.discountType === "percentage" ? "%" : undefined} prefix={draft.discountType === "fixed" ? (currency === "USD" ? "$" : currency) : undefined} /></View><Text style={styles.negative}>-{formatMoney(totals.discountAmount)}</Text></View>
-      <SelectField label="Tax" icon="receipt-outline" value={draft.taxRate > 0 ? `${draft.taxLabel} (${draft.taxRate}%)` : "No tax"} onPress={() => pick("Tax rate", ["No tax", "Sales Tax (5%)", "Sales Tax (8.25%)", "Sales Tax (10%)"], (value) => updateDraft({ taxRate: Number(value.match(/[\d.]+/)?.[0] ?? 0), taxLabel: value === "No tax" ? draft.taxLabel : "Sales Tax" }))} />
+      <SelectField label="Tax" icon="receipt-outline" value={draft.taxRate > 0 ? `${draft.taxLabel} (${draft.taxRate}%)` : "No tax"} onPress={() => pick("Tax rate", ["No tax", "Sales Tax (5%)", "Sales Tax (8.25%)", "Sales Tax (10%)", "Custom rate"], (value) => { if (value === "Custom rate") return; const taxRate = Number(value.match(/[\d.]+/)?.[0] ?? 0); setTaxInput(taxRate ? String(taxRate) : ""); updateDraft({ taxRate, taxLabel: value === "No tax" ? "Tax" : "Sales Tax" }); })} />
+      <FormField label="Custom Tax Rate" icon="calculator-outline" value={taxInput} onChangeText={(value) => { setTaxInput(value); updateDraft({ taxRate: Math.min(100, numberValue(value)), taxLabel: "Tax" }); }} keyboardType="decimal-pad" placeholder="Enter percentage" suffix="%" />
       <AppCard style={styles.totalCard}>
         <View style={styles.totalSmall}><Text style={styles.itemMeta}>Subtotal</Text><Text style={styles.itemMeta}>{formatMoney(totals.subtotal)}</Text></View>
         <View style={styles.totalSmall}><Text style={styles.itemMeta}>Discount ({draft.discountType === "percentage" ? `${draft.discountValue}%` : "fixed"})</Text><Text style={styles.negative}>-{formatMoney(totals.discountAmount)}</Text></View>
@@ -194,6 +220,11 @@ export function EstimateExtrasScreen() {
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       <FormField label="Terms & Conditions" icon="document-text-outline" value={draft.terms} onChangeText={(terms) => updateDraft({ terms })} multiline />
       <SelectField label="Validity Period" icon="calendar-outline" value={`${draft.validityDays} days`} onPress={() => pick("Validity period", ["7 days", "14 days", "30 days", "60 days", "90 days"], (value) => { const validityDays = Number(value.match(/\d+/)?.[0] ?? 30); updateDraft({ validityDays, validUntil: addDaysYmd(draft.estimateDate, validityDays) }); })} />
+      <AppCard style={styles.automationCard}>
+        <View style={styles.switchRow}><View style={{ flex: 1 }}><Text style={styles.switchTitle}>Recurring Estimate</Text><Text style={styles.itemMeta}>Automatically create this estimate on a schedule.</Text></View><Switch value={draft.recurringEnabled ?? false} onValueChange={(recurringEnabled) => updateDraft({ recurringEnabled })} trackColor={{ false: colors.gray200, true: "#82d8c7" }} thumbColor={draft.recurringEnabled ? colors.primary : "#fff"} /></View>
+        {draft.recurringEnabled ? <><SelectField label="Frequency" icon="repeat-outline" value={(draft.recurrenceFrequency ?? "monthly").replace(/^./, (value) => value.toUpperCase())} onPress={() => pick("Repeat estimate", ["Weekly", "Monthly", "Quarterly", "Yearly"], (value) => updateDraft({ recurrenceFrequency: value.toLowerCase() as typeof draft.recurrenceFrequency }))} /><FormField label="Start Date" icon="calendar-outline" value={draft.recurrenceStartDate ?? draft.estimateDate} onChangeText={(recurrenceStartDate) => updateDraft({ recurrenceStartDate })} placeholder="YYYY-MM-DD" /></> : null}
+        <View style={styles.switchRow}><View style={{ flex: 1 }}><Text style={styles.switchTitle}>Automated Reminders</Text><Text style={styles.itemMeta}>Send follow-ups when this estimate becomes overdue.</Text></View><Switch value={draft.automatedReminders ?? true} onValueChange={(automatedReminders) => updateDraft({ automatedReminders })} trackColor={{ false: colors.gray200, true: "#82d8c7" }} thumbColor={(draft.automatedReminders ?? true) ? colors.primary : "#fff"} /></View>
+      </AppCard>
       <View style={styles.switchRow}><View style={{ flex: 1 }}><Text style={styles.switchTitle}>Customer Signature</Text><Text style={styles.itemMeta}>Include an approval signature field.</Text></View><Switch value={draft.customerSignatureEnabled} onValueChange={(customerSignatureEnabled) => updateDraft({ customerSignatureEnabled })} trackColor={{ false: colors.gray200, true: "#82d8c7" }} thumbColor={draft.customerSignatureEnabled ? colors.primary : "#fff"} /></View>
       {draft.customerSignatureEnabled ? <View style={styles.signatureBox}><FormField label="Signature" icon="pencil-outline" value={draft.signatureText} onChangeText={(signatureText) => updateDraft({ signatureText })} placeholder="Customer name" /><Text style={styles.signaturePreview}>{draft.signatureText || "Tap to add signature"}</Text></View> : null}
       <Text style={styles.sectionTitle}>Attachments</Text>
@@ -227,6 +258,7 @@ const styles = StyleSheet.create({
   lineAmount: { flex: 1, color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "800", textAlign: "right" },
   addCard: { marginTop: spacing.sm, marginBottom: spacing.lg },
   sectionTitle: { color: colors.textPrimary, fontSize: uiType.sectionTitle, fontWeight: "800", marginTop: spacing.lg, marginBottom: spacing.sm },
+  automationCard: { marginTop: spacing.md, marginBottom: spacing.lg, paddingBottom: spacing.xs },
   twoColumns: { flexDirection: "row", gap: spacing.sm },
   inlineButtons: { flexDirection: "row", gap: spacing.sm },
   catalogCard: { paddingVertical: 0 },

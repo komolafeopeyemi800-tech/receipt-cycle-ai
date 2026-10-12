@@ -57,6 +57,7 @@ export function InvoiceBasicScreen() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <FormField label="Invoice Number" icon="document-text-outline" value={draft.invoiceNumber} onChangeText={(invoiceNumber) => updateDraft({ invoiceNumber })} required />
+        <FormField label="Invoice Title (Optional)" icon="create-outline" value={draft.title ?? ""} onChangeText={(title) => updateDraft({ title })} placeholder="e.g. Website design project" />
         <DateRow label="Issue Date" value={formatDate(draft.issueDate)} onPress={() => setDateTarget("issue")} />
         <DateRow label="Due Date" value={`${formatDate(draft.dueDate)} (${draft.terms})`} onPress={() => setDateTarget("due")} />
         <SelectField label="Customer" icon="person-outline" value={customer?.name ?? "Select a customer"} onPress={() => setCustomerPickerOpen(true)} required />
@@ -100,8 +101,8 @@ export function CustomerPickerSheet({ visible, selectedId, onSelect, onClose }: 
 
   return <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
     <Pressable style={styles.backdrop} onPress={close}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ justifyContent: "flex-end" }}>
-        <Pressable style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]} onPress={(event) => event.stopPropagation()}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.sheetHost}>
+        <Pressable style={[styles.sheet, { paddingBottom: Math.max(insets.bottom + spacing.sm, Platform.OS === "android" ? 44 : spacing.lg) }]} onPress={(event) => event.stopPropagation()}>
           <View style={styles.handle} />
           <View style={styles.sheetHead}><Text style={styles.sheetTitle}>{mode === "add" ? "Add Customer" : "Select Customer"}</Text><Pressable onPress={close} accessibilityLabel="Close customer sheet"><Ionicons name="close" size={24} color={colors.gray600} /></Pressable></View>
           {mode === "list" ? <>
@@ -142,6 +143,7 @@ const styles = StyleSheet.create({
   datePickerWrap: { backgroundColor: colors.surface, paddingHorizontal: spacing.lg },
   done: { textAlign: "right", color: colors.primary, fontWeight: "800", paddingVertical: spacing.sm },
   backdrop: { flex: 1, backgroundColor: "rgba(15,23,42,0.48)", justifyContent: "flex-end" },
+  sheetHost: { flex: 1, width: "100%", justifyContent: "flex-end" },
   sheet: { maxHeight: "88%", backgroundColor: colors.surface, borderTopLeftRadius: radius.extraLarge, borderTopRightRadius: radius.extraLarge, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   handle: { width: 32, height: 4, borderRadius: 2, backgroundColor: colors.gray400, alignSelf: "center", marginBottom: spacing.md },
   sheetHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.md },

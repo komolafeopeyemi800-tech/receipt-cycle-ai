@@ -17,5 +17,9 @@ export async function getRuntimeConfig(db: Db) {
     freeCameraLimit: limit(row?.freeCameraLimit, 20),
     freeUploadLimit: limit(row?.freeUploadLimit, 20),
     freeManualLimit: limit(row?.freeManualLimit, 60),
+    dailyScanLimit: limit(row?.dailyScanLimit, 25),
+    dailyVoiceLimit: limit(row?.dailyVoiceLimit, 25),
+    dailyUploadLimit: limit(row?.dailyUploadLimit, 25),
+    dailyAssistantLimit: limit(row?.dailyAssistantLimit, 50),
   };
 }

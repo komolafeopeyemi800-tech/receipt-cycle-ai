@@ -332,20 +332,14 @@ export function UploadStatementScreen() {
 
       {!picked ? (
         <View style={styles.uploadContent}>
-          <View style={styles.dropZone}>
+          <Pressable style={styles.dropZone} onPress={onPick} disabled={busy || !ready} accessibilityRole="button" accessibilityLabel="Choose a file to upload">
             <View style={styles.folderIcon}><Ionicons name="folder-open-outline" size={48} color={colors.gray500} /></View>
             <Text style={styles.title}>Upload your files</Text>
-            <Text style={styles.sub}>Choose a file to browse and extract</Text>
+            <Text style={styles.sub}>Tap here to choose a receipt, invoice or statement: photos from your gallery, PDF, CSV or Excel</Text>
             <View style={styles.documentKinds}><Text style={[styles.kindChip, styles.receiptChip]}>receipt</Text><Text style={[styles.kindChip, styles.invoiceChip]}>invoice</Text><Text style={[styles.kindChip, styles.cardChip]}>card statement</Text><Text style={[styles.kindChip, styles.bankChip]}>bank statement</Text></View>
             <Text style={styles.fileTypes}>PDF, CSV, XLSX, JPG or PNG · up to 12 MB</Text>
             <Pressable style={styles.chooseButton} onPress={onPick} disabled={busy || !ready}><Ionicons name="cloud-upload-outline" size={17} color="#fff" /><Text style={styles.chooseText}>Browse files</Text></Pressable>
-          </View>
-          <View style={styles.tileGrid}>
-            <Pressable style={[styles.tile, { backgroundColor: colors.blueSoft }]} onPress={() => void onPickGallery()}><Ionicons name="images-outline" size={27} color={colors.blue600} /><Text style={styles.tileText}>Gallery</Text></Pressable>
-            <Pressable style={[styles.tile, { backgroundColor: "#f3f7ff" }]} onPress={onPick}><Ionicons name="document-outline" size={27} color={colors.blue600} /><Text style={styles.tileText}>Files</Text></Pressable>
-            <Pressable style={[styles.tile, { backgroundColor: colors.roseSoft }]} onPress={onPick}><Ionicons name="document-text-outline" size={27} color={colors.rose600} /><Text style={styles.tileText}>PDF / Excel</Text></Pressable>
-            <Pressable style={[styles.tile, { backgroundColor: colors.mintSoft }]} onPress={() => void onPickGallery()}><Ionicons name="image-outline" size={27} color={colors.primary} /><Text style={styles.tileText}>Image</Text></Pressable>
-          </View>
+          </Pressable>
           <View style={styles.infoCard}><Ionicons name="sparkles-outline" size={19} color={colors.primary} /><Text style={styles.infoText}>Receipt images open with a visual evidence preview and editable extracted fields. Statements are prepared as transaction rows for review.</Text></View>
         </View>
       ) : (

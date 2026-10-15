@@ -5,7 +5,7 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
-  ScrollView,
+  FlatList,
   StyleSheet,
   Text,
   View,
@@ -131,6 +131,16 @@ export function TransactionsListScreen() {
     );
   }, [list, filters.sort]);
 
+  // One flat list (day headings and rows) so only what is on screen is drawn, even with thousands of transactions.
+  const flatRows = useMemo(() => {
+    const out: ({ kind: "day"; day: string } | { kind: "tx"; tx: DocTx })[] = [];
+    for (const [day, txs] of groupedByDate) {
+      out.push({ kind: "day", day });
+      for (const tx of txs) out.push({ kind: "tx", tx });
+    }
+    return out;
+  }, [groupedByDate]);
+
   useEffect(() => {
     if (filters.startDate || filters.endDate) setPeriod("all");
   }, [filters.startDate, filters.endDate]);
@@ -188,11 +198,18 @@ export function TransactionsListScreen() {
   return (
     <LinearGradient colors={[...gradients.page]} style={styles.flex}>
       <ScreenHeader title="Transactions" />
-      <ScrollView
+      <FlatList
+        data={flatRows}
+        keyExtractor={(row) => (row.kind === "day" ? `d-${row.day}` : row.tx.id)}
         contentContainerStyle={styles.pad}
         showsVerticalScrollIndicator={false}
-        nestedScrollEnabled
-      >
+        initialNumToRender={14}
+        maxToRenderPerBatch={12}
+        windowSize={9}
+        updateCellsBatchingPeriod={40}
+        removeClippedSubviews
+        extraData={[selectionMode, selectedIds]}
+        ListHeaderComponent={<>
         <FinancialPeriodSummary
           mode={period}
           onModeChange={(m) => {
@@ -252,7 +269,9 @@ export function TransactionsListScreen() {
           </Pressable>
         ) : null}
 
-        {loading ? (
+        </>}
+        ListEmptyComponent={
+loading ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
         ) : baseFiltered.length === 0 ? (
           <View style={styles.empty}>
@@ -266,14 +285,27 @@ export function TransactionsListScreen() {
             <Text style={styles.emptyTitle}>No matching records</Text>
             <Text style={styles.emptySub}>Change your search or filters.</Text>
           </View>
-        ) : (
-          groupedByDate.map(([day, txs]) => (
-            <View key={day} style={styles.dayGroup}>
-              <Text style={styles.dayHeader}>{formatDate(day)}</Text>
-              {txs.map((tx) => (
-                <AnimatedPressable
-                  key={tx.id}
-                  containerStyle={styles.rowWrap}
+        ) : null
+        }
+        ListFooterComponent={<>
+        {!loading && list.length > 0 ? (
+          <View style={styles.listEnd}>
+            <Text style={styles.listEndTxt}>
+              {list.length === 1
+                ? "1 transaction"
+                : `${list.length} transactions`}
+            </Text>
+          </View>
+        ) : null}
+        <View style={{ height: 100 }} />
+        </>}
+        renderItem={({ item: row }) => row.kind === "day" ? (
+          <Text style={styles.dayHeader}>{formatDate(row.day)}</Text>
+        ) : (() => {
+          const tx = row.tx;
+          return (
+            <AnimatedPressable
+                                    containerStyle={styles.rowWrap}
                   style={styles.rowPressTarget}
                   onPress={() =>
                     selectionMode ? toggleSelected(tx.id) : navigation.navigate("TransactionDetail", {
@@ -318,21 +350,9 @@ export function TransactionsListScreen() {
                     />
                   </View>
                 </AnimatedPressable>
-              ))}
-            </View>
-          ))
-        )}
-        {!loading && list.length > 0 ? (
-          <View style={styles.listEnd}>
-            <Text style={styles.listEndTxt}>
-              {list.length === 1
-                ? "1 transaction"
-                : `${list.length} transactions`}
-            </Text>
-          </View>
-        ) : null}
-        <View style={{ height: 100 }} />
-      </ScrollView>
+          );
+        })()}
+      />
     </LinearGradient>
   );
 }

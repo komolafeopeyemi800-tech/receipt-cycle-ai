@@ -93,6 +93,10 @@ export default function Admin() {
     freeCameraLimit: 20,
     freeUploadLimit: 20,
     freeManualLimit: 60,
+    dailyScanLimit: 25,
+    dailyVoiceLimit: 25,
+    dailyUploadLimit: 25,
+    dailyAssistantLimit: 50,
   });
   const [notificationDraft, setNotificationDraft] = useState({ globalEnabled: false, lifecycleEnabled: true, remindersEnabled: true, transactionalEnabled: true, marketingEnabled: true, androidOfferCampaignsEnabled: false, quietHoursStart: 21, quietHoursEnd: 8, combinedDailyCap: 8, transactionalDailyCap: 6 });
 
@@ -134,6 +138,10 @@ export default function Admin() {
       freeCameraLimit: config.freeCameraLimit,
       freeUploadLimit: config.freeUploadLimit,
       freeManualLimit: config.freeManualLimit,
+      dailyScanLimit: config.dailyScanLimit ?? 25,
+      dailyVoiceLimit: config.dailyVoiceLimit ?? 25,
+      dailyUploadLimit: config.dailyUploadLimit ?? 25,
+      dailyAssistantLimit: config.dailyAssistantLimit ?? 50,
     });
   }, [config]);
 
@@ -435,6 +443,14 @@ export default function Admin() {
                   <Limit label="Camera limit" value={draft.freeCameraLimit} onChange={(v) => setDraft((d) => ({ ...d, freeCameraLimit: v }))} />
                   <Limit label="Upload limit" value={draft.freeUploadLimit} onChange={(v) => setDraft((d) => ({ ...d, freeUploadLimit: v }))} />
                   <Limit label="Manual limit" value={draft.freeManualLimit} onChange={(v) => setDraft((d) => ({ ...d, freeManualLimit: v }))} />
+                </div>
+                <p className="text-sm font-bold text-gray-900 mb-1">Daily AI allowance per person (everyone, paid or free)</p>
+                <p className="text-xs text-gray-500 mb-3">Each person can use these this many times in any 24 hours. They are not shown to users: after the limit they are asked to come back tomorrow. Manual entry stays unlimited for paid plans.</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  <Limit label="Receipt scans / day" value={draft.dailyScanLimit} onChange={(v) => setDraft((d) => ({ ...d, dailyScanLimit: v }))} />
+                  <Limit label="Voice entries / day" value={draft.dailyVoiceLimit} onChange={(v) => setDraft((d) => ({ ...d, dailyVoiceLimit: v }))} />
+                  <Limit label="Document uploads / day" value={draft.dailyUploadLimit} onChange={(v) => setDraft((d) => ({ ...d, dailyUploadLimit: v }))} />
+                  <Limit label="AI assistant / day" value={draft.dailyAssistantLimit} onChange={(v) => setDraft((d) => ({ ...d, dailyAssistantLimit: v }))} />
                 </div>
                 <div className="flex items-center gap-2">
                   <button disabled={saving} className="h-10 px-4 rounded-lg bg-primary text-white text-sm font-semibold disabled:opacity-60">

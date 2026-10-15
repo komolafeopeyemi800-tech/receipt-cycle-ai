@@ -134,6 +134,11 @@ export type PublicConfig = {
   freeCameraLimit: number;
   freeUploadLimit: number;
   freeManualLimit: number;
+  /** Admin-only daily AI allowances per person; the public config does not include them. */
+  dailyScanLimit?: number;
+  dailyVoiceLimit?: number;
+  dailyUploadLimit?: number;
+  dailyAssistantLimit?: number;
   updatedAt: number | null;
   updatedBy: string | null;
 };

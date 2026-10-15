@@ -14,10 +14,11 @@ import {
 } from "../ai/scan";
 import { openaiParseTransaction, whisperTranscribe } from "../ai/voice";
 import { getRuntimeConfig } from "../lib/config";
+import { useDaily, type DailyKind } from "../lib/dailyLimit";
 import { parseBody } from "../lib/http";
 import { computeSubscriptionState, sessionErrorMessage } from "../lib/subscription";
 import { requireUser } from "../middleware/auth";
-import type { AppEnv, AuthedUser } from "../types";
+import type { AppEnv, AuthedUser, Db } from "../types";
 
 /** Signed-in + subscription gate shared by every AI route. Returns an error message, or null when allowed. */
 function aiGate(u: AuthedUser, fallback: string): string | null {
@@ -50,6 +51,14 @@ const hints = z
   })
   .nullish();
 
+/** Counts this call against the person's daily allowance; returns the "come back tomorrow" text when it is used up. */
+async function dailyStop(db: Db, userId: string, kind: DailyKind): Promise<string | null> {
+  const cfg = await getRuntimeConfig(db);
+  const limit = kind === "scan" ? cfg.dailyScanLimit : kind === "voice" ? cfg.dailyVoiceLimit : kind === "upload" ? cfg.dailyUploadLimit : cfg.dailyAssistantLimit;
+  const r = await useDaily(db, userId, kind, limit);
+  return r.ok ? null : r.message;
+}
+
 const blocked = (error: string) => ({ success: false as const, extracted_data: null, error, pipeline: "blocked" });
 
 export const aiRoutes = new Hono<AppEnv>();
@@ -63,6 +72,8 @@ aiRoutes.post("/scan", async (c) => {
   const cfg = await getRuntimeConfig(c.get("db"));
   if (cfg.maintenanceMode) return c.json(blocked("System is in maintenance mode."));
   if (!cfg.scannerEnabled) return c.json(blocked("Scanner is currently disabled by admin."));
+  const scanStop = await dailyStop(c.get("db"), c.get("user").id, "scan");
+  if (scanStop) return c.json(blocked(scanStop));
 
   const env = c.env;
   const mime = body.mimeType || "image/jpeg";
@@ -119,6 +130,8 @@ aiRoutes.post("/scan-text", async (c) => {
   const cfg = await getRuntimeConfig(c.get("db"));
   if (cfg.maintenanceMode) return c.json(blocked("System is in maintenance mode."));
   if (!cfg.uploadEnabled) return c.json(blocked("Upload scanning is currently disabled by admin."));
+  const uploadStop = await dailyStop(c.get("db"), c.get("user").id, "upload");
+  if (uploadStop) return c.json(blocked(uploadStop));
 
   const trimmed = text.trim();
   if (trimmed.length < 8) {
@@ -146,6 +159,8 @@ aiRoutes.post("/money-leaks", async (c) => {
   const empty = { summary: "", findings: [], tips: [] as string[] };
   const gate = aiGate(c.get("user"), "Optional entry highlights are not included with your current access.");
   if (gate) return c.json({ ok: false as const, error: gate, ...empty });
+  const leakStop = await dailyStop(c.get("db"), c.get("user").id, "assistant");
+  if (leakStop) return c.json({ ok: false as const, error: leakStop, ...empty });
   const out = await analyzeMoneyLeaks(c.env, body);
   return c.json(out.ok ? { ...out, error: undefined } : { ok: false as const, error: out.error, ...empty });
 });
@@ -157,6 +172,8 @@ aiRoutes.post("/voice/transcribe", async (c) => {
   );
   const gate = aiGate(c.get("user"), "Voice entry and Ask AI are not included with your current access.");
   if (gate) return c.json({ ok: false as const, error: gate, text: "" });
+  const tStop = await dailyStop(c.get("db"), c.get("user").id, "voice");
+  if (tStop) return c.json({ ok: false as const, error: tStop, text: "" });
   const tr = await whisperTranscribe(c.env, body.audioBase64, (body.mimeType ?? "audio/m4a").trim() || "audio/m4a", body.language);
   return c.json(tr.ok ? { ok: true as const, text: tr.text } : { ok: false as const, error: tr.error, text: "" });
 });
@@ -167,6 +184,8 @@ aiRoutes.post("/voice/parse", async (c) => {
   if (gate) return c.json({ ok: false as const, error: gate, draft: null });
   const t = body.text.trim();
   if (!t) return c.json({ ok: false as const, error: "Say or type what you bought.", draft: null });
+  const pStop = await dailyStop(c.get("db"), c.get("user").id, "voice");
+  if (pStop) return c.json({ ok: false as const, error: pStop, draft: null });
   const out = await openaiParseTransaction(c.env, t, body.hints ?? undefined);
   return c.json(out.ok ? { ok: true as const, draft: out.draft } : { ok: false as const, error: out.error, draft: null });
 });
@@ -178,6 +197,8 @@ aiRoutes.post("/voice/transaction", async (c) => {
   );
   const gate = aiGate(c.get("user"), "Voice entry and Ask AI are not included with your current access.");
   if (gate) return c.json({ ok: false as const, error: gate, transcript: "", draft: null });
+  const vStop = await dailyStop(c.get("db"), c.get("user").id, "voice");
+  if (vStop) return c.json({ ok: false as const, error: vStop, transcript: "", draft: null });
   const tr = await whisperTranscribe(c.env, body.audioBase64, (body.mimeType ?? "audio/m4a").trim() || "audio/m4a", body.language);
   if (!tr.ok) return c.json({ ok: false as const, error: tr.error, transcript: "", draft: null });
   const parsed = await openaiParseTransaction(c.env, tr.text, body.hints ?? undefined);
@@ -196,6 +217,8 @@ aiRoutes.post("/coach", async (c) => {
   );
   const gate = aiGate(c.get("user"), "Voice entry and Ask AI are not included with your current access.");
   if (gate) return c.json({ ok: false as const, error: gate, reply: "" });
+  const cStop = await dailyStop(c.get("db"), c.get("user").id, "assistant");
+  if (cStop) return c.json({ ok: false as const, error: cStop, reply: "" });
   const out = await financeCoachChat(c.env, body);
   return c.json(out.ok ? { ok: true as const, reply: out.reply } : { ok: false as const, error: out.error, reply: "" });
 });

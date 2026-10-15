@@ -36,6 +36,9 @@ export function EstimateListScreen() {
   return <ScreenContainer>
     <ScreenHeader title="Estimates" />
     <FlatList
+      initialNumToRender={12}
+      windowSize={9}
+      removeClippedSubviews
       data={rows}
       keyExtractor={(item) => item.estimateNumber}
       contentContainerStyle={styles.content}

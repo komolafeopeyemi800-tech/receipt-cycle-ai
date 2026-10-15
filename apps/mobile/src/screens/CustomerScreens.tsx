@@ -44,6 +44,9 @@ export function CustomersScreen() {
   return <ScreenContainer>
     <ScreenHeader title="Customers" />
     <FlatList
+      initialNumToRender={12}
+      windowSize={9}
+      removeClippedSubviews
       data={rows}
       keyExtractor={(item) => item.id}
       keyboardShouldPersistTaps="handled"

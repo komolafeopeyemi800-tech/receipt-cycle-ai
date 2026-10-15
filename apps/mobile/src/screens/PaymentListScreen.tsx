@@ -38,6 +38,9 @@ export function PaymentListScreen() {
   return <ScreenContainer>
     <ScreenHeader title="Payments" rightIcon="filter-outline" onRightPress={cycleFilter} />
     <FlatList
+      initialNumToRender={12}
+      windowSize={9}
+      removeClippedSubviews
       data={rows}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.content}

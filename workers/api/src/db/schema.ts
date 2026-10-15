@@ -376,6 +376,11 @@ export const appConfig = sqliteTable("app_config", {
   freeCameraLimit: integer("free_camera_limit"),
   freeUploadLimit: integer("free_upload_limit"),
   freeManualLimit: integer("free_manual_limit"),
+  /** Per person, per rolling 24 hours, for every plan. Admin only: never sent to the apps. */
+  dailyScanLimit: integer("daily_scan_limit"),
+  dailyVoiceLimit: integer("daily_voice_limit"),
+  dailyUploadLimit: integer("daily_upload_limit"),
+  dailyAssistantLimit: integer("daily_assistant_limit"),
   updatedAt: integer("updated_at"),
   updatedBy: text("updated_by"),
 });

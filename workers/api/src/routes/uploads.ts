@@ -4,6 +4,7 @@ import { z } from "zod";
 import { uploadParses } from "../db/schema";
 import { aiExtractChunk, aiMapColumns, aiOcrPdf } from "../docs/ai";
 import { getRuntimeConfig } from "../lib/config";
+import { useDaily } from "../lib/dailyLimit";
 import { ApiError } from "../lib/errors";
 import { parseBody } from "../lib/http";
 import { enforce } from "../lib/rateLimit";
@@ -30,7 +31,7 @@ export const uploadRoutes = new Hono<AppEnv>();
 uploadRoutes.use("*", requireUser);
 
 /** Gate shared by every AI route: switches, plan, key, and the daily budget. */
-async function aiGate(c: Context<AppEnv>) {
+async function aiGate(c: Context<AppEnv>, countsAsUpload = false) {
   const db = c.get("db");
   const u = c.get("user");
   const cfg = await getRuntimeConfig(db);
@@ -47,6 +48,11 @@ async function aiGate(c: Context<AppEnv>) {
   );
   if (!sub.canUseAiFeatures) throw new ApiError(402, sessionErrorMessage(sub.phase) ?? "The AI helper is not available on your plan.");
   if (!c.env.OPENAI_API_KEY?.trim()) throw new ApiError(503, "The AI helper is not configured on the server.");
+  if (countsAsUpload) {
+    // One uploaded document is one use, however many AI calls it needs; the per-call ceiling below still caps total spend.
+    const r = await useDaily(db, u.id, "upload", cfg.dailyUploadLimit);
+    if (!r.ok) throw new ApiError(429, r.message);
+  }
   await enforce(db, `ai:${u.id}`, AI_CALLS_PER_DAY, DAY_MS, `Daily limit reached for the AI helper (${AI_CALLS_PER_DAY} calls).`);
 }
 
@@ -62,7 +68,7 @@ async function viaAi<T>(run: () => Promise<T>): Promise<T> {
 
 uploadRoutes.post("/ai/map-columns", async (c) => {
   const { grid } = await parseBody(c, z.object({ grid: z.array(z.array(z.string().max(200)).max(60)).min(2).max(60) }));
-  await aiGate(c);
+  await aiGate(c, true);
   return c.json({ mapping: await viaAi(() => aiMapColumns(c.env, grid)) });
 });
 
@@ -74,7 +80,7 @@ uploadRoutes.post("/ai/extract", async (c) => {
 
 uploadRoutes.post("/ai/ocr-pdf", async (c) => {
   const { pdfBase64 } = await parseBody(c, z.object({ pdfBase64: z.string().min(100).max(MAX_PDF_BASE64_CHARS) }));
-  await aiGate(c);
+  await aiGate(c, true);
   return c.json({ rows: await viaAi(() => aiOcrPdf(c.env, pdfBase64)) });
 });
 

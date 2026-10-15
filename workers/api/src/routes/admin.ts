@@ -107,7 +107,14 @@ adminRoutes.get("/validate", async (c) => {
 adminRoutes.get("/config", async (c) => {
   await requireAdmin(c);
   const row = await c.get("db").select().from(appConfig).where(eq(appConfig.key, "global")).get();
-  return c.json(toPublicConfig(row));
+  // The daily AI allowances are for the admin only, so they are added here and never to the public config.
+  return c.json({
+    ...toPublicConfig(row),
+    dailyScanLimit: sanitizeLimit(row?.dailyScanLimit, 25),
+    dailyVoiceLimit: sanitizeLimit(row?.dailyVoiceLimit, 25),
+    dailyUploadLimit: sanitizeLimit(row?.dailyUploadLimit, 25),
+    dailyAssistantLimit: sanitizeLimit(row?.dailyAssistantLimit, 50),
+  });
 });
 
 const configBody = z
@@ -133,6 +140,10 @@ const configBody = z
     freeCameraLimit: z.number(),
     freeUploadLimit: z.number(),
     freeManualLimit: z.number(),
+    dailyScanLimit: z.number(),
+    dailyVoiceLimit: z.number(),
+    dailyUploadLimit: z.number(),
+    dailyAssistantLimit: z.number(),
   })
   .partial();
 
@@ -144,6 +155,10 @@ adminRoutes.put("/config", async (c) => {
   if (body.freeCameraLimit !== undefined) patch.freeCameraLimit = sanitizeLimit(body.freeCameraLimit, 20);
   if (body.freeUploadLimit !== undefined) patch.freeUploadLimit = sanitizeLimit(body.freeUploadLimit, 20);
   if (body.freeManualLimit !== undefined) patch.freeManualLimit = sanitizeLimit(body.freeManualLimit, 60);
+  if (body.dailyScanLimit !== undefined) patch.dailyScanLimit = sanitizeLimit(body.dailyScanLimit, 25);
+  if (body.dailyVoiceLimit !== undefined) patch.dailyVoiceLimit = sanitizeLimit(body.dailyVoiceLimit, 25);
+  if (body.dailyUploadLimit !== undefined) patch.dailyUploadLimit = sanitizeLimit(body.dailyUploadLimit, 25);
+  if (body.dailyAssistantLimit !== undefined) patch.dailyAssistantLimit = sanitizeLimit(body.dailyAssistantLimit, 50);
   await db
     .insert(appConfig)
     .values({ key: "global", ...patch })

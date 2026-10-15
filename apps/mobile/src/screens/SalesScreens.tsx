@@ -511,6 +511,9 @@ function SalesList({ kind }: { kind: ListKind }) {
         }
       />
       <FlatList
+        initialNumToRender={12}
+        windowSize={9}
+        removeClippedSubviews
         data={rows}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}

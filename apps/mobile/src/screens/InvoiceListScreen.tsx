@@ -41,6 +41,9 @@ export function InvoiceListScreen() {
   return <ScreenContainer>
     <ScreenHeader title="Invoices" />
     <FlatList
+      initialNumToRender={12}
+      windowSize={9}
+      removeClippedSubviews
       data={rows}
       keyExtractor={(item) => item.invoiceNumber}
       contentContainerStyle={styles.content}

@@ -1,7 +1,7 @@
 import type { InvoiceSettings } from "../sales/setupData";
-import { ACCENTS, DEFAULT_ACCENT, type DocKind, type DocTemplate, type PaperSize } from "./layout";
+import { ACCENTS, DEFAULT_ACCENT, DEFAULT_DOC_OPTIONS, type DocKind, type DocOptions, type DocTemplate, type PaperSize } from "./layout";
 
-export type ResolvedStyle = { template: DocTemplate; accent: string; paper: PaperSize; formatDate: (ymd: string) => string };
+export type ResolvedStyle = { template: DocTemplate; accent: string; paper: PaperSize; formatDate: (ymd: string) => string; options: DocOptions; paymentInstructions: string };
 
 const fallbackDate = (ymd: string) => ymd;
 let formatDateFn: (ymd: string) => string = fallbackDate;
@@ -17,7 +17,8 @@ export function resolveDocumentStyle(kind: DocKind, source: InvoiceSettings | nu
   const template = (kind === "ESTIMATE" ? source?.estimateTemplate : source?.invoiceTemplate) === "compact" ? "compact" : "standard";
   const raw = kind === "ESTIMATE" ? source?.estimateColor : source?.invoiceColor;
   const accent = ACCENTS.some((a) => a.hex === raw) ? (raw as string) : DEFAULT_ACCENT;
-  return { template, accent, paper: source?.paperSize === "letter" ? "letter" : "a4", formatDate };
+  const saved = (kind === "ESTIMATE" ? source?.docOptions?.ESTIMATE : source?.docOptions?.INVOICE) ?? {};
+  return { template, accent, paper: source?.paperSize === "letter" ? "letter" : "a4", formatDate, options: { ...DEFAULT_DOC_OPTIONS, ...saved } as DocOptions, paymentInstructions: source?.paymentInstructions ?? "" };
 }
 
 export function getDocumentStyle(kind: DocKind): ResolvedStyle {

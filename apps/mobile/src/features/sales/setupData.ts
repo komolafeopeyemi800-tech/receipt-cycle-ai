@@ -53,6 +53,10 @@ export type InvoiceSettings = {
   estimateTemplate?: "standard" | "compact";
   estimateColor?: string;
   paperSize?: "a4" | "letter";
+  /** What to print on each kind of document. Missing keys use the defaults in features/documents/layout. */
+  docOptions?: { INVOICE?: Record<string, boolean>; ESTIMATE?: Record<string, boolean> };
+  /** Bank / mobile-money details printed in the "Payment details" block of invoices and estimates. */
+  paymentInstructions?: string;
 };
 
 export type SalesSetupState = {

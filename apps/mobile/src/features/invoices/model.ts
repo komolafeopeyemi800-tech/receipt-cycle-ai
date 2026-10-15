@@ -118,7 +118,7 @@ export function createInvoiceDraft(settings: InvoiceSettings, saved: SavedInvoic
     shipping: 0,
     notes: settings.defaultNotes,
     terms: settings.paymentTerms,
-    signatureEnabled: false,
+    signatureEnabled: Boolean(settings.docOptions?.INVOICE?.signatureDefault),
     signatureText: "",
     attachment: null,
     recurringEnabled: false,

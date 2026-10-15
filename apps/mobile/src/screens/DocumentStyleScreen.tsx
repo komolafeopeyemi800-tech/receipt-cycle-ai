@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import { ScreenHeader } from "../components/ScreenHeader";
@@ -9,13 +9,33 @@ import { DocumentPreview } from "../components/documents/DocumentPreview";
 import { SignaturePad } from "../components/documents/SignaturePad";
 import { useSalesSetup } from "../contexts/SalesSetupContext";
 import { usePreferences } from "../contexts/PreferencesContext";
-import { ACCENTS, PAPER, type DocInput, type DocTemplate, type PaperSize } from "../features/documents/layout";
+import { ACCENTS, DEFAULT_DOC_OPTIONS, PAPER, type DocInput, type DocOptions, type DocTemplate, type PaperSize } from "../features/documents/layout";
 import { resolveDocumentStyle } from "../features/documents/styleStore";
 import { createInvoiceDraft } from "../features/invoices/model";
 import { documentLogo } from "../features/invoices/pdf";
 import type { SalesCustomer } from "../features/sales/setupData";
 import type { RootStackParamList } from "../navigation/types";
 import { colors, radius, spacing, uiType } from "../theme/tokens";
+
+const SHOW_OPTIONS: { key: keyof DocOptions; title: string; note?: string; invoiceOnly?: boolean }[] = [
+  { key: "logo", title: "My logo", note: "Your own logo, when you have uploaded one" },
+  { key: "address", title: "Business address" },
+  { key: "phone", title: "Business phone" },
+  { key: "email", title: "Business email" },
+  { key: "taxId", title: "Tax number" },
+  { key: "website", title: "Website" },
+  { key: "customerContact", title: "Customer phone and email" },
+  { key: "itemNumbers", title: "Row numbers" },
+  { key: "itemDescriptions", title: "Item descriptions" },
+  { key: "taxLine", title: "Tax line in the totals" },
+  { key: "amountBox", title: "Amount box at the top", note: "Standard layout only" },
+  { key: "notes", title: "Notes" },
+  { key: "terms", title: "Payment terms" },
+  { key: "paymentDetails", title: "Payment details", note: "Bank or mobile-money details you type below" },
+  { key: "signatureDefault", title: "Signature on new invoices", note: "You can still change it on each invoice", invoiceOnly: true },
+  { key: "hideBranding", title: "Hide “Created with Receipt Cycle”", note: "Removes the small line in the footer" },
+];
+void DEFAULT_DOC_OPTIONS;
 
 const SAMPLE_CUSTOMER: SalesCustomer = { id: "sample", name: "Northwind Traders", businessName: "Northwind Traders Ltd", email: "accounts@northwind.example", phone: "+1 555 010 2030", billingAddress: "48 Harbour Road\nPort City 10021", taxId: "", notes: "", status: "active", createdAt: "2026-01-01" };
 
@@ -30,6 +50,9 @@ export function DocumentStyleScreen() {
   const [accent, setAccent] = useState(current.accent);
   const [paper, setPaper] = useState<PaperSize>(current.paper);
   const [padOpen, setPadOpen] = useState(false);
+  const [opts, setOpts] = useState<DocOptions>(current.options);
+  const [payText, setPayText] = useState(invoiceSettings.paymentInstructions ?? "");
+  const flip = (key: keyof DocOptions) => (value: boolean) => setOpts((o) => ({ ...o, [key]: value }));
 
   const input = useMemo<DocInput>(() => {
     const base = createInvoiceDraft(invoiceSettings, []);
@@ -45,15 +68,17 @@ export function DocumentStyleScreen() {
       taxRate: base.taxRate || 7.5,
       signatureEnabled: true,
     };
-    return { kind, template, accent, paper, draft, business: businessProfile, customer: SAMPLE_CUSTOMER, currency, formatDate, signature: businessProfile.signature ?? null, logo: documentLogo(businessProfile) };
+    return { kind, template, accent, paper, draft, business: businessProfile, customer: SAMPLE_CUSTOMER, currency, formatDate, signature: businessProfile.signature ?? null, logo: documentLogo(businessProfile), options: opts, paymentInstructions: payText };
     // numberFormat changes how money prints, so it refreshes the sample too
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kind, template, accent, paper, invoiceSettings, businessProfile, currency, formatDate, numberFormat]);
+  }, [kind, template, accent, paper, opts, payText, invoiceSettings, businessProfile, currency, formatDate, numberFormat]);
 
   function save() {
     saveInvoiceSettings({
       ...invoiceSettings,
       paperSize: paper,
+      paymentInstructions: payText.trim(),
+      docOptions: { ...invoiceSettings.docOptions, [kind]: opts },
       ...(kind === "INVOICE" ? { invoiceTemplate: template, invoiceColor: accent } : { estimateTemplate: template, estimateColor: accent }),
     });
     Alert.alert("Saved", `Your ${kind === "INVOICE" ? "invoices" : "estimates"} will print in this style.`);
@@ -90,6 +115,25 @@ export function DocumentStyleScreen() {
             </Pressable>
           ))}
         </View>
+        <Text style={styles.section}>WHAT TO SHOW</Text>
+        <View style={styles.optCard}>
+          {SHOW_OPTIONS.filter((row) => !row.invoiceOnly || kind === "INVOICE").map((row, index, all) => (
+            <View key={row.key} style={[styles.optRow, index < all.length - 1 && styles.optDivider]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.optTitle}>{row.title}</Text>
+                {row.note ? <Text style={styles.optNote}>{row.note}</Text> : null}
+              </View>
+              <Switch value={Boolean(opts[row.key])} onValueChange={flip(row.key)} trackColor={{ false: colors.gray200, true: colors.primary }} thumbColor="#fff" accessibilityLabel={row.title} />
+            </View>
+          ))}
+        </View>
+        {opts.paymentDetails ? (
+          <>
+            <Text style={styles.section}>PAYMENT DETAILS</Text>
+            <TextInput style={styles.payInput} value={payText} onChangeText={setPayText} multiline placeholder="Bank name, account name and number, payment reference" placeholderTextColor={colors.gray400} textAlignVertical="top" maxLength={400} />
+            <Text style={styles.hint}>Printed under your notes on every {kind === "INVOICE" ? "invoice" : "estimate"}. Leave empty to print nothing.</Text>
+          </>
+        ) : null}
         <Text style={styles.section}>LOGO</Text>
         <View style={styles.sigCard}>
           <View style={{ flex: 1 }}>
@@ -123,6 +167,12 @@ const styles = StyleSheet.create({
   chipOn: { backgroundColor: colors.mintSoft, borderColor: colors.primary },
   chipText: { color: colors.textPrimary, fontSize: uiType.body, fontWeight: "700" },
   chipTextOn: { color: colors.primary },
+  optCard: { borderRadius: radius.medium, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: spacing.md },
+  optRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, minHeight: 56, paddingVertical: spacing.sm },
+  optDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.divider },
+  optTitle: { color: colors.textPrimary, fontSize: uiType.body, fontWeight: "600" },
+  optNote: { color: colors.gray500, fontSize: uiType.caption, marginTop: 2 },
+  payInput: { minHeight: 96, borderRadius: radius.medium, borderWidth: 1, borderColor: colors.border, padding: spacing.md, fontSize: 15, color: colors.textPrimary, backgroundColor: colors.surface },
   hint: { color: colors.gray500, fontSize: uiType.caption, lineHeight: 17, marginTop: spacing.sm },
   swatches: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   swatchRing: { width: 52, height: 52, borderRadius: 26, borderWidth: 2, borderColor: "transparent", alignItems: "center", justifyContent: "center" },

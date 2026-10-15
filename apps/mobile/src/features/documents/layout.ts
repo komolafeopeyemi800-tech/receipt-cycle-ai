@@ -37,6 +37,21 @@ export type Prim =
   | { t: "hint"; x: number; y: number; w: number; h: number; text: string }
   | { t: "ink"; x: number; y: number; w: number; h: number; ink: SignatureInk; color: string };
 
+/** What the person chooses to print on a document. Everything is on by default except the app credit switch. */
+export type DocOptions = {
+  logo: boolean; phone: boolean; email: boolean; address: boolean; taxId: boolean; website: boolean;
+  customerContact: boolean; itemDescriptions: boolean; itemNumbers: boolean; taxLine: boolean; amountBox: boolean;
+  notes: boolean; terms: boolean; paymentDetails: boolean;
+  /** New invoices start with the signature line switched on. */
+  signatureDefault: boolean;
+  /** Hide the small "Created with Receipt Cycle" line in the footer. */
+  hideBranding: boolean;
+};
+export const DEFAULT_DOC_OPTIONS: DocOptions = {
+  logo: true, phone: true, email: true, address: true, taxId: true, website: true, customerContact: true, itemDescriptions: true,
+  itemNumbers: true, taxLine: true, amountBox: true, notes: true, terms: true, paymentDetails: true, signatureDefault: false, hideBranding: false,
+};
+
 export type DocLayout = { w: number; h: number; pages: Prim[][] };
 
 export type DocInput = {
@@ -52,6 +67,9 @@ export type DocInput = {
   signature?: SignatureInk | null;
   /** A JPEG the PDF can embed; the same file is shown in the preview. */
   logo?: { uri: string; width: number; height: number } | null;
+  options?: Partial<DocOptions>;
+  /** Free text such as bank name and account number, printed when the "payment details" option is on. */
+  paymentInstructions?: string;
 };
 
 const SYMBOLS: Record<string, string> = { USD: "$", GBP: "£", EUR: "€", JPY: "¥", CAD: "CA$", AUD: "A$", NZD: "NZ$", MXN: "MX$", HKD: "HK$", SGD: "S$" };
@@ -117,6 +135,7 @@ export function buildDocument(input: DocInput): DocLayout {
   const m = compact ? 34 : 40;
   const c: Ctx = { input, money: documentMoney(input.currency), w, h, m, pages: [], cur: [], y: 0, limit: h - (compact ? 52 : 62) };
   const isInvoice = input.kind === "INVOICE";
+  const o: DocOptions = { ...DEFAULT_DOC_OPTIONS, ...input.options };
   const totals = calculateInvoiceTotals(input.draft);
   const cw = w - 2 * m;
   const accent = input.accent;
@@ -127,7 +146,10 @@ export function buildDocument(input: DocInput): DocLayout {
   if (!compact) c.cur.push({ t: "rect", x: 0, y: 0, w, h: 10, fill: accent });
   let y = compact ? m - 6 : 36;
   const logoBox = compact ? 34 : 46;
-  if (input.logo) {
+  const logoSpace = o.logo ? logoBox + 12 : 0;
+  if (!o.logo) {
+    /* the person chose not to print a logo */
+  } else if (input.logo) {
     const r = input.logo.width / input.logo.height;
     const lw = r >= 1 ? logoBox : logoBox * r, lh = r >= 1 ? logoBox / r : logoBox;
     c.cur.push({ t: "img", x: m, y, w: lw, h: lh, uri: input.logo.uri });
@@ -135,26 +157,26 @@ export function buildDocument(input: DocInput): DocLayout {
     // No logo uploaded: leave the space empty (never our own mark). The preview draws a dashed "Your logo" hint here; the PDF stays blank.
     c.cur.push({ t: "hint", x: m, y, w: logoBox, h: logoBox, text: "Your logo" });
   }
-  const nameX = m + logoBox + 12;
-  const leftW = (compact ? cw * 0.58 : cw * 0.56) - logoBox - 12;
+  const nameX = m + logoSpace;
+  const leftW = (compact ? cw * 0.58 : cw * 0.56) - logoSpace;
   const nameSize = (business.businessName || "").length > 28 ? 11.5 : compact ? 12 : 14;
   let hy = y + 1;
   hy += paragraph(c, nameX, hy, leftW, business.businessName || "Your business", nameSize, { bold: true, max: 2 });
-  const contact = [business.email, business.phone].filter(Boolean).join("  ·  ");
-  if (!compact && business.address) hy += paragraph(c, nameX, hy + 2, leftW, business.address, 8.5, { color: MUTED, max: 4 }) + 2;
+  const contact = [o.email ? business.email : "", o.phone ? business.phone : ""].filter(Boolean).join("  ·  ");
+  if (o.address && business.address) hy += paragraph(c, nameX, hy + 2, leftW, business.address, 8.5, { color: MUTED, max: 4 }) + 2;
   if (contact) hy += paragraph(c, nameX, hy + 1, leftW, contact, 8.5, { color: MUTED, max: 2 }) + 1;
-  if (business.taxId) hy += paragraph(c, nameX, hy + 1, leftW, `Tax ID: ${business.taxId}`, 8.5, { color: MUTED, max: 1 });
+  if (o.taxId && business.taxId) hy += paragraph(c, nameX, hy + 1, leftW, `Tax ID: ${business.taxId}`, 8.5, { color: MUTED, max: 1 });
   const rightX = m + cw * 0.58, rightW = cw * 0.42;
   const titleSize = compact ? 18 : 26;
   text(c, rightX, y - 2, rightW, input.kind, titleSize, { bold: true, color: accent, align: "right" });
   text(c, rightX, y + titleSize + 2, rightW, `# ${input.draft.invoiceNumber}`, compact ? 9.5 : 10.5, { bold: true, align: "right" });
   if (compact) c.cur.push({ t: "rect", x: rightX + rightW - 70, y: y + titleSize + 18, w: 70, h: 1.6, fill: accent });
-  y = Math.max(hy, y + logoBox) + (compact ? 14 : 20);
+  y = Math.max(hy, y + (o.logo ? logoBox : 0)) + (compact ? 14 : 20);
 
   // ---------- parties and key facts ----------
   const dueLabel = isInvoice ? "Due date" : "Valid until";
   const details: [string, string][] = [["Issue date", input.formatDate(input.draft.issueDate)], [dueLabel, input.formatDate(input.draft.dueDate)]];
-  if (input.draft.terms) details.push([isInvoice ? "Terms" : "Terms", input.draft.terms]);
+  if (o.terms && input.draft.terms) details.push([isInvoice ? "Terms" : "Terms", input.draft.terms]);
   const billW = compact ? cw * 0.34 : cw * 0.36;
   const billLabel = isInvoice ? "Bill to" : "Prepared for";
   let by = y;
@@ -163,7 +185,7 @@ export function buildDocument(input: DocInput): DocLayout {
   by += paragraph(c, m, by, billW, customer.name || "Customer", 11, { bold: true, max: 2 });
   if (customer.businessName && customer.businessName !== customer.name) by += paragraph(c, m, by, billW, customer.businessName, 9, { color: MUTED, max: 1 });
   if (customer.billingAddress) by += paragraph(c, m, by + 1, billW, customer.billingAddress, 8.5, { color: MUTED, max: 4 }) + 1;
-  const reach = [customer.email, customer.phone].filter(Boolean).join("  ·  ");
+  const reach = o.customerContact ? [customer.email, customer.phone].filter(Boolean).join("  ·  ") : "";
   if (reach) by += paragraph(c, m, by + 1, billW, reach, 8.5, { color: MUTED, max: 2 });
 
   const detX = m + cw * (compact ? 0.38 : 0.39), detW = cw * (compact ? 0.28 : 0.26);
@@ -176,7 +198,9 @@ export function buildDocument(input: DocInput): DocLayout {
     dy += 13;
   });
 
-  if (!compact) {
+  if (!compact && !o.amountBox) {
+    y = Math.max(by, dy) + 18;
+  } else if (!compact) {
     const chipX = m + cw * 0.69, chipW = cw * 0.31, chipH = 62;
     c.cur.push({ t: "rect", x: chipX, y, w: chipW, h: chipH, fill: tint(accent, 0.1), stroke: tint(accent, 0.35), lw: 0.6 });
     label(c, chipX + 12, y + 10, chipW - 24, isInvoice ? "Amount due" : "Estimate total");
@@ -194,7 +218,7 @@ export function buildDocument(input: DocInput): DocLayout {
   c.cur.push({ t: "line", x1: m, y1: y - 8, x2: m + cw, y2: y - 8, color: HAIR, lw: 0.6 });
 
   // ---------- table ----------
-  const amtW = compact ? 74 : 82, rateW = compact ? 66 : 74, qtyW = compact ? 40 : 46, numW = compact ? 0 : 22;
+  const amtW = compact ? 74 : 82, rateW = compact ? 66 : 74, qtyW = compact ? 40 : 46, numW = compact || !o.itemNumbers ? 0 : 22;
   const descX = m + numW, descW = cw - numW - amtW - rateW - qtyW - 8;
   const qtyX = m + cw - amtW - rateW - qtyW, rateX = m + cw - amtW - rateW, amtX = m + cw - amtW;
   const tableHead = () => {
@@ -207,7 +231,7 @@ export function buildDocument(input: DocInput): DocLayout {
       y += 18;
     } else {
       c.cur.push({ t: "rect", x: m, y, w: cw, h: 22, fill: accent });
-      text(c, m + 6, y + 7, numW, "#", 8, { bold: true, color: "#FFFFFF" });
+      if (numW > 0) text(c, m + 6, y + 7, numW, "#", 8, { bold: true, color: "#FFFFFF" });
       text(c, descX, y + 7, descW, "DESCRIPTION", 8, { bold: true, color: "#FFFFFF" });
       text(c, qtyX, y + 7, qtyW, "QTY", 8, { bold: true, color: "#FFFFFF", align: "right" });
       text(c, rateX, y + 7, rateW, "RATE", 8, { bold: true, color: "#FFFFFF", align: "right" });
@@ -218,7 +242,8 @@ export function buildDocument(input: DocInput): DocLayout {
   const footer = () => {
     const fy = h - (compact ? 34 : 40);
     c.cur.push({ t: "line", x1: m, y1: fy, x2: m + cw, y2: fy, color: HAIR, lw: 0.6 });
-    text(c, m, fy + 7, cw * 0.5, fitText([business.businessName, business.website].filter(Boolean).join("  ·  ") || "", 7.5, false, cw * 0.5), 7.5, { color: MUTED });
+    text(c, m, fy + 7, cw * 0.5, fitText([business.businessName, o.website ? business.website : ""].filter(Boolean).join("  ·  ") || "", 7.5, false, cw * 0.5), 7.5, { color: MUTED });
+    if (!o.hideBranding) text(c, m, fy + 18, cw * 0.5, "Created with Receipt Cycle", 6.5, { color: "#8A94A3" });
     text(c, m + cw * 0.5, fy + 7, cw * 0.5, `${input.draft.invoiceNumber}  ·  Page {{page}} of {{pages}}`, 7.5, { color: MUTED, align: "right" });
   };
   const newPage = () => {
@@ -236,12 +261,12 @@ export function buildDocument(input: DocInput): DocLayout {
   const rowPad = compact ? 5 : 7;
   input.draft.items.forEach((item, index) => {
     const nameLines = wrapText(item.name, compact ? 8.5 : 9, true, descW - 4).slice(0, 3);
-    const descLines = item.description ? wrapText(item.description, 7.8, false, descW - 4).slice(0, 3) : [];
+    const descLines = o.itemDescriptions && item.description ? wrapText(item.description, 7.8, false, descW - 4).slice(0, 3) : [];
     const rowH = rowPad * 2 + nameLines.length * (compact ? 11 : 12) + descLines.length * 10;
     if (y + rowH > c.limit) newPage();
     if (!compact && index % 2 === 1) c.cur.push({ t: "rect", x: m, y, w: cw, h: rowH, fill: ZEBRA });
     let ty = y + rowPad;
-    if (!compact) text(c, m + 6, ty, numW, String(index + 1), 8.5, { color: MUTED });
+    if (numW > 0) text(c, m + 6, ty, numW, String(index + 1), 8.5, { color: MUTED });
     nameLines.forEach((line, i) => text(c, descX, ty + i * (compact ? 11 : 12), descW, line, compact ? 8.5 : 9, { bold: true }));
     ty += nameLines.length * (compact ? 11 : 12);
     descLines.forEach((line, i) => text(c, descX, ty + i * 10, descW, line, 7.8, { color: MUTED }));
@@ -259,11 +284,11 @@ export function buildDocument(input: DocInput): DocLayout {
   // ---------- totals + notes (kept together) ----------
   const rows: [string, string][] = [["Subtotal", c.money(totals.subtotal)]];
   if (totals.discountAmount > 0) rows.push([`Discount${input.draft.discountType === "percentage" ? ` (${qty(input.draft.discountValue)}%)` : ""}`, `-${c.money(totals.discountAmount)}`]);
-  if (input.draft.taxRate > 0) rows.push([`${input.draft.taxLabel || "Tax"} (${qty(input.draft.taxRate)}%)`, c.money(totals.taxAmount)]);
+  if (o.taxLine && input.draft.taxRate > 0) rows.push([`${input.draft.taxLabel || "Tax"} (${qty(input.draft.taxRate)}%)`, c.money(totals.taxAmount)]);
   if (input.draft.shipping > 0) rows.push(["Shipping", c.money(input.draft.shipping)]);
   const totBoxW = cw * (compact ? 0.46 : 0.42), totX = m + cw - totBoxW;
   const noteW = cw - totBoxW - 24;
-  const noteLines = input.draft.notes ? wrapText(input.draft.notes, 8, false, noteW) : [];
+  const noteLines = o.notes && input.draft.notes ? wrapText(input.draft.notes, 8, false, noteW) : [];
   const needTotals = rows.length * 17 + (compact ? 34 : 40) + 6;
   const needNotes = noteLines.length ? 14 + Math.min(noteLines.length, 8) * 10.5 : 0;
   const needSign = input.draft.signatureEnabled || !isInvoice ? 96 : 0;
@@ -290,6 +315,12 @@ export function buildDocument(input: DocInput): DocLayout {
     label(c, m, ny, noteW, "Notes");
     noteLines.slice(0, 8).forEach((line, i) => text(c, m, ny + 12 + i * 10.5, noteW, line, 8, { color: "#374151" }));
     ny += needNotes;
+  }
+  const payLines = o.paymentDetails && input.paymentInstructions?.trim() ? wrapText(input.paymentInstructions, 8, false, noteW).slice(0, 7) : [];
+  if (payLines.length) {
+    label(c, m, ny, noteW, "Payment details");
+    payLines.forEach((line, i) => text(c, m, ny + 12 + i * 10.5, noteW, line, 8, { color: "#374151" }));
+    ny += 14 + payLines.length * 10.5;
   }
   y = Math.max(y, ny) + 8;
 
@@ -318,7 +349,7 @@ export function buildDocument(input: DocInput): DocLayout {
     y += 68;
   }
   void needSign;
-  if (input.draft.terms && isInvoice && y + 26 <= c.limit) {
+  if (o.terms && input.draft.terms && isInvoice && y + 26 <= c.limit) {
     label(c, m, y, cw, "Payment terms");
     text(c, m, y + 11, cw, `${input.draft.terms}. Please quote ${input.draft.invoiceNumber} with your payment.`, 8, { color: "#374151" });
   }

@@ -98,6 +98,18 @@ app.get("/api/billing/status", (c) => {
   const required = ["POLAR_ACCESS_TOKEN", "POLAR_WEBHOOK_SECRET", "POLAR_MONTHLY_PRODUCT_ID", "POLAR_YEARLY_PRODUCT_ID"] as const;
   return c.json({ server: e.POLAR_SERVER === "sandbox" ? "sandbox" : "production", ready: required.every((k) => checks[k]), present: checks });
 });
+/** Is the Firebase key present and readable? Yes/no and the (non-secret) project id only. */
+app.get("/api/push/status", (c) => {
+  const raw = c.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
+  if (!raw) return c.json({ configured: false });
+  try {
+    const j = JSON.parse(raw) as { project_id?: string; client_email?: string; private_key?: string };
+    const valid = Boolean(j.project_id && j.client_email && j.private_key?.includes("BEGIN PRIVATE KEY"));
+    return c.json({ configured: true, valid, projectId: j.project_id ?? null });
+  } catch {
+    return c.json({ configured: true, valid: false, projectId: null, problem: "The pasted value is not valid JSON. Paste the whole downloaded file." });
+  }
+});
 app.route("/api/billing", billingRoutes);
 app.route("/api/admin", adminRoutes);
 app.route("/api/ai", aiRoutes);

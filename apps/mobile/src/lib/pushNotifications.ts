@@ -8,7 +8,7 @@ Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false }),
 });
 
-async function deviceId() {
+export async function deviceId() {
   const current = await AsyncStorage.getItem(DEVICE_ID_KEY);
   if (current) return current;
   const created = `${Platform.OS}-${Date.now()}-${Math.random().toString(36).slice(2)}`;

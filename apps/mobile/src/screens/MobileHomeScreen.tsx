@@ -228,7 +228,20 @@ export function MobileHomeScreen() {
     void AsyncStorage.setItem(`receipt-cycle:access-notice:${user.id}`, today);
   };
 
+  // The looping voice animations pause while the page is being scrolled, so scrolling stays smooth on mid-range phones.
+  const [scrolling, setScrolling] = useState(false);
+  const scrollIdle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const markScrolling = () => {
+    if (scrollIdle.current) clearTimeout(scrollIdle.current);
+    setScrolling((was) => (was ? was : true));
+  };
+  const markIdle = () => {
+    if (scrollIdle.current) clearTimeout(scrollIdle.current);
+    scrollIdle.current = setTimeout(() => setScrolling(false), 250);
+  };
+
   useEffect(() => {
+    if (scrolling) return;
     const waveLoops = waveMotions.map((motion, index) =>
       Animated.loop(
         Animated.sequence([
@@ -272,7 +285,7 @@ export function MobileHomeScreen() {
       pulseOne.stop();
       pulseTwo.stop();
     };
-  }, [waveMotions, micPulseOne, micPulseTwo]);
+  }, [waveMotions, micPulseOne, micPulseTwo, scrolling]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -318,6 +331,10 @@ export function MobileHomeScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         decelerationRate="normal"
+        onScrollBeginDrag={markScrolling}
+        onScrollEndDrag={markIdle}
+        onMomentumScrollBegin={markScrolling}
+        onMomentumScrollEnd={markIdle}
         scrollEventThrottle={16}
         nestedScrollEnabled
       >

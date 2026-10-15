@@ -60,7 +60,9 @@ export default function Admin() {
   const config = useQuery(api.admin.adminConfig, authArgs ? authArgs : "skip");
   const logs = useQuery(api.admin.recentAuditLogs, authArgs ? { ...authArgs, limit: 80 } : "skip");
   const users = useQuery(api.admin.recentUsers, authArgs ? { ...authArgs, limit: 2000 } : "skip");
+  const notificationDashboard = useQuery(api.admin.notificationDashboard, authArgs ? authArgs : "skip");
   const updateConfig = useMutation(api.admin.updateConfig);
+  const updateNotificationSettings = useMutation(api.admin.updateNotificationSettings);
   const updateUserManagement = useMutation(api.admin.updateUserManagement);
   const deleteUserMutation = useMutation(api.admin.deleteUser);
   const fetchHealth = useAction(api.admin.systemHealth);
@@ -91,6 +93,21 @@ export default function Admin() {
     freeUploadLimit: 20,
     freeManualLimit: 60,
   });
+  const [notificationDraft, setNotificationDraft] = useState({ globalEnabled: false, lifecycleEnabled: true, remindersEnabled: true, transactionalEnabled: true, marketingEnabled: true, androidOfferCampaignsEnabled: false, quietHoursStart: 21, quietHoursEnd: 8, combinedDailyCap: 8, transactionalDailyCap: 6 });
+
+  useEffect(() => {
+    if (!notificationDashboard?.settings) return;
+    const { key: _key, updatedAt: _updatedAt, updatedBy: _updatedBy, ...settings } = notificationDashboard.settings;
+    setNotificationDraft(settings);
+  }, [notificationDashboard]);
+
+  async function saveNotificationControls() {
+    if (!authArgs) return setMsg("Unlock admin first.");
+    setSaving(true); setMsg(null);
+    try { await updateNotificationSettings({ ...authArgs, actor: adminEmail, ...notificationDraft }); setMsg("Push notification controls updated."); }
+    catch (error) { setMsg(error instanceof Error ? error.message : "Could not update push controls."); }
+    finally { setSaving(false); }
+  }
 
   useEffect(() => {
     if (!config) return;
@@ -378,6 +395,28 @@ export default function Admin() {
                 )}
               </div>
             </div>
+
+            <form onSubmit={(event) => { event.preventDefault(); void saveNotificationControls(); }} className="bg-white rounded-2xl p-5 border border-gray-100 mb-6">
+              <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+                <div><h3 className="text-lg font-bold text-gray-900">Push Notifications</h3><p className="text-sm text-gray-500">Global guardrails, channel kill switches, quiet hours, frequency caps and recent delivery health.</p></div>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold ${notificationDraft.globalEnabled ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{notificationDraft.globalEnabled ? "Sending enabled" : "Sending safely paused"}</span>
+              </div>
+              <div className="grid md:grid-cols-3 gap-3 mb-4 grid-cols-1">
+                <Toggle label="Global sending" checked={notificationDraft.globalEnabled} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, globalEnabled: value }))} />
+                <Toggle label="Trial lifecycle" checked={notificationDraft.lifecycleEnabled} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, lifecycleEnabled: value }))} />
+                <Toggle label="Daily reminders" checked={notificationDraft.remindersEnabled} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, remindersEnabled: value }))} />
+                <Toggle label="Transactional" checked={notificationDraft.transactionalEnabled} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, transactionalEnabled: value }))} />
+                <Toggle label="Marketing" checked={notificationDraft.marketingEnabled} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, marketingEnabled: value }))} />
+                <Toggle label="Android offer campaigns" checked={notificationDraft.androidOfferCampaignsEnabled} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, androidOfferCampaignsEnabled: value }))} />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <Limit label="Quiet starts" value={notificationDraft.quietHoursStart} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, quietHoursStart: value }))} />
+                <Limit label="Quiet ends" value={notificationDraft.quietHoursEnd} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, quietHoursEnd: value }))} />
+                <Limit label="Daily cap" value={notificationDraft.combinedDailyCap} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, combinedDailyCap: value }))} />
+                <Limit label="Transactional cap" value={notificationDraft.transactionalDailyCap} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, transactionalDailyCap: value }))} />
+              </div>
+              <div className="flex flex-wrap items-center gap-3"><button disabled={saving} className="h-10 px-4 rounded-lg bg-primary text-white text-sm font-semibold disabled:opacity-60">Save push controls</button><span className="text-xs text-gray-500">{notificationDashboard?.templates.length ?? 0} templates · {notificationDashboard?.jobs.length ?? 0} recent jobs · {notificationDashboard?.attempts.length ?? 0} delivery attempts</span></div>
+            </form>
 
             <div className="grid lg:grid-cols-2 gap-6 mb-6 grid-cols-1">
               <form

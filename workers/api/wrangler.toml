@@ -12,6 +12,9 @@ routes = [{ pattern = "api.receiptcycle.com", custom_domain = true }]
 # Keep the workers.dev address too, as a backup.
 workers_dev = true
 
+[triggers]
+crons = ["* * * * *"]
+
 [[d1_databases]]
 binding = "DB"
 database_name = "receipt-cycle-db"

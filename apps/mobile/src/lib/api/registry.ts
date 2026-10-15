@@ -12,6 +12,8 @@ import type {
   AdminStats,
   AdminUser,
   AuditLog,
+  NotificationAdminDashboard,
+  NotificationAdminSettings,
   AuthResult,
   Budget,
   Category,
@@ -20,6 +22,7 @@ import type {
   Finding,
   LedgerRow,
   Preferences,
+  PushPreferences,
   PublicConfig,
   ScanResult,
   SessionArgs,
@@ -209,6 +212,22 @@ export const api = {
       const { token: _t, sessionToken: _s, userId: _u, ...prefs } = a;
       await c.request("PUT", "/api/preferences", { token: tok(a), body: prefs });
     }),
+  },
+
+  notifications: {
+    preferences: fn<SessionArgs, PushPreferences>("query", "notifications.preferences", (c, a) =>
+      c.request("GET", "/api/notifications/preferences", { token: tok(a) })),
+    savePreferences: fn<SessionArgs & PushPreferences, { ok: true }>("mutation", "notifications.savePreferences", (c, a) => {
+      const { token: _token, sessionToken: _sessionToken, userId: _userId, updatedAt: _updatedAt, ...body } = a;
+      return c.request("PUT", "/api/notifications/preferences", { token: tok(a), body });
+    }),
+    registerDevice: fn<SessionArgs & { pushToken: string; platform: "android" | "ios" | "web"; deviceId: string; permissionStatus: string }, { ok: true }>("mutation", "notifications.registerDevice", (c, a) =>
+      c.request("PUT", "/api/notifications/device", { token: tok(a), body: { token: a.pushToken, platform: a.platform, deviceId: a.deviceId, permissionStatus: a.permissionStatus } })),
+    /** Sends a test notification to this account's devices right now. */
+    test: fn<SessionArgs, { sent: number; results: { platform: string; ok: boolean; error?: string }[] }>("action", "notifications.test", (c, a) =>
+      c.request("POST", "/api/notifications/test", { token: tok(a), body: {} })),
+    opened: fn<SessionArgs & { jobId?: string; kind: "opened" | "app_opened" }, { ok: true }>("mutation", "notifications.opened", (c, a) =>
+      c.request("POST", "/api/notifications/opened", { token: tok(a), body: { jobId: a.jobId, kind: a.kind } })),
   },
 
   // ---- money data -----------------------------------------------------------
@@ -481,6 +500,12 @@ export const api = {
     recentAuditLogs: fn<AdminListArgs, AuditLog[]>("query", "admin.recentAuditLogs", (c, a) =>
       c.request("GET", "/api/admin/audit-logs", { adminSecret: a.secret, query: { limit: a.limit } }),
     ),
+    notificationDashboard: fn<AdminArgs, NotificationAdminDashboard>("query", "admin.notificationDashboard", (c, a) =>
+      c.request("GET", "/api/notifications/admin", { adminSecret: a.secret })),
+    updateNotificationSettings: fn<AdminArgs & Omit<NotificationAdminSettings, "key" | "updatedAt" | "updatedBy">, { ok: true }>("mutation", "admin.updateNotificationSettings", (c, a) => {
+      const { secret, adminEmail: _email, actor: _actor, ...body } = a;
+      return c.request("PUT", "/api/notifications/admin/settings", { adminSecret: secret, body });
+    }),
     updateUserManagement: fn<UserPatch, { ok: true }>("mutation", "admin.updateUserManagement", async (c, a) => {
       const { secret, adminEmail: _e, actor: _a, userId, ...body } = a;
       await c.request("PATCH", `/api/admin/users/${enc(userId)}`, { adminSecret: secret, body });

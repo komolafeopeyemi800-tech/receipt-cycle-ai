@@ -14,3 +14,20 @@ export const GOOGLE_WEB_CLIENT_ID =
 export const API_URL: string =
   (import.meta.env.VITE_API_URL as string | undefined)?.trim() ||
   (import.meta.env.DEV ? "http://localhost:8787" : PRODUCTION_API_URL);
+
+/**
+ * Firebase *web* app settings for browser notifications. These are public by design (they ship in every Firebase website).
+ * Fill them in from Firebase console > Project settings > Your apps > Web app, or set the VITE_FIREBASE_* variables.
+ */
+const fb = (key: string, fallback = "") => ((import.meta.env as Record<string, string | undefined>)[key] ?? "").trim() || fallback;
+export const FIREBASE_WEB_CONFIG = {
+  apiKey: fb("VITE_FIREBASE_API_KEY"),
+  authDomain: fb("VITE_FIREBASE_AUTH_DOMAIN"),
+  projectId: fb("VITE_FIREBASE_PROJECT_ID"),
+  storageBucket: fb("VITE_FIREBASE_STORAGE_BUCKET"),
+  messagingSenderId: fb("VITE_FIREBASE_MESSAGING_SENDER_ID"),
+  appId: fb("VITE_FIREBASE_APP_ID"),
+};
+/** Firebase console > Project settings > Cloud Messaging > Web Push certificates > Key pair (public key). */
+export const FIREBASE_VAPID_KEY = fb("VITE_FIREBASE_VAPID_KEY");
+export const webPushConfigured = () => Boolean(FIREBASE_WEB_CONFIG.apiKey && FIREBASE_WEB_CONFIG.projectId && FIREBASE_WEB_CONFIG.appId && FIREBASE_VAPID_KEY);

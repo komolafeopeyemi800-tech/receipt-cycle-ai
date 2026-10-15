@@ -106,7 +106,6 @@ export type RootStackParamList = {
   SignUp: undefined;
   ForgotPassword: undefined;
   ResetPassword: { token?: string } | undefined;
-  FinanceCoach: undefined;
   CashFlowReport: undefined;
   OverdueInvoicesReport: undefined;
 };

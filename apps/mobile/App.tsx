@@ -20,6 +20,7 @@ import { InsightsScreen } from "./src/screens/InsightsScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
 import { GoogleDriveBackupScreen } from "./src/screens/GoogleDriveBackupScreen";
 import { DriveBackupAppListener } from "./src/components/DriveBackupAppListener";
+import { PushNotificationBridge } from "./src/components/PushNotificationBridge";
 import { AccountSettingsScreen } from "./src/screens/AccountSettingsScreen";
 import { PricingScreen } from "./src/screens/PricingScreen";
 import { AddTransactionScreen } from "./src/screens/AddTransactionScreen";
@@ -69,7 +70,6 @@ import { SignInScreen } from "./src/screens/SignInScreen";
 import { SignUpScreen } from "./src/screens/SignUpScreen";
 import { ForgotPasswordScreen } from "./src/screens/ForgotPasswordScreen";
 import { ResetPasswordScreen } from "./src/screens/ResetPasswordScreen";
-import { FinanceCoachScreen } from "./src/screens/FinanceCoachScreen";
 import { CashFlowReportScreen, OverdueInvoicesReportScreen, ReportsHomeScreen } from "./src/screens/ReportsScreens";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { colors } from "./src/theme/tokens";
@@ -159,7 +159,7 @@ function MainTabs() {
   return (
     <Tab.Navigator tabBar={(props) => <ReceiptCycleTabBar {...props} />} screenOptions={{ headerShown: false }}>
       <Tab.Screen name="Home" component={MobileHomeScreen} options={{ tabBarLabel: "Home" }} />
-      <Tab.Screen name="Records" component={TransactionsListScreen} options={{ tabBarLabel: "Records" }} />
+      <Tab.Screen name="Records" component={TransactionsListScreen} options={{ tabBarLabel: "Transactions" }} />
       <Tab.Screen name="Analysis" component={InsightsScreen} options={{ tabBarLabel: "Analysis" }} />
       <Tab.Screen name="Sales" component={SalesNavigator} />
       <Tab.Screen name="More" component={MoreNavigator} />
@@ -218,7 +218,6 @@ function MainStackNavigator() {
       <Stack.Screen name="SavedLocations" component={SavedLocationsScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="Pricing" component={PricingScreen} options={{ presentation: "card" }} />
-      <Stack.Screen name="FinanceCoach" component={FinanceCoachScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="CashFlowReport" component={CashFlowReportScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="OverdueInvoicesReport" component={OverdueInvoicesReportScreen} options={{ presentation: "card" }} />
     </Stack.Navigator>
@@ -335,6 +334,7 @@ export default function App() {
                             <NavigationContainer ref={navigationRef}>
                               <PasswordResetDeepLinks />
                               <DriveBackupAppListener />
+                              <PushNotificationBridge />
                               <RootGate />
                               <StatusBar style="dark" />
                             </NavigationContainer>

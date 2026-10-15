@@ -14,7 +14,7 @@ type IconName = ComponentProps<typeof Ionicons>["name"];
 
 const tabIcons: Record<TabName, IconName> = {
   Home: "home-outline",
-  Records: "file-tray-full-outline",
+  Records: "receipt",
   Sales: "briefcase-outline",
   More: "person-circle-outline",
 };
@@ -49,7 +49,7 @@ export function ReceiptCycleTabBar({ state, descriptors, navigation }: BottomTab
     const moduleName = nested?.routes?.[nested.index ?? 0]?.name;
     const contextualIcons = name === "More" ? moreModuleIcons : name === "Sales" ? salesModuleIcons : {};
     const contextualModule = moduleName && contextualIcons[moduleName] ? moduleName : null;
-    const label = name === "More" ? "Me" : contextualModule === "SalesInvoices" ? "Invoices" : contextualModule === "SalesEstimates" ? "Estimates" : contextualModule === "SalesPayments" ? "Payments" : contextualModule === "SalesReports" ? "Reports" : contextualModule ?? descriptors[route.key]?.options.tabBarLabel ?? name;
+    const label = name === "More" ? "Me" : name === "Records" ? "Transactions" : contextualModule === "SalesInvoices" ? "Invoices" : contextualModule === "SalesEstimates" ? "Estimates" : contextualModule === "SalesPayments" ? "Payments" : contextualModule === "SalesReports" ? "Reports" : contextualModule ?? descriptors[route.key]?.options.tabBarLabel ?? name;
     const icon = name === "More" ? tabIcons.More : contextualModule ? contextualIcons[contextualModule]! : tabIcons[name];
     const openTab = () => {
       const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });

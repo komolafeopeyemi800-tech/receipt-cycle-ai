@@ -238,6 +238,72 @@ export const userPreferences = sqliteTable("user_preferences", {
   voiceInputLanguage: text("voice_input_language"),
 });
 
+export const notificationPreferences = sqliteTable("notification_preferences", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  dailyReminder: integer("daily_reminder", { mode: "boolean" }).notNull().default(true),
+  invoiceReminders: integer("invoice_reminders", { mode: "boolean" }).notNull().default(true),
+  overdueReminders: integer("overdue_reminders", { mode: "boolean" }).notNull().default(true),
+  paymentConfirmations: integer("payment_confirmations", { mode: "boolean" }).notNull().default(true),
+  budgetAlerts: integer("budget_alerts", { mode: "boolean" }).notNull().default(true),
+  weeklyReports: integer("weekly_reports", { mode: "boolean" }).notNull().default(false),
+  marketingUpdates: integer("marketing_updates", { mode: "boolean" }).notNull().default(true),
+  timezone: text("timezone").notNull().default("UTC"),
+  updatedAt: integer("updated_at").notNull(),
+});
+
+export const pushDevices = sqliteTable("push_devices", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  platform: text("platform", { enum: ["android", "ios", "web"] }).notNull(),
+  deviceId: text("device_id").notNull(),
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  permissionStatus: text("permission_status").notNull(),
+  lastSeenAt: integer("last_seen_at").notNull(),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+}, (t) => [uniqueIndex("push_device_user_device_idx").on(t.userId, t.deviceId), index("push_device_user_active_idx").on(t.userId, t.active)]);
+
+export const notificationTemplates = sqliteTable("notification_templates", {
+  key: text("key").primaryKey(), name: text("name").notNull(), category: text("category").notNull(),
+  title: text("title").notNull(), body: text("body").notNull(), route: text("route").notNull(),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  androidEnabled: integer("android_enabled", { mode: "boolean" }).notNull().default(true),
+  webEnabled: integer("web_enabled", { mode: "boolean" }).notNull().default(true),
+  webAccessMentions: integer("web_access_mentions", { mode: "boolean" }).notNull().default(false),
+  updatedAt: integer("updated_at").notNull(), updatedBy: text("updated_by").notNull(),
+});
+
+export const notificationSettings = sqliteTable("notification_settings", {
+  key: text("key").primaryKey(), globalEnabled: integer("global_enabled", { mode: "boolean" }).notNull().default(false),
+  lifecycleEnabled: integer("lifecycle_enabled", { mode: "boolean" }).notNull().default(true),
+  remindersEnabled: integer("reminders_enabled", { mode: "boolean" }).notNull().default(true),
+  transactionalEnabled: integer("transactional_enabled", { mode: "boolean" }).notNull().default(true),
+  marketingEnabled: integer("marketing_enabled", { mode: "boolean" }).notNull().default(true),
+  androidOfferCampaignsEnabled: integer("android_offer_campaigns_enabled", { mode: "boolean" }).notNull().default(false),
+  quietHoursStart: integer("quiet_hours_start").notNull().default(21), quietHoursEnd: integer("quiet_hours_end").notNull().default(8),
+  combinedDailyCap: integer("combined_daily_cap").notNull().default(8), transactionalDailyCap: integer("transactional_daily_cap").notNull().default(6),
+  updatedAt: integer("updated_at").notNull(), updatedBy: text("updated_by").notNull(),
+});
+
+export const notificationJobs = sqliteTable("notification_jobs", {
+  id: text("id").primaryKey(), userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  templateKey: text("template_key").notNull(), category: text("category").notNull(), route: text("route").notNull(),
+  title: text("title").notNull(), body: text("body").notNull(), scheduledFor: integer("scheduled_for").notNull(), expiresAt: integer("expires_at").notNull(),
+  status: text("status").notNull(), priority: integer("priority").notNull(), dedupeKey: text("dedupe_key").notNull().unique(), attempts: integer("attempts").notNull().default(0),
+  lastError: text("last_error"), createdAt: integer("created_at").notNull(), updatedAt: integer("updated_at").notNull(),
+}, (t) => [index("notification_job_status_due_idx").on(t.status, t.scheduledFor), index("notification_job_user_created_idx").on(t.userId, t.createdAt)]);
+
+export const notificationAttempts = sqliteTable("notification_attempts", {
+  id: text("id").primaryKey(), jobId: text("job_id").notNull().references(() => notificationJobs.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(), deviceId: text("device_id"), status: text("status").notNull(), providerMessageId: text("provider_message_id"),
+  errorCode: text("error_code"), errorMessage: text("error_message"), createdAt: integer("created_at").notNull(),
+}, (t) => [index("notification_attempt_job_idx").on(t.jobId), index("notification_attempt_user_created_idx").on(t.userId, t.createdAt)]);
+
+export const notificationEvents = sqliteTable("notification_events", {
+  id: text("id").primaryKey(), userId: text("user_id").notNull(), jobId: text("job_id"), kind: text("kind").notNull(), createdAt: integer("created_at").notNull(),
+}, (t) => [index("notification_event_user_created_idx").on(t.userId, t.createdAt)]);
+
 /** Single row, key = "global". Runtime switches and free-tier limits for web + mobile. */
 export const appConfig = sqliteTable("app_config", {
   key: text("key").primaryKey(),

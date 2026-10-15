@@ -18,7 +18,9 @@ import { receiptEvidenceRoutes, receiptRoutes } from "./routes/receipts";
 import { uploadRoutes } from "./routes/uploads";
 import { workspaceRoutes } from "./routes/workspaces";
 import { publicDocumentRoutes } from "./routes/publicDocuments";
+import { notificationRoutes } from "./routes/notifications";
 import type { AppEnv } from "./types";
+import { dispatchPushQueue, queueDailyReminders } from "./lib/pushDispatch";
 
 export const app = new Hono<AppEnv>();
 
@@ -75,6 +77,7 @@ app.route("/api/categories", categoryRoutes);
 app.route("/api/budgets", budgetRoutes);
 app.route("/api/workspaces", workspaceRoutes);
 app.route("/api/preferences", preferenceRoutes);
+app.route("/api/notifications", notificationRoutes);
 app.route("/api/subscription", subscriptionRoutes);
 app.route("/api/sales", salesRoutes);
 app.route("/public/documents", publicDocumentRoutes);
@@ -111,4 +114,15 @@ app.onError((err, c) => {
   return c.json({ error: "Something went wrong. Please try again." }, 500);
 });
 
-export default app;
+export default Object.assign(app, { scheduled });
+
+/** Cloudflare Cron Trigger entry point. Queue processing is safe when disabled or unconfigured. */
+export async function scheduled(_controller: ScheduledController, env: AppEnv["Bindings"], ctx: ExecutionContext) {
+  ctx.waitUntil(
+    (async () => {
+      // Every 15 minutes look for people whose local time has reached the reminder hour, then send whatever is due.
+      if (new Date().getUTCMinutes() % 15 === 0) await queueDailyReminders(env).catch((e) => console.error("daily reminders failed", e));
+      await dispatchPushQueue(env);
+    })(),
+  );
+}

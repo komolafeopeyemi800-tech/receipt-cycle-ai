@@ -7,9 +7,11 @@ import {
 } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Image,
   Linking,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,6 +20,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -70,6 +73,7 @@ export function MobileHomeScreen() {
     "Voice",
   );
   const [aiEntryText, setAiEntryText] = useState("");
+  const [showDailyAccess, setShowDailyAccess] = useState(false);
   const waveMotions = useRef([
     new Animated.Value(0),
     new Animated.Value(0),
@@ -135,12 +139,6 @@ export function MobileHomeScreen() {
       action: () => navigation.navigate("Sales", { screen: "SalesCustomers" }),
     },
     {
-      label: "Ask AI",
-      icon: "sparkles-outline",
-      tone: "purple",
-      action: () => openRoot("FinanceCoach"),
-    },
-    {
       label: "Budgets",
       icon: "pie-chart-outline",
       tone: "amber",
@@ -157,6 +155,12 @@ export function MobileHomeScreen() {
       icon: "pricetags-outline",
       tone: "rose",
       action: () => navigation.navigate("More", { screen: "Categories" }),
+    },
+    {
+      label: "Sales",
+      icon: "trending-up-outline",
+      tone: "amber",
+      action: () => navigation.navigate("Sales"),
     },
     {
       label: "More",
@@ -183,14 +187,6 @@ export function MobileHomeScreen() {
       action: () => openRoot("EstimateCreate"),
     },
     {
-      title: "Ask questions about your records",
-      body: "Use Ask AI to explore saved income, expenses, categories, and spending patterns.",
-      cta: "Open Ask AI",
-      icon: "sparkles-outline" as IconName,
-      tone: ["#6d28d9", "#8b5cf6"] as const,
-      action: () => openRoot("FinanceCoach"),
-    },
-    {
       title: "Plan before you spend",
       body: "Set category budgets and compare what you planned with what you actually spent.",
       cta: "Set a budget",
@@ -203,7 +199,10 @@ export function MobileHomeScreen() {
   const aiLocked = Boolean(subscription && !subscription.canUseAiFeatures);
   const openAiCapture = (mode = aiEntryMode) => {
     if (aiLocked) {
-      openRoot("Pricing");
+      Alert.alert(
+        "Trial access ended",
+        "Your 7-day trial or 25-transaction allowance has ended. Account access is managed on Receipt Cycle web.",
+      );
       return;
     }
     openRoot("AddTransaction", {
@@ -211,6 +210,22 @@ export function MobileHomeScreen() {
       initialAiMode: mode,
       initialAiText: aiEntryText.trim() || undefined,
     });
+  };
+
+  useEffect(() => {
+    if (!user?.id || !subscription || subscription.pro) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const key = `receipt-cycle:access-notice:${user.id}`;
+    void AsyncStorage.getItem(key).then((lastShown) => {
+      if (lastShown !== today) setShowDailyAccess(true);
+    });
+  }, [subscription, user?.id]);
+
+  const dismissDailyAccess = () => {
+    setShowDailyAccess(false);
+    if (!user?.id) return;
+    const today = new Date().toISOString().slice(0, 10);
+    void AsyncStorage.setItem(`receipt-cycle:access-notice:${user.id}`, today);
   };
 
   useEffect(() => {
@@ -275,12 +290,36 @@ export function MobileHomeScreen() {
 
   return (
     <LinearGradient colors={[...gradients.page]} style={styles.flex}>
+      <Modal visible={showDailyAccess} transparent={false} animationType="slide" onRequestClose={dismissDailyAccess} statusBarTranslucent navigationBarTranslucent>
+        <LinearGradient colors={["#07131c", "#0b2528", "#07131c"]} style={styles.accessOverlay}>
+          <ScrollView contentContainerStyle={[styles.accessScroll, { paddingTop: insets.top + spacing.xl }]} showsVerticalScrollIndicator={false}>
+            <View style={styles.accessBadge}><Ionicons name="shield-checkmark" size={27} color="#07131c" /></View>
+            <Text style={styles.accessEyebrow}>RECEIPT CYCLE ACCESS</Text>
+            <Text style={styles.accessTitle}>{subscription?.phase === "trial" ? `${Math.max(0, Math.ceil(((subscription.trialEndsAt ?? Date.now()) - Date.now()) / 86_400_000))} days left in your trial` : "Your free trial has ended"}</Text>
+            <Text style={styles.accessCopy}>Use every entry method during your trial. Access continues until the seven-day timer ends or you reach 25 transactions.</Text>
+            <View style={styles.accessUsage}><View><Text style={styles.accessUsageLabel}>TRANSACTIONS USED</Text><Text style={styles.accessUsageValue}>{subscription?.trialAddsUsed ?? 0} of {subscription?.trialAddsLimit ?? 25}</Text></View><View style={styles.accessUsageIcon}><Ionicons name="receipt-outline" size={25} color="#68e0ca" /></View></View>
+            <Text style={styles.accessIncluded}>Included in your trial</Text>
+            {[
+              ["scan-outline", "Receipt capture", "Scan or upload receipts and review the extracted evidence"],
+              ["mic-outline", "AI transaction entry", "Create records naturally with voice or typed instructions"],
+              ["document-text-outline", "Business documents", "Create invoices, estimates and organized financial records"],
+            ].map(([icon, title, copy]) => <View key={title} style={styles.accessBenefit}><View style={styles.accessBenefitIcon}><Ionicons name={icon as IconName} size={23} color="#68e0ca" /></View><View style={styles.accessBenefitCopy}><Text style={styles.accessBenefitTitle}>{title}</Text><Text style={styles.accessBenefitText}>{copy}</Text></View></View>)}
+            <Text style={styles.accessWebNote}>Account plans and billing are managed on the Receipt Cycle web version.</Text>
+          </ScrollView>
+          <View style={[styles.accessFooter, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}><Pressable style={styles.accessSkip} onPress={dismissDailyAccess}><Text style={styles.accessSkipText}>Continue to dashboard</Text><Ionicons name="arrow-forward" size={19} color="#07131c" /></Pressable></View>
+        </LinearGradient>
+      </Modal>
       <ScrollView
         contentContainerStyle={[
           styles.page,
           { paddingTop: Math.max(insets.top, spacing.lg) },
         ]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        decelerationRate="normal"
+        scrollEventThrottle={16}
+        nestedScrollEnabled
       >
         <View style={styles.header}>
           <View style={styles.identity}>
@@ -426,14 +465,6 @@ export function MobileHomeScreen() {
                       <Text style={styles.aiCaptureTitle}>
                         Tell AI your transaction
                       </Text>
-                      <View style={styles.premiumPill}>
-                        <Ionicons
-                          name={aiLocked ? "lock-closed" : "diamond"}
-                          size={9}
-                          color={colors.purple600}
-                        />
-                        <Text style={styles.premiumPillText}>PRO</Text>
-                      </View>
                     </View>
                     <Text style={styles.aiCaptureSubtitle}>
                       Speak naturally or type it. AI prepares the record for
@@ -587,9 +618,7 @@ export function MobileHomeScreen() {
                     style={styles.aiTextInput}
                     multiline
                     editable={!aiLocked}
-                    onFocus={() => {
-                      if (aiLocked) openRoot("Pricing");
-                    }}
+                    onFocus={() => { if (aiLocked) openAiCapture("Quick Text"); }}
                   />
                   <Pressable
                     style={styles.aiSendButton}
@@ -755,36 +784,6 @@ export function MobileHomeScreen() {
                 </View>
               </>
             )}
-            <View style={styles.insightRow}>
-              <Pressable
-                style={styles.insightCard}
-                onPress={() => navigation.navigate("Analysis")}
-              >
-                <Ionicons
-                  name="analytics-outline"
-                  size={22}
-                  color={colors.info}
-                />
-                <Text style={styles.insightTitle}>Spending insights</Text>
-                <Text style={styles.insightText}>
-                  Review categories and trends
-                </Text>
-              </Pressable>
-              <Pressable
-                style={styles.insightCard}
-                onPress={() => openRoot("FinanceCoach")}
-              >
-                <Ionicons
-                  name="sparkles-outline"
-                  size={22}
-                  color={colors.purple600}
-                />
-                <Text style={styles.insightTitle}>Ask AI</Text>
-                <Text style={styles.insightText}>
-                  Ask about your own records
-                </Text>
-              </Pressable>
-            </View>
           </>
         )}
       </ScrollView>
@@ -794,6 +793,26 @@ export function MobileHomeScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  accessOverlay: { flex: 1 },
+  accessScroll: { flexGrow: 1, paddingHorizontal: spacing.xl, paddingBottom: 132 },
+  accessBadge: { width: 56, height: 56, borderRadius: 18, backgroundColor: "#68e0ca", alignItems: "center", justifyContent: "center", marginBottom: spacing.lg },
+  accessEyebrow: { color: "#68e0ca", fontSize: 12, fontWeight: "900", letterSpacing: 1.6 },
+  accessTitle: { color: "#fff", fontSize: 34, lineHeight: 40, fontWeight: "900", marginTop: spacing.sm, maxWidth: 360 },
+  accessCopy: { color: "#a9bac2", fontSize: uiType.body, lineHeight: 24, marginTop: spacing.md, marginBottom: spacing.xl },
+  accessUsage: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#10272b", borderWidth: 1, borderColor: "#214348", padding: spacing.lg, borderRadius: 20, marginBottom: spacing.xl },
+  accessUsageLabel: { color: "#8da4ad", fontSize: 11, fontWeight: "900", letterSpacing: 1.1 },
+  accessUsageValue: { color: "#fff", fontSize: 24, lineHeight: 30, fontWeight: "900", marginTop: 4 },
+  accessUsageIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: "#19393c", alignItems: "center", justifyContent: "center" },
+  accessIncluded: { color: "#fff", fontSize: uiType.sectionTitle, fontWeight: "900", marginBottom: spacing.md },
+  accessBenefit: { flexDirection: "row", alignItems: "center", gap: spacing.md, backgroundColor: "#101b20", borderRadius: 18, padding: spacing.md, marginBottom: spacing.md },
+  accessBenefitIcon: { width: 48, height: 48, borderRadius: 15, backgroundColor: "#173035", alignItems: "center", justifyContent: "center" },
+  accessBenefitCopy: { flex: 1 },
+  accessBenefitTitle: { color: "#fff", fontSize: uiType.body, fontWeight: "900", marginBottom: 3 },
+  accessBenefitText: { color: "#9fb0b8", fontSize: uiType.caption, lineHeight: 18 },
+  accessWebNote: { color: "#80949d", fontSize: uiType.caption, lineHeight: 18, marginTop: spacing.md, textAlign: "center" },
+  accessFooter: { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: spacing.lg, paddingTop: spacing.md, backgroundColor: "rgba(7,19,28,0.97)", borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "#20333a" },
+  accessSkip: { minHeight: 56, borderRadius: 17, backgroundColor: "#68e0ca", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm },
+  accessSkipText: { color: "#07131c", fontSize: uiType.body, fontWeight: "900" },
   page: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxxl },
   header: {
     flexDirection: "row",

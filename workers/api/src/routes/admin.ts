@@ -55,7 +55,7 @@ export function toPublicConfig(row: typeof appConfig.$inferSelect | undefined) {
   };
 }
 
-async function audit(db: Db, action: string, actor: string, details: unknown) {
+export async function audit(db: Db, action: string, actor: string, details: unknown) {
   await db.insert(adminAuditLogs).values({
     id: newId(),
     action,
@@ -85,7 +85,7 @@ configRoutes.get("/is-admin", requireUser, async (c) =>
  * `x-admin-secret` header. (Convex trusted a typed-in email plus the secret; the email now comes
  * from the session instead.)
  */
-async function requireAdmin(c: Context<AppEnv>): Promise<string> {
+export async function requireAdmin(c: Context<AppEnv>): Promise<string> {
   const expected = c.env.ADMIN_DASHBOARD_SECRET?.trim();
   if (!expected) throw new ApiError(503, "ADMIN_DASHBOARD_SECRET is not configured on this deployment.");
   if (c.req.header("x-admin-secret") !== expected) throw new ApiError(403, "Unauthorized admin access.");

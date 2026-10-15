@@ -199,7 +199,7 @@ export function SettingsScreen() {
           <RowNav
             icon="download-outline"
             title="Export Data"
-            sub={runtime?.exportEnabled === false ? "Disabled by admin" : sub && !sub.canExportCsv ? "Pro feature · Manage access on receiptcycle.com" : "Download your transaction spreadsheet"}
+            sub={runtime?.exportEnabled === false ? "Disabled by admin" : sub && !sub.canExportCsv ? "Pro feature · Manage access on Receipt Cycle web version" : "Download your transaction spreadsheet"}
             onPress={() => void exportCsvDownload()}
           />
           <Divider />
@@ -381,12 +381,14 @@ function RowNav({
   sub,
   onPress,
   compact,
+  showChevron = true,
 }: {
   icon: ComponentProps<typeof Ionicons>["name"];
   title: string;
   sub: string;
-  onPress: () => void;
+  onPress?: () => void;
   compact?: boolean;
+  showChevron?: boolean;
 }) {
   return (
     <Pressable style={[styles.row, compact && styles.rowCompact]} onPress={onPress}>
@@ -395,7 +397,7 @@ function RowNav({
         <Text style={compact ? styles.rowTitleSm : styles.rowTitle}>{title}</Text>
         <Text style={compact ? styles.rowSubSm : styles.rowSub}>{sub}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={compact ? 16 : 18} color={colors.gray400} />
+      {showChevron ? <Ionicons name="chevron-forward" size={compact ? 16 : 18} color={colors.gray400} /> : null}
     </Pressable>
   );
 }

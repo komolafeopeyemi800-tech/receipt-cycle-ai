@@ -95,8 +95,7 @@ export function ReportsHomeScreen() {
           <AppCard style={styles.toolCard}>
             <Text style={styles.sectionTitle}>Reports & insights</Text>
             <ReportLink icon="cash-outline" tone="mint" title="Cash Flow Report" description="Follow money coming in and going out" onPress={() => root?.navigate("CashFlowReport")} />
-            <ReportLink icon="alert-circle-outline" tone="rose" title="Overdue Invoices" description="Review balances and send reminders" onPress={() => root?.navigate("OverdueInvoicesReport")} />
-            <ReportLink icon="sparkles-outline" tone="purple" title="Ask AI" description="Ask questions about your saved records" onPress={() => root?.navigate("FinanceCoach")} last />
+            <ReportLink icon="alert-circle-outline" tone="rose" title="Overdue Invoices" description="Review balances and send reminders" onPress={() => root?.navigate("OverdueInvoicesReport")} last />
           </AppCard>
         </>}
       </ScrollView>

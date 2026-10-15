@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,7 +11,6 @@ import {
   View,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { Accelerometer } from "expo-sensors";
 import * as ImagePicker from "expo-image-picker";
 import { useAction, useQuery } from "../lib/api";
 import { useIsFocused, useNavigation } from "@react-navigation/native";
@@ -27,25 +26,13 @@ import type { ScannedExtracted } from "../types/transaction";
 import { userFacingError, userFacingErrorFromUnknown } from "../lib/userFacingErrors";
 
 const bannerBlue = "rgba(15, 23, 42, 0.84)";
-const DIM = "rgba(0,0,0,0.58)";
-const FRAME_BORDER = "#21b89a";
-const FRAME_FILL = "rgba(33, 184, 154, 0.04)";
-/** Movement between accelerometer samples; above = not steady */
-const JERK_THRESHOLD = 0.13;
-/** Hold still this long (ms) before auto shutter */
-const STEADY_MS = 980;
-/** After auto capture, wait before next (ms) */
-const AUTO_COOLDOWN_MS = 3200;
-/** Show “Hold steady” after this much still time */
-const STEADY_HINT_MS = 380;
-
-type GuidePhase = "align" | "steady" | "capturing";
+type GuidePhase = "align" | "capturing";
 
 export function ScanReceiptScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
-  const { width: winW, height: winH } = useWindowDimensions();
+  const { height: winH } = useWindowDimensions();
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const scan = useAction(api.scanReceipt.scanFromBase64);
@@ -54,42 +41,21 @@ export function ScanReceiptScreen() {
   const subscriptionState = useSubscriptionState();
   const scanBlocked = !token || Boolean(subscriptionState && !subscriptionState.canUseAiFeatures);
   const [torch, setTorch] = useState(false);
-  const [autoCapture, setAutoCapture] = useState(true);
   const [busy, setBusy] = useState(false);
   const [guidePhase, setGuidePhase] = useState<GuidePhase>("align");
 
   const busyRef = useRef(false);
   busyRef.current = busy;
 
-  const steadyMsRef = useRef(0);
-  const lastAccelRef = useRef({ x: 0, y: 0, z: 0 });
-  const cooldownUntilRef = useRef(0);
-  const captureFromCameraRef = useRef<() => Promise<void>>(async () => {});
-  /** Smoothed vertical offset so the guide frame subtly follows tilt (focus cue). */
-  const frameNudgeSmoothRef = useRef(0);
-  const [frameNudgeY, setFrameNudgeY] = useState(0);
   const [processingUri, setProcessingUri] = useState<string | null>(null);
 
   /** Reserve space for close/sync row + bottom shutter bar — center the guide in the remaining area */
   const topBarH = insets.top + 44;
-  const bottomReserved = 108 + Math.max(insets.bottom, 12);
-  const availH = winH - topBarH - bottomReserved;
-  const frameW = winW * 0.88;
-  const frameH = Math.min(frameW * 1.38, Math.max(200, availH * 0.68));
-  const frameLeft = (winW - frameW) / 2;
-  const frameTopBase = topBarH + Math.max(6, (availH - frameH) / 2);
-  const frameTop = frameTopBase + frameNudgeY;
-  const frameBottom = frameTop + frameH;
-  const bottomDimH = Math.max(0, winH - frameBottom - bottomReserved);
-  /** Keep the framing guide visible while capture timing follows the live sensor state. */
-  const showFocusFrame = true;
 
   const guideText =
     guidePhase === "capturing"
       ? "Scanning — hold steady"
-      : guidePhase === "steady"
-        ? "Hold steady"
-        : "Position the receipt within the frame";
+      : "Position the receipt, then tap the shutter";
 
   const processBase64 = useCallback(
     async (base64: string, mime: string, receiptUri?: string) => {
@@ -131,7 +97,7 @@ export function ScanReceiptScreen() {
     if (!token || (subscriptionState && !subscriptionState.canUseAiFeatures)) {
       Alert.alert(
         "Scanner unavailable",
-        !token ? "Sign in to scan receipts." : "Receipt scanning is not included with your current access.",
+        !token ? "Sign in to scan receipts." : "Your 7-day trial or 25-transaction allowance has ended. Account access is managed on Receipt Cycle web.",
       );
       return;
     }
@@ -157,68 +123,10 @@ export function ScanReceiptScreen() {
       setBusy(false);
       setGuidePhase("align");
       setProcessingUri(null);
-      steadyMsRef.current = 0;
     }
   }, [processBase64, token, subscriptionState]);
 
-  captureFromCameraRef.current = captureFromCamera;
-
-  /** Accelerometer: frame nudge always; auto-capture only when enabled and not busy. */
-  useEffect(() => {
-    if (Platform.OS === "web" || !isFocused || !permission?.granted) {
-      try {
-        Accelerometer.removeAllListeners();
-      } catch {
-        /* noop */
-      }
-      return;
-    }
-
-    let alive = true;
-    steadyMsRef.current = 0;
-    lastAccelRef.current = { x: 0, y: 0, z: 0 };
-    frameNudgeSmoothRef.current = 0;
-
-    Accelerometer.setUpdateInterval(100);
-    const sub = Accelerometer.addListener((a) => {
-      if (!alive) return;
-
-      const target = Math.max(-22, Math.min(22, a.y * 42));
-      frameNudgeSmoothRef.current = frameNudgeSmoothRef.current * 0.82 + target * 0.18;
-      setFrameNudgeY(frameNudgeSmoothRef.current);
-
-      if (!autoCapture || busyRef.current || scanBlocked) return;
-      if (Date.now() < cooldownUntilRef.current) return;
-
-      const p = lastAccelRef.current;
-      const jerk = Math.sqrt((a.x - p.x) ** 2 + (a.y - p.y) ** 2 + (a.z - p.z) ** 2);
-      lastAccelRef.current = { x: a.x, y: a.y, z: a.z };
-
-      if (jerk > JERK_THRESHOLD) {
-        steadyMsRef.current = 0;
-        setGuidePhase("align");
-        return;
-      }
-
-      steadyMsRef.current += 100;
-      if (steadyMsRef.current >= STEADY_HINT_MS && steadyMsRef.current < STEADY_MS) {
-        setGuidePhase("steady");
-      }
-      if (steadyMsRef.current >= STEADY_MS) {
-        steadyMsRef.current = 0;
-        cooldownUntilRef.current = Date.now() + AUTO_COOLDOWN_MS;
-        void captureFromCameraRef.current();
-      }
-    });
-
-    return () => {
-      alive = false;
-      sub.remove();
-    };
-  }, [autoCapture, busy, permission?.granted, isFocused, scanBlocked]);
-
   const takePictureManual = useCallback(async () => {
-    cooldownUntilRef.current = Date.now() + AUTO_COOLDOWN_MS;
     await captureFromCamera();
   }, [captureFromCamera]);
 
@@ -226,7 +134,7 @@ export function ScanReceiptScreen() {
     if (!token || (subscriptionState && !subscriptionState.canUseAiFeatures)) {
       Alert.alert(
         "Scanner unavailable",
-        !token ? "Sign in to scan receipts." : "Receipt scanning is not included with your current access.",
+        !token ? "Sign in to scan receipts." : "Your 7-day trial or 25-transaction allowance has ended. Account access is managed on Receipt Cycle web.",
       );
       return;
     }
@@ -316,14 +224,14 @@ export function ScanReceiptScreen() {
     );
   }
 
-  const guidePillTop = Math.min(frameBottom + 14, winH - bottomReserved - 48);
+  const guidePillTop = Math.max(topBarH + 70, Math.min(winH * 0.58, winH - 180));
 
   return (
     <View style={styles.root}>
       {scanBlocked ? (
         <View style={[styles.blockBanner, { top: topBarH }]}>
           <Text style={styles.blockBannerTxt}>
-            {!token ? "Sign in to scan receipts." : "Receipt scanning is not included with your current access."}
+            {!token ? "Sign in to scan receipts." : "Your 7-day trial or 25-transaction allowance has ended. Account access is managed on Receipt Cycle web."}
           </Text>
         </View>
       ) : null}
@@ -331,43 +239,6 @@ export function ScanReceiptScreen() {
         <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" enableTorch={torch} />
       ) : (
         <View style={[StyleSheet.absoluteFill, { backgroundColor: "#000" }]} />
-      )}
-
-      {showFocusFrame ? (
-        <>
-          <View style={[styles.dimStrip, { top: 0, height: frameTop, left: 0, right: 0 }]} pointerEvents="none" />
-          <View
-            style={[styles.dimStrip, { top: frameTop, left: 0, width: frameLeft, height: frameH }]}
-            pointerEvents="none"
-          />
-          <View
-            style={[
-              styles.dimStrip,
-              { top: frameTop, left: frameLeft + frameW, width: frameLeft, height: frameH },
-            ]}
-            pointerEvents="none"
-          />
-          <View
-            style={[styles.dimStrip, { top: frameBottom, left: 0, right: 0, height: bottomDimH }]}
-            pointerEvents="none"
-          />
-          <View
-            style={[
-              styles.frameBox,
-              {
-                left: frameLeft,
-                top: frameTop,
-                width: frameW,
-                height: frameH,
-                borderColor: FRAME_BORDER,
-                backgroundColor: FRAME_FILL,
-              },
-            ]}
-            pointerEvents="none"
-          />
-        </>
-      ) : (
-        <View style={styles.dimFull} pointerEvents="none" />
       )}
 
       <View style={[styles.guidePillWrap, { top: guidePillTop }]} pointerEvents="none">
@@ -414,10 +285,10 @@ export function ScanReceiptScreen() {
         <Pressable style={styles.shutterOuter} onPress={takePictureManual} disabled={busy || scanBlocked}>
           <View style={styles.shutterInner} />
         </Pressable>
-        <Pressable style={styles.circleBtn} onPress={() => setAutoCapture((value) => !value)} disabled={busy || scanBlocked} accessibilityLabel={autoCapture ? "Turn auto capture off" : "Turn auto capture on"}>
+        <View style={styles.circleBtn} accessibilityLabel="Manual capture mode">
           <Ionicons name="scan-outline" size={22} color="#fff" />
-          <Text style={styles.bottomLabel}>{autoCapture ? "Auto" : "Manual"}</Text>
-        </Pressable>
+          <Text style={styles.bottomLabel}>Manual</Text>
+        </View>
       </View>
     </View>
   );
@@ -437,22 +308,6 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   blockBannerTxt: { fontSize: 12, fontWeight: "600", color: "#78350f", textAlign: "center" },
-  dimFull: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.48)",
-    zIndex: 1,
-  },
-  dimStrip: {
-    position: "absolute",
-    backgroundColor: DIM,
-    zIndex: 1,
-  },
-  frameBox: {
-    position: "absolute",
-    borderWidth: 2,
-    borderRadius: 4,
-    zIndex: 2,
-  },
   guidePillWrap: {
     position: "absolute",
     left: 20,

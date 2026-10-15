@@ -77,6 +77,19 @@ export type Preferences = {
   voiceInputLanguage?: string | null;
 };
 
+export type PushPreferences = {
+  userId?: string;
+  dailyReminder: boolean;
+  invoiceReminders: boolean;
+  overdueReminders: boolean;
+  paymentConfirmations: boolean;
+  budgetAlerts: boolean;
+  weeklyReports: boolean;
+  marketingUpdates: boolean;
+  timezone: string;
+  updatedAt?: number;
+};
+
 export type SubscriptionState = {
   userId: string;
   pro: boolean;
@@ -170,6 +183,8 @@ export type AdminUser = {
 };
 
 export type AuditLog = { id: string; action: string; actor: string; details: string | null; createdAt: number };
+export type NotificationAdminSettings = { key: string; globalEnabled: boolean; lifecycleEnabled: boolean; remindersEnabled: boolean; transactionalEnabled: boolean; marketingEnabled: boolean; androidOfferCampaignsEnabled: boolean; quietHoursStart: number; quietHoursEnd: number; combinedDailyCap: number; transactionalDailyCap: number; updatedAt: number; updatedBy: string };
+export type NotificationAdminDashboard = { settings: NotificationAdminSettings; templates: Array<{ key: string; name: string; category: string; title: string; body: string; route: string; enabled: boolean; androidEnabled: boolean; webEnabled: boolean; webAccessMentions: boolean; updatedAt: number; updatedBy: string }>; jobs: Array<{ id: string; templateKey: string; category: string; status: string; scheduledFor: number; lastError: string | null }>; attempts: Array<{ id: string; jobId: string; status: string; errorCode: string | null; createdAt: number }> };
 
 // ---- AI --------------------------------------------------------------------
 

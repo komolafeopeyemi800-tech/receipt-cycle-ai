@@ -53,6 +53,8 @@ export type Env = {
   RESEND_API_KEY?: string;
   RESEND_FROM_EMAIL?: string;
   RESEND_SUPPORT_EMAIL?: string;
+  /** Firebase service-account JSON, stored only with `wrangler secret put`. */
+  FIREBASE_SERVICE_ACCOUNT_JSON?: string;
 };
 
 export type AuthedUser = {

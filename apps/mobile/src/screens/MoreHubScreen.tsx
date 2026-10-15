@@ -8,7 +8,7 @@ import type { RootStackParamList } from "../navigation/types";
 import { colors, spacing, uiType } from "../theme/tokens";
 
 type NestedDestination = "Budgets" | "Accounts" | "Categories";
-type RootDestination = "Settings" | "FinanceCoach" | "Notifications" | "Pricing" | "BusinessProfile" | "InvoiceSettings" | "ScanReceipt" | "UploadStatement" | "AddTransaction";
+type RootDestination = "Settings" | "Notifications" | "Pricing" | "BusinessProfile" | "InvoiceSettings" | "ScanReceipt" | "UploadStatement" | "AddTransaction";
 type Entry = { title: string; description: string; icon: React.ComponentProps<typeof Ionicons>["name"]; tone: "mint" | "blue" | "rose" | "amber" | "purple"; action: () => void };
 
 export function MoreHubScreen() {
@@ -47,7 +47,6 @@ export function MoreHubScreen() {
     { title: "Budgets", description: "Plan limits and compare spending", icon: "pie-chart-outline", tone: "purple", action: () => openNested("Budgets") },
   ];
   const utilities: Entry[] = [
-    { title: "Ask AI", description: "Questions grounded in your records", icon: "sparkles-outline", tone: "purple", action: () => openRoot("FinanceCoach") },
     { title: "Notifications & Reminders", description: "Control business alerts", icon: "notifications-outline", tone: "rose", action: () => openRoot("Notifications") },
     { title: "Profile & Account", description: "Security, exports and preferences", icon: "person-circle-outline", tone: "blue", action: () => openRoot("Settings") },
     { title: "Plan & Access", description: "View your current access and usage", icon: "diamond-outline", tone: "amber", action: () => openRoot("Pricing") },
@@ -66,7 +65,7 @@ export function MoreHubScreen() {
         <Text style={styles.intro}>Everything you can do in Receipt Cycle, organized so you can reach any tool quickly.</Text>
         <MoreGroup title="Capture & records" entries={capture} />
         <MoreGroup title="Sales & customers" entries={business} />
-        <MoreGroup title="AI, account & preferences" entries={utilities} />
+        <MoreGroup title="Account & preferences" entries={utilities} />
         <MoreGroup title="Support & legal" entries={support} />
         <Text style={styles.version}>Receipt Cycle v1.0.0</Text>
       </ScrollView>

@@ -9,6 +9,14 @@ export function PricingScreen() {
   const subscription = useSubscriptionState();
   const usage = subscription?.pro ? "Unlimited" : `${subscription?.trialAddsUsed ?? 0} / ${subscription?.trialAddsLimit ?? 25}`;
   const accessLabel = subscription?.pro ? "Pro access" : subscription?.phase === "trial" ? "Trial access" : "Free access";
+  const daysRemaining = subscription?.pro
+    ? null
+    : Math.max(0, Math.ceil(((subscription?.trialEndsAt ?? Date.now()) - Date.now()) / 86_400_000));
+  const aiAccess = subscription?.pro
+    ? "Unlimited"
+    : subscription?.canUseAiFeatures
+      ? `${subscription.trialAddsRemaining} transaction${subscription.trialAddsRemaining === 1 ? "" : "s"} remaining`
+      : "Trial limit reached";
 
   return (
     <ScreenContainer>
@@ -24,14 +32,15 @@ export function PricingScreen() {
           <Ionicons name={subscription?.pro ? "checkmark-circle" : "information-circle-outline"} size={22} color={subscription?.pro ? colors.success : colors.primary} />
           <View style={styles.flex}>
             <Text style={styles.activeTitle}>{subscription?.pro ? "Pro is active" : subscription?.phase === "trial" ? "Your trial is active" : "Free plan"}</Text>
-            <Text style={styles.activeText}>{subscription?.pro ? "Unlimited records and eligible Pro features are available on this device." : "You can continue using the features included with your current account."}</Text>
+            <Text style={styles.activeText}>{subscription?.pro ? "Unlimited records and eligible Pro features are available on this device." : subscription?.phase === "trial" ? `${daysRemaining} day${daysRemaining === 1 ? "" : "s"} remaining in your trial. Access ends when the timer expires or 25 transactions are reached.` : "Your trial access has ended. Existing records remain available."}</Text>
           </View>
         </AppCard>
 
         <AppCard style={styles.usageCard}>
           <Text style={styles.usageTitle}>Your usage</Text>
           <UsageRow label="Transactions" value={usage} />
-          <UsageRow label="AI features" value={subscription?.canUseAiFeatures ? "Available" : "Not included"} />
+          <UsageRow label="Trial countdown" value={subscription?.pro ? "Not applicable" : daysRemaining && daysRemaining > 0 ? `${daysRemaining} day${daysRemaining === 1 ? "" : "s"} left` : "Ended"} />
+          <UsageRow label="AI features" value={aiAccess} />
           <UsageRow label="CSV export" value={subscription?.canExportCsv ? "Available" : "Not included"} />
         </AppCard>
 

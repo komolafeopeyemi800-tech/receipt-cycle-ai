@@ -20,7 +20,7 @@
       "infoPlist": {
         "UIFileSharingEnabled": true,
         "LSSupportsOpeningDocumentsInPlace": true,
-        "NSMicrophoneUsageDescription": "Receipt Cycle uses the microphone for voice entry and optional spoken prompts in Ask AI. Audio is not saved without your action."
+        "NSMicrophoneUsageDescription": "Receipt Cycle uses the microphone when you choose voice entry to prepare a transaction for your review."
       }
     },
     "android": {
@@ -31,9 +31,17 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.POST_NOTIFICATIONS"
       ],
-      "package": "com.receiptcycle.mobile"
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.ACTIVITY_RECOGNITION"
+      ],
+      "package": "com.receiptcycle.mobile",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -52,7 +60,8 @@
       "expo-web-browser",
       "expo-background-fetch",
       "expo-font",
-      "expo-mail-composer"
+      "expo-mail-composer",
+      ["expo-notifications", { "icon": "./assets/notification-icon.png", "color": "#149184", "defaultChannel": "reminders" }]
     ],
     "extra": {
       "eas": {

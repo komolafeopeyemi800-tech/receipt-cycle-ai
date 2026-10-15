@@ -203,14 +203,14 @@ export function InsightsScreen() {
           <IncomeExpenseBars transactions={(all ?? []) as DocTx[]} />
         </View>
 
-        <View style={[styles.card, { marginTop: 12 }]}>
+        <View style={[styles.card, { marginTop: 12, display: "none" }]}>
           <Text style={styles.cardHdr}>Ask AI</Text>
           <Text style={styles.subHint}>
             Tell AI what to do with the entries you saved this period—summaries, labels, or plain-language recap. For organization only, not advice. Same period as above.
           </Text>
           <Pressable
-            style={styles.coachBtn}
-            onPress={() => navigation.navigate("FinanceCoach")}
+            style={[styles.coachBtn, { display: "none" }]}
+            onPress={() => undefined}
             disabled={loading || !aiOk || !token}
           >
             <Ionicons name="chatbubbles-outline" size={18} color={colors.primary} />

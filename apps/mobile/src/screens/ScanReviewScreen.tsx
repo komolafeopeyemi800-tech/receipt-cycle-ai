@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Image, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { CommonActions, useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
@@ -81,10 +81,7 @@ export function ScanReviewScreen() {
 
       <ScrollView contentContainerStyle={styles.pad} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={styles.reviewSuccess}><Ionicons name="sparkles-outline" size={19} color={colors.primary} /><View style={{ flex: 1 }}><Text style={styles.reviewSuccessTitle}>AI extracted this information</Text><Text style={styles.reviewSuccessSub}>Review and edit before saving</Text></View><Ionicons name="checkmark-circle" size={20} color={colors.success} /></View>
-        <View style={styles.previewRow}>
-          <View style={styles.receiptPreview}>{route.params.receiptUri ? <Image source={{ uri: route.params.receiptUri }} resizeMode="contain" style={styles.previewImage} /> : <Text style={styles.receiptPreviewText} numberOfLines={8}>{draft.formatted_receipt_text?.trim() || `${draft.merchant_name || "Receipt"}\n${draft.date || ""}\n${amountStr || ""}`}</Text>}</View>
-          <View style={styles.receiptPreview}><Ionicons name="receipt-outline" size={25} color={colors.gray500} /><Text style={styles.receiptPreviewLabel}>Extracted text</Text></View>
-        </View>
+        <View style={styles.receiptPreview}>{route.params.receiptUri ? <Image source={{ uri: route.params.receiptUri }} resizeMode="contain" style={styles.previewImage} /> : <Text style={styles.receiptPreviewText}>{draft.formatted_receipt_text?.trim() || `${draft.merchant_name || "Receipt"}\n${draft.date || ""}\n${amountStr || ""}`}</Text>}</View>
 
         <View style={styles.metaRow}>
           <View style={styles.badge}>
@@ -221,14 +218,18 @@ export function ScanReviewScreen() {
 
         <View style={styles.syncNote}><Ionicons name="cloud-upload-outline" size={16} color={colors.primary} style={{ marginRight: 8, marginTop: 2 }} /><Text style={styles.syncNoteTxt}>Your changes are saved with the transaction on the next screen.</Text></View>
 
-        <Pressable style={styles.primary} onPress={onSave}>
-          <Text style={styles.primaryTxt}>Continue to save expense</Text>
-        </Pressable>
-        <Pressable style={styles.secondary} onPress={onRetake}>
-          <Ionicons name="camera-outline" size={16} color={colors.primary} />
-          <Text style={styles.secondaryTxt}>Retake scan</Text>
-        </Pressable>
       </ScrollView>
+      <View style={[styles.actionDock, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+        <Pressable style={styles.dockAction} onPress={onRetake} accessibilityLabel="Delete scan and retake">
+          <Ionicons name="trash-outline" size={22} color={colors.rose600} />
+          <Text style={[styles.dockLabel, { color: colors.rose600 }]}>Retake</Text>
+        </Pressable>
+        <View style={styles.dockHint}><Ionicons name="create-outline" size={19} color={colors.primary} /><Text style={styles.dockHintText}>Edit fields above</Text></View>
+        <Pressable style={styles.saveDockAction} onPress={onSave} accessibilityLabel="Continue and save transaction">
+          <Ionicons name="checkmark" size={23} color="#fff" />
+          <Text style={styles.saveDockLabel}>Save</Text>
+        </Pressable>
+      </View>
     </LinearGradient>
   );
 }
@@ -242,14 +243,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingBottom: 6,
   },
-  title: { fontSize: 17, fontWeight: "800", color: colors.textPrimary },
-  pad: { paddingHorizontal: 16, paddingBottom: 28, paddingTop: 8 },
+  title: { fontSize: typeScale.headline, fontWeight: "700", color: colors.textPrimary },
+  pad: { paddingHorizontal: 16, paddingBottom: 112, paddingTop: 8 },
   reviewSuccess: { flexDirection: "row", alignItems: "center", gap: 9, backgroundColor: colors.mintSoft, borderColor: "#c9eee2", borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 12 },
-  reviewSuccessTitle: { color: colors.primaryDark, fontSize: 12, fontWeight: "800" },
-  reviewSuccessSub: { color: colors.gray600, fontSize: 11, marginTop: 2 },
+  reviewSuccessTitle: { color: colors.primaryDark, fontSize: typeScale.body, fontWeight: "700" },
+  reviewSuccessSub: { color: colors.gray600, fontSize: typeScale.sm, marginTop: 2 },
   previewRow: { flexDirection: "row", gap: 8, marginBottom: 14 },
-  receiptPreview: { flex: 1, minHeight: 100, maxHeight: 120, borderRadius: 10, borderColor: colors.border, borderWidth: 1, backgroundColor: "#f7f9fa", padding: 8, alignItems: "center", justifyContent: "center" },
-  receiptPreviewText: { color: colors.gray700, fontSize: 9, lineHeight: 12, textAlign: "center", fontFamily: Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" }) },
+  receiptPreview: { width: "100%", height: 250, borderRadius: 16, borderColor: colors.border, borderWidth: 1, backgroundColor: "#eef2f3", padding: 8, alignItems: "center", justifyContent: "center", marginBottom: 14, overflow: "hidden" },
+  receiptPreviewText: { color: colors.gray700, fontSize: typeScale.sm, lineHeight: 17, textAlign: "center" },
   receiptPreviewLabel: { color: colors.gray500, fontSize: 11, marginTop: 4 },
   previewImage: { width: "100%", height: "100%" },
   syncNote: {
@@ -323,8 +324,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 14,
     minHeight: 160,
-    fontSize: typeScale.sm,
-    fontFamily: Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" }),
+    fontSize: typeScale.body,
     color: colors.gray900,
     lineHeight: 20,
   },
@@ -377,4 +377,11 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   secondaryTxt: { fontSize: typeScale.sm, fontWeight: "700", color: colors.primary },
+  actionDock: { position: "absolute", left: 0, right: 0, bottom: 0, minHeight: 78, paddingTop: 10, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.divider },
+  dockAction: { width: 66, alignItems: "center", justifyContent: "center", gap: 3 },
+  dockLabel: { fontSize: 11, fontWeight: "700" },
+  dockHint: { flex: 1, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6 },
+  dockHintText: { fontSize: 12, color: colors.gray600, fontWeight: "600" },
+  saveDockAction: { minWidth: 82, minHeight: 50, borderRadius: 14, backgroundColor: colors.primary, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 },
+  saveDockLabel: { color: "#fff", fontSize: 13, fontWeight: "800" },
 });

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -28,6 +28,8 @@ export function SignInScreen() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const revealPassword = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 120);
 
   useEffect(() => {
     void (async () => {
@@ -54,13 +56,20 @@ export function SignInScreen() {
   return (
     <LinearGradient colors={[...gradients.page]} style={styles.flex}>
       <SafeAreaView style={styles.flex} edges={["top", "left", "right"]}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.flex}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.flex}>
           <ScrollView
+            ref={scrollRef}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            automaticallyAdjustKeyboardInsets
+            nestedScrollEnabled
+            scrollEventThrottle={16}
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.hero}>
+              <View style={styles.shield}><Ionicons name="shield-checkmark-outline" size={30} color={colors.primary} /></View>
+              <Text style={styles.trustTitle}>Never lose another receipt with automated cloud backups</Text>
               <Text style={styles.title}>Welcome back</Text>
               <Text style={styles.sub}>Sign in to continue with the same account you use on the web.</Text>
             </View>
@@ -93,6 +102,7 @@ export function SignInScreen() {
                   secureTextEntry
                   value={password}
                   onChangeText={setPassword}
+                  onFocus={revealPassword}
                   placeholder="••••••••"
                   placeholderTextColor={colors.gray400}
                 />
@@ -128,8 +138,11 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 36,
     justifyContent: "center",
+    minHeight: "100%",
   },
   hero: { alignItems: "center", marginBottom: 22 },
+  shield: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.mintSoft, alignItems: "center", justifyContent: "center", marginBottom: 9 },
+  trustTitle: { maxWidth: 320, textAlign: "center", color: colors.gray900, fontSize: 19, lineHeight: 25, fontWeight: "800", marginBottom: 16 },
   title: { fontSize: 26, fontWeight: "800", color: colors.gray900 },
   sub: {
     fontSize: typeScale.sm,

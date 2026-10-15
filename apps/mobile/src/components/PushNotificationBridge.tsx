@@ -2,7 +2,8 @@ import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import * as Notifications from "expo-notifications";
 import { api, useMutation } from "../lib/api";
-import { deviceId, existingPushRegistration } from "../lib/pushNotifications";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { PENDING_NOTIFICATION_PREFS_KEY, deviceId, existingPushRegistration } from "../lib/pushNotifications";
 import { useAuth } from "../contexts/AuthContext";
 import { openNotificationRoute } from "../lib/notificationRoutes";
 
@@ -10,6 +11,9 @@ export function PushNotificationBridge() {
   const { token } = useAuth();
   const register = useMutation(api.notifications.registerDevice);
   const opened = useMutation(api.notifications.opened);
+  const savePrefs = useMutation(api.notifications.savePreferences);
+  const savePrefsRef = useRef(savePrefs);
+  savePrefsRef.current = savePrefs;
   // The mutation functions get a new identity on every render. Keeping them in refs stops this effect from re-running
   // (and calling the server again) over and over; it should only run when the person signs in or out.
   const registerRef = useRef(register);
@@ -22,6 +26,12 @@ export function PushNotificationBridge() {
     if (!token) return;
     void existingPushRegistration().then((device) => device && (lastToken.current = device.token, registerRef.current({ token, pushToken: device.token, platform: device.platform, deviceId: device.deviceId, permissionStatus: device.permissionStatus }))).catch(() => undefined);
     void openedRef.current({ token, kind: "app_opened" }).catch(() => undefined);
+    // Choices made during setup are applied to the account as soon as the person is signed in.
+    void AsyncStorage.getItem(PENDING_NOTIFICATION_PREFS_KEY).then(async (raw) => {
+      if (!raw) return;
+      await savePrefsRef.current({ token, ...JSON.parse(raw) });
+      await AsyncStorage.removeItem(PENDING_NOTIFICATION_PREFS_KEY);
+    }).catch(() => undefined);
     const appState = AppState.addEventListener("change", (state) => { if (state === "active") void openedRef.current({ token, kind: "app_opened" }).catch(() => undefined); });
     const response = Notifications.addNotificationResponseReceivedListener((event) => {
       const jobId = event.notification.request.content.data?.jobId;

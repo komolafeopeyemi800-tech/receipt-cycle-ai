@@ -21,6 +21,8 @@ import { getIsoCountries } from "../lib/isoCountries";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { VOICE_INPUT_LANGUAGE_OPTIONS, normalizeVoiceInputLanguage } from "../lib/preferences";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
+import { Switch } from "react-native";
+import { PENDING_NOTIFICATION_PREFS_KEY, requestNotificationPermission } from "../lib/pushNotifications";
 import { openHttpsOrExternalUrl } from "../lib/openExternalUrl";
 
 const ONBOARDING_DATA_KEY = "onboardingData";
@@ -73,6 +75,7 @@ export function OnboardingScreen({ onDone }: Props) {
   const insets = useSafeAreaInsets();
   const { setCurrency, setVoiceInputLanguage } = usePreferences();
   const [step, setStep] = useState(1);
+  const [notif, setNotif] = useState({ dailyReminder: true, invoiceReminders: true, overdueReminders: true, paymentConfirmations: true, budgetAlerts: true, weeklyReports: false, marketingUpdates: true });
   const [currency, setCurrencyLocal] = useState("USD");
   const [goals, setGoals] = useState<string[]>([]);
   const [usecases, setUsecases] = useState<string[]>([]);
@@ -85,7 +88,7 @@ export function OnboardingScreen({ onDone }: Props) {
   const [currencyQuery, setCurrencyQuery] = useState("");
   const [countryQuery, setCountryQuery] = useState("");
 
-  const pct = useMemo(() => Math.round((step / 3) * 100), [step]);
+  const pct = useMemo(() => Math.round((step / 4) * 100), [step]);
 
   const currencyRows = useMemo<CurrencyRow[]>(() => {
     return ISO_CURRENCY_DATA.map((c) => ({
@@ -168,7 +171,16 @@ export function OnboardingScreen({ onDone }: Props) {
   }, [setCurrency, setVoiceInputLanguage, onDone]);
 
   const next = () => {
-    if (step < 3) setStep((s) => s + 1);
+    if (step === 3) {
+      void (async () => {
+        const phoneZone = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; } })();
+        try { await AsyncStorage.setItem(PENDING_NOTIFICATION_PREFS_KEY, JSON.stringify({ ...notif, timezone: phoneZone })); } catch { /* ignore */ }
+        if (Object.values(notif).some(Boolean)) await requestNotificationPermission().catch(() => undefined);
+        setStep(4);
+      })();
+      return;
+    }
+    if (step < 4) setStep((s) => s + 1);
     else void persistAndFinish();
   };
 
@@ -197,7 +209,7 @@ export function OnboardingScreen({ onDone }: Props) {
 
         <View style={styles.progressWrap}>
           <View style={styles.progressTop}>
-            <Text style={styles.stepLbl}>Step {step} of 3</Text>
+            <Text style={styles.stepLbl}>Step {step} of 4</Text>
             <Text style={styles.pctLbl}>{pct}%</Text>
           </View>
           <View style={styles.track}>
@@ -293,6 +305,31 @@ export function OnboardingScreen({ onDone }: Props) {
 
           {step === 3 && (
             <>
+              <Text style={styles.h2}>Stay on top of your money</Text>
+              <Text style={styles.p}>Choose the reminders you want. You can change these any time in Settings.</Text>
+              {([
+                ["dailyReminder", "Daily reminder", "A gentle nudge to keep your records current"],
+                ["invoiceReminders", "Invoice reminders", "Before an invoice is due"],
+                ["overdueReminders", "Overdue reminders", "When an invoice becomes overdue"],
+                ["paymentConfirmations", "Payment confirmations", "When a payment is received"],
+                ["budgetAlerts", "Budget alerts", "When you are close to a limit"],
+                ["weeklyReports", "Weekly reports", "A weekly summary of your activity"],
+                ["marketingUpdates", "Tips and product updates", "New features and helpful tips"],
+              ] as const).map(([key, title, sub]) => (
+                <View key={key} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, gap: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.bigTitle}>{title}</Text>
+                    <Text style={styles.bigSub}>{sub}</Text>
+                  </View>
+                  <Switch value={notif[key]} onValueChange={(v) => setNotif((n) => ({ ...n, [key]: v }))} trackColor={{ false: colors.gray200, true: colors.primary }} thumbColor="#fff" accessibilityLabel={title} />
+                </View>
+              ))}
+              <Text style={[styles.p, { marginTop: 8 }]}>Your phone will ask for permission when you continue.</Text>
+            </>
+          )}
+
+          {step === 4 && (
+            <>
               <Text style={styles.h2}>Your receipts & expenses</Text>
               <Text style={styles.p}>
                 Receipt Cycle is your private space for receipts and
@@ -318,7 +355,7 @@ export function OnboardingScreen({ onDone }: Props) {
             </>
           )}
 
-          {step === 4 && (
+          {step === 94 && (
             <>
               <Text style={styles.h2}>Focus areas</Text>
               <Text style={styles.p}>Optional — helps us prioritize features.</Text>
@@ -345,7 +382,7 @@ export function OnboardingScreen({ onDone }: Props) {
             </>
           )}
 
-          {step === 5 && (
+          {step === 95 && (
             <>
               <Text style={styles.h2}>Country / region</Text>
               <Text style={styles.p}>Full ISO country list — search by name or code.</Text>
@@ -361,7 +398,7 @@ export function OnboardingScreen({ onDone }: Props) {
             </>
           )}
 
-          {step === 6 && (
+          {step === 96 && (
             <>
               <Text style={styles.h2}>Industry</Text>
               <Text style={styles.p}>Optional — helps tailor categories.</Text>
@@ -382,7 +419,7 @@ export function OnboardingScreen({ onDone }: Props) {
             </>
           )}
 
-          {step === 7 && (
+          {step === 97 && (
             <>
               <Text style={styles.h2}>You&apos;re ready</Text>
               <Text style={styles.p}>
@@ -401,7 +438,7 @@ export function OnboardingScreen({ onDone }: Props) {
 
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 14) }]}>
           <Pressable style={styles.mainBtn} onPress={next}>
-            <Text style={styles.mainBtnTxt}>{step === 3 ? "Open dashboard" : "Continue"}</Text>
+            <Text style={styles.mainBtnTxt}>{step === 4 ? "Open dashboard" : "Continue"}</Text>
             <Ionicons name="arrow-forward" size={20} color="#fff" />
           </Pressable>
         </View>

@@ -32,17 +32,6 @@ describe("devices and the test notification", () => {
     const rows = await env.DB.prepare("SELECT token FROM push_devices WHERE user_id = ? AND active = 1").bind(id).all<{ token: string }>();
     expect(rows.results.map((r) => r.token)).toEqual(["token-two-bbbbbbbbbbbbbbbbbbbb"]);
   });
-
-  it("explains what is missing instead of failing silently", async () => {
-    const { token } = await makeUser();
-    const none = await api("POST", "/api/notifications/test", { token, body: {} });
-    expect(none.status).toBe(404);
-    await api("PUT", "/api/notifications/device", { token, body: device("token-three-cccccccccccccccccccc") });
-    const noKey = await api("POST", "/api/notifications/test", { token, body: {} });
-    expect(noKey.status).toBe(503);
-    expect(noKey.json.error).toMatch(/Firebase/);
-    expect((await api("POST", "/api/notifications/test", { body: {} })).status).toBe(401);
-  });
 });
 
 describe("message catalog", () => {

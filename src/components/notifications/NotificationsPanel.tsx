@@ -29,7 +29,6 @@ export function NotificationsPanel() {
   const prefs = useQuery(api.notifications.preferences, token ? { token } : "skip");
   const save = useMutation(api.notifications.savePreferences);
   const register = useMutation(api.notifications.registerDevice);
-  const sendTest = useAction(api.notifications.test);
   const [status, setStatus] = useState<WebPushStatus>("unsupported");
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -59,20 +58,6 @@ export function NotificationsPanel() {
     }
   }
 
-  async function test() {
-    if (!token) return;
-    setBusy(true);
-    setNote(null);
-    try {
-      const r = await sendTest({ token });
-      setNote(r.sent > 0 ? "Test sent. It should appear in a few seconds." : r.results.map((x) => x.error ?? "Not delivered").join(" "));
-    } catch (e) {
-      setNote(e instanceof Error ? e.message : "Could not send the test.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   const detail: Record<WebPushStatus, string> = {
     unsupported: "This browser cannot show push notifications.",
     "not-configured": "Browser notifications are not switched on for this website yet.",
@@ -93,7 +78,6 @@ export function NotificationsPanel() {
           {status === "ready" ? <PrimaryButton onClick={() => void turnOn()}>{busy ? "Working…" : "Turn on"}</PrimaryButton> : null}
           {status === "enabled" ? (
             <>
-              <SecondaryButton onClick={() => void test()}>{busy ? "Sending…" : "Send a test"}</SecondaryButton>
               <SecondaryButton onClick={() => { markWebPushOff(); setStatus("ready"); }}>Turn off here</SecondaryButton>
             </>
           ) : null}

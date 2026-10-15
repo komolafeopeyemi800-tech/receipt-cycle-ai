@@ -50,3 +50,13 @@ export async function existingPushRegistration() {
   return typeof nativeToken.data === "string" ? { token: nativeToken.data, deviceId: await deviceId(), permissionStatus: permission.status, platform: Platform.OS === "ios" ? "ios" as const : "android" as const } : null;
 }
 
+
+export const PENDING_NOTIFICATION_PREFS_KEY = "pendingNotificationPrefs";
+
+/** Asks the phone for permission without registering anything; registration follows once the person is signed in. */
+export async function requestNotificationPermission() {
+  await configurePushChannel();
+  const current = await Notifications.getPermissionsAsync();
+  if (current.granted) return true;
+  return (await Notifications.requestPermissionsAsync()).granted;
+}

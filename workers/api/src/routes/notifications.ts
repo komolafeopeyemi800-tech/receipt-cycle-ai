@@ -36,22 +36,6 @@ notificationRoutes.put("/device", async (c) => {
   return c.json({ ok: true });
 });
 /** Sends a test notification right now to every device this account has enabled, and reports what Firebase answered. */
-notificationRoutes.post("/test", async (c) => {
-  const db = c.get("db"), userId = c.get("user").id;
-  await enforce(db, `push-test:${userId}`, 10, 60 * 60_000, "You have sent several test notifications.");
-  const devices = await db.select().from(pushDevices).where(and(eq(pushDevices.userId, userId), eq(pushDevices.active, true))).limit(10);
-  if (devices.length === 0) throw new ApiError(404, "No device is registered for notifications yet. Turn notifications on first.");
-  const session = await firebaseSession(c.env);
-  if (!session) throw new ApiError(503, "Push notifications are not configured on the server yet (Firebase key missing).");
-  const results = [] as { platform: string; ok: boolean; error?: string }[];
-  for (const device of devices) {
-    const response = await sendFcm(session.account, session.token, device, { title: "Receipt Cycle is connected", body: "Notifications are working on this device.", route: device.platform === "web" ? "/dashboard" : "Records", jobId: "test", templateKey: "test", category: "test" });
-    const payload = (await response.json().catch(() => ({}))) as { error?: { status?: string; message?: string } };
-    if (!response.ok && ["UNREGISTERED", "INVALID_ARGUMENT"].includes(payload.error?.status ?? "")) await db.update(pushDevices).set({ active: false, updatedAt: Date.now() }).where(eq(pushDevices.id, device.id));
-    results.push({ platform: device.platform, ok: response.ok, ...(response.ok ? {} : { error: payload.error?.message ?? `Firebase answered ${response.status}` }) });
-  }
-  return c.json({ sent: results.filter((r) => r.ok).length, results });
-});
 notificationRoutes.post("/opened", async (c) => {
   const body = await parseBody(c, z.object({ jobId: z.string().optional(), kind: z.enum(["opened", "app_opened"]) }));
   await c.get("db").insert(notificationEvents).values({ id: newId(), userId: c.get("user").id, jobId: body.jobId ?? null, kind: body.kind, createdAt: Date.now() });

@@ -223,9 +223,6 @@ export const api = {
     }),
     registerDevice: fn<SessionArgs & { pushToken: string; platform: "android" | "ios" | "web"; deviceId: string; permissionStatus: string }, { ok: true }>("mutation", "notifications.registerDevice", (c, a) =>
       c.request("PUT", "/api/notifications/device", { token: tok(a), body: { token: a.pushToken, platform: a.platform, deviceId: a.deviceId, permissionStatus: a.permissionStatus } })),
-    /** Sends a test notification to this account's devices right now. */
-    test: fn<SessionArgs, { sent: number; results: { platform: string; ok: boolean; error?: string }[] }>("action", "notifications.test", (c, a) =>
-      c.request("POST", "/api/notifications/test", { token: tok(a), body: {} })),
     opened: fn<SessionArgs & { jobId?: string; kind: "opened" | "app_opened" }, { ok: true }>("mutation", "notifications.opened", (c, a) =>
       c.request("POST", "/api/notifications/opened", { token: tok(a), body: { jobId: a.jobId, kind: a.kind } })),
   },

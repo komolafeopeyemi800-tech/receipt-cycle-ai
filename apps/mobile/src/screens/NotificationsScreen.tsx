@@ -2,7 +2,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, Te
 import { Ionicons } from "@expo/vector-icons";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { AppCard, IconTile, ScreenContainer } from "../components/ui/FinanceUI";
-import { api, useAction, useMutation, useQuery, type PushPreferences } from "../lib/api";
+import { api, useMutation, useQuery, type PushPreferences } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import { requestPushRegistration } from "../lib/pushNotifications";
 import { colors, spacing, uiType } from "../theme/tokens";
@@ -31,7 +31,6 @@ export function NotificationsScreen() {
   const remote = useQuery(api.notifications.preferences, token ? { token } : "skip");
   const save = useMutation(api.notifications.savePreferences);
   const register = useMutation(api.notifications.registerDevice);
-  const sendTest = useAction(api.notifications.test);
   const preferences = remote;
 
   async function setValue(key: PreferenceKey, value: boolean) {
@@ -49,19 +48,9 @@ export function NotificationsScreen() {
       }
       await register({ token, pushToken: result.token, platform: result.platform, deviceId: result.deviceId, permissionStatus: result.status });
       if (preferences) await save({ token, ...preferences, timezone: phoneZone() }); // so the daily reminder arrives at 7 pm where you are
-      Alert.alert("Notifications enabled", "Receipt Cycle can now send the reminders you selected.");
+      Alert.alert("Notifications allowed", "You will receive only the reminders switched on below.");
     } catch (error) {
       Alert.alert("Could not enable notifications", error instanceof Error ? error.message : "Please try again.");
-    }
-  }
-
-  async function testNow() {
-    if (!token) return;
-    try {
-      const result = await sendTest({ token });
-      Alert.alert(result.sent > 0 ? "Test sent" : "Test not delivered", result.sent > 0 ? "A notification should appear on this phone in a few seconds." : result.results.map((r) => r.error ?? "Unknown problem").join("\n"));
-    } catch (error) {
-      Alert.alert("Could not send the test", error instanceof Error ? error.message : "Please try again.");
     }
   }
 
@@ -73,7 +62,6 @@ export function NotificationsScreen() {
           <View style={styles.permissionCopy}><Text style={styles.title}>Receive reminders on this device</Text><Text style={styles.description}>Choose this when you are ready. Receipt Cycle will then ask for your phone's permission.</Text></View>
           <Pressable accessibilityRole="button" onPress={() => void enableOnDevice()} style={styles.enableButton}><Text style={styles.enableText}>Enable</Text></Pressable>
         </AppCard>
-        <Pressable accessibilityRole="button" onPress={() => void testNow()} style={styles.testButton}><Text style={styles.testText}>Send me a test notification</Text></Pressable>
         <AppCard style={styles.card}>
           {rows.map((row, index) => <View key={row.key} style={[styles.row, index < rows.length - 1 && styles.divider]}>
             <IconTile icon={row.icon} tone={row.tone} size={38} />

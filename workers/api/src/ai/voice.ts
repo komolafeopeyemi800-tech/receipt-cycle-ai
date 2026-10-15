@@ -63,6 +63,8 @@ export type VoiceParseHints = {
   expenseCategories?: string[];
   incomeCategories?: string[];
   accountNames?: string[];
+  /** The person's own calendar day (YYYY-MM-DD) so "yesterday" means their yesterday, not the server's. */
+  today?: string;
 };
 
 export type TxDraft = {
@@ -127,7 +129,11 @@ export async function openaiParseTransaction(
     return { ok: false, error: "Add OPENAI_API_KEY to the API Worker." };
   }
 
-  const todayUtc = new Date().toISOString().split("T")[0];
+  const serverDay = new Date().toISOString().split("T")[0]!;
+  // Trust the phone's date only when it is a real day within a day or two of the server's clock.
+  const claimed = hints?.today;
+  const near = claimed && /^\d{4}-\d{2}-\d{2}$/.test(claimed) && Math.abs(Date.parse(claimed) - Date.parse(serverDay)) <= 2 * 86_400_000 && !Number.isNaN(Date.parse(claimed));
+  const todayUtc = near ? claimed : serverDay;
   const system = `You parse spoken or typed money notes into structured JSON for a personal receipt app.
 
 Four intents (transaction, budget, invoice, estimate):
@@ -142,7 +148,7 @@ Rules for transaction:
 - amount: positive number; null only if truly unclear.
 - category: MUST prefer an EXACT match from the user's lists when provided; otherwise best short label.
 - merchant: store or payee if inferable.
-- date: YYYY-MM-DD from what they said (relative like "yesterday" vs today UTC ${todayUtc}) or null.
+- date: YYYY-MM-DD from what they said (relative like "yesterday" is counted from today = ${todayUtc}; if no day is stated or it cannot be worked out, use null — never guess a date) or null.
 - description: short note or null.
 - payment_method: how they paid ONLY if they say it (e.g. cash, card, Venmo) — match to their account list when provided; else null.
 

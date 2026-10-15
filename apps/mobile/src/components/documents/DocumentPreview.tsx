@@ -31,6 +31,9 @@ function Item({ p, s }: { p: Prim; s: number }) {
   if (p.t === "text") {
     return <Text pointerEvents="none" numberOfLines={1} allowFontScaling={false} style={{ position: "absolute", left: p.x * s, top: p.y * s, width: p.w * s, fontSize: p.size * s, lineHeight: p.size * 1.2 * s, color: p.color, fontWeight: p.bold ? "700" : "400", textAlign: p.align ?? "left", includeFontPadding: false }}>{p.text}</Text>;
   }
+  if (p.t === "hint") {
+    return <View pointerEvents="none" style={{ position: "absolute", left: p.x * s, top: p.y * s, width: p.w * s, height: p.h * s, borderWidth: 1, borderStyle: "dashed", borderColor: "#9CA3AF", alignItems: "center", justifyContent: "center" }}><Text allowFontScaling={false} style={{ fontSize: Math.max(6, 7 * s), color: "#9CA3AF", textAlign: "center" }}>{p.text}</Text></View>;
+  }
   if (p.t === "img") {
     return <Image source={{ uri: p.uri }} resizeMode="contain" style={{ position: "absolute", left: p.x * s, top: p.y * s, width: p.w * s, height: p.h * s }} />;
   }

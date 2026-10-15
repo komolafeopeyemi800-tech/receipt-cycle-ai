@@ -1,3 +1,4 @@
+import { todayLocalYmd } from "../lib/dates";
 import { usePaymentFlow } from "../contexts/PaymentFlowContext";
 import { useEstimateFlow } from "../contexts/EstimateFlowContext";
 import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
@@ -220,7 +221,7 @@ export function MobileHomeScreen() {
 
   useEffect(() => {
     if (!user?.id || !subscription || subscription.pro) return;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayLocalYmd();
     const key = `receipt-cycle:access-notice:${user.id}`;
     void AsyncStorage.getItem(key).then((lastShown) => {
       if (lastShown !== today) setShowDailyAccess(true);
@@ -230,7 +231,7 @@ export function MobileHomeScreen() {
   const dismissDailyAccess = () => {
     setShowDailyAccess(false);
     if (!user?.id) return;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayLocalYmd();
     void AsyncStorage.setItem(`receipt-cycle:access-notice:${user.id}`, today);
   };
 

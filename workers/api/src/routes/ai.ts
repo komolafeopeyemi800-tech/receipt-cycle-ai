@@ -48,6 +48,7 @@ const hints = z
     expenseCategories: z.array(z.string()).optional(),
     incomeCategories: z.array(z.string()).optional(),
     accountNames: z.array(z.string()).optional(),
+    today: z.string().max(10).optional(),
   })
   .nullish();
 

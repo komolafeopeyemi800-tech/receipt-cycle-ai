@@ -1,3 +1,4 @@
+import { todayLocalYmd } from "../lib/dates";
 import { Alert, Platform } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { Directory, File, Paths } from "expo-file-system";
@@ -87,7 +88,7 @@ export function useCsvExport() {
       Alert.alert("Export", "No transactions to export yet.");
       return;
     }
-    const fileName = `receipt-cycle-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+    const fileName = `receipt-cycle-transactions-${todayLocalYmd()}.csv`;
 
     try {
       const csv = buildCsv(rows);

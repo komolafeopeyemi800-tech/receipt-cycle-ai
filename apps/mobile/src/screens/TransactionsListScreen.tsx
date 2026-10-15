@@ -1,3 +1,4 @@
+import { todayLocalYmd } from "../lib/dates";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "../lib/api";
 import { api } from "../lib/api";
@@ -221,7 +222,7 @@ export function TransactionsListScreen() {
       setBulkBusy(true);
       const dir = new Directory(Paths.document, "ReceiptCycle", "Exports");
       if (!dir.exists) dir.create({ intermediates: true });
-      const file = new File(dir, `receipt-cycle-selected-${new Date().toISOString().slice(0, 10)}.csv`);
+      const file = new File(dir, `receipt-cycle-selected-${todayLocalYmd()}.csv`);
       if (!file.exists) file.create({ overwrite: true });
       file.write(`\uFEFF${csv}`, { encoding: "utf8" });
       if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(file.uri, { mimeType: "text/csv", dialogTitle: "Export selected transactions" });

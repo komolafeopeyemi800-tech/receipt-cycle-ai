@@ -1,3 +1,4 @@
+import { todayLocalYmd } from "./dates";
 import { apiClient } from "./apiClient";
 import { exchangeCodeAsync, refreshAsync, type DiscoveryDocument } from "expo-auth-session";
 import { api } from "./api";
@@ -83,7 +84,7 @@ export async function runDriveBackupWithStoredCredentials(): Promise<void> {
     null,
     2,
   );
-  const stamp = new Date().toISOString().slice(0, 10);
+  const stamp = todayLocalYmd();
   await uploadJsonToDrive(access, `receipt-cycle-backup-${stamp}.json`, payload);
   await setLastDriveBackupAt(Date.now());
 }

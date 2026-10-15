@@ -1,3 +1,4 @@
+import { todayLocalYmd, trustedTransactionDate, ymdOf } from "../lib/dates";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLeaveConfirmation } from "../hooks/useLeaveConfirmation";
 import { useAction, useMutation, useQuery } from "../lib/api";
@@ -75,7 +76,7 @@ type AccountRow = {
 };
 
 function formatYmd(d: Date) {
-  return d.toISOString().split("T")[0]!;
+  return ymdOf(d);
 }
 
 export function AddTransactionScreen() {
@@ -124,6 +125,7 @@ export function AddTransactionScreen() {
   const [category, setCategory] = useState("Food & Dining");
   const [date, setDate] = useState(() => formatYmd(new Date()));
   const [dateObj, setDateObj] = useState(() => new Date());
+  const [dateAssumed, setDateAssumed] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [accountId, setAccountId] = useState<Id<"accounts"> | null>(null);
@@ -243,10 +245,16 @@ export function AddTransactionScreen() {
       setAmount(String(s.total_amount));
     if (s.merchant_name) setMerchant(s.merchant_name);
     if (s.category) setCategory(s.category);
-    if (s.date) {
-      setDate(s.date);
-      const p = new Date(s.date + "T12:00:00");
-      if (!Number.isNaN(p.getTime())) setDateObj(p);
+    const readDate = trustedTransactionDate(s.date);
+    if (readDate) {
+      setDate(readDate);
+      setDateObj(new Date(readDate + "T12:00:00"));
+      setDateAssumed(false);
+    } else {
+      // No reliable date on the document: show today's real date, say so, and let the person correct it.
+      setDate(todayLocalYmd());
+      setDateObj(new Date());
+      setDateAssumed(true);
     }
     if (s.payment_method) {
       setPaymentMethod(s.payment_method);
@@ -453,10 +461,11 @@ export function AddTransactionScreen() {
     if (draft.merchant?.trim()) {
       setMerchant(draft.merchant.trim());
     }
-    if (draft.date?.trim()) {
-      setDate(draft.date.trim());
-      const p = new Date(`${draft.date.trim()}T12:00:00`);
-      if (!Number.isNaN(p.getTime())) setDateObj(p);
+    const spokenDate = trustedTransactionDate(draft.date?.trim());
+    if (spokenDate) {
+      setDate(spokenDate);
+      setDateObj(new Date(`${spokenDate}T12:00:00`));
+      setDateAssumed(false);
     }
     const desc = draft.description?.trim();
     if (desc) {
@@ -898,6 +907,7 @@ export function AddTransactionScreen() {
     if (selected) {
       setDateObj(selected);
       setDate(formatYmd(selected));
+      setDateAssumed(false);
     }
   };
 
@@ -1204,6 +1214,7 @@ export function AddTransactionScreen() {
           value={date}
           onPress={() => setShowDatePicker(true)}
         />
+        {dateAssumed ? <Text style={{ color: colors.amber600 ?? colors.rose600, fontSize: 12, marginTop: -6, marginBottom: 10 }}>No date could be read, so today's date is shown. Tap Date to correct it.</Text> : null}
         {showDatePicker && (
           <DateTimePicker
             value={dateObj}

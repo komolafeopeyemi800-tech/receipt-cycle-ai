@@ -1,3 +1,4 @@
+import { todayLocalYmd } from "../../lib/dates";
 import { calculateInvoiceTotals, type SavedInvoice } from "../invoices/model";
 
 export type PaymentMethod = "Cash" | "Bank Transfer" | "Card" | "Mobile Money";
@@ -74,7 +75,7 @@ export const paymentListPreview: PaymentListPreview[] = [
 
 export const paymentPreviewMetrics = { received: 28450, refunded: 1200 };
 
-export function todayYmd() { return new Date().toISOString().slice(0, 10); }
+export function todayYmd() { return todayLocalYmd(); }
 
 export function createPaymentDraft(invoiceNumber?: string): PaymentDraft {
   return { invoiceNumber: invoiceNumber ?? null, amount: 0, paymentDate: todayYmd(), method: "Bank Transfer", accountId: null, accountName: "", note: "" };

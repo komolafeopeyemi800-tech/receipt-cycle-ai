@@ -90,6 +90,14 @@ export function DocumentStyleScreen() {
             </Pressable>
           ))}
         </View>
+        <Text style={styles.section}>LOGO</Text>
+        <View style={styles.sigCard}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.sigTitle}>{businessProfile.logoUri ? "Your logo is set" : "No logo yet"}</Text>
+            <Text style={styles.hint}>{businessProfile.logoUri ? "It appears at the top of your invoices and estimates." : "The logo area stays empty until you upload your own. We never put our logo on your documents."}</Text>
+          </View>
+          <Pressable style={styles.sigBtn} onPress={() => navigation.navigate("BusinessProfile" as never)} accessibilityRole="button"><Ionicons name="image-outline" size={16} color="#fff" /><Text style={styles.sigBtnText}>{businessProfile.logoUri ? "Change" : "Upload"}</Text></Pressable>
+        </View>
         <Text style={styles.section}>SIGNATURE</Text>
         <View style={styles.sigCard}>
           <View style={{ flex: 1 }}>

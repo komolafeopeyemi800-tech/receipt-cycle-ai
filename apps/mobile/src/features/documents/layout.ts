@@ -33,6 +33,8 @@ export type Prim =
   | { t: "line"; x1: number; y1: number; x2: number; y2: number; color: string; lw: number; dash?: boolean }
   | { t: "text"; x: number; y: number; w: number; text: string; size: number; bold?: boolean; color: string; align?: "left" | "right" | "center" }
   | { t: "img"; x: number; y: number; w: number; h: number; uri: string }
+  /** On-screen only (never printed): a dashed box that tells the person where their logo will appear. */
+  | { t: "hint"; x: number; y: number; w: number; h: number; text: string }
   | { t: "ink"; x: number; y: number; w: number; h: number; ink: SignatureInk; color: string };
 
 export type DocLayout = { w: number; h: number; pages: Prim[][] };
@@ -130,8 +132,8 @@ export function buildDocument(input: DocInput): DocLayout {
     const lw = r >= 1 ? logoBox : logoBox * r, lh = r >= 1 ? logoBox / r : logoBox;
     c.cur.push({ t: "img", x: m, y, w: lw, h: lh, uri: input.logo.uri });
   } else {
-    c.cur.push({ t: "rect", x: m, y, w: logoBox, h: logoBox, fill: accent });
-    text(c, m, y + logoBox / 2 - 11, logoBox, (business.businessName || "R").trim().charAt(0).toUpperCase() || "R", compact ? 16 : 22, { bold: true, color: "#FFFFFF", align: "center" });
+    // No logo uploaded: leave the space empty (never our own mark). The preview draws a dashed "Your logo" hint here; the PDF stays blank.
+    c.cur.push({ t: "hint", x: m, y, w: logoBox, h: logoBox, text: "Your logo" });
   }
   const nameX = m + logoBox + 12;
   const leftW = (compact ? cw * 0.58 : cw * 0.56) - logoBox - 12;
@@ -216,10 +218,8 @@ export function buildDocument(input: DocInput): DocLayout {
   const footer = () => {
     const fy = h - (compact ? 34 : 40);
     c.cur.push({ t: "line", x1: m, y1: fy, x2: m + cw, y2: fy, color: HAIR, lw: 0.6 });
-    text(c, m, fy + 7, cw * 0.5, fitText([business.businessName, business.website].filter(Boolean).join("  ·  ") || "Generated with Receipt Cycle", 7.5, false, cw * 0.5), 7.5, { color: MUTED });
+    text(c, m, fy + 7, cw * 0.5, fitText([business.businessName, business.website].filter(Boolean).join("  ·  ") || "", 7.5, false, cw * 0.5), 7.5, { color: MUTED });
     text(c, m + cw * 0.5, fy + 7, cw * 0.5, `${input.draft.invoiceNumber}  ·  Page {{page}} of {{pages}}`, 7.5, { color: MUTED, align: "right" });
-    if (!business.businessName && !business.website) return;
-    text(c, m, fy + 18, cw * 0.5, "Generated with Receipt Cycle", 6.5, { color: "#8A94A3" });
   };
   const newPage = () => {
     footer();

@@ -82,7 +82,7 @@ export function EstimateSendScreen() {
   const customer = customers.find((item) => item.id === draft.customerId);
 
   if (!customer) return <ScreenContainer><ScreenHeader title="Send Estimate" back /><EmptyState icon="person-outline" title="Customer missing" description="Return to the estimate and select a customer." /></ScreenContainer>;
-  const summary = `Estimate ${draft.estimateNumber} from ${businessProfile.businessName || "Receipt Cycle"} for ${customer.name}.`;
+  const summary = `Estimate ${draft.estimateNumber} from ${businessProfile.businessName || "your business"} for ${customer.name}.`;
   const pdfUri = () => createInvoicePdf(estimateAsInvoiceDraft(draft), businessProfile, customer, currency, "ESTIMATE");
 
   async function sharePdf(title = `Share ${draft.estimateNumber}`) {

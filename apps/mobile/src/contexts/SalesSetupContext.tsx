@@ -1,3 +1,4 @@
+import { todayLocalYmd } from "../lib/dates";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { cloneDefaultSalesSetupState, defaultSalesSetupState, type NotificationPreferences, type BusinessProfile, type CatalogItem, type InvoiceSettings, type SalesCustomer, type SalesSetupState } from "../features/sales/setupData";
@@ -116,7 +117,7 @@ export function SalesSetupProvider({ children }: { children: ReactNode }) {
     ready: loadedStorageKey === storageKey,
     saveCustomer: (draft) => {
       const id = draft.id ?? `customer-${Date.now()}`;
-      const customer: SalesCustomer = { ...draft, id, createdAt: draft.createdAt ?? new Date().toISOString().slice(0, 10) };
+      const customer: SalesCustomer = { ...draft, id, createdAt: draft.createdAt ?? todayLocalYmd() };
       update((current) => ({ ...current, customers: current.customers.some((item) => item.id === id) ? current.customers.map((item) => item.id === id ? customer : item) : [customer, ...current.customers] }));
       return id;
     },

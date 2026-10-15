@@ -71,7 +71,7 @@ function ConvexTransactionsInner() {
   const [amount, setAmount] = useState("");
   const [merchant, setMerchant] = useState("");
   const [category, setCategory] = useState("Food & Dining");
-  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`; });
   const [type, setType] = useState<"expense" | "income">("expense");
   const [busy, setBusy] = useState(false);
   const [scanMsg, setScanMsg] = useState<string | null>(null);

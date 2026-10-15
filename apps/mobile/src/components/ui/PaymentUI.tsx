@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { BusinessProfile } from "../../features/sales/setupData";
 import type { SavedPayment } from "../../features/payments/model";
@@ -6,7 +6,7 @@ import { colors, radius, spacing, uiType } from "../../theme/tokens";
 
 export function ReceiptPreviewCard({ payment, business, formatMoney, formatDate }: { payment: SavedPayment; business: BusinessProfile; formatMoney: (amount: number) => string; formatDate: (date: string) => string }) {
   return <View style={styles.paper}>
-    <View style={styles.header}><View style={styles.brandRow}><View style={styles.brandMark}><Ionicons name="leaf-outline" size={19} color="#fff" /></View><View><Text style={styles.brand}>{business.businessName || "Receipt Cycle"}</Text><Text style={styles.micro}>Simple Financial Tools</Text><Text style={styles.micro}>for A Brighter Tomorrow</Text></View></View><View style={styles.receiptMeta}><Text style={styles.receiptTitle}>RECEIPT</Text><Text style={styles.metaStrong}>{payment.receiptNumber}</Text><Text style={styles.micro}>{formatDate(payment.paymentDate)}</Text></View></View>
+    <View style={styles.header}><View style={styles.brandRow}>{business.logoUri ? <Image source={{ uri: business.logoUri }} style={styles.brandLogo} resizeMode="contain" /> : <View style={styles.brandBlank} />}<View><Text style={styles.brand}>{business.businessName || "Your business"}</Text></View></View><View style={styles.receiptMeta}><Text style={styles.receiptTitle}>RECEIPT</Text><Text style={styles.metaStrong}>{payment.receiptNumber}</Text><Text style={styles.micro}>{formatDate(payment.paymentDate)}</Text></View></View>
     <View style={styles.rule} />
     <View style={styles.partyRow}><View style={{ flex: 1 }}><Text style={styles.label}>BILL TO</Text><Text style={styles.party}>{payment.customerName}</Text><Text style={styles.address}>{payment.customerAddress || payment.customerEmail || "Customer payment"}</Text></View><View style={styles.invoiceRef}><Text style={styles.label}>INVOICE REF.</Text><Text style={styles.party}>{payment.invoiceNumber}</Text></View></View>
     <ReceiptLine label="Amount Received" value={formatMoney(payment.amount)} strong />
@@ -15,8 +15,8 @@ export function ReceiptPreviewCard({ payment, business, formatMoney, formatDate 
     <ReceiptLine label="Payment Date" value={formatDate(payment.paymentDate)} />
     <ReceiptLine label="Reference" value={payment.reference} />
     <View style={styles.balance}><Text style={styles.balanceLabel}>Remaining Balance</Text><Text style={styles.balanceValue}>{formatMoney(payment.remainingBalance)}</Text></View>
-    <View style={styles.thanks}><Text style={styles.thanksMain}>Thank you for your payment!</Text><Text style={styles.thanksSub}>Together, we build brighter businesses.</Text></View>
-    <View style={styles.signature}><Text style={styles.signatureText}>{business.businessName || "Receipt Cycle"}</Text><View style={styles.signatureLine} /><Text style={styles.micro}>Authorized Signature</Text></View>
+    <View style={styles.thanks}><Text style={styles.thanksMain}>Thank you for your payment!</Text></View>
+    <View style={styles.signature}><Text style={styles.signatureText}>{business.businessName || ""}</Text><View style={styles.signatureLine} /><Text style={styles.micro}>Authorized Signature</Text></View>
   </View>;
 }
 
@@ -29,6 +29,8 @@ export function PaymentSuccessIcon() {
 }
 
 const styles = StyleSheet.create({
+  brandLogo: { width: 44, height: 44 },
+  brandBlank: { width: 44, height: 44, borderWidth: 1, borderStyle: "dashed", borderColor: "#cbd5e1" },
   paper: { minHeight: 610, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, borderRadius: radius.small },
   header: { flexDirection: "row", justifyContent: "space-between", gap: spacing.sm },
   brandRow: { flexDirection: "row", gap: spacing.sm, alignItems: "center", flex: 1 },

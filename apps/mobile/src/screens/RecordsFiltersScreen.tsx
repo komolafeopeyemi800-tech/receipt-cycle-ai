@@ -1,3 +1,4 @@
+import { todayLocalYmd } from "../lib/dates";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -81,7 +82,7 @@ export function RecordsFiltersScreen() {
         <Pressable style={styles.dateButton} onPress={() => setPicker("end")}><Text style={styles.dateText}>{draft.endDate ?? "To date"}</Text></Pressable>
       </View>
       {draft.startDate || draft.endDate ? <Pressable onPress={() => update({ startDate: null, endDate: null })}><Text style={styles.smallAction}>Clear dates</Text></Pressable> : null}
-      {picker ? <><DateTimePicker value={new Date(`${picker === "start" ? draft.startDate ?? new Date().toISOString().slice(0, 10) : draft.endDate ?? new Date().toISOString().slice(0, 10)}T12:00:00`)} mode="date" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onDate} />{Platform.OS === "ios" ? <Pressable onPress={() => setPicker(null)}><Text style={styles.smallAction}>Done</Text></Pressable> : null}</> : null}
+      {picker ? <><DateTimePicker value={new Date(`${picker === "start" ? draft.startDate ?? todayLocalYmd() : draft.endDate ?? todayLocalYmd()}T12:00:00`)} mode="date" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onDate} />{Platform.OS === "ios" ? <Pressable onPress={() => setPicker(null)}><Text style={styles.smallAction}>Done</Text></Pressable> : null}</> : null}
       <SelectField label="Account" icon="wallet-outline" value={accountName} onPress={() => setShowAccounts((value) => !value)} />
       {showAccounts ? <View style={styles.optionBox}><Pressable style={styles.option} onPress={() => { update({ accountId: null }); setShowAccounts(false); }}><Text>All Accounts</Text></Pressable>{accountRows.map((account) => <Pressable key={String(account.id)} style={styles.option} onPress={() => { update({ accountId: String(account.id) }); setShowAccounts(false); }}><Text>{account.name}</Text></Pressable>)}</View> : null}
       <SelectField label="Sort By" icon="swap-vertical-outline" value={sorts.find((sort) => sort.value === draft.sort)?.label ?? "Date (Newest First)"} onPress={() => setShowSort((value) => !value)} />

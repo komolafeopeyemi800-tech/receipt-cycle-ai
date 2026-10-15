@@ -79,7 +79,14 @@ function bumpTrialAdds(db: Db, userId: string, by: number) {
 }
 
 /** Dates are compared as strings by the range filters, so only `YYYY-MM-DD` is accepted. */
-const ymd = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD");
+const ymd = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD")
+  .refine((v) => {
+    const [y, m, d] = v.split("-").map(Number);
+    const probe = new Date(Date.UTC(y!, m! - 1, d!));
+    return y! >= 2000 && y! <= 2100 && probe.getUTCFullYear() === y && probe.getUTCMonth() === m! - 1 && probe.getUTCDate() === d;
+  }, "date must be a real calendar day");
 
 const entrySource = z.enum(["camera", "upload", "manual"]);
 

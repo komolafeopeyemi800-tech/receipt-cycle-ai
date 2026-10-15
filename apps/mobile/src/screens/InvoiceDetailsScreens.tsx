@@ -103,7 +103,7 @@ export function InvoiceExtrasScreen() {
       <View style={styles.switchRow}><View style={{ flex: 1 }}><Text style={styles.switchTitle}>Signature</Text><Text style={styles.switchMeta}>Print your drawn signature and name on the invoice.</Text></View><Switch value={draft.signatureEnabled} onValueChange={(signatureEnabled) => updateDraft({ signatureEnabled })} trackColor={{ false: colors.gray200, true: "#82d8c7" }} thumbColor={draft.signatureEnabled ? colors.primary : "#fff"} /></View>
       {draft.signatureEnabled ? <View style={styles.signatureBox}><SignatureField /><FormField label="Name under signature" icon="pencil-outline" value={draft.signatureText} onChangeText={(signatureText) => updateDraft({ signatureText })} placeholder="Alex Rivera" /></View> : null}
       <View style={styles.assetRow}>
-        <Pressable onPress={() => navigation.navigate("BusinessProfile")} style={styles.assetCard} accessibilityRole="button" accessibilityLabel="Change business logo">{businessProfile.logoUri ? <Image source={{ uri: businessProfile.logoUri }} style={styles.logo} /> : <View style={styles.logoMark}><Ionicons name="leaf-outline" size={25} color="#fff" /></View>}<Text style={styles.assetTitle}>{businessProfile.businessName || "Receipt Cycle"}</Text><Text style={styles.assetMeta}>Tap to change</Text></Pressable>
+        <Pressable onPress={() => navigation.navigate("BusinessProfile")} style={styles.assetCard} accessibilityRole="button" accessibilityLabel="Change business logo">{businessProfile.logoUri ? <Image source={{ uri: businessProfile.logoUri }} style={styles.logo} /> : <View style={styles.logoMark}><Ionicons name="cloud-upload-outline" size={24} color={colors.gray500} /></View>}<Text style={styles.assetTitle}>{businessProfile.businessName || "Add your business name"}</Text><Text style={styles.assetMeta}>Tap to change</Text></Pressable>
         <Pressable onPress={() => void addAttachment()} style={styles.assetCard} accessibilityRole="button" accessibilityLabel="Add invoice attachment"><Ionicons name={draft.attachment ? "document-attach-outline" : "attach-outline"} size={34} color={colors.textPrimary} /><Text style={styles.assetTitle} numberOfLines={1}>{draft.attachment?.name ?? (attaching ? "Adding..." : "Add file")}</Text><Text style={styles.assetMeta}>{draft.attachment ? "Tap to replace" : "PDF, image, etc."}</Text></Pressable>
       </View>
     </ScrollView>
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   assetRow: { flexDirection: "row", gap: spacing.sm },
   assetCard: { flex: 1, minHeight: 142, borderWidth: 1, borderColor: colors.border, borderRadius: radius.medium, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", padding: spacing.sm },
   logo: { width: 48, height: 48, borderRadius: radius.medium, marginBottom: spacing.sm },
-  logoMark: { width: 48, height: 48, borderRadius: radius.medium, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", marginBottom: spacing.sm },
+  logoMark: { width: 48, height: 48, borderRadius: radius.medium, borderWidth: 1.5, borderStyle: "dashed", borderColor: colors.gray400, alignItems: "center", justifyContent: "center", marginBottom: spacing.sm },
   assetTitle: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "800", textAlign: "center" },
   assetMeta: { color: colors.gray500, fontSize: uiType.caption, marginTop: 4 },
 });

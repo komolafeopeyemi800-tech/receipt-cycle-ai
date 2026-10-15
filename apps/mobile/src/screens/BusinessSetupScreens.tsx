@@ -72,7 +72,7 @@ export function BusinessProfileScreen() {
     <ScreenHeader title="Business Profile" back />
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       <Pressable onPress={() => void pickLogo()} style={({ pressed }) => [styles.logoCard, pressed && { opacity: 0.75 }]} accessibilityRole="button" accessibilityLabel="Upload business logo">
-        {profile.logoUri ? <Image source={{ uri: profile.logoUri }} style={styles.logoImage} /> : <View style={styles.logoPlaceholder}><Ionicons name="leaf-outline" size={30} color="#fff" /></View>}
+        {profile.logoUri ? <Image source={{ uri: profile.logoUri }} style={styles.logoImage} /> : <View style={styles.logoPlaceholder}><Ionicons name="cloud-upload-outline" size={26} color={colors.gray500} /></View>}
         <Text style={styles.logoTitle}>{profile.logoUri ? "Change Logo" : "Upload Logo"}</Text>
         <Text style={styles.logoMeta}>JPG or PNG up to 2MB</Text>
       </Pressable>
@@ -135,7 +135,7 @@ export function InvoiceSettingsScreen() {
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, paddingBottom: spacing.xxxl },
   logoCard: { minHeight: 122, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.large, alignItems: "center", justifyContent: "center", marginBottom: spacing.xl },
-  logoPlaceholder: { width: 52, height: 52, borderRadius: radius.medium, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", marginBottom: spacing.sm },
+  logoPlaceholder: { width: 58, height: 58, borderRadius: radius.medium, borderWidth: 1.5, borderStyle: "dashed", borderColor: colors.gray400, backgroundColor: "transparent", alignItems: "center", justifyContent: "center", marginBottom: spacing.sm },
   logoImage: { width: 58, height: 58, borderRadius: radius.medium, marginBottom: spacing.sm },
   logoTitle: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "800" },
   logoMeta: { color: colors.gray500, fontSize: uiType.caption, marginTop: 3 },

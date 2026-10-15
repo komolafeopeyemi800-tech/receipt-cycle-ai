@@ -1,3 +1,4 @@
+import { todayLocalYmd } from "../../lib/dates";
 import type { SalesStatus } from "../../types/sales";
 import type { InvoiceSettings, SalesCustomer } from "../sales/setupData";
 
@@ -74,7 +75,7 @@ export const invoiceListPreview: InvoiceListPreview[] = [
 export const invoiceSyncId = (invoice: Pick<SavedInvoice, "invoiceNumber">) => `inv:${invoice.invoiceNumber}`;
 
 export function todayYmd() {
-  return new Date().toISOString().slice(0, 10);
+  return todayLocalYmd();
 }
 
 export function addDaysYmd(ymd: string, days: number) {

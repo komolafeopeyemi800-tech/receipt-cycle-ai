@@ -16,7 +16,7 @@ function receiptDirectory() {
 export function createReceiptPdf(payment: SavedPayment, business: BusinessProfile, currency: string) {
   const command = (text: string, x: number, y: number, size = 10, bold = false) => `BT /${bold ? "F2" : "F1"} ${size} Tf ${x} ${y} Td (${pdfEscape(text)}) Tj ET`;
   const lines = [
-    command(business.businessName || "Receipt Cycle", 48, 744, 18, true),
+    command(business.businessName || "Your business", 48, 744, 18, true),
     command("PAYMENT RECEIPT", 393, 744, 16, true),
     command(`Receipt #: ${payment.receiptNumber}`, 393, 721, 9),
     command(`Date: ${payment.paymentDate}`, 393, 706, 9),
@@ -65,12 +65,11 @@ export function createReceiptPdf(payment: SavedPayment, business: BusinessProfil
 }
 
 export function createReceiptImage(payment: SavedPayment, business: BusinessProfile, currency: string) {
-  const brand = xmlEscape(business.businessName || "Receipt Cycle");
+  const brand = xmlEscape(business.businessName || "Your business");
   const customer = xmlEscape(payment.customerName);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1100" viewBox="0 0 720 1100">
   <rect width="720" height="1100" fill="#f8fdfb"/><rect x="45" y="35" width="630" height="1030" rx="28" fill="#fff" stroke="#dbe7ee" stroke-width="2"/>
-  <rect x="78" y="78" width="64" height="64" rx="16" fill="#0f766e"/><text x="110" y="120" font-family="Arial" font-size="30" fill="#fff" text-anchor="middle">RC</text>
-  <text x="160" y="104" font-family="Arial" font-size="28" font-weight="700" fill="#14213a">${brand}</text><text x="160" y="132" font-family="Arial" font-size="16" fill="#64748b">Simple Financial Tools</text>
+  <text x="160" y="104" font-family="Arial" font-size="28" font-weight="700" fill="#14213a">${brand}</text>
   <text x="620" y="104" text-anchor="end" font-family="Arial" font-size="25" font-weight="700" fill="#14213a">RECEIPT</text><text x="620" y="133" text-anchor="end" font-family="Arial" font-size="15" fill="#475569">${xmlEscape(payment.receiptNumber)}</text>
   <line x1="78" y1="180" x2="642" y2="180" stroke="#94a3b8" stroke-width="2" stroke-dasharray="7 7"/>
   <text x="78" y="226" font-family="Arial" font-size="15" font-weight="700" fill="#475569">BILL TO</text><text x="78" y="258" font-family="Arial" font-size="21" font-weight="700" fill="#14213a">${customer}</text>

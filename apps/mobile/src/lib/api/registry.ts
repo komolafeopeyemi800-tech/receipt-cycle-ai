@@ -3,6 +3,7 @@
  * the names the Convex code used, so screens only changed their imports. Each entry says which
  * Worker route it hits and how to reshape the answer.
  */
+import { todayLocalYmd } from "../dates";
 import { defaultAvatarUrl } from "../avatar";
 import type { ApiClient } from "./client";
 import type { ColumnMapping } from "../statementParse/statement";
@@ -276,7 +277,7 @@ export const api = {
           type: "expense",
           category: "Food & Dining",
           merchant: "Demo Cafe",
-          date: new Date().toISOString().split("T")[0],
+          date: todayLocalYmd(),
           description: "Demo transaction (seed)",
           payment_method: "Card",
           tags: ["demo"],
@@ -412,7 +413,7 @@ export const api = {
     parseTransactionFromSpeech: fn<SessionArgs & { text: string; hints?: VoiceHints }, Ok & { draft: TxDraft | null }>(
       "action",
       "voiceFinance.parseTransactionFromSpeech",
-      (c, a) => c.request("POST", "/api/ai/voice/parse", { token: tok(a), body: { text: a.text, hints: a.hints } }),
+      (c, a) => c.request("POST", "/api/ai/voice/parse", { token: tok(a), body: { text: a.text, hints: { ...a.hints, today: todayLocalYmd() } } }),
     ),
     voiceTransactionFromAudio: fn<
       SessionArgs & { audioBase64: string; mimeType?: string; language?: string; hints?: VoiceHints },
@@ -420,7 +421,7 @@ export const api = {
     >("action", "voiceFinance.voiceTransactionFromAudio", (c, a) =>
       c.request("POST", "/api/ai/voice/transaction", {
         token: tok(a),
-        body: { audioBase64: a.audioBase64, mimeType: a.mimeType, language: a.language, hints: a.hints },
+        body: { audioBase64: a.audioBase64, mimeType: a.mimeType, language: a.language, hints: { ...a.hints, today: todayLocalYmd() } },
       }),
     ),
     financeCoachChat: fn<

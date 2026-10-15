@@ -21,13 +21,13 @@ export const API_URL: string =
  */
 const fb = (key: string, fallback = "") => ((import.meta.env as Record<string, string | undefined>)[key] ?? "").trim() || fallback;
 export const FIREBASE_WEB_CONFIG = {
-  apiKey: fb("VITE_FIREBASE_API_KEY"),
-  authDomain: fb("VITE_FIREBASE_AUTH_DOMAIN"),
-  projectId: fb("VITE_FIREBASE_PROJECT_ID"),
-  storageBucket: fb("VITE_FIREBASE_STORAGE_BUCKET"),
-  messagingSenderId: fb("VITE_FIREBASE_MESSAGING_SENDER_ID"),
-  appId: fb("VITE_FIREBASE_APP_ID"),
+  apiKey: fb("VITE_FIREBASE_API_KEY", "AIzaSyDSBrkGfcJ3rHukgNyJ9OjgXELrEX5sSnI"),
+  authDomain: fb("VITE_FIREBASE_AUTH_DOMAIN", "receiptcycleapp.firebaseapp.com"),
+  projectId: fb("VITE_FIREBASE_PROJECT_ID", "receiptcycleapp"),
+  storageBucket: fb("VITE_FIREBASE_STORAGE_BUCKET", "receiptcycleapp.firebasestorage.app"),
+  messagingSenderId: fb("VITE_FIREBASE_MESSAGING_SENDER_ID", "1045047345639"),
+  appId: fb("VITE_FIREBASE_APP_ID", "1:1045047345639:web:69f137c4ee62b500a43d42"),
 };
 /** Firebase console > Project settings > Cloud Messaging > Web Push certificates > Key pair (public key). */
-export const FIREBASE_VAPID_KEY = fb("VITE_FIREBASE_VAPID_KEY");
+export const FIREBASE_VAPID_KEY = fb("VITE_FIREBASE_VAPID_KEY", "BLvyaATesqfZqSXR5KWQIIQkXyXYVJuZOh_hA_9I_zur22foiO8nR4UwoeP4wt2DPQzgELDNHq8tcQGFdRzFvk8");
 export const webPushConfigured = () => Boolean(FIREBASE_WEB_CONFIG.apiKey && FIREBASE_WEB_CONFIG.projectId && FIREBASE_WEB_CONFIG.appId && FIREBASE_VAPID_KEY);

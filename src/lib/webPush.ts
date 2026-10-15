@@ -31,7 +31,24 @@ export function webPushStatus(): WebPushStatus {
 async function registerWorker() {
   // The worker reads the public Firebase settings from its own address, so it needs no build step.
   const cfg = encodeURIComponent(JSON.stringify(FIREBASE_WEB_CONFIG));
-  return navigator.serviceWorker.register(`/firebase-messaging-sw.js?cfg=${cfg}`, { scope: "/firebase-cloud-messaging-push-scope" });
+  const registration = await navigator.serviceWorker.register(`/firebase-messaging-sw.js?cfg=${cfg}`, { scope: "/firebase-cloud-messaging-push-scope" });
+  // The browser can only subscribe once the worker is fully active, which takes a moment on first install.
+  const worker = registration.installing ?? registration.waiting ?? registration.active;
+  if (worker && worker.state !== "activated") {
+    await new Promise<void>((resolve, reject) => {
+      const timer = window.setTimeout(() => reject(new Error("The notification service did not start. Reload the page and try again.")), 15000);
+      worker.addEventListener("statechange", () => {
+        if (worker.state === "activated") {
+          window.clearTimeout(timer);
+          resolve();
+        } else if (worker.state === "redundant") {
+          window.clearTimeout(timer);
+          reject(new Error("The notification service could not start. Check your connection and try again."));
+        }
+      });
+    });
+  }
+  return registration;
 }
 
 /** Asks the browser for permission and returns this browser's push token. Throws a readable message on failure. */

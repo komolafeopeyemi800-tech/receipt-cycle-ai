@@ -1,5 +1,7 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  Keyboard,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -25,8 +27,30 @@ import { PremiumIcon } from "./PremiumIcon";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
+/**
+ * Every screen sits in this. On Android the keyboard can cover the lower part of a screen without the window being
+ * resized (so a Save button ends up out of reach). When that happens the container pads itself by exactly the part
+ * the keyboard covers, so the page can be scrolled until the button is above the keyboard.
+ */
 export function ScreenContainer({ children }: { children: ReactNode }) {
-  return <View style={styles.screen}>{children}</View>;
+  const ref = useRef<View>(null);
+  const [pad, setPad] = useState(0);
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const show = Keyboard.addListener("keyboardDidShow", (event) => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        ref.current?.measureInWindow((_x, y, _w, h) => {
+          const overlap = y + h - event.endCoordinates.screenY;
+          setPad(overlap > 24 ? Math.round(overlap) : 0);
+        });
+      }, 120);
+    });
+    const hide = Keyboard.addListener("keyboardDidHide", () => { if (timer) clearTimeout(timer); setPad(0); });
+    return () => { show.remove(); hide.remove(); if (timer) clearTimeout(timer); };
+  }, []);
+  return <View ref={ref} collapsable={false} style={[styles.screen, pad > 0 && { paddingBottom: pad }]}>{children}</View>;
 }
 
 export function AppCard({
@@ -370,6 +394,29 @@ export function SelectField({
   );
 }
 
+/** A large round "+" pinned to the bottom-right, so the main create action is always easy to find. */
+export function AddFab({ onPress, label }: { onPress: () => void; label: string }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => [styles.fab, pressed && { opacity: 0.85 }]}>
+      <Ionicons name="add" size={34} color="#fff" />
+    </Pressable>
+  );
+}
+
+/** Empty list with a big round "+" and a clear sentence telling the person where to tap. */
+export function CreateEmptyState({ title, description, buttonLabel, onPress }: { title: string; description: string; buttonLabel: string; onPress: () => void }) {
+  return (
+    <View style={styles.createEmpty}>
+      <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={buttonLabel} style={({ pressed }) => [styles.createCircle, pressed && { opacity: 0.85 }]}>
+        <Ionicons name="add" size={44} color="#fff" />
+      </Pressable>
+      <Text style={styles.createTitle}>{title}</Text>
+      <Text style={styles.createText}>{description}</Text>
+      <Text style={styles.createHint}>{buttonLabel}</Text>
+    </View>
+  );
+}
+
 export function EmptyState({
   icon = "document-outline",
   title,
@@ -402,6 +449,12 @@ export function EmptyState({
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
+  fab: { position: "absolute", right: 20, bottom: 28, width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", ...shadows.floating },
+  createEmpty: { alignItems: "center", paddingHorizontal: spacing.xl, paddingTop: spacing.xxxl },
+  createCircle: { width: 92, height: 92, borderRadius: 46, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", ...shadows.floating },
+  createTitle: { color: colors.textPrimary, fontSize: uiType.sectionTitle, fontWeight: "800", marginTop: spacing.lg, textAlign: "center" },
+  createText: { color: colors.gray500, fontSize: uiType.body, textAlign: "center", marginTop: spacing.xs, lineHeight: 21 },
+  createHint: { color: colors.primary, fontSize: uiType.body, fontWeight: "800", marginTop: spacing.md },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.large,

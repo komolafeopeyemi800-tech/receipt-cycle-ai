@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ScreenHeader } from "../components/ScreenHeader";
-import { EmptyState, IconTile, ScreenContainer, SearchInput, SegmentedTabs, StatusBadge } from "../components/ui/FinanceUI";
+import { AddFab, CreateEmptyState, EmptyState, IconTile, ScreenContainer, SearchInput, SegmentedTabs, StatusBadge } from "../components/ui/FinanceUI";
 import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
 import { usePreferences } from "../contexts/PreferencesContext";
 import type { InvoiceStatus } from "../features/invoices/model";
@@ -39,7 +39,7 @@ export function InvoiceListScreen() {
   }
 
   return <ScreenContainer>
-    <ScreenHeader title="Invoices" rightIcon="add-circle" onRightPress={createInvoice} />
+    <ScreenHeader title="Invoices" />
     <FlatList
       data={rows}
       keyExtractor={(item) => item.invoiceNumber}
@@ -55,8 +55,9 @@ export function InvoiceListScreen() {
         <View style={styles.right}><Text style={styles.amount}>{formatMoney(item.amount)}</Text><StatusBadge status={item.status} /></View>
         <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
       </Pressable>}
-      ListEmptyComponent={<EmptyState icon="document-text-outline" title={`No ${filter.toLowerCase()} invoices`} description="Create an invoice or choose another status." actionLabel="Create new invoice" onAction={createInvoice} />}
+      ListEmptyComponent={invoices.length === 0 ? <CreateEmptyState title="No invoices yet" description="Tap the plus button to create your first invoice." buttonLabel="Create new invoice" onPress={createInvoice} /> : <EmptyState icon="document-text-outline" title={`No ${filter.toLowerCase()} invoices`} description="Choose another status or search again." />}
     />
+    {invoices.length > 0 ? <AddFab label="Create new invoice" onPress={createInvoice} /> : null}
   </ScreenContainer>;
 }
 

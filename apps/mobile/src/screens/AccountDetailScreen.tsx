@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   useNavigation,
   useRoute,
@@ -106,61 +107,33 @@ export function AccountDetailScreen() {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.hero}>
-            <View style={[styles.heroIcon, { backgroundColor: `${tint}1d` }]}>
-              <Ionicons name={icon} size={29} color={tint} />
+          <LinearGradient colors={["#0f766e", "#115e59"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+            <View style={styles.heroRow}>
+              <View style={styles.heroIcon}><Ionicons name={icon} size={26} color="#fff" /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.name} numberOfLines={1}>{account.name}</Text>
+                <View style={styles.typePill}><Text style={styles.typePillText}>{accountType(account.iconKey).label} account</Text></View>
+              </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{account.name}</Text>
-              <Text style={styles.type}>
-                {accountType(account.iconKey).label} Account
-              </Text>
-            </View>
-          </View>
-          <Text
-            style={[
-              styles.balance,
-              {
-                color: account.balance < 0 ? colors.danger : colors.textPrimary,
-              },
-            ]}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-          >
-            {formatMoney(account.balance)}
-          </Text>
-          <Text style={styles.caption}>Current Balance</Text>
+            <Text style={styles.caption}>Current balance</Text>
+            <Text style={[styles.balance, account.balance < 0 && { color: "#fecaca" }]} numberOfLines={1} adjustsFontSizeToFit>{formatMoney(account.balance)}</Text>
+          </LinearGradient>
           <View style={styles.stats}>
-            <AppCard style={styles.stat}>
-              <Text
-                style={[styles.statValue, { color: colors.success }]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-              >
-                {formatMoney(inflow)}
-              </Text>
+            <View style={styles.stat}>
+              <View style={[styles.statIcon, { backgroundColor: "#dcfce7" }]}><Ionicons name="arrow-down" size={15} color={colors.success} /></View>
               <Text style={styles.statLabel}>Inflow</Text>
-            </AppCard>
-            <AppCard style={styles.stat}>
-              <Text
-                style={[styles.statValue, { color: colors.danger }]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-              >
-                {formatMoney(outflow)}
-              </Text>
+              <Text style={[styles.statValue, { color: colors.success }]} numberOfLines={1} adjustsFontSizeToFit>{formatMoney(inflow)}</Text>
+            </View>
+            <View style={styles.stat}>
+              <View style={[styles.statIcon, { backgroundColor: "#fee2e2" }]}><Ionicons name="arrow-up" size={15} color={colors.danger} /></View>
               <Text style={styles.statLabel}>Outflow</Text>
-            </AppCard>
-            <AppCard style={styles.stat}>
-              <Text
-                style={styles.statValue}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-              >
-                {formatMoney(roundMoney(inflow - outflow))}
-              </Text>
+              <Text style={[styles.statValue, { color: colors.danger }]} numberOfLines={1} adjustsFontSizeToFit>{formatMoney(outflow)}</Text>
+            </View>
+            <View style={styles.stat}>
+              <View style={[styles.statIcon, { backgroundColor: "#e0f2fe" }]}><Ionicons name="swap-vertical" size={15} color={colors.blue600} /></View>
               <Text style={styles.statLabel}>Net</Text>
-            </AppCard>
+              <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>{formatMoney(roundMoney(inflow - outflow))}</Text>
+            </View>
           </View>
           <View style={styles.periods}>
             {(["This Month", "Last 3 Months", "All Time"] as const).map(
@@ -273,36 +246,19 @@ export function AccountDetailScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: 42 },
-  hero: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  heroIcon: {
-    width: 54,
-    height: 54,
-    borderRadius: radius.large,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  name: {
-    fontSize: uiType.sectionTitle,
-    color: colors.textPrimary,
-    fontWeight: "800",
-  },
-  type: { fontSize: uiType.secondary, color: colors.gray600, marginTop: 2 },
-  balance: { fontSize: 25, fontWeight: "800", marginLeft: 62 },
-  caption: {
-    marginLeft: 62,
-    color: colors.gray600,
-    fontSize: uiType.secondary,
-    marginBottom: spacing.md,
-  },
-  stats: { flexDirection: "row", gap: 4, marginBottom: spacing.lg },
-  stat: { flex: 1, minWidth: 0, padding: spacing.sm },
-  statValue: { color: colors.textPrimary, fontSize: 12, fontWeight: "800" },
-  statLabel: { fontSize: uiType.caption, color: colors.gray600, marginTop: 3 },
+  hero: { borderRadius: 22, padding: spacing.lg, marginBottom: spacing.md },
+  heroRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  heroIcon: { width: 50, height: 50, borderRadius: 25, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center" },
+  name: { fontSize: uiType.sectionTitle, color: "#fff", fontWeight: "800" },
+  typePill: { alignSelf: "flex-start", marginTop: 4, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.18)" },
+  typePillText: { color: "#fff", fontSize: 11, fontWeight: "800" },
+  caption: { color: "rgba(255,255,255,0.78)", fontSize: uiType.secondary, marginTop: spacing.lg },
+  balance: { color: "#fff", fontSize: 30, fontWeight: "800", marginTop: 2 },
+  stats: { flexDirection: "row", gap: spacing.sm, marginBottom: spacing.lg },
+  stat: { flex: 1, minWidth: 0, padding: spacing.md, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  statIcon: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", marginBottom: 6 },
+  statValue: { color: colors.textPrimary, fontSize: uiType.body, fontWeight: "800", marginTop: 2 },
+  statLabel: { fontSize: uiType.caption, color: colors.gray600 },
   periods: { flexDirection: "row", gap: 4, marginBottom: spacing.lg },
   period: {
     flex: 1,

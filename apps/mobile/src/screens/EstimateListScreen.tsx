@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ScreenHeader } from "../components/ScreenHeader";
-import { AppButton, EmptyState, IconTile, ScreenContainer, SearchInput, SegmentedTabs, StatusBadge } from "../components/ui/FinanceUI";
+import { AddFab, CreateEmptyState, EmptyState, IconTile, ScreenContainer, SearchInput, SegmentedTabs, StatusBadge } from "../components/ui/FinanceUI";
 import { useEstimateFlow } from "../contexts/EstimateFlowContext";
 import { usePreferences } from "../contexts/PreferencesContext";
 import type { EstimateStatus } from "../features/estimates/model";
@@ -34,7 +34,7 @@ export function EstimateListScreen() {
   }
 
   return <ScreenContainer>
-    <ScreenHeader title="Estimates" rightIcon="add-circle" onRightPress={createEstimate} />
+    <ScreenHeader title="Estimates" />
     <FlatList
       data={rows}
       keyExtractor={(item) => item.estimateNumber}
@@ -51,10 +51,10 @@ export function EstimateListScreen() {
           <View style={styles.right}><Text style={styles.amount}>{formatMoney(item.amount)}</Text><StatusBadge status={item.status} /></View>
           <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
         </Pressable>
-        {item.status === "accepted" ? <AppButton label="Convert to Invoice" variant="secondary" onPress={() => openEstimate(item)} style={styles.convertButton} /> : null}
       </View>}
-      ListEmptyComponent={<EmptyState icon="document-outline" title={`No ${filter.toLowerCase()} estimates`} description="Create an estimate or choose another status." actionLabel="Create new estimate" onAction={createEstimate} />}
+      ListEmptyComponent={estimates.length === 0 ? <CreateEmptyState title="No estimates yet" description="Tap the plus button to create your first estimate." buttonLabel="Create new estimate" onPress={createEstimate} /> : <EmptyState icon="document-outline" title={`No ${filter.toLowerCase()} estimates`} description="Choose another status or search again." />}
     />
+    {estimates.length > 0 ? <AddFab label="Create new estimate" onPress={createEstimate} /> : null}
   </ScreenContainer>;
 }
 
@@ -69,5 +69,4 @@ const styles = StyleSheet.create({
   date: { color: colors.gray500, fontSize: uiType.caption, marginTop: 2 },
   right: { alignItems: "flex-end", gap: 5, maxWidth: 108 },
   amount: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "800" },
-  convertButton: { minHeight: 34, marginLeft: 46 },
 });

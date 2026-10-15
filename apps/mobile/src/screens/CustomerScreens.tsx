@@ -1,3 +1,4 @@
+import { SafeActionFooter } from "../components/ui/SafeActionFooter";
 import { ContactPickerModal } from "../components/ContactPickerModal";
 import { useLeaveConfirmation } from "../hooks/useLeaveConfirmation";
 import { useMemo, useRef, useState } from "react";
@@ -64,7 +65,7 @@ export function CustomerDetailScreen() {
   const navigation = useNavigation<RootNav>();
   const route = useRoute<RouteProp<RootStackParamList, "SalesCustomerDetail">>();
   const { customers, setCustomerStatus, deleteCustomer } = useSalesSetup();
-  const { invoices: savedInvoices } = useInvoiceFlow();
+  const { invoices: savedInvoices, loadInvoice } = useInvoiceFlow();
   const { estimates: savedEstimates } = useEstimateFlow();
   const { payments } = usePaymentFlow();
   const { formatMoney, formatDate } = usePreferences();
@@ -79,6 +80,11 @@ export function CustomerDetailScreen() {
   const balance = Math.max(0, totalInvoiced - amountPaid);
   const documents = tab === "Invoices" ? invoices : estimates;
   const customerId = customer.id;
+  function openDocument(documentNumber: string) {
+    if (tab === "Estimates") { navigation.navigate("EstimateDetail", { estimateNumber: documentNumber }); return; }
+    const invoice = savedInvoices.find((row) => row.invoiceNumber === documentNumber);
+    if (loadInvoice(documentNumber)) navigation.navigate(invoice?.items.length ? "InvoicePreview" : "InvoiceCreate");
+  }
   const nextStatus: CustomerStatus = customer.status === "inactive" ? "active" : "inactive";
 
   function openMenu() {
@@ -115,7 +121,7 @@ export function CustomerDetailScreen() {
 
       <SegmentedTabs options={["Invoices", "Estimates"] as const} value={tab} onChange={setTab} />
       <AppCard style={styles.documentCard}>
-        {documents.length ? documents.map((item, index) => <View key={item.id} style={[styles.documentRow, index !== documents.length - 1 && styles.divider]}><Ionicons name="document-text-outline" size={20} color={colors.blue600} /><View style={styles.rowMain}><Text style={styles.rowTitle}>{item.id}</Text><Text style={styles.rowMeta}>{formatDate(item.issuedAt)}</Text></View><StatusBadge status={item.status} /><Text style={styles.documentAmount}>{formatMoney(item.amount)}</Text></View>) : <EmptyState icon="document-outline" title={`No ${tab.toLowerCase()}`} description={`This customer has no ${tab.toLowerCase()} yet.`} />}
+        {documents.length ? documents.map((item, index) => <Pressable key={item.id} onPress={() => openDocument(item.id)} style={({ pressed }) => [styles.documentRow, index !== documents.length - 1 && styles.divider, pressed && { opacity: 0.7 }]} accessibilityRole="button" accessibilityLabel={`Open ${item.id}`}><Ionicons name="document-text-outline" size={20} color={colors.blue600} /><View style={styles.rowMain}><Text style={styles.rowTitle} numberOfLines={1}>{item.id}</Text><Text style={styles.rowMeta}>{formatDate(item.issuedAt)}</Text></View><View style={styles.documentRight}><Text style={styles.documentAmount} numberOfLines={1}>{formatMoney(item.amount)}</Text><StatusBadge status={item.status} /></View><Ionicons name="chevron-forward" size={16} color={colors.gray400} /></Pressable>) : <EmptyState icon="document-outline" title={`No ${tab.toLowerCase()}`} description={`This customer has no ${tab.toLowerCase()} yet.`} />}
       </AppCard>
     </ScrollView>
   </ScreenContainer>;
@@ -209,8 +215,8 @@ export function CustomerFormScreen() {
       <FormField label="Billing Address" icon="location-outline" value={billingAddress} onChangeText={setBillingAddress} placeholder={'123 Street Address\nCity, State  ZIP Code'} multiline />
       <FormField label="Tax ID (EIN or SSN)" icon="lock-closed-outline" value={taxId} onChangeText={setTaxId} placeholder="12-3456789 (optional)" />
       <FormField label="Notes" icon="document-text-outline" value={notes} onChangeText={setNotes} placeholder="Add notes about this customer..." multiline />
-      <AppButton label={existing ? "Save changes" : "Save customer"} onPress={onSave} style={styles.formButton} />
     </ScrollView>
+    <SafeActionFooter><AppButton label={existing ? "Save changes" : "Save customer"} onPress={onSave} /></SafeActionFooter>
   </ScreenContainer>;
 }
 
@@ -235,7 +241,8 @@ const styles = StyleSheet.create({
   documentCard: { paddingVertical: 0 },
   documentRow: { minHeight: 64, flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingVertical: spacing.sm },
   divider: { borderBottomWidth: 1, borderBottomColor: colors.divider },
-  documentAmount: { color: colors.textPrimary, fontSize: uiType.caption, fontWeight: "800" },
+  documentAmount: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "800", textAlign: "right" },
+  documentRight: { alignItems: "flex-end", gap: 4, maxWidth: "46%" },
   formContent: { padding: spacing.lg, paddingBottom: spacing.xxxl },
   formButton: { marginTop: spacing.md },
   customerAiCard: { marginBottom: spacing.lg, backgroundColor: colors.purpleSoft, borderColor: colors.border },

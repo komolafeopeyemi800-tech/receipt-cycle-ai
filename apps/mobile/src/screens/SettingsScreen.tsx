@@ -90,6 +90,13 @@ export function SettingsScreen() {
             sub="Currency, language and date format"
             onPress={() => navigation.navigate("RegionalPreferences")}
           />
+          <Divider />
+          <RowNav
+            icon="document-text-outline"
+            title="Invoice & Estimate Settings"
+            sub="Numbering, tax, terms, style, colour and signature"
+            onPress={() => navigation.navigate("InvoiceSettings")}
+          />
         </View>
 
         <Text style={styles.section}>APP PREFERENCES</Text>

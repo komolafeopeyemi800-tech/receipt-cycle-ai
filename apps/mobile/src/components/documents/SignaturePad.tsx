@@ -1,4 +1,6 @@
 import { useMemo, useRef, useState } from "react";
+import { Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Modal, PanResponder, Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { colors, radius, spacing, uiType } from "../../theme/tokens";
@@ -8,6 +10,7 @@ type Pt = [number, number];
 
 /** A full-width pad to sign with a finger. Saves normalised strokes so the signature stays crisp at any size. */
 export function SignaturePad({ visible, onClose, onSave }: { visible: boolean; onClose: () => void; onSave: (ink: SignatureInk) => void }) {
+  const insets = useSafeAreaInsets();
   const [strokes, setStrokes] = useState<Pt[][]>([]);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const live = useRef<Pt[] | null>(null);
@@ -53,7 +56,7 @@ export function SignaturePad({ visible, onClose, onSave }: { visible: boolean; o
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
       <View style={styles.backdrop}>
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom + spacing.lg, Platform.OS === "android" ? 64 : spacing.xxl) }]}>
           <Text style={styles.title}>Draw your signature</Text>
           <Text style={styles.sub}>Sign with your finger inside the box.</Text>
           <View style={styles.pad} onLayout={(e) => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })} {...responder.panHandlers}>
@@ -79,7 +82,7 @@ const styles = StyleSheet.create({
   sheet: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: spacing.xxl },
   title: { color: colors.textPrimary, fontSize: 20, fontWeight: "800" },
   sub: { color: colors.gray500, fontSize: uiType.body, marginTop: 4, marginBottom: spacing.md },
-  pad: { height: 230, borderRadius: radius.medium, borderWidth: 1, borderColor: colors.border, backgroundColor: "#FFFFFF", overflow: "hidden", justifyContent: "center" },
+  pad: { height: 200, borderRadius: radius.medium, borderWidth: 1, borderColor: colors.border, backgroundColor: "#FFFFFF", overflow: "hidden", justifyContent: "center" },
   baseline: { position: "absolute", left: 16, right: 16, bottom: 56, height: 1, backgroundColor: "#D1D5DB" },
   hint: { position: "absolute", alignSelf: "center", color: "#9CA3AF", fontSize: 18 },
   row: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.lg },

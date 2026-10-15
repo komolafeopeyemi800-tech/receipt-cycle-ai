@@ -4,6 +4,7 @@ import * as Notifications from "expo-notifications";
 import { api, useMutation } from "../lib/api";
 import { deviceId, existingPushRegistration } from "../lib/pushNotifications";
 import { useAuth } from "../contexts/AuthContext";
+import { openNotificationRoute } from "../lib/notificationRoutes";
 
 export function PushNotificationBridge() {
   const { token } = useAuth();
@@ -25,6 +26,7 @@ export function PushNotificationBridge() {
     const response = Notifications.addNotificationResponseReceivedListener((event) => {
       const jobId = event.notification.request.content.data?.jobId;
       void openedRef.current({ token, kind: "opened", ...(typeof jobId === "string" ? { jobId } : {}) }).catch(() => undefined);
+      openNotificationRoute(event.notification.request.content.data?.route);
     });
     // Firebase can change a phone's token at any time (reinstall, restore, refresh): tell the server straight away.
     // Firebase can change a phone's token at any time. The event itself carries the new token, so use it directly
@@ -35,6 +37,8 @@ export function PushNotificationBridge() {
       lastToken.current = fresh;
       void deviceId().then((id) => registerRef.current({ token, pushToken: fresh, platform: "android", deviceId: id, permissionStatus: "granted" })).catch(() => undefined);
     });
+    // The app was closed and a tap on a notification started it: open that screen too.
+    void Notifications.getLastNotificationResponseAsync().then((event) => event && openNotificationRoute(event.notification.request.content.data?.route)).catch(() => undefined);
     return () => { appState.remove(); response.remove(); tokenRefresh.remove(); };
   }, [token]);
   return null;

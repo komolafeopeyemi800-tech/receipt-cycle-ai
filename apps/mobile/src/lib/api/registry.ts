@@ -506,6 +506,9 @@ export const api = {
       const { secret, adminEmail: _email, actor: _actor, ...body } = a;
       return c.request("PUT", "/api/notifications/admin/settings", { adminSecret: secret, body });
     }),
+    /** One door for every notification-admin screen action (templates, campaigns, log, user lookup). */
+    notificationAdminCall: fn<AdminArgs & { method: "GET" | "POST" | "PUT"; path: string; body?: unknown; query?: Record<string, string> }, unknown>("mutation", "admin.notificationAdminCall", (c, a) =>
+      c.request(a.method, `/api/notifications/admin${a.path}`, { adminSecret: a.secret, body: a.body, query: a.query })),
     updateUserManagement: fn<UserPatch, { ok: true }>("mutation", "admin.updateUserManagement", async (c, a) => {
       const { secret, adminEmail: _e, actor: _a, userId, ...body } = a;
       await c.request("PATCH", `/api/admin/users/${enc(userId)}`, { adminSecret: secret, body });

@@ -16,11 +16,16 @@ export async function deviceId() {
   return created;
 }
 
+const CHANNELS: [string, string][] = [
+  ["reminders", "Reminders"], ["invoices", "Invoices"], ["payments", "Payments"], ["budgets", "Budgets"], ["reports", "Weekly reports"], ["updates", "Tips and updates"],
+];
+
 export async function configurePushChannel() {
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("reminders", {
-      name: "Receipt Cycle reminders",
-      importance: Notifications.AndroidImportance.DEFAULT,
+  if (Platform.OS !== "android") return;
+  for (const [id, name] of CHANNELS) {
+    await Notifications.setNotificationChannelAsync(id, {
+      name,
+      importance: id === "updates" ? Notifications.AndroidImportance.LOW : Notifications.AndroidImportance.DEFAULT,
       vibrationPattern: [0, 200, 120, 200],
       lightColor: "#149184",
     });

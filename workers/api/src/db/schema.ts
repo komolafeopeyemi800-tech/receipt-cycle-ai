@@ -272,7 +272,37 @@ export const notificationTemplates = sqliteTable("notification_templates", {
   webEnabled: integer("web_enabled", { mode: "boolean" }).notNull().default(true),
   webAccessMentions: integer("web_access_mentions", { mode: "boolean" }).notNull().default(false),
   updatedAt: integer("updated_at").notNull(), updatedBy: text("updated_by").notNull(),
+  /** sequence | pool | event | quota | campaign */
+  kind: text("kind").notNull().default("event"),
+  /** Which preference switch controls it: dailyReminder, invoiceReminders, ..., marketingUpdates, or none (service notices). */
+  toggle: text("toggle").notNull().default("marketingUpdates"),
+  /** Who may receive it: all, paid, trial, expired_free, has_overdue, voice_unused. */
+  audience: text("audience").notNull().default("all"),
+  weight: integer("weight").notNull().default(1),
+  cooldownDays: integer("cooldown_days").notNull().default(10),
+  /** Wording used for web push / email, or on Android when the admin allows web-access mentions. */
+  bodyWebMention: text("body_web_mention"),
+  sequenceDay: integer("sequence_day"),
+  windowStart: integer("window_start"),
+  windowEnd: integer("window_end"),
+  delayMinutes: integer("delay_minutes"),
+  /** Comma separated: android, web. */
+  channels: text("channels").notNull().default("android,web"),
+  version: integer("version").notNull().default(1),
 });
+
+export const notificationTemplateHistory = sqliteTable("notification_template_history", {
+  id: text("id").primaryKey(), templateKey: text("template_key").notNull(), version: integer("version").notNull(),
+  snapshot: text("snapshot").notNull(), updatedAt: integer("updated_at").notNull(), updatedBy: text("updated_by").notNull(),
+}, (t) => [index("notification_template_history_key_idx").on(t.templateKey, t.version)]);
+
+export const notificationCampaigns = sqliteTable("notification_campaigns", {
+  id: text("id").primaryKey(), name: text("name").notNull(), templateKey: text("template_key").notNull(),
+  fields: text("fields").notNull().default("{}"), audience: text("audience").notNull().default("{}"),
+  sendMode: text("send_mode").notNull().default("now"), sendAt: integer("send_at"),
+  status: text("status").notNull().default("draft"), createdBy: text("created_by").notNull(),
+  queued: integer("queued").notNull().default(0), createdAt: integer("created_at").notNull(), updatedAt: integer("updated_at").notNull(),
+}, (t) => [index("notification_campaign_status_idx").on(t.status, t.sendAt)]);
 
 export const notificationSettings = sqliteTable("notification_settings", {
   key: text("key").primaryKey(), globalEnabled: integer("global_enabled", { mode: "boolean" }).notNull().default(false),
@@ -284,6 +314,15 @@ export const notificationSettings = sqliteTable("notification_settings", {
   quietHoursStart: integer("quiet_hours_start").notNull().default(21), quietHoursEnd: integer("quiet_hours_end").notNull().default(8),
   combinedDailyCap: integer("combined_daily_cap").notNull().default(8), transactionalDailyCap: integer("transactional_daily_cap").notNull().default(6),
   updatedAt: integer("updated_at").notNull(), updatedBy: text("updated_by").notNull(),
+  lifecycleDailyCap: integer("lifecycle_daily_cap").notNull().default(1),
+  dailyReminderCap: integer("daily_reminder_cap").notNull().default(1),
+  marketingDailyCap: integer("marketing_daily_cap").notNull().default(1),
+  campaignsPerWeek: integer("campaigns_per_week").notNull().default(2),
+  campaignMinGapHours: integer("campaign_min_gap_hours").notNull().default(48),
+  jobExpiryHours: integer("job_expiry_hours").notNull().default(12),
+  backoffEnabled: integer("backoff_enabled", { mode: "boolean" }).notNull().default(true),
+  /** Lets Android pushes use the "web version" wording. Off until Google Play rules are confirmed for your account. */
+  webAccessMentionsAndroid: integer("web_access_mentions_android", { mode: "boolean" }).notNull().default(false),
 });
 
 export const notificationJobs = sqliteTable("notification_jobs", {
@@ -292,6 +331,15 @@ export const notificationJobs = sqliteTable("notification_jobs", {
   title: text("title").notNull(), body: text("body").notNull(), scheduledFor: integer("scheduled_for").notNull(), expiresAt: integer("expires_at").notNull(),
   status: text("status").notNull(), priority: integer("priority").notNull(), dedupeKey: text("dedupe_key").notNull().unique(), attempts: integer("attempts").notNull().default(0),
   lastError: text("last_error"), createdAt: integer("created_at").notNull(), updatedAt: integer("updated_at").notNull(),
+  toggle: text("toggle").notNull().default("marketingUpdates"),
+  kind: text("kind").notNull().default("event"),
+  bodyWebMention: text("body_web_mention"),
+  /** JSON: facts the sender re-checks just before sending (invoice id, budget key, ...). */
+  payload: text("payload").notNull().default("{}"),
+  collapseKey: text("collapse_key"),
+  ttlSeconds: integer("ttl_seconds").notNull().default(43200),
+  channels: text("channels").notNull().default("android,web"),
+  campaignId: text("campaign_id"),
 }, (t) => [index("notification_job_status_due_idx").on(t.status, t.scheduledFor), index("notification_job_user_created_idx").on(t.userId, t.createdAt)]);
 
 export const notificationAttempts = sqliteTable("notification_attempts", {

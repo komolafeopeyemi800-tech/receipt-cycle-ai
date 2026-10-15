@@ -6,6 +6,7 @@ import { runBatch, type Stmt } from "../lib/batch";
 import { getRuntimeConfig } from "../lib/config";
 import { ApiError } from "../lib/errors";
 import { parseBody, workspaceParam } from "../lib/http";
+import { queueBudgetAlerts, queueQuotaNotice } from "../lib/notificationEngine";
 import { newId, resolveScope } from "../lib/scope";
 import {
   assertCanCreateTransaction,
@@ -218,6 +219,13 @@ transactionRoutes.post("/", async (c) => {
   const delta = balanceDelta(body.type, body.amount);
   if (body.accountId && delta !== 0) stmts.push(adjustBalance(db, body.accountId, scope, delta));
   await runBatch(db, stmts);
+  // Notifications are a side effect: they must never make saving an entry fail.
+  const tell = (async () => {
+    const used = (await db.select({ n: profile.trialLifetimeAdds }).from(profile).where(eq(profile.userId, u.id)).get())?.n ?? 0;
+    await queueQuotaNotice(c.env, u.id, used, u.profile.proSubscriptionActive);
+    if (body.type === "expense") await queueBudgetAlerts(c.env, u.id, body.workspace, body.category, body.date);
+  })().catch((e) => console.error("notification hooks failed", e));
+  try { c.executionCtx.waitUntil(tell); } catch { await tell; }
   return c.json({ id }, 201);
 });
 

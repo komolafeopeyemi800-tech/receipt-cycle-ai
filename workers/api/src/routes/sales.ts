@@ -5,6 +5,7 @@ import { salesRecords } from "../db/schema";
 import { ApiError } from "../lib/errors";
 import { parseBody, workspaceParam } from "../lib/http";
 import { resolveScope } from "../lib/scope";
+import { queuePaymentNotice } from "../lib/notificationEngine";
 import { requireUser } from "../middleware/auth";
 import type { AppEnv } from "../types";
 
@@ -91,6 +92,11 @@ salesRoutes.post("/batch", async (c) => {
       });
   });
   await db.batch(statements as [(typeof statements)[number], ...(typeof statements)[number][]]);
+  // A new payment record tells the owner (best effort; never blocks saving).
+  const tell = Promise.all(
+    prepared.filter((o) => o.op === "put" && o.kind === "payment").map((o) => queuePaymentNotice(c.env, user.id, scope, { ...(o as { data: Record<string, unknown> }).data, id: o.id })),
+  ).catch((e) => console.error("payment notice failed", e));
+  try { c.executionCtx.waitUntil(tell); } catch { await tell; }
   return c.json({ serverTime: Date.now(), applied });
 });
 

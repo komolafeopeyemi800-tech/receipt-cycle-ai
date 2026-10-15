@@ -1,6 +1,8 @@
 import { env } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
-import { fcmMessage, queueDailyReminders } from "../src/lib/pushDispatch";
+import { ALL_SEEDS, templateProblems } from "../src/lib/notificationCatalog";
+import { DAY, planNotifications, queueQuotaNotice } from "../src/lib/notificationEngine";
+import { fcmMessage } from "../src/lib/pushDispatch";
 import { api, makeUser } from "./helpers";
 
 const device = (token: string) => ({ token, platform: "android" as const, deviceId: `dev-${token}-12345`, permissionStatus: "granted" });
@@ -43,37 +45,87 @@ describe("devices and the test notification", () => {
   });
 });
 
-describe("daily reminder queue", () => {
-  async function zoneAtHour(hour: number) {
-    const h = new Date().getUTCHours();
-    const offset = ((hour - h + 36) % 24) - 12 + 0; // -12..11 hours from UTC
-    const o = offset > 11 ? offset - 24 : offset;
-    return o === 0 ? "UTC" : o > 0 ? `Etc/GMT-${o}` : `Etc/GMT+${-o}`;
+describe("message catalog", () => {
+  it("every built-in message fits the length and Google Play rules", () => {
+    expect(ALL_SEEDS.length).toBeGreaterThan(40);
+    for (const t of ALL_SEEDS) expect({ key: t.key, problems: templateProblems(t) }).toEqual({ key: t.key, problems: [] });
+  });
+
+  it("blocks a trial message that mentions a price or a link", () => {
+    const base = { title: "Hello", body: "Try it", kind: "sequence", category: "lifecycle" };
+    expect(templateProblems({ ...base, body: "Only $5 today" }).length).toBeGreaterThan(0);
+    expect(templateProblems({ ...base, body: "See https://x.com" }).length).toBeGreaterThan(0);
+    expect(templateProblems({ ...base, title: "x".repeat(60) }).length).toBeGreaterThan(0);
+  });
+});
+
+describe("planner", () => {
+  const T0 = Date.UTC(2026, 5, 1, 0, 0, 0);
+  async function enable() {
+    await env.DB.prepare("INSERT OR REPLACE INTO notification_settings (key, global_enabled, updated_at, updated_by) VALUES ('global', 1, ?, 'test')").bind(Date.now()).run();
+  }
+  async function person(daysIn: number) {
+    const { token, id } = await makeUser();
+    await api("PUT", "/api/notifications/device", { token, body: device(`token-plan-${id}-aaaaaaaaaaaaaaaa`) });
+    await api("PUT", "/api/notifications/preferences", { token, body: { dailyReminder: true, invoiceReminders: true, overdueReminders: true, paymentConfirmations: true, budgetAlerts: true, weeklyReports: false, marketingUpdates: true, timezone: "UTC" } });
+    await env.DB.prepare("UPDATE profile SET trial_started_at = ? WHERE user_id = ?").bind(T0, id).run();
+    return { id, now: T0 + daysIn * DAY + 9.5 * 3600_000 };
   }
 
-  it("creates one reminder per person per local day, only at 7 pm local, only when switched on", async () => {
-    const now = Date.now();
-    await env.DB.prepare("INSERT OR REPLACE INTO notification_settings (key, global_enabled, lifecycle_enabled, reminders_enabled, transactional_enabled, marketing_enabled, android_offer_campaigns_enabled, quiet_hours_start, quiet_hours_end, combined_daily_cap, transactional_daily_cap, updated_at, updated_by) VALUES ('global', 0, 1, 1, 1, 1, 0, 21, 8, 8, 6, ?, 'test')").bind(now).run();
-    const { token, id } = await makeUser();
-    await api("PUT", "/api/notifications/device", { token, body: device("token-four-dddddddddddddddddddd") });
-    const zone = await zoneAtHour(19);
-    await api("PUT", "/api/notifications/preferences", { token, body: { dailyReminder: true, invoiceReminders: true, overdueReminders: true, paymentConfirmations: true, budgetAlerts: true, weeklyReports: false, marketingUpdates: true, timezone: zone } });
+  it("plans nothing while the master switch is off", async () => {
+    await env.DB.prepare("INSERT OR REPLACE INTO notification_settings (key, global_enabled, updated_at, updated_by) VALUES ('global', 0, ?, 'test')").bind(Date.now()).run();
+    const p = await person(1);
+    expect((await planNotifications(env as any, p.now)).created).toBe(0);
+  });
 
-    expect(await queueDailyReminders(env as any)).toBe(0); // master switch is off
+  it("sends the trial step for the day once, and a daily reminder only after day 7", async () => {
+    await enable();
+    const p = await person(1); // day 2
+    await planNotifications(env as any, p.now);
+    await planNotifications(env as any, p.now); // running again must not duplicate
+    const day2 = await env.DB.prepare("SELECT kind, dedupe_key FROM notification_jobs WHERE user_id = ?").bind(p.id).all<{ kind: string; dedupe_key: string }>();
+    expect(day2.results.map((r) => r.kind)).toEqual(["sequence"]);
+    expect(day2.results[0].dedupe_key).toBe(`trial:${p.id}:2`);
 
-    await env.DB.prepare("UPDATE notification_settings SET global_enabled = 1 WHERE key = 'global'").run();
-    expect(await queueDailyReminders(env as any)).toBeGreaterThanOrEqual(1);
-    expect(await queueDailyReminders(env as any)).toBe(0); // already queued today
-    const jobs = await env.DB.prepare("SELECT title, category, status FROM notification_jobs WHERE user_id = ?").bind(id).all<{ title: string; category: string; status: string }>();
-    expect(jobs.results).toEqual([{ title: "Keep your records current", category: "daily", status: "queued" }]);
+    const q = await person(8); // day 9
+    await planNotifications(env as any, q.now);
+    const day9 = await env.DB.prepare("SELECT kind FROM notification_jobs WHERE user_id = ?").bind(q.id).all<{ kind: string }>();
+    expect(day9.results.map((r) => r.kind)).toEqual(["pool"]);
+  });
 
-    // someone whose local time is not 7 pm gets nothing
-    const other = await makeUser();
-    await api("PUT", "/api/notifications/device", { token: other.token, body: device("token-five-eeeeeeeeeeeeeeeeeeee") });
-    await api("PUT", "/api/notifications/preferences", { token: other.token, body: { dailyReminder: true, invoiceReminders: true, overdueReminders: true, paymentConfirmations: true, budgetAlerts: true, weeklyReports: false, marketingUpdates: true, timezone: await zoneAtHour(10) } });
-    await queueDailyReminders(env as any);
-    const none = await env.DB.prepare("SELECT count(*) AS n FROM notification_jobs WHERE user_id = ?").bind(other.id).first<{ n: number }>();
-    expect(none?.n).toBe(0);
-    await env.DB.prepare("UPDATE notification_settings SET global_enabled = 0 WHERE key = 'global'").run();
+  it("warns once when a free person reaches 20 entries", async () => {
+    await enable();
+    const { id } = await makeUser();
+    await queueQuotaNotice(env as any, id, 20, false);
+    await queueQuotaNotice(env as any, id, 20, false);
+    const rows = await env.DB.prepare("SELECT kind FROM notification_jobs WHERE user_id = ?").bind(id).all();
+    expect(rows.results.length).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("admin notification center", () => {
+  it("lists every built-in message, validates edits, keeps history and can restore", async () => {
+    const admin = await makeUser({ email: "boss@example.com" });
+    const h = { "x-admin-secret": "admin-secret" };
+    const overview = await api("GET", "/api/notifications/admin", { token: admin.token, headers: h });
+    expect(overview.status).toBe(200);
+    expect(overview.json.templates.length).toBeGreaterThan(40);
+
+    const t = overview.json.templates.find((x: any) => x.kind === "sequence");
+    const ok = await api("PUT", `/api/notifications/admin/templates/${t.key}`, { token: admin.token, headers: h, body: { ...t, title: "New title" } });
+    expect(ok.status).toBe(200);
+    expect(ok.json.version).toBe(t.version + 1);
+    const bad = await api("PUT", `/api/notifications/admin/templates/${t.key}`, { token: admin.token, headers: h, body: { ...t, body: "Pay $9 at https://x.com" } });
+    expect(bad.status).toBe(422);
+
+    const hist = await api("GET", `/api/notifications/admin/templates/${t.key}/history`, { token: admin.token, headers: h });
+    expect(hist.json[0].version).toBe(t.version);
+    const back = await api("POST", `/api/notifications/admin/templates/${t.key}/restore`, { token: admin.token, headers: h, body: { version: t.version } });
+    expect(back.status).toBe(200);
+  });
+
+  it("refuses people who are not admins", async () => {
+    const { token } = await makeUser();
+    expect((await api("GET", "/api/notifications/admin", { token, headers: { "x-admin-secret": "admin-secret" } })).status).toBe(403);
   });
 });

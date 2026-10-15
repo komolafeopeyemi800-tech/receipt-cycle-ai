@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useAction, useMutation, useQuery } from "@mobile-lib/api";
 import { api } from "@mobile-lib/api";
+import NotificationCenter from "@/components/admin/NotificationCenter";
 
 const STORAGE_KEY = "receiptcycle_admin_secret";
 const ADMIN_EMAIL_KEY = "receiptcycle_admin_email";
@@ -396,27 +397,7 @@ export default function Admin() {
               </div>
             </div>
 
-            <form onSubmit={(event) => { event.preventDefault(); void saveNotificationControls(); }} className="bg-white rounded-2xl p-5 border border-gray-100 mb-6">
-              <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-                <div><h3 className="text-lg font-bold text-gray-900">Push Notifications</h3><p className="text-sm text-gray-500">Global guardrails, channel kill switches, quiet hours, frequency caps and recent delivery health.</p></div>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${notificationDraft.globalEnabled ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{notificationDraft.globalEnabled ? "Sending enabled" : "Sending safely paused"}</span>
-              </div>
-              <div className="grid md:grid-cols-3 gap-3 mb-4 grid-cols-1">
-                <Toggle label="Global sending" checked={notificationDraft.globalEnabled} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, globalEnabled: value }))} />
-                <Toggle label="Trial lifecycle" checked={notificationDraft.lifecycleEnabled} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, lifecycleEnabled: value }))} />
-                <Toggle label="Daily reminders" checked={notificationDraft.remindersEnabled} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, remindersEnabled: value }))} />
-                <Toggle label="Transactional" checked={notificationDraft.transactionalEnabled} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, transactionalEnabled: value }))} />
-                <Toggle label="Marketing" checked={notificationDraft.marketingEnabled} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, marketingEnabled: value }))} />
-                <Toggle label="Android offer campaigns" checked={notificationDraft.androidOfferCampaignsEnabled} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, androidOfferCampaignsEnabled: value }))} />
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                <Limit label="Quiet starts" value={notificationDraft.quietHoursStart} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, quietHoursStart: value }))} />
-                <Limit label="Quiet ends" value={notificationDraft.quietHoursEnd} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, quietHoursEnd: value }))} />
-                <Limit label="Daily cap" value={notificationDraft.combinedDailyCap} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, combinedDailyCap: value }))} />
-                <Limit label="Transactional cap" value={notificationDraft.transactionalDailyCap} onChange={(value) => setNotificationDraft((draft) => ({ ...draft, transactionalDailyCap: value }))} />
-              </div>
-              <div className="flex flex-wrap items-center gap-3"><button disabled={saving} className="h-10 px-4 rounded-lg bg-primary text-white text-sm font-semibold disabled:opacity-60">Save push controls</button><span className="text-xs text-gray-500">{notificationDashboard?.templates.length ?? 0} templates · {notificationDashboard?.jobs.length ?? 0} recent jobs · {notificationDashboard?.attempts.length ?? 0} delivery attempts</span></div>
-            </form>
+            <NotificationCenter secret={secret} adminEmail={adminEmail} />
 
             <div className="grid lg:grid-cols-2 gap-6 mb-6 grid-cols-1">
               <form

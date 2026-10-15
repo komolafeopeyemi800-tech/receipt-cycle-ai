@@ -10,7 +10,7 @@ import { androidPolicyErrors } from "../lib/notificationPolicy";
 import { newId } from "../lib/scope";
 import { requireUser } from "../middleware/auth";
 import type { AppEnv } from "../types";
-import { audit, requireAdmin } from "./admin";
+import { notificationAdminRoutes } from "./notificationAdmin";
 
 const defaults = { dailyReminder: true, invoiceReminders: true, overdueReminders: true, paymentConfirmations: true, budgetAlerts: true, weeklyReports: false, marketingUpdates: true, timezone: "UTC" };
 const prefsSchema = z.object({ dailyReminder: z.boolean(), invoiceReminders: z.boolean(), overdueReminders: z.boolean(), paymentConfirmations: z.boolean(), budgetAlerts: z.boolean(), weeklyReports: z.boolean(), marketingUpdates: z.boolean(), timezone: z.string().min(1).max(80) });
@@ -58,20 +58,4 @@ notificationRoutes.post("/opened", async (c) => {
   return c.json({ ok: true });
 });
 
-const settingsDefaults = { globalEnabled: false, lifecycleEnabled: true, remindersEnabled: true, transactionalEnabled: true, marketingEnabled: true, androidOfferCampaignsEnabled: false, quietHoursStart: 21, quietHoursEnd: 8, combinedDailyCap: 8, transactionalDailyCap: 6 };
-notificationRoutes.get("/admin", async (c) => {
-  await requireAdmin(c); const db = c.get("db"); const settings = await db.select().from(notificationSettings).where(eq(notificationSettings.key, "global")).get();
-  return c.json({ settings: settings ?? { key: "global", ...settingsDefaults, updatedAt: 0, updatedBy: "default" }, templates: await db.select().from(notificationTemplates).orderBy(desc(notificationTemplates.updatedAt)).limit(100), jobs: await db.select().from(notificationJobs).orderBy(desc(notificationJobs.createdAt)).limit(100), attempts: await db.select().from(notificationAttempts).orderBy(desc(notificationAttempts.createdAt)).limit(100) });
-});
-notificationRoutes.put("/admin/settings", async (c) => {
-  const actor = await requireAdmin(c); const body = await parseBody(c, z.object({ globalEnabled: z.boolean(), lifecycleEnabled: z.boolean(), remindersEnabled: z.boolean(), transactionalEnabled: z.boolean(), marketingEnabled: z.boolean(), androidOfferCampaignsEnabled: z.boolean(), quietHoursStart: z.number().int().min(0).max(23), quietHoursEnd: z.number().int().min(0).max(23), combinedDailyCap: z.number().int().min(1).max(50), transactionalDailyCap: z.number().int().min(1).max(50) }));
-  const values = { key: "global", ...body, updatedAt: Date.now(), updatedBy: actor };
-  await c.get("db").insert(notificationSettings).values(values).onConflictDoUpdate({ target: notificationSettings.key, set: values }); await audit(c.get("db"), "notifications.settings.update", actor, body); return c.json({ ok: true });
-});
-notificationRoutes.put("/admin/templates/:key", async (c) => {
-  const actor = await requireAdmin(c); const body = await parseBody(c, z.object({ name: z.string().min(1), category: z.string().min(1), title: z.string().min(1).max(100), body: z.string().min(1).max(240), route: z.string().min(1), enabled: z.boolean(), androidEnabled: z.boolean(), webEnabled: z.boolean(), webAccessMentions: z.boolean() }));
-  const settings = await c.get("db").select().from(notificationSettings).where(eq(notificationSettings.key, "global")).get(); const errors = body.androidEnabled ? androidPolicyErrors({ ...body, androidOfferCampaignsEnabled: settings?.androidOfferCampaignsEnabled ?? false }) : [];
-  if (errors.length) return c.json({ error: errors.join(" "), code: "blocked_policy" }, 422);
-  const values = { key: c.req.param("key"), ...body, updatedAt: Date.now(), updatedBy: actor };
-  await c.get("db").insert(notificationTemplates).values(values).onConflictDoUpdate({ target: notificationTemplates.key, set: values }); await audit(c.get("db"), "notifications.template.save", actor, { key: values.key }); return c.json({ ok: true });
-});
+notificationRoutes.route("/admin", notificationAdminRoutes);

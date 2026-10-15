@@ -4,6 +4,7 @@ import { ReceiptCycleLogo } from "@/components/brand/ReceiptCycleLogo";
 import { INSTAGRAM_URL, PLAY_STORE_URL, SUPPORT_EMAIL, TWITTER_URL } from "@/content/site";
 import { cn } from "@/lib/utils";
 import { useOptionalWebAuth } from "@/contexts/WebAuthContext";
+import { useRememberedSession } from "@/lib/useRememberedSession";
 
 export function LandingPrimaryCta({
   children,
@@ -75,7 +76,8 @@ const resourceLinks = [
 ] as const;
 
 export function CommercialHeader({ ctaLabel: baseLabel, ctaHref: baseHref, announcement }: { ctaLabel: string; ctaHref: string; announcement?: string }) {
-  const signedIn = Boolean(useOptionalWebAuth()?.user);
+  const rememberedSignIn = useRememberedSession();
+  const signedIn = Boolean(useOptionalWebAuth()?.user) || rememberedSignIn;
   const ctaLabel = signedIn ? "Dashboard" : baseLabel;
   const ctaHref = signedIn ? "/dashboard" : baseHref;
   const [menuOpen, setMenuOpen] = useState(false);
@@ -238,7 +240,8 @@ function MenuGroup({ title, links, close }: { title: string; links: ReadonlyArra
 }
 
 export function CommercialFooter() {
-  const signedIn = Boolean(useOptionalWebAuth()?.user);
+  const rememberedSignIn = useRememberedSession();
+  const signedIn = Boolean(useOptionalWebAuth()?.user) || rememberedSignIn;
   const year = new Date().getFullYear();
 
   return (

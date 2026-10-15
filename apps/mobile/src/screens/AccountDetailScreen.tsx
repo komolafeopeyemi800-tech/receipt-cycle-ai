@@ -54,6 +54,8 @@ export function AccountDetailScreen() {
   );
   const [period, setPeriod] = useState<Period>("This Month");
   const [showAll, setShowAll] = useState(false);
+  // "See all" reveals the list in pages so an account with thousands of transactions never mounts them all at once.
+  const [shownCount, setShownCount] = useState(60);
   const rows = useMemo(() => {
     const cutoff =
       period === "This Month"
@@ -165,14 +167,14 @@ export function AccountDetailScreen() {
             action={
               rows.length > 5 ? (showAll ? "Show less" : "See all") : undefined
             }
-            onAction={() => setShowAll((value) => !value)}
+            onAction={() => { setShowAll((value) => !value); setShownCount(60); }}
           />
           {rows.length === 0 ? (
             <Text style={styles.empty}>
               No linked transactions in this period.
             </Text>
           ) : (
-            rows.slice(0, showAll ? undefined : 5).map((tx) => (
+            rows.slice(0, showAll ? shownCount : 5).map((tx) => (
               <Pressable
                 key={tx.id}
                 style={styles.row}
@@ -209,6 +211,11 @@ export function AccountDetailScreen() {
               </Pressable>
             ))
           )}
+          {showAll && rows.length > shownCount ? (
+            <Pressable onPress={() => setShownCount((count) => count + 100)} accessibilityRole="button" style={styles.showMore}>
+              <Text style={styles.showMoreText}>Show more ({rows.length - shownCount} remaining)</Text>
+            </Pressable>
+          ) : null}
           {spending.length > 0 ? (
             <>
               <MoneySection title="Spending by Category" />
@@ -309,5 +316,7 @@ const styles = StyleSheet.create({
     fontSize: uiType.secondary,
     fontWeight: "700",
   },
+  showMore: { alignItems: "center", paddingVertical: spacing.md },
+  showMoreText: { color: colors.primary, fontSize: uiType.secondary, fontWeight: "800" },
   empty: { color: colors.gray600, textAlign: "center", padding: spacing.xl },
 });

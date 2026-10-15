@@ -146,6 +146,16 @@
         </p>
       </div>
     </noscript>
+    <script>
+      // If the app script itself cannot load (blocked, offline, removed by a new release), show a message instead of a blank page.
+      window.addEventListener("error", function (e) {
+        var t = e && e.target;
+        if (!t || t.tagName !== "SCRIPT" || !/\/assets\//.test(t.src || "")) return;
+        var root = document.getElementById("root");
+        if (!root || root.children.length) return;
+        root.innerHTML = '<div role="alert" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;font-family:system-ui,sans-serif;color:#0f172a"><h1 style="font-size:22px;margin:0">Something went wrong.</h1><p style="margin:0;color:#475569">The page could not be loaded.</p><button onclick="location.reload()" style="margin-top:8px;padding:10px 22px;border:0;border-radius:12px;background:#0f9488;color:#fff;font-weight:700;font-size:15px;cursor:pointer">Reload</button></div>';
+      }, true);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

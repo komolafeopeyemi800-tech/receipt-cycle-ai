@@ -1,21 +1,20 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { AppErrorBoundary, reloadOnce } from "@/components/AppErrorBoundary";
 
 // After a new deploy, an open tab can ask for a page file that no longer exists.
 // Reload once to pick up the new version instead of leaving a blank page.
 window.addEventListener("vite:preloadError", (event) => {
-  event.preventDefault();
-  try {
-    if (sessionStorage.getItem("rc-reloaded-for-chunk") === "1") return;
-    sessionStorage.setItem("rc-reloaded-for-chunk", "1");
-  } catch {
-    /* storage blocked: still reload once below */
-  }
-  window.location.reload();
+  // Reloads (at most once per 30 s); otherwise the error reaches the error boundary, which shows a Reload button.
+  if (reloadOnce()) event.preventDefault();
 });
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <AppErrorBoundary>
+    <App />
+  </AppErrorBoundary>,
+);
 
 // Warm the most-visited pages in the background so clicking them is instant.
 const warm = () => {

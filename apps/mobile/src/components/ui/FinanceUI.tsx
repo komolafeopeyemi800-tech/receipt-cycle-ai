@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Keyboard,
   Platform,
@@ -112,7 +112,7 @@ export function AppButton({
   );
 }
 
-export function IconTile({
+export const IconTile = memo(function IconTile({
   icon,
   tone = "mint",
   size = 38,
@@ -122,11 +122,11 @@ export function IconTile({
   size?: number;
 }) {
   return <PremiumIcon icon={icon} tone={tone} size={size} />;
-}
+});
 
 type UiStatus = SalesStatus | "active" | "prospect" | "inactive";
 
-export function StatusBadge({ status }: { status: UiStatus }) {
+export const StatusBadge = memo(function StatusBadge({ status }: { status: UiStatus }) {
   const palette: Record<UiStatus, [string, string, string]> = {
     draft: ["Draft", "#eef2f7", colors.gray600],
     sent: ["Sent", colors.blueSoft, colors.blue600],
@@ -148,7 +148,7 @@ export function StatusBadge({ status }: { status: UiStatus }) {
       <Text style={[styles.badgeText, { color }]}>{label}</Text>
     </View>
   );
-}
+});
 
 export function SectionHeader({
   title,

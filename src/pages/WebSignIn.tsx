@@ -1,11 +1,11 @@
 import { FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { AuthLayout } from "@/components/auth/AuthLayout";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { api, useQuery } from "@mobile-lib/api";
-import { getWebLastEmail, getWebSessionUser } from "@/lib/webSession";
+import { getWebLastEmail, getWebSessionUser, hasRememberedSession } from "@/lib/webSession";
 import { needsWebOnboarding } from "@/lib/webOnboarding";
 
 function safeInternalPath(raw: string | null, fallback: string): string {
@@ -18,6 +18,8 @@ export default function WebSignIn() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = safeInternalPath(params.get("next"), "/dashboard");
+  // Signed in within the last 30 days on this browser: go straight to the dashboard (decided once, on arrival).
+  const [alreadySignedIn] = useState(() => hasRememberedSession());
 
   const [email, setEmail] = useState(() => getWebLastEmail());
   const [password, setPassword] = useState("");
@@ -70,6 +72,8 @@ export default function WebSignIn() {
       setBusy(false);
     }
   }
+
+  if (alreadySignedIn) return <Navigate to={next} replace />;
 
   return (
     <AuthLayout title="Welcome back" subtitle="Sign in to pick up where you left off. Same account on the web and mobile app.">

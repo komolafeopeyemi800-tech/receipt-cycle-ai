@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useMemo, useState } from "react";
+import { ActivityIndicator, Pressable, FlatList, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
@@ -67,6 +67,27 @@ export function CategoryBreakdownScreen() {
   }, [allExpensesMonth, period, totalExp]);
 
   const loading = !ready || rows === undefined;
+  const renderTx = useCallback(
+    ({ item: tx }: { item: DocTx }) => (
+      <Pressable
+        style={styles.row}
+        onPress={() => navigation.navigate("TransactionDetail", { transactionId: tx.id })}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={styles.merchant}>{tx.merchant || tx.category}</Text>
+          <Text style={styles.meta}>
+            {formatDate(tx.date)} · {tx.type}
+          </Text>
+        </View>
+        <Text style={[styles.amt, tx.type === "expense" ? styles.exp : styles.inc]}>
+          {tx.type === "expense" ? "-" : "+"}
+          {formatMoney(tx.amount)}
+        </Text>
+        <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
+      </Pressable>
+    ),
+    [navigation, formatDate, formatMoney],
+  );
 
   return (
     <LinearGradient colors={[...gradients.page]} style={styles.flex}>
@@ -113,32 +134,24 @@ export function CategoryBreakdownScreen() {
       ) : (rows?.length ?? 0) === 0 ? (
         <Text style={styles.empty}>No transactions in this view.</Text>
       ) : (
-        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          {(rows as DocTx[]).map((tx) => (
-            <Pressable
-              key={tx.id}
-              style={styles.row}
-              onPress={() => navigation.navigate("TransactionDetail", { transactionId: tx.id })}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={styles.merchant}>{tx.merchant || tx.category}</Text>
-                <Text style={styles.meta}>
-                  {formatDate(tx.date)} · {tx.type}
-                </Text>
-              </View>
-              <Text style={[styles.amt, tx.type === "expense" ? styles.exp : styles.inc]}>
-                {tx.type === "expense" ? "-" : "+"}
-                {formatMoney(tx.amount)}
-              </Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
-            </Pressable>
-          ))}
-          <View style={{ height: 40 }} />
-        </ScrollView>
+        <FlatList
+          data={rows as DocTx[]}
+          keyExtractor={keyOfTx}
+          renderItem={renderTx}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          initialNumToRender={14}
+          maxToRenderPerBatch={12}
+          windowSize={9}
+          removeClippedSubviews
+          ListFooterComponent={<View style={{ height: 40 }} />}
+        />
       )}
     </LinearGradient>
   );
 }
+
+const keyOfTx = (tx: DocTx) => tx.id;
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },

@@ -1,4 +1,4 @@
-import type { ComponentProps } from "react";
+import { memo, type ComponentProps } from "react";
 import { StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Path } from "react-native-svg";
@@ -37,7 +37,7 @@ const accents: Record<IconTone, string> = {
   purple: colors.purple600,
 };
 
-export function PremiumIcon({
+export const PremiumIcon = memo(function PremiumIcon({
   icon,
   tone = "mint",
   size = 38,
@@ -74,7 +74,7 @@ export function PremiumIcon({
       <View style={styles.highlightDot} />
     </View>
   );
-}
+});
 
 const filledIcons: Partial<Record<IconName, IconName>> = {
   "home-outline": "home",
@@ -166,7 +166,7 @@ function semanticIcon(
   return defaultCategoryIcon(category);
 }
 
-export function TransactionGlyph({
+export const TransactionGlyph = memo(function TransactionGlyph({
   merchant = "",
   category = "",
   type,
@@ -206,7 +206,7 @@ export function TransactionGlyph({
       </Svg>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   shell: {
@@ -214,11 +214,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1.5,
     borderColor: "rgba(255,255,255,0.72)",
-    shadowColor: "#082f2d",
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
     overflow: "hidden",
   },
   brandShell: { backgroundColor: "#ffffff", borderColor: "#dfe9e8" },

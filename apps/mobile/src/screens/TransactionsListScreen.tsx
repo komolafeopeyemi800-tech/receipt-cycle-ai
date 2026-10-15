@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "../lib/api";
 import { api } from "../lib/api";
 import {
@@ -33,7 +33,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { FinancialPeriodSummary } from "../components/FinancialPeriodSummary";
-import { AnimatedPressable } from "../components/AnimatedPressable";
 import { useSubscriptionState } from "../hooks/useSubscriptionState";
 import { SectionHeader } from "../components/ui/FinanceUI";
 import { useRecordsFilters } from "../contexts/RecordsFilterContext";
@@ -43,6 +42,57 @@ type Nav = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, "Records">,
   NativeStackNavigationProp<RootStackParamList>
 >;
+
+type FlatRow = { kind: "day"; day: string } | { kind: "tx"; tx: DocTx };
+const noopLongPress = (_id: string) => {};
+
+const DayHeader = memo(function DayHeader({ day, formatDate }: { day: string; formatDate: (d: string) => string }) {
+  return <Text style={styles.dayHeader}>{formatDate(day)}</Text>;
+});
+
+const TxRow = memo(function TxRow({
+  tx,
+  selectionMode,
+  selected,
+  onPress,
+  onLongPress,
+  formatMoney,
+  formatDate,
+}: {
+  tx: DocTx;
+  selectionMode: boolean;
+  selected: boolean;
+  onPress: (id: string) => void;
+  onLongPress: (id: string) => void;
+  formatMoney: (n: number) => string;
+  formatDate: (d: string) => string;
+}) {
+  const amountText = `${tx.type === "expense" ? "-" : "+"}${formatMoney(tx.amount)}`;
+  return (
+    <View style={styles.rowWrap}>
+      <Pressable
+        style={({ pressed }) => [styles.rowPressTarget, pressed && styles.rowPressed]}
+        onPress={() => onPress(tx.id)}
+        onLongPress={() => onLongPress(tx.id)}
+      >
+        <View style={styles.row}>
+          {selectionMode ? <Ionicons name={selected ? "checkbox" : "square-outline"} size={22} color={selected ? colors.primary : colors.gray400} /> : null}
+          <TransactionGlyph merchant={tx.merchant} category={tx.category} type={tx.type} size={36} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.merchant} numberOfLines={1}>{tx.merchant || tx.category}</Text>
+            <Text style={styles.meta} numberOfLines={1}>{tx.category} · {formatDate(tx.date)} · {tx.type}</Text>
+          </View>
+          {amountText.length > 11 ? (
+            <Text style={[styles.amt, tx.type === "expense" ? styles.expense : styles.income]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.58}>{amountText}</Text>
+          ) : (
+            <Text style={[styles.amt, tx.type === "expense" ? styles.expense : styles.income]} numberOfLines={1}>{amountText}</Text>
+          )}
+          <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
+        </View>
+      </Pressable>
+    </View>
+  );
+});
 
 export function TransactionsListScreen() {
   const navigation = useNavigation<Nav>();
@@ -64,7 +114,7 @@ export function TransactionsListScreen() {
           return { startStr: start, endStr: end };
         })()
       : null;
-  const all = useQuery(
+  const allBase = useQuery(
     api.transactions.list,
     ready
       ? {
@@ -75,6 +125,7 @@ export function TransactionsListScreen() {
         }
       : "skip",
   );
+  const all = allBase;
   const filter = filters.type;
   const setFilter = (type: "all" | "expense" | "income") =>
     setFilters({ ...filters, type, category: null });
@@ -195,6 +246,41 @@ export function TransactionsListScreen() {
     ]);
   }
 
+  const openTx = useCallback(
+    (id: string) => navigation.navigate("TransactionDetail", { transactionId: id }),
+    [navigation],
+  );
+  const longPressTx = useCallback((id: string) => {
+    setSelectionMode(true);
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+  const pressTx = useCallback(
+    (id: string) => (selectionMode ? toggleSelected(id) : openTx(id)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectionMode, openTx],
+  );
+  const renderRow = useCallback(
+    ({ item: row }: { item: FlatRow }) =>
+      row.kind === "day" ? (
+        <DayHeader day={row.day} formatDate={formatDate} />
+      ) : (
+        <TxRow
+          tx={row.tx}
+          selectionMode={selectionMode}
+          selected={selectedIds.has(row.tx.id)}
+          onPress={pressTx}
+          onLongPress={selectionMode ? noopLongPress : longPressTx}
+          formatMoney={formatMoney}
+          formatDate={formatDate}
+        />
+      ),
+    [selectionMode, selectedIds, pressTx, longPressTx, formatMoney, formatDate],
+  );
+
   return (
     <LinearGradient colors={[...gradients.page]} style={styles.flex}>
       <ScreenHeader title="Transactions" />
@@ -203,12 +289,11 @@ export function TransactionsListScreen() {
         keyExtractor={(row) => (row.kind === "day" ? `d-${row.day}` : row.tx.id)}
         contentContainerStyle={styles.pad}
         showsVerticalScrollIndicator={false}
-        initialNumToRender={14}
-        maxToRenderPerBatch={12}
-        windowSize={9}
-        updateCellsBatchingPeriod={40}
+        initialNumToRender={10}
+        maxToRenderPerBatch={6}
+        windowSize={5}
+        updateCellsBatchingPeriod={30}
         removeClippedSubviews
-        extraData={[selectionMode, selectedIds]}
         ListHeaderComponent={<>
         <FinancialPeriodSummary
           mode={period}
@@ -299,59 +384,7 @@ loading ? (
         ) : null}
         <View style={{ height: 100 }} />
         </>}
-        renderItem={({ item: row }) => row.kind === "day" ? (
-          <Text style={styles.dayHeader}>{formatDate(row.day)}</Text>
-        ) : (() => {
-          const tx = row.tx;
-          return (
-            <AnimatedPressable
-                                    containerStyle={styles.rowWrap}
-                  style={styles.rowPressTarget}
-                  onPress={() =>
-                    selectionMode ? toggleSelected(tx.id) : navigation.navigate("TransactionDetail", {
-                      transactionId: tx.id,
-                    })
-                  }
-                  onLongPress={() => { if (!selectionMode) setSelectionMode(true); toggleSelected(tx.id); }}
-                  pressedScale={0.985}
-                >
-                  <View style={styles.row}>
-                    {selectionMode ? <Ionicons name={selectedIds.has(tx.id) ? "checkbox" : "square-outline"} size={22} color={selectedIds.has(tx.id) ? colors.primary : colors.gray400} /> : null}
-                    <TransactionGlyph
-                      merchant={tx.merchant}
-                      category={tx.category}
-                      type={tx.type}
-                      size={36}
-                    />
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={styles.merchant} numberOfLines={1}>
-                        {tx.merchant || tx.category}
-                      </Text>
-                      <Text style={styles.meta} numberOfLines={1}>
-                        {tx.category} · {formatDate(tx.date)} · {tx.type}
-                      </Text>
-                    </View>
-                    <Text
-                      style={[
-                        styles.amt,
-                        tx.type === "expense" ? styles.expense : styles.income,
-                      ]}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.58}
-                    >
-                      {tx.type === "expense" ? "-" : "+"}
-                      {formatMoney(tx.amount)}
-                    </Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={18}
-                      color={colors.gray400}
-                    />
-                  </View>
-                </AnimatedPressable>
-          );
-        })()}
+        renderItem={renderRow}
       />
     </LinearGradient>
   );
@@ -449,6 +482,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   rowPressTarget: { borderRadius: 10 },
+  rowPressed: { transform: [{ scale: 0.985 }] },
   rowWrap: { marginBottom: 6 },
   rowIcon: {
     width: 36,

@@ -23,7 +23,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useIsFocused, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "../lib/api";
 import { api } from "../lib/api";
@@ -228,20 +228,35 @@ export function MobileHomeScreen() {
     void AsyncStorage.setItem(`receipt-cycle:access-notice:${user.id}`, today);
   };
 
-  // The looping voice animations pause while the page is being scrolled, so scrolling stays smooth on mid-range phones.
-  const [scrolling, setScrolling] = useState(false);
+  // The looping voice animations only run while Home is the focused tab, the Voice card is shown and the page is idle.
+  // Scroll start/stop toggles them through refs (no state, so the long Home tree is not re-rendered while scrolling).
+  const focused = useIsFocused();
+  const scrollingRef = useRef(false);
   const scrollIdle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loopsRunning = useRef(false);
+  const loopsRef = useRef<Animated.CompositeAnimation[]>([]);
+  const wantLoops = useRef(false);
+
+  const syncLoops = () => {
+    const shouldRun = wantLoops.current && !scrollingRef.current;
+    if (shouldRun === loopsRunning.current) return;
+    loopsRunning.current = shouldRun;
+    loopsRef.current.forEach((loop) => (shouldRun ? loop.start() : loop.stop()));
+  };
   const markScrolling = () => {
     if (scrollIdle.current) clearTimeout(scrollIdle.current);
-    setScrolling((was) => (was ? was : true));
+    scrollingRef.current = true;
+    syncLoops();
   };
   const markIdle = () => {
     if (scrollIdle.current) clearTimeout(scrollIdle.current);
-    scrollIdle.current = setTimeout(() => setScrolling(false), 250);
+    scrollIdle.current = setTimeout(() => {
+      scrollingRef.current = false;
+      syncLoops();
+    }, 400);
   };
 
   useEffect(() => {
-    if (scrolling) return;
     const waveLoops = waveMotions.map((motion, index) =>
       Animated.loop(
         Animated.sequence([
@@ -275,20 +290,32 @@ export function MobileHomeScreen() {
           }),
         ]),
       );
-    const pulseOne = makePulse(micPulseOne, 0);
-    const pulseTwo = makePulse(micPulseTwo, 675);
-    waveLoops.forEach((loop) => loop.start());
-    pulseOne.start();
-    pulseTwo.start();
+    loopsRef.current = [
+      ...waveLoops,
+      makePulse(micPulseOne, 0),
+      makePulse(micPulseTwo, 675),
+    ];
+    loopsRunning.current = false;
+    syncLoops();
     return () => {
-      waveLoops.forEach((loop) => loop.stop());
-      pulseOne.stop();
-      pulseTwo.stop();
+      loopsRef.current.forEach((loop) => loop.stop());
+      loopsRef.current = [];
+      loopsRunning.current = false;
+      if (scrollIdle.current) clearTimeout(scrollIdle.current);
     };
-  }, [waveMotions, micPulseOne, micPulseTwo, scrolling]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waveMotions, micPulseOne, micPulseTwo]);
 
   useEffect(() => {
+    wantLoops.current = focused && aiEntryMode === "Voice";
+    syncLoops();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focused, aiEntryMode]);
+
+  useEffect(() => {
+    if (!focused) return;
     const timer = setInterval(() => {
+      if (scrollingRef.current) return;
       setPromotionIndex((current) => {
         const next = (current + 1) % promotions.length;
         promotionRef.current?.scrollTo({
@@ -299,7 +326,7 @@ export function MobileHomeScreen() {
       });
     }, 5000);
     return () => clearInterval(timer);
-  }, [promotionWidth]);
+  }, [promotionWidth, focused]);
 
   return (
     <LinearGradient colors={[...gradients.page]} style={styles.flex}>
@@ -335,7 +362,6 @@ export function MobileHomeScreen() {
         onScrollEndDrag={markIdle}
         onMomentumScrollBegin={markScrolling}
         onMomentumScrollEnd={markIdle}
-        scrollEventThrottle={16}
         nestedScrollEnabled
       >
         <View style={styles.header}>

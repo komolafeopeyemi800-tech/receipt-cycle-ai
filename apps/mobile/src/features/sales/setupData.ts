@@ -35,6 +35,8 @@ export type BusinessProfile = {
   address: string;
   taxId: string;
   website: string;
+  /** A signature drawn on the phone: strokes of points (0..1) and the pad ratio. Printed on documents that ask for one. */
+  signature?: { strokes: number[][][]; aspect: number } | null;
 };
 
 export type InvoiceSettings = {
@@ -45,6 +47,12 @@ export type InvoiceSettings = {
   taxLabel: string;
   paymentTerms: string;
   defaultNotes: string;
+  /** How printed invoices / estimates look. Missing values fall back to Standard, Teal and A4. */
+  invoiceTemplate?: "standard" | "compact";
+  invoiceColor?: string;
+  estimateTemplate?: "standard" | "compact";
+  estimateColor?: string;
+  paperSize?: "a4" | "letter";
 };
 
 export type SalesSetupState = {

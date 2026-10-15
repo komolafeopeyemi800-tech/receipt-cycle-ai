@@ -9,7 +9,9 @@ import { ScreenHeader } from "../components/ScreenHeader";
 import { AppButton, AppCard, FormField, ScreenContainer, SearchInput, SegmentedTabs, SelectField, StatusBadge } from "../components/ui/FinanceUI";
 import { DocumentProgress } from "../components/ui/SalesDocumentUI";
 import { SafeActionFooter } from "../components/ui/SafeActionFooter";
+import { ContactPickerModal } from "../components/ContactPickerModal";
 import { InitialsAvatar } from "../components/ui/SalesSetupUI";
+import { useLeaveConfirmation } from "../hooks/useLeaveConfirmation";
 import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { useSalesSetup } from "../contexts/SalesSetupContext";
@@ -23,12 +25,14 @@ type CustomerKind = "Individual" | "Business";
 
 export function InvoiceBasicScreen() {
   const navigation = useNavigation<RootNav>();
-  const { draft, updateDraft, saveDraft } = useInvoiceFlow();
+  const { draft, updateDraft, saveDraft, invoices } = useInvoiceFlow();
   const { customers } = useSalesSetup();
   const { formatDate } = usePreferences();
   const [dateTarget, setDateTarget] = useState<"issue" | "due" | null>(null);
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
   const customer = customers.find((item) => item.id === draft.customerId);
+  const alreadySaved = invoices.some((item) => item.invoiceNumber === draft.invoiceNumber);
+  useLeaveConfirmation(!alreadySaved && Boolean(draft.customerId || draft.items.length), "This invoice is not saved yet. Are you sure you want to go back?");
 
   function saveCurrentDraft() {
     if (!customer) { Alert.alert("Choose a customer", "Select a customer before saving this draft."); return; }
@@ -61,7 +65,7 @@ export function InvoiceBasicScreen() {
         <DateRow label="Issue Date" value={formatDate(draft.issueDate)} onPress={() => setDateTarget("issue")} />
         <DateRow label="Due Date" value={`${formatDate(draft.dueDate)} (${draft.terms})`} onPress={() => setDateTarget("due")} />
         <SelectField label="Customer" icon="person-outline" value={customer?.name ?? "Select a customer"} onPress={() => setCustomerPickerOpen(true)} required />
-        {customer ? <AppCard style={styles.selectedCustomer}><InitialsAvatar name={customer.name} size={38} /><View style={{ flex: 1 }}><Text style={styles.customerName}>{customer.name}</Text><Text style={styles.customerMeta}>{customer.email || customer.phone || "Customer selected"}</Text></View><StatusBadge status={customer.status} /></AppCard> : null}
+        {customer ? <AppCard style={styles.selectedCustomer}><InitialsAvatar name={customer.name} email={customer.email} size={38} /><View style={{ flex: 1 }}><Text style={styles.customerName}>{customer.name}</Text><Text style={styles.customerMeta}>{customer.email || customer.phone || "Customer selected"}</Text></View><StatusBadge status={customer.status} /></AppCard> : null}
         <AppCard style={styles.nextCard}><View style={styles.nextIcon}><Ionicons name="receipt-outline" size={22} color="#fff" /></View><View style={{ flex: 1 }}><Text style={styles.nextTitle}>Next step</Text><Text style={styles.nextCopy}>Add line items, then adjust tax, discount, and extras.</Text></View></AppCard>
       </ScrollView>
       {dateTarget ? <View style={styles.datePickerWrap}><DateTimePicker value={new Date(`${dateTarget === "issue" ? draft.issueDate : draft.dueDate}T12:00:00`)} mode="date" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={(_, selected) => onDate(selected)} />{Platform.OS === "ios" ? <Pressable onPress={() => setDateTarget(null)}><Text style={styles.done}>Done</Text></Pressable> : null}</View> : null}
@@ -89,6 +93,7 @@ export function CustomerPickerSheet({ visible, selectedId, onSelect, onClose }: 
   const [notes, setNotes] = useState("");
   const rows = useMemo(() => customers.filter((customer) => customer.status !== "inactive" && (!search.trim() || `${customer.name} ${customer.businessName} ${customer.email}`.toLowerCase().includes(search.trim().toLowerCase()))), [customers, search]);
 
+  const [contactsOpen, setContactsOpen] = useState(false);
   function close() { setMode("list"); onClose(); }
   function addCustomer() {
     const displayName = kind === "Business" ? businessName.trim() : name.trim();
@@ -108,10 +113,12 @@ export function CustomerPickerSheet({ visible, selectedId, onSelect, onClose }: 
           {mode === "list" ? <>
             <SearchInput value={search} onChangeText={setSearch} placeholder="Search customers..." />
             <ScrollView style={styles.customerList} keyboardShouldPersistTaps="handled">
-              {rows.map((customer) => <Pressable key={customer.id} onPress={() => onSelect(customer.id)} style={[styles.customerRow, selectedId === customer.id && styles.customerRowSelected]}><InitialsAvatar name={customer.name} size={40} /><View style={{ flex: 1 }}><Text style={styles.customerName}>{customer.name}</Text><Text style={styles.customerMeta}>{customer.email || customer.phone || "No contact details"}</Text></View>{selectedId === customer.id ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : <Ionicons name="chevron-forward" size={18} color={colors.gray400} />}</Pressable>)}
+              {rows.map((customer) => <Pressable key={customer.id} onPress={() => onSelect(customer.id)} style={[styles.customerRow, selectedId === customer.id && styles.customerRowSelected]}><InitialsAvatar name={customer.name} email={customer.email} size={40} /><View style={{ flex: 1 }}><Text style={styles.customerName}>{customer.name}</Text><Text style={styles.customerMeta}>{customer.email || customer.phone || "No contact details"}</Text></View>{selectedId === customer.id ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : <Ionicons name="chevron-forward" size={18} color={colors.gray400} />}</Pressable>)}
             </ScrollView>
             <AppButton label="Add new customer" icon="add" onPress={() => setMode("add")} />
           </> : <ScrollView style={styles.addForm} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <Pressable onPress={() => setContactsOpen(true)} style={styles.contactsButton} accessibilityRole="button"><Ionicons name="people-outline" size={18} color={colors.primary} /><Text style={styles.contactsButtonText}>Fill from phone contacts</Text></Pressable>
+            <ContactPickerModal visible={contactsOpen} onClose={() => setContactsOpen(false)} onPick={(c) => { setName(c.name); setBusinessName(c.businessName || c.name); setEmail(c.email); setPhone(c.phone); setAddress(c.address); if (c.businessName) setKind("Business"); setContactsOpen(false); }} />
             <SegmentedTabs options={["Individual", "Business"] as const} value={kind} onChange={setKind} />
             {kind === "Individual" ? <FormField label="Full Name" icon="person-outline" value={name} onChangeText={setName} placeholder="Sarah Chen" required /> : <FormField label="Business Name" icon="business-outline" value={businessName} onChangeText={setBusinessName} placeholder="Bright Co" required />}
             <FormField label="Email" icon="mail-outline" value={email} onChangeText={setEmail} placeholder="sarah@brightco.com" keyboardType="email-address" autoCapitalize="none" />
@@ -128,6 +135,8 @@ export function CustomerPickerSheet({ visible, selectedId, onSelect, onClose }: 
 }
 
 const styles = StyleSheet.create({
+  contactsButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 44, borderRadius: radius.medium, borderWidth: 1, borderColor: colors.primary, marginBottom: spacing.md },
+  contactsButtonText: { color: colors.primary, fontWeight: "800", fontSize: uiType.body },
   content: { padding: spacing.lg, paddingBottom: spacing.xxxl },
   fieldBlock: { marginBottom: spacing.md },
   label: { fontSize: uiType.secondary, color: colors.gray700, fontWeight: "600", marginBottom: 5 },

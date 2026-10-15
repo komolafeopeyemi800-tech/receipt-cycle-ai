@@ -35,6 +35,7 @@ export type SalesStackParamList = {
 
 export type RootStackParamList = {
   BackupExport: undefined;
+  DocumentStyle: { kind: "INVOICE" | "ESTIMATE" };
   Main:
     | {
         screen?: keyof MainTabParamList;

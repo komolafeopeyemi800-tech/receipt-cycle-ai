@@ -90,6 +90,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const nullRemoteSeeded = useRef(false);
   const savedCurrency = useRef<string | null>(null);
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // When the person changes a setting, the older copy still on the server must not overwrite it before the save lands.
+  const lastLocalChangeAt = useRef(0);
 
   const snapshot = useRef({
     currency,
@@ -140,6 +142,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   }, [user?.id, upsertRemote]);
 
   const scheduleConvexSync = useCallback(() => {
+    lastLocalChangeAt.current = Date.now();
     if (!user?.id) return;
     if (syncTimer.current) clearTimeout(syncTimer.current);
     syncTimer.current = setTimeout(() => {
@@ -225,6 +228,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    if (Date.now() - lastLocalChangeAt.current < 6000) return;
     const localCurrency = savedCurrency.current;
     const payload = {
       currency: localCurrency && localCurrency.length === 3 ? localCurrency : remoteRow.currency,

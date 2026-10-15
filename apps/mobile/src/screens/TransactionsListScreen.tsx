@@ -204,6 +204,10 @@ export function TransactionsListScreen() {
           monthLabel={formatMonthYearLabel(selectedYm)}
           onPrevMonth={() => setSelectedYm((ym) => addMonthsYm(ym, -1))}
           onNextMonth={() => setSelectedYm((ym) => addMonthsYm(ym, 1))}
+          selectedYm={selectedYm}
+          onSelectYm={(ym) => {
+            setSelectedYm(ym);
+          }}
           expense={summary.totalExpenses}
           income={summary.totalIncome}
           total={summary.netBalance}
@@ -212,22 +216,25 @@ export function TransactionsListScreen() {
           onFilterChange={setFilter}
         />
 
-        <SectionHeader
-          title="All Transactions"
-          actionLabel={selectionMode ? "Done" : "Manage"}
-          onAction={() => selectionMode ? leaveSelection() : setSelectionMode(true)}
-        />
+        <SectionHeader title="All Transactions" actionLabel={selectionMode ? "Done" : undefined} onAction={selectionMode ? leaveSelection : undefined} />
         <View style={styles.recordsTools}>
           <Pressable style={styles.filterTool} onPress={() => navigation.navigate("RecordsFilters")}><Ionicons name="funnel-outline" size={17} color={colors.primary} /><Text style={styles.filterToolText}>Filter & search</Text></Pressable>
-          {selectionMode ? <Pressable style={styles.selectAllTool} onPress={() => setSelectedIds(selectedIds.size === list.length ? new Set() : new Set(list.map((row) => row.id)))}><Ionicons name={selectedIds.size === list.length ? "checkbox" : "checkbox-outline"} size={17} color={colors.primary} /><Text style={styles.selectAllText}>{selectedIds.size === list.length ? "Clear all" : "Select all"}</Text></Pressable> : null}
         </View>
-        {selectionMode ? (
-          <View style={styles.bulkBar}>
-            <Text style={styles.bulkCount}>{selectedIds.size} selected</Text>
-            <Pressable style={styles.bulkIconAction} disabled={!selectedIds.size || bulkBusy} onPress={() => void exportSelected()} accessibilityLabel="Export selected transactions"><Ionicons name="download-outline" size={21} color={selectedIds.size ? colors.primary : colors.gray400} /></Pressable>
-            <Pressable style={styles.bulkIconAction} disabled={!selectedIds.size || bulkBusy} onPress={deleteSelected} accessibilityLabel="Delete selected transactions"><Ionicons name="trash-outline" size={21} color={selectedIds.size ? colors.rose600 : colors.gray400} /></Pressable>
-          </View>
-        ) : null}
+        <View style={styles.bulkBar}>
+          <Pressable style={styles.bulkChip} disabled={!list.length} onPress={() => { setSelectionMode(true); setSelectedIds(selectedIds.size === list.length ? new Set() : new Set(list.map((row) => row.id))); }} accessibilityRole="button">
+            <Ionicons name={selectionMode && selectedIds.size === list.length && list.length > 0 ? "checkbox" : "checkbox-outline"} size={18} color={colors.primary} />
+            <Text style={styles.bulkChipText}>{selectionMode && selectedIds.size === list.length && list.length > 0 ? "Clear" : "Select all"}</Text>
+          </Pressable>
+          <Pressable style={styles.bulkChip} disabled={bulkBusy || !list.length} onPress={() => { if (!selectedIds.size) { setSelectionMode(true); Alert.alert("Choose transactions", "Tap the transactions you want to download, then tap Download again."); } else void exportSelected(); }} accessibilityRole="button">
+            <Ionicons name="download-outline" size={18} color={selectedIds.size ? colors.primary : colors.gray500} />
+            <Text style={[styles.bulkChipText, !selectedIds.size && { color: colors.gray500 }]}>Download</Text>
+          </Pressable>
+          <Pressable style={styles.bulkChip} disabled={bulkBusy || !list.length} onPress={() => { if (!selectedIds.size) { setSelectionMode(true); Alert.alert("Choose transactions", "Tap the transactions you want to delete, then tap Delete again."); } else deleteSelected(); }} accessibilityRole="button">
+            <Ionicons name="trash-outline" size={18} color={selectedIds.size ? colors.rose600 : colors.gray500} />
+            <Text style={[styles.bulkChipText, { color: selectedIds.size ? colors.rose600 : colors.gray500 }]}>Delete</Text>
+          </Pressable>
+        </View>
+        {selectionMode ? <Text style={styles.bulkCount}>{selectedIds.size} selected</Text> : null}
         {filters.search ||
         filters.category ||
         filters.startDate ||
@@ -338,8 +345,10 @@ const styles = StyleSheet.create({
   filterToolText: { color: colors.primary, fontSize: 13, fontWeight: "800" },
   selectAllTool: { flexDirection: "row", alignItems: "center", gap: 5, paddingVertical: 8 },
   selectAllText: { color: colors.primary, fontSize: 13, fontWeight: "800" },
-  bulkBar: { flexDirection: "row", alignItems: "center", gap: 13, padding: 12, marginBottom: 12, borderRadius: 13, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-  bulkCount: { flex: 1, color: colors.textPrimary, fontSize: 13, fontWeight: "800" },
+  bulkBar: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
+  bulkChip: { flex: 1, minHeight: 42, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  bulkChipText: { color: colors.primary, fontSize: 13, fontWeight: "800" },
+  bulkCount: { marginBottom: 8, color: colors.textPrimary, fontSize: 13, fontWeight: "800" },
   bulkAction: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 5 },
   bulkIconAction: { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: colors.gray100 },
   bulkExport: { color: colors.primary, fontSize: 12, fontWeight: "800" },

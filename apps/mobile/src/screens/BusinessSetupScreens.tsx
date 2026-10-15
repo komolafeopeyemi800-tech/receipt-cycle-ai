@@ -124,6 +124,9 @@ export function InvoiceSettingsScreen() {
       <SelectField label="Payment Terms" icon="time-outline" value={settings.paymentTerms} onPress={() => pick("Payment terms", ["Due on receipt", "Net 7", "Net 15", "Net 30", "Net 60"], (value) => change("paymentTerms", value))} />
       <FormField label="Notes for Invoices" icon="chatbox-ellipses-outline" value={settings.defaultNotes} onChangeText={(value) => change("defaultNotes", value)} placeholder="Thank you for your business!" multiline />
       <Text style={styles.helper}>This note will appear on all invoices by default.</Text>
+      <SelectField label="Invoice Style & Color" icon="color-palette-outline" value={`${settings.invoiceTemplate === "compact" ? "Compact" : "Standard"} layout`} onPress={() => navigation.navigate("DocumentStyle", { kind: "INVOICE" })} />
+      <SelectField label="Estimate Style & Color" icon="document-attach-outline" value={`${settings.estimateTemplate === "compact" ? "Compact" : "Standard"} layout`} onPress={() => navigation.navigate("DocumentStyle", { kind: "ESTIMATE" })} />
+      <Text style={styles.helper}>Choose how your invoices and estimates look when you share or print them, and draw your signature.</Text>
     </ScrollView>
     <SafeActionFooter><AppButton label={saving ? "Saving..." : "Save settings"} disabled={saving} onPress={() => void onSave()} /></SafeActionFooter>
   </ScreenContainer>;

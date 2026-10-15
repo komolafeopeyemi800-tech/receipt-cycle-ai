@@ -39,6 +39,7 @@ export function RegionalPreferencesScreen() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [languageOpen, setLanguageOpen] = useState(false);
+  const [simplePicker, setSimplePicker] = useState<"date" | "number" | null>(null);
   const [languageQuery, setLanguageQuery] = useState("");
 
   const allRows = useMemo(() => {
@@ -94,29 +95,17 @@ export function RegionalPreferencesScreen() {
 
         <Text style={[styles.section, { marginTop: 20 }]}>DATE FORMAT</Text>
         <Text style={styles.hint}>How dates appear in lists and details (stored values stay YYYY-MM-DD).</Text>
-        <View style={styles.card}>
-          {DATE_FORMAT_OPTIONS.map((d) => (
-            <Pressable
-              key={d.id}
-              style={[styles.row, dateFormat === d.id && styles.rowOn]}
-              onPress={() => void setDateFormat(d.id)}
-            >
-              <Text style={styles.rowTxt}>{d.label}</Text>
-              {dateFormat === d.id ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}
-            </Pressable>
-          ))}
-        </View>
+        <Pressable style={styles.currencyCard} onPress={() => setSimplePicker("date")} accessibilityRole="button">
+          <View style={{ flex: 1 }}><Text style={styles.currencyCardLbl}>Selected date format</Text><Text style={styles.currencyCardVal}>{DATE_FORMAT_OPTIONS.find((d) => d.id === dateFormat)?.label}</Text></View>
+          <Ionicons name="chevron-forward" size={20} color={colors.gray400} />
+        </Pressable>
 
         <Text style={[styles.section, { marginTop: 20 }]}>NUMBER FORMAT</Text>
         <Text style={styles.hint}>How big amounts are grouped. Example: {formatMoney(1234567.89)}</Text>
-        <View style={styles.card}>
-          {NUMBER_FORMAT_OPTIONS.map((f) => (
-            <Pressable key={f.id} style={[styles.row, numberFormat === f.id && styles.rowOn]} onPress={() => void setNumberFormat(f.id)}>
-              <Text style={styles.rowTxt}>{f.label}  ·  {f.example}</Text>
-              {numberFormat === f.id ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}
-            </Pressable>
-          ))}
-        </View>
+        <Pressable style={styles.currencyCard} onPress={() => setSimplePicker("number")} accessibilityRole="button">
+          <View style={{ flex: 1 }}><Text style={styles.currencyCardLbl}>Selected number format</Text><Text style={styles.currencyCardVal}>{(() => { const f = NUMBER_FORMAT_OPTIONS.find((n) => n.id === numberFormat); return f ? `${f.label}  ·  ${f.example}` : ""; })()}</Text></View>
+          <Ionicons name="chevron-forward" size={20} color={colors.gray400} />
+        </Pressable>
 
         <Text style={[styles.section, { marginTop: 20 }]}>VOICE INPUT LANGUAGE</Text>
         <Text style={styles.hint}>
@@ -165,6 +154,24 @@ export function RegionalPreferencesScreen() {
               </Pressable>
             )}
             ListEmptyComponent={<Text style={styles.empty}>No matches.</Text>}
+          />
+        </View>
+      </Modal>
+      <Modal visible={simplePicker !== null} animationType="slide" onRequestClose={() => setSimplePicker(null)}>
+        <View style={[styles.modalRoot, { paddingTop: insets.top + 8 }]}>
+          <View style={styles.modalHeader}><Pressable onPress={() => setSimplePicker(null)} hitSlop={12}><Text style={styles.modalCancel}>Cancel</Text></Pressable><Text style={styles.modalTitle}>{simplePicker === "date" ? "Date format" : "Number format"}</Text><View style={{ width: 56 }} /></View>
+          <FlatList
+            data={simplePicker === "date" ? DATE_FORMAT_OPTIONS.map((d) => ({ id: d.id as string, label: d.label })) : NUMBER_FORMAT_OPTIONS.map((n) => ({ id: n.id as string, label: `${n.label}  ·  ${n.example}` }))}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => {
+              const on = item.id === (simplePicker === "date" ? dateFormat : numberFormat);
+              return (
+                <Pressable style={[styles.pickerRow, on && styles.pickerRowOn]} onPress={() => { if (simplePicker === "date") void setDateFormat(item.id as never); else void setNumberFormat(item.id as never); setSimplePicker(null); }}>
+                  <Text style={styles.pickerRowTxt}>{item.label}</Text>
+                  {on ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}
+                </Pressable>
+              );
+            }}
           />
         </View>
       </Modal>

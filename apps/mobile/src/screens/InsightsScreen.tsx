@@ -173,6 +173,10 @@ export function InsightsScreen() {
           monthLabel={formatMonthYearLabel(selectedYm)}
           onPrevMonth={() => setSelectedYm((ym) => addMonthsYm(ym, -1))}
           onNextMonth={() => setSelectedYm((ym) => addMonthsYm(ym, 1))}
+          selectedYm={selectedYm}
+          onSelectYm={(ym) => {
+            setSelectedYm(ym);
+          }}
           expense={expense}
           income={income}
           total={net}

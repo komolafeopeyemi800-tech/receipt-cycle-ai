@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLeaveConfirmation } from "../hooks/useLeaveConfirmation";
 import { useAction, useMutation, useQuery } from "../lib/api";
 import { Audio } from "expo-av";
 import * as ImagePicker from "expo-image-picker";
@@ -130,6 +131,7 @@ export function AddTransactionScreen() {
   const [showAdditional, setShowAdditional] = useState(false);
   const [details, setDetails] = useState<ScannedExtracted>({ taxes: [], items: [] });
   const [saving, setSaving] = useState(false);
+  const { allowLeave } = useLeaveConfirmation(!editId && Boolean(amount || merchant.trim() || notes.trim()));
   const [attachmentBusy, setAttachmentBusy] = useState(false);
   const [attachedScan, setAttachedScan] = useState<ScannedExtracted | null>(
     null,
@@ -846,6 +848,7 @@ export function AddTransactionScreen() {
           receipt_url: receiptKey,
         });
       }
+      allowLeave();
       navigation.goBack();
     } catch (e) {
       Alert.alert("Could not save", userFacingErrorFromUnknown(e));

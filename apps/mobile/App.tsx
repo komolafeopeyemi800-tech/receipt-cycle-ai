@@ -20,6 +20,8 @@ import { InsightsScreen } from "./src/screens/InsightsScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
 import { GoogleDriveBackupScreen } from "./src/screens/GoogleDriveBackupScreen";
 import { DriveBackupAppListener } from "./src/components/DriveBackupAppListener";
+import { DocumentStyleSync } from "./src/components/documents/DocumentStyleSync";
+import { DocumentStyleScreen } from "./src/screens/DocumentStyleScreen";
 import { PushNotificationBridge } from "./src/components/PushNotificationBridge";
 import { AccountSettingsScreen } from "./src/screens/AccountSettingsScreen";
 import { PricingScreen } from "./src/screens/PricingScreen";
@@ -176,6 +178,7 @@ function MainStackNavigator() {
       <Stack.Screen name="RecordsFilters" component={RecordsFiltersScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="BackupExport" component={BackupExportScreen} />
+      <Stack.Screen name="DocumentStyle" component={DocumentStyleScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="ScanReceipt" component={ScanReceiptScreen} options={{ animation: "fade" }} />
       <Stack.Screen name="ScanReview" component={ScanReviewScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="UploadStatement" component={UploadStatementScreen} options={{ presentation: "modal" }} />
@@ -337,6 +340,7 @@ export default function App() {
                               <PasswordResetDeepLinks />
                               <DriveBackupAppListener />
                               <PushNotificationBridge />
+                              <DocumentStyleSync />
                               <RootGate />
                               <StatusBar style="dark" />
                             </NavigationContainer>

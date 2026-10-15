@@ -1,3 +1,5 @@
+import { ContactPickerModal } from "../components/ContactPickerModal";
+import { useLeaveConfirmation } from "../hooks/useLeaveConfirmation";
 import { useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,7 +19,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useAction, api } from "../lib/api";
 import type { CustomerStatus } from "../features/sales/setupData";
 import type { RootStackParamList } from "../navigation/types";
-import { colors, spacing, uiType } from "../theme/tokens";
+import { colors, radius, spacing, uiType } from "../theme/tokens";
 
 type RootNav = NativeStackNavigationProp<RootStackParamList>;
 type CustomerFilter = "All" | "Active" | "Prospects" | "Inactive";
@@ -47,7 +49,7 @@ export function CustomersScreen() {
       contentContainerStyle={styles.listContent}
       ListHeaderComponent={<View style={styles.listHeader}><SearchInput value={search} onChangeText={setSearch} placeholder="Search customers..." /><SegmentedTabs options={["All", "Active", "Prospects", "Inactive"] as const} value={filter} onChange={setFilter} /></View>}
       renderItem={({ item }) => <Pressable onPress={() => navigation.navigate("SalesCustomerDetail", { customerId: item.id })} style={({ pressed }) => [styles.customerRow, pressed && styles.pressed]} accessibilityRole="button">
-        <InitialsAvatar name={item.name} />
+        <InitialsAvatar name={item.name} email={item.email} />
         <View style={styles.rowMain}><Text style={styles.rowTitle} numberOfLines={1}>{item.name}</Text>{item.email ? <Text style={styles.rowMeta} numberOfLines={1}>{item.email}</Text> : null}{item.phone ? <Text style={styles.rowMeta}>{item.phone}</Text> : null}</View>
         <StatusBadge status={item.status} />
         <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
@@ -91,7 +93,7 @@ export function CustomerDetailScreen() {
   return <ScreenContainer>
     <ScreenHeader title="Customer Details" back rightIcon="ellipsis-vertical" onRightPress={openMenu} />
     <ScrollView contentContainerStyle={styles.detailContent} showsVerticalScrollIndicator={false}>
-      <View style={styles.customerHero}><InitialsAvatar name={customer.name} size={58} /><View style={styles.heroMain}><View style={styles.heroTitleRow}><Text style={styles.heroTitle}>{customer.name}</Text><StatusBadge status={customer.status} /></View><Text style={styles.heroMeta}>{customer.businessName || "Individual customer"}</Text><Text style={styles.heroMeta}>Since {formatDate(customer.createdAt)}</Text></View></View>
+      <View style={styles.customerHero}><InitialsAvatar name={customer.name} email={customer.email} size={58} /><View style={styles.heroMain}><View style={styles.heroTitleRow}><Text style={styles.heroTitle}>{customer.name}</Text><StatusBadge status={customer.status} /></View><Text style={styles.heroMeta}>{customer.businessName || "Individual customer"}</Text><Text style={styles.heroMeta}>Since {formatDate(customer.createdAt)}</Text></View></View>
       <View style={styles.contactActions}>
         <ContactAction icon="call-outline" label="Call" onPress={() => customer.phone ? openContactUrl(`tel:${customer.phone}`, "No calling app is available.") : Alert.alert("No phone number", "Add a phone number to this customer first.")} />
         <ContactAction icon="mail-outline" label="Email" onPress={() => customer.email ? openContactUrl(`mailto:${customer.email}`, "No email app is available.") : Alert.alert("No email address", "Add an email address to this customer first.")} />
@@ -134,6 +136,9 @@ export function CustomerFormScreen() {
   const [billingAddress, setBillingAddress] = useState(existing?.billingAddress ?? "");
   const [taxId, setTaxId] = useState(existing?.taxId ?? "");
   const [notes, setNotes] = useState(existing?.notes ?? "");
+  const changed = name !== (existing?.name ?? "") || email !== (existing?.email ?? "") || phone !== (existing?.phone ?? "") || businessName !== (existing?.businessName ?? "") || billingAddress !== (existing?.billingAddress ?? "") || notes !== (existing?.notes ?? "");
+  const { allowLeave } = useLeaveConfirmation(changed);
+  const [contactsOpen, setContactsOpen] = useState(false);
   const [smartOpen, setSmartOpen] = useState(false);
   const [smartText, setSmartText] = useState("");
   const [smartBusy, setSmartBusy] = useState(false);
@@ -187,12 +192,15 @@ export function CustomerFormScreen() {
   function onSave() {
     if (!name.trim()) { Alert.alert("Customer name required", "Enter a customer name before saving."); return; }
     saveCustomer({ id: existing?.id, createdAt: existing?.createdAt, name: name.trim(), businessName: businessName.trim(), email: email.trim(), phone: phone.trim(), billingAddress: billingAddress.trim(), taxId: taxId.trim(), notes: notes.trim(), status: existing?.status ?? "active" });
+    allowLeave();
     navigation.goBack();
   }
 
   return <ScreenContainer>
     <ScreenHeader title={existing ? "Edit Customer" : "Add Customer"} back />
     <ScrollView contentContainerStyle={styles.formContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <Pressable onPress={() => setContactsOpen(true)} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 44, borderRadius: radius.medium, borderWidth: 1, borderColor: colors.primary, marginBottom: spacing.md }} accessibilityRole="button"><Ionicons name="people-outline" size={18} color={colors.primary} /><Text style={{ color: colors.primary, fontWeight: "800", fontSize: uiType.body }}>Fill from phone contacts</Text></Pressable>
+      <ContactPickerModal visible={contactsOpen} onClose={() => setContactsOpen(false)} onPick={(c) => { setName(c.name); setBusinessName(c.businessName); setEmail(c.email); setPhone(c.phone); setBillingAddress(c.address); setContactsOpen(false); }} />
       {!existing ? <AppCard style={styles.customerAiCard}><View style={styles.customerAiHead}><View><Text style={styles.customerAiTitle}>Add with AI</Text><Text style={styles.customerAiCopy}>Speak or type the customer details, then review them.</Text></View><View style={styles.customerAiActions}><Pressable onPress={() => void toggleCustomerVoice()} style={[styles.customerAiIcon, recording && styles.customerAiRecording]}><Ionicons name={recording ? "stop" : "mic"} size={20} color={recording ? colors.rose600 : colors.primary} /></Pressable><Pressable onPress={() => setSmartOpen((value) => !value)} style={styles.customerAiIcon}><Ionicons name="create-outline" size={20} color={colors.blue600} /></Pressable></View></View>{smartOpen ? <View style={styles.customerAiInputRow}><TextInput value={smartText} onChangeText={setSmartText} placeholder="Sarah Chen, sarah@bright.co, +1 555 0100" placeholderTextColor={colors.gray400} multiline style={styles.customerAiInput} /> <Pressable onPress={() => void fillFromText()} disabled={smartBusy} style={styles.customerAiSend}>{smartBusy ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="arrow-forward" size={18} color="#fff" />}</Pressable></View> : null}</AppCard> : null}
       <FormField label="Customer Name" icon="person-outline" value={name} onChangeText={setName} placeholder="Enter customer name" required />
       <FormField label="Business Name" icon="business-outline" value={businessName} onChangeText={setBusinessName} placeholder="Enter business name (optional)" />

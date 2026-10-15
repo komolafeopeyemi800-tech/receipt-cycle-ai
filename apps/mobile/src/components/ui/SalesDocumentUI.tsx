@@ -1,3 +1,9 @@
+import { useMemo } from "react";
+import { useSalesSetup } from "../../contexts/SalesSetupContext";
+import { usePreferences } from "../../contexts/PreferencesContext";
+import { DocumentPreview } from "../documents/DocumentPreview";
+import { resolveDocumentStyle } from "../../features/documents/styleStore";
+import { documentLogo } from "../../features/invoices/pdf";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { ComponentProps } from "react";
@@ -18,34 +24,26 @@ export function DocumentProgress({ active, labels = defaultSteps }: { active: 1 
   </View>;
 }
 
-export function DocumentPreviewCard({ draft, business, customer, currency, formatMoney, formatDate, label = "INVOICE" }: {
+export function DocumentPreviewCard({ draft, business, customer, currency, label = "INVOICE" }: {
   draft: InvoiceDraft;
   business: BusinessProfile;
   customer: SalesCustomer;
   currency: string;
-  formatMoney: (amount: number) => string;
-  formatDate: (date: string) => string;
+  formatMoney?: (amount: number) => string;
+  formatDate?: (date: string) => string;
   label?: "INVOICE" | "ESTIMATE";
 }) {
-  const totals = calculateInvoiceTotals(draft);
-  return <View style={styles.paper}>
-    <View style={styles.paperHeader}>
-      <View style={styles.brandRow}>{business.logoUri ? <Image source={{ uri: business.logoUri }} style={styles.logo} /> : <View style={styles.brandMark}><Ionicons name="leaf-outline" size={18} color="#fff" /></View>}<View><Text style={styles.businessName}>{business.businessName || "Receipt Cycle"}</Text><Text style={styles.micro}>Track · Invoice · Grow</Text></View></View>
-      <View style={styles.invoiceMeta}><Text style={styles.invoiceWord}>{label}</Text><Text style={styles.micro}>{label === "INVOICE" ? "Invoice" : "Estimate"} #: {draft.invoiceNumber}</Text><Text style={styles.micro}>Issue: {formatDate(draft.issueDate)}</Text><Text style={styles.micro}>{label === "INVOICE" ? "Due" : "Valid until"}: {formatDate(draft.dueDate)}</Text></View>
-    </View>
-    <View style={styles.billTo}><Text style={styles.miniHeading}>BILL TO</Text><Text style={styles.customerName}>{customer.name}</Text>{customer.businessName && customer.businessName !== customer.name ? <Text style={styles.micro}>{customer.businessName}</Text> : null}<Text style={styles.address}>{customer.billingAddress || customer.email || "No billing address"}</Text></View>
-    <View style={styles.tableHead}><Text style={[styles.tableHeadText, { flex: 1 }]}>Description</Text><Text style={styles.qty}>Qty</Text><Text style={styles.rate}>Rate</Text><Text style={styles.amount}>Amount</Text></View>
-    {draft.items.map((item) => <View key={item.id} style={styles.previewItem}><View style={{ flex: 1 }}><Text style={styles.itemName}>{item.name}</Text>{item.description ? <Text style={styles.itemDescription} numberOfLines={2}>{item.description}</Text> : null}</View><Text style={styles.qty}>{item.quantity}</Text><Text style={styles.rate}>{currency} {item.rate.toFixed(2)}</Text><Text style={styles.amount}>{formatMoney(item.quantity * item.rate)}</Text></View>)}
-    <View style={styles.totalArea}>
-      <SummaryLine label="Subtotal" value={formatMoney(totals.subtotal)} />
-      {totals.discountAmount > 0 ? <SummaryLine label={`Discount${draft.discountType === "percentage" ? ` (${draft.discountValue}%)` : ""}`} value={`-${formatMoney(totals.discountAmount)}`} /> : null}
-      {draft.taxRate > 0 ? <SummaryLine label={`${draft.taxLabel} (${draft.taxRate}%)`} value={formatMoney(totals.taxAmount)} /> : null}
-      {draft.shipping > 0 ? <SummaryLine label="Shipping" value={formatMoney(draft.shipping)} /> : null}
-      <View style={styles.grandTotal}><Text style={styles.grandLabel}>Total</Text><Text style={styles.grandValue}>{formatMoney(totals.total)}</Text></View>
-    </View>
-    {draft.notes ? <Text style={styles.thanks}>{draft.notes}</Text> : null}
-    <View style={styles.paperFooter}><Ionicons name="leaf-outline" size={33} color="#b9efe2" /><Text style={styles.footerText}>A BRIGHTER TOMORROW{`\n`}TOGETHER</Text></View>
-  </View>;
+  const { invoiceSettings } = useSalesSetup();
+  const { formatDate, numberFormat } = usePreferences();
+  const style = resolveDocumentStyle(label, invoiceSettings, formatDate);
+  const logo = documentLogo(business);
+  const input = useMemo(() => ({
+    kind: label, template: style.template, accent: style.accent, paper: style.paper, draft, business, customer, currency,
+    formatDate, signature: business.signature ?? null, logo,
+  // numberFormat is read through documentMoney(), so it must refresh the layout when it changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [label, style.template, style.accent, style.paper, draft, business, customer, currency, formatDate, numberFormat]);
+  return <DocumentPreview input={input} />;
 }
 
 function SummaryLine({ label, value }: { label: string; value: string }) {

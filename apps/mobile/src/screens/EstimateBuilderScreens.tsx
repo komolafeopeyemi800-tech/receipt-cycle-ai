@@ -12,6 +12,7 @@ import { AppButton, AppCard, FormField, IconTile, ScreenContainer, SegmentedTabs
 import { EstimateFlowFooter, estimateProgressLabels } from "../components/ui/EstimateUI";
 import { DocumentProgress } from "../components/ui/SalesDocumentUI";
 import { InitialsAvatar } from "../components/ui/SalesSetupUI";
+import { useLeaveConfirmation } from "../hooks/useLeaveConfirmation";
 import { useEstimateFlow } from "../contexts/EstimateFlowContext";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { useSalesSetup } from "../contexts/SalesSetupContext";
@@ -41,9 +42,10 @@ function DateRow({ label, value, onPress }: { label: string; value: string; onPr
 
 export function EstimateBasicScreen() {
   const navigation = useNavigation<RootNav>();
-  const { draft, updateDraft, saveEstimate } = useEstimateFlow();
+  const { draft, updateDraft, saveEstimate, estimates } = useEstimateFlow();
   const { customers } = useSalesSetup();
   const { formatDate } = usePreferences();
+  useLeaveConfirmation(!estimates.some((item) => item.estimateNumber === draft.estimateNumber) && Boolean(draft.customerId || draft.items.length), "This estimate is not saved yet. Are you sure you want to go back?");
   const [dateOpen, setDateOpen] = useState(false);
   const [customerOpen, setCustomerOpen] = useState(false);
   const customer = customers.find((item) => item.id === draft.customerId);
@@ -76,7 +78,7 @@ export function EstimateBasicScreen() {
         <FormField label="Estimate Title (Optional)" icon="create-outline" value={draft.title ?? ""} onChangeText={(title) => updateDraft({ title })} placeholder="e.g. Website design proposal" />
         <DateRow label="Estimate Date" value={formatDate(draft.estimateDate)} onPress={() => setDateOpen(true)} />
         <SelectField label="Customer" icon="person-outline" value={customer?.name ?? "Select a customer"} onPress={() => setCustomerOpen(true)} required />
-        {customer ? <AppCard style={styles.customerCard}><InitialsAvatar name={customer.name} size={40} /><View style={{ flex: 1 }}><Text style={styles.customerName}>{customer.name}</Text><Text style={styles.customerMeta}>{customer.billingAddress || customer.email}</Text></View><StatusBadge status={customer.status} /></AppCard> : null}
+        {customer ? <AppCard style={styles.customerCard}><InitialsAvatar name={customer.name} email={customer.email} size={40} /><View style={{ flex: 1 }}><Text style={styles.customerName}>{customer.name}</Text><Text style={styles.customerMeta}>{customer.billingAddress || customer.email}</Text></View><StatusBadge status={customer.status} /></AppCard> : null}
         <FormField label="Reference" icon="bookmark-outline" value={draft.reference} onChangeText={(reference) => updateDraft({ reference })} placeholder="Website project, Q4 campaign" />
       </ScrollView>
       {dateOpen ? <View style={styles.datePicker}><DateTimePicker value={new Date(`${draft.estimateDate}T12:00:00`)} mode="date" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={(_, selected) => onDate(selected)} />{Platform.OS === "ios" ? <Pressable onPress={() => setDateOpen(false)}><Text style={styles.done}>Done</Text></Pressable> : null}</View> : null}

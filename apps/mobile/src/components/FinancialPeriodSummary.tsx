@@ -21,10 +21,15 @@ type Props = {
   filter?: Filter;
   onFilterChange?: (filter: Filter) => void;
   variant?: "records" | "analysis";
+  /** The month being shown (YYYY-MM) and a way to jump straight to another one. */
+  selectedYm?: string;
+  onSelectYm?: (ym: string) => void;
 };
 
-export function FinancialPeriodSummary({ mode, onModeChange, monthLabel, onPrevMonth, onNextMonth, monthNavDisabled, expense, income, total, formatCompact, filter, onFilterChange, variant = "records" }: Props) {
+export function FinancialPeriodSummary({ mode, onModeChange, monthLabel, onPrevMonth, onNextMonth, monthNavDisabled, expense, income, total, formatCompact, filter, onFilterChange, variant = "records", selectedYm, onSelectYm }: Props) {
   const [filterOpen, setFilterOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [pickYear, setPickYear] = useState(() => Number((selectedYm ?? "").slice(0, 4)) || new Date().getFullYear());
   const hasFilter = filter !== undefined && onFilterChange !== undefined;
   return <View style={styles.wrap}>
     <View style={styles.controls}>
@@ -33,7 +38,7 @@ export function FinancialPeriodSummary({ mode, onModeChange, monthLabel, onPrevM
       </View>
       <View style={styles.controlEnd}>
         {hasFilter ? <Pressable style={styles.iconButton} onPress={() => setFilterOpen(true)} accessibilityLabel="Filter records"><Ionicons name="options-outline" size={19} color={colors.gray600} /></Pressable> : null}
-        <Pressable style={styles.iconButton} onPress={() => onModeChange("month")} accessibilityLabel="Choose month"><Ionicons name="calendar-outline" size={19} color={colors.gray600} /></Pressable>
+        <Pressable style={styles.iconButton} onPress={() => { if (selectedYm && onSelectYm) { setPickYear(Number(selectedYm.slice(0, 4)) || new Date().getFullYear()); setCalendarOpen(true); } else onModeChange("month"); }} accessibilityLabel="Choose month"><Ionicons name="calendar-outline" size={19} color={colors.gray600} /></Pressable>
       </View>
     </View>
     {mode === "month" ? <View style={styles.monthNav}>
@@ -52,6 +57,21 @@ export function FinancialPeriodSummary({ mode, onModeChange, monthLabel, onPrevM
       </View>
     </AppCard>}
     {hasFilter ? <Modal visible={filterOpen} transparent animationType="fade" onRequestClose={() => setFilterOpen(false)}><Pressable style={styles.backdrop} onPress={() => setFilterOpen(false)}><Pressable style={styles.modal} onPress={(event) => event.stopPropagation()}><Text style={styles.modalTitle}>Show transactions</Text>{(["all", "expense", "income"] as const).map((item) => <Pressable key={item} style={[styles.modalRow, filter === item && styles.modalRowActive]} onPress={() => { onFilterChange(item); setFilterOpen(false); }}><Text style={styles.modalRowText}>{item === "all" ? "All" : item === "expense" ? "Expenses only" : "Income only"}</Text>{filter === item ? <Ionicons name="checkmark" size={18} color={colors.primary} /> : null}</Pressable>)}<Pressable onPress={() => setFilterOpen(false)} style={styles.close}><Text style={styles.closeText}>Close</Text></Pressable></Pressable></Pressable></Modal> : null}
+    {onSelectYm ? <Modal visible={calendarOpen} transparent animationType="fade" onRequestClose={() => setCalendarOpen(false)}><Pressable style={styles.backdrop} onPress={() => setCalendarOpen(false)}><Pressable style={styles.modal} onPress={(event) => event.stopPropagation()}>
+      <View style={styles.yearRow}>
+        <Pressable onPress={() => setPickYear((y) => y - 1)} style={styles.monthArrow} accessibilityLabel="Previous year"><Ionicons name="chevron-back" size={20} color={colors.primary} /></Pressable>
+        <Text style={styles.modalTitle}>{pickYear}</Text>
+        <Pressable onPress={() => setPickYear((y) => y + 1)} style={styles.monthArrow} accessibilityLabel="Next year"><Ionicons name="chevron-forward" size={20} color={colors.primary} /></Pressable>
+      </View>
+      <View style={styles.monthGrid}>
+        {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((name, index) => {
+          const ym = `${pickYear}-${String(index + 1).padStart(2, "0")}`;
+          const on = ym === selectedYm;
+          return <Pressable key={ym} style={[styles.monthCell, on && styles.monthCellOn]} onPress={() => { onModeChange("month"); onSelectYm(ym); setCalendarOpen(false); }}><Text style={[styles.monthCellText, on && styles.monthCellTextOn]}>{name}</Text></Pressable>;
+        })}
+      </View>
+      <Pressable onPress={() => setCalendarOpen(false)} style={styles.close}><Text style={styles.closeText}>Close</Text></Pressable>
+    </Pressable></Pressable></Modal> : null}
   </View>;
 }
 
@@ -80,6 +100,12 @@ const styles = StyleSheet.create({
   modalRow: { borderColor: colors.border, borderWidth: 1, borderRadius: radius.medium, minHeight: 46, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, marginBottom: spacing.sm },
   modalRowActive: { borderColor: colors.primary, backgroundColor: colors.mintSoft },
   modalRowText: { color: colors.textPrimary, fontSize: uiType.body, fontWeight: "600" },
+  yearRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.sm },
+  monthGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  monthCell: { width: "30.5%", minHeight: 44, alignItems: "center", justifyContent: "center", borderRadius: radius.medium, borderColor: colors.border, borderWidth: 1 },
+  monthCellOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  monthCellText: { color: colors.textPrimary, fontWeight: "700", fontSize: uiType.body },
+  monthCellTextOn: { color: "#fff" },
   close: { alignItems: "center", padding: spacing.md },
   closeText: { color: colors.gray600, fontSize: uiType.body, fontWeight: "600" },
 });

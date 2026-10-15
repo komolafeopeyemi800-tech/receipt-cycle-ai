@@ -184,7 +184,7 @@ export function InsightsScreen() {
           variant="analysis"
         />
       </View>
-      <ScrollView contentContainerStyle={styles.pad}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.pad}>
         <View style={styles.card}>
           <Text style={styles.cardHdr}>Expense distribution</Text>
           <Text style={styles.subHint}>Tap the chart or a legend row for details.</Text>

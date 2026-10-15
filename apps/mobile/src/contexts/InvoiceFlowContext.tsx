@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { createInvoiceDraft, createSavedInvoice, invoiceSyncId, type InvoiceDraft, type InvoiceLineItem, type InvoiceStatus, type SavedInvoice } from "../features/invoices/model";
+import { createInvoiceDraft, createSavedInvoice, roundCents, invoiceSyncId, type InvoiceDraft, type InvoiceLineItem, type InvoiceStatus, type SavedInvoice } from "../features/invoices/model";
 import { asyncKv } from "../lib/asyncKv";
 import { applyToCollection, useSalesSync, type SalesChange, type SalesData } from "../lib/salesSync";
 import { useAuth } from "./AuthContext";
@@ -141,8 +141,8 @@ export function InvoiceFlowProvider({ children }: { children: ReactNode }) {
       ...current,
       invoices: current.invoices.map((invoice) => {
         if (invoice.invoiceNumber !== invoiceNumber) return invoice;
-        const amountPaid = Math.min(invoice.total, Math.max(0, (invoice.amountPaid ?? 0) + amount));
-        return { ...invoice, amountPaid, status: amountPaid >= invoice.total ? "paid" : "partially_paid", updatedAt: new Date().toISOString() };
+        const amountPaid = roundCents(Math.min(invoice.total, Math.max(0, (invoice.amountPaid ?? 0) + amount)));
+        return { ...invoice, amountPaid, status: amountPaid >= roundCents(invoice.total) ? "paid" : "partially_paid", updatedAt: new Date().toISOString() };
       }),
     })),
   }), [state, loadedKey, storageKey, customers, invoiceSettings]);

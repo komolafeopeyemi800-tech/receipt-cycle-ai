@@ -101,7 +101,7 @@ export function CustomerDetailScreen() {
 
   return <ScreenContainer>
     <ScreenHeader title="Customer Details" back rightIcon="ellipsis-vertical" onRightPress={openMenu} />
-    <ScrollView contentContainerStyle={styles.detailContent} showsVerticalScrollIndicator={false}>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.detailContent} showsVerticalScrollIndicator={false}>
       <View style={styles.customerHero}><InitialsAvatar name={customer.name} email={customer.email} size={58} /><View style={styles.heroMain}><View style={styles.heroTitleRow}><Text style={styles.heroTitle}>{customer.name}</Text><StatusBadge status={customer.status} /></View><Text style={styles.heroMeta}>{customer.businessName || "Individual customer"}</Text><Text style={styles.heroMeta}>Since {formatDate(customer.createdAt)}</Text></View></View>
       <View style={styles.contactActions}>
         <ContactAction icon="call-outline" label="Call" onPress={() => customer.phone ? openContactUrl(`tel:${customer.phone}`, "No calling app is available.") : Alert.alert("No phone number", "Add a phone number to this customer first.")} />

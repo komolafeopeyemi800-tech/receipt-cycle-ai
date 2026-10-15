@@ -61,7 +61,7 @@ export function MoreHubScreen() {
   return (
     <ScreenContainer>
       <ScreenHeader title="All features" back />
-      <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
         <Text style={styles.intro}>Everything you can do in Receipt Cycle, organized so you can reach any tool quickly.</Text>
         <MoreGroup title="Capture & records" entries={capture} />
         <MoreGroup title="Sales & customers" entries={business} />

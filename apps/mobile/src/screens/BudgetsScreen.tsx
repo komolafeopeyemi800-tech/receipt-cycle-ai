@@ -81,7 +81,7 @@ export function BudgetsScreen() {
   return (
     <View style={styles.root}>
       <ScreenHeader title="Budgets" />
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >

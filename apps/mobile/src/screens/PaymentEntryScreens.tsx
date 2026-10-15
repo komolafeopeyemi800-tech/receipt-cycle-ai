@@ -1,3 +1,4 @@
+import { roundCents } from "../features/invoices/model";
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -31,7 +32,9 @@ export function PaymentCreateScreen() {
   const [amount, setAmount] = useState(draft.amount ? String(draft.amount) : "");
   const [saving, setSaving] = useState(false);
   const invoice = availableInvoices.find((item) => item.invoiceNumber === draft.invoiceNumber);
-  const balance = invoice ? Math.max(0, invoice.total - invoice.amountPaid) : 0;
+  const balance = invoice ? Math.max(0, roundCents(roundCents(invoice.total) - roundCents(invoice.amountPaid))) : 0;
+  const parsedAmount = roundCents(Number(amount.replace(/[,\s]/g, "")));
+  const amountValid = Number.isFinite(parsedAmount) && parsedAmount > 0 && parsedAmount <= balance;
 
   function onDate(selected?: Date) {
     if (Platform.OS === "android") setDateOpen(false);
@@ -42,8 +45,9 @@ export function PaymentCreateScreen() {
   async function save() {
     if (!draft.invoiceNumber) { Alert.alert("Choose an invoice", "Select the invoice this payment should be applied to."); return; }
     if (!draft.accountId) { Alert.alert("Choose an account", "Select the account receiving this payment."); return; }
-    const numeric = Number(amount.replace(/,/g, ""));
+    const numeric = parsedAmount;
     if (!Number.isFinite(numeric) || numeric <= 0) { Alert.alert("Amount required", "Enter an amount greater than zero."); return; }
+    if (numeric > balance) { Alert.alert("Amount too high", `This invoice only has ${formatMoney(balance)} left to pay.`); return; }
     setSaving(true);
     try {
       const payment = await recordPayment(numeric);
@@ -59,12 +63,13 @@ export function PaymentCreateScreen() {
         <SelectField label="Invoice" icon="document-text-outline" value={invoice ? `${invoice.invoiceNumber} · ${formatMoney(balance)} due` : "Choose an invoice"} onPress={() => setInvoiceOpen(true)} required />
         {invoice ? <AppCard style={styles.customerCard}><InitialsAvatar name={invoice.customerName} size={38} /><View style={{ flex: 1 }}><Text style={styles.customerName}>{invoice.customerName}</Text><Text style={styles.customerMeta}>Balance due {formatMoney(balance)}</Text></View><Pressable onPress={() => navigation.navigate("PaymentInvoiceDetail", { invoiceNumber: invoice.invoiceNumber })}><Ionicons name="chevron-forward" size={19} color={colors.primary} /></Pressable></AppCard> : null}
         <FormField label="Amount Received" icon="cash-outline" prefix={currency === "USD" ? "$" : currency} value={amount} onChangeText={(value) => { setAmount(value); const parsed = Number(value.replace(/,/g, "")); updateDraft({ amount: Number.isFinite(parsed) ? parsed : 0 }); }} placeholder="0.00" keyboardType="decimal-pad" required />
+        {invoice && balance > 0 ? <Pressable onPress={() => { setAmount(String(balance)); updateDraft({ amount: balance }); }} accessibilityRole="button" style={{ alignSelf: "flex-start", marginTop: -spacing.sm, marginBottom: spacing.md }}><Text style={{ color: colors.primary, fontWeight: "800", fontSize: uiType.secondary }}>Pay full balance ({formatMoney(balance)})</Text></Pressable> : null}
         <View style={styles.fieldBlock}><Text style={styles.label}>Payment Date <Text style={{ color: colors.rose600 }}>*</Text></Text><Pressable style={styles.dateRow} onPress={() => setDateOpen(true)}><Ionicons name="calendar-outline" size={18} color={colors.primary} /><Text style={styles.dateValue}>{formatDate(draft.paymentDate)}</Text><Ionicons name="calendar" size={18} color={colors.gray500} /></Pressable></View>
         <SelectField label="Payment Method & Account" icon="card-outline" value={draft.accountName ? `${draft.method} · ${draft.accountName}` : "Choose method and account"} onPress={() => navigation.navigate("PaymentMethod")} required />
         <FormField label="Note" icon="document-text-outline" value={draft.note} onChangeText={(note) => updateDraft({ note })} placeholder="First installment payment" multiline />
       </ScrollView>
       {dateOpen ? <View style={styles.datePicker}><DateTimePicker value={new Date(`${draft.paymentDate}T12:00:00`)} mode="date" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={(_, selected) => onDate(selected)} />{Platform.OS === "ios" ? <Pressable onPress={() => setDateOpen(false)}><Text style={styles.done}>Done</Text></Pressable> : null}</View> : null}
-      <SafeActionFooter><AppButton label={saving ? "Recording Payment..." : "Save Payment"} onPress={() => void save()} disabled={saving || !invoice || !draft.accountId || !(Number(amount) > 0) || Number(amount) > balance} /></SafeActionFooter>
+      <SafeActionFooter><AppButton label={saving ? "Recording Payment..." : "Save Payment"} onPress={() => void save()} disabled={saving || !invoice || !draft.accountId || !amountValid} /></SafeActionFooter>
     </KeyboardAvoidingView>
     <InvoicePicker visible={invoiceOpen} invoices={availableInvoices} selected={draft.invoiceNumber} onClose={() => setInvoiceOpen(false)} onSelect={(invoiceNumber) => { updateDraft({ invoiceNumber, amount: 0 }); setAmount(""); setInvoiceOpen(false); }} />
   </ScreenContainer>;
@@ -83,7 +88,7 @@ function InvoicePicker({ visible, invoices, selected, onClose, onSelect }: { vis
       <View style={styles.handle} /><View style={styles.sheetHead}><Text style={styles.sheetTitle}>Choose Invoice</Text><Pressable onPress={onClose} accessibilityLabel="Close invoice picker"><Ionicons name="close" size={23} color={colors.gray600} /></Pressable></View>
       <SearchInput value={search} onChangeText={setSearch} placeholder="Search invoices or customers" />
       <View style={{ marginTop: spacing.md }}><SegmentedTabs options={["Open", "Overdue", "All"] as const} value={filter} onChange={setFilter} /></View>
-      <ScrollView style={styles.invoiceList}>
+      <ScrollView keyboardShouldPersistTaps="handled" style={styles.invoiceList}>
         {rows.map((invoice) => <Pressable key={`${invoice.preview}-${invoice.invoiceNumber}`} style={styles.invoiceRow} onPress={() => setChoice(invoice.invoiceNumber)} accessibilityRole="radio" accessibilityState={{ checked: choice === invoice.invoiceNumber }}>
           <Ionicons name={choice === invoice.invoiceNumber ? "radio-button-on" : "radio-button-off"} size={21} color={choice === invoice.invoiceNumber ? colors.primary : colors.gray400} />
           <InitialsAvatar name={invoice.customerName} size={36} /><View style={{ flex: 1 }}><Text style={styles.invoiceNumber}>{invoice.invoiceNumber}</Text><Text style={styles.customerMeta}>{invoice.customerName}</Text><Text style={[styles.due, invoice.status === "overdue" && { color: colors.danger }]}>Due {formatDate(invoice.dueDate)}</Text></View><View style={{ alignItems: "flex-end" }}><Text style={styles.invoiceAmount}>{formatMoney(invoice.total)}</Text><Text style={styles.customerMeta}>Balance</Text><Text style={styles.customerMeta}>{formatMoney(invoice.total - invoice.amountPaid)}</Text></View>
@@ -109,7 +114,7 @@ export function PaymentMethodScreen() {
 
   return <ScreenContainer>
     <ScreenHeader title="Payment Method & Account" back />
-    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <Text style={styles.sectionTitle}>Select Payment Method</Text>
       <View style={styles.methodGrid}>{methods.map((method) => <Pressable key={method.value} onPress={() => updateDraft({ method: method.value })} style={[styles.methodCard, draft.method === method.value && styles.methodSelected]} accessibilityRole="radio" accessibilityState={{ checked: draft.method === method.value }}><IconTile icon={method.icon} tone={method.tone} size={44} />{draft.method === method.value ? <Ionicons name="checkmark-circle" size={21} color={colors.primary} style={styles.methodCheck} /> : null}<Text style={styles.methodLabel}>{method.value}</Text></Pressable>)}</View>
       <Text style={styles.sectionTitle}>Receive Into Account</Text>

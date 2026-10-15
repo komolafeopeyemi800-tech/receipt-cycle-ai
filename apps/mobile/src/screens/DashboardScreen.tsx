@@ -83,7 +83,7 @@ export function DashboardScreen() {
         </View>
       </View>
 
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >

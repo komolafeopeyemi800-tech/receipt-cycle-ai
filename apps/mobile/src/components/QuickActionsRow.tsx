@@ -1,3 +1,5 @@
+import { useEstimateFlow } from "../contexts/EstimateFlowContext";
+import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
@@ -60,6 +62,8 @@ const actions = [
 
 export function QuickActionsRow() {
   const navigation = useNavigation<Nav>();
+  const { startNewInvoice } = useInvoiceFlow();
+  const { startNewEstimate } = useEstimateFlow();
 
   const onPress = (scheme: (typeof actions)[number]["scheme"]) => {
     if (scheme === "scan") {
@@ -80,8 +84,8 @@ export function QuickActionsRow() {
         ?.navigate("Main", { screen: "More", params: { screen: "Budgets" } });
       return;
     }
-    if (scheme === "invoice") navigation.getParent()?.navigate("InvoiceCreate" as never);
-    if (scheme === "estimate") navigation.getParent()?.navigate("EstimateCreate" as never);
+    if (scheme === "invoice") { startNewInvoice(); navigation.getParent()?.navigate("InvoiceCreate" as never); }
+    if (scheme === "estimate") { startNewEstimate(); navigation.getParent()?.navigate("EstimateCreate" as never); }
   };
 
   return (

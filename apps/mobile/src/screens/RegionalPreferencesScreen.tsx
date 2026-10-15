@@ -160,7 +160,7 @@ export function RegionalPreferencesScreen() {
       <Modal visible={simplePicker !== null} animationType="slide" onRequestClose={() => setSimplePicker(null)}>
         <View style={[styles.modalRoot, { paddingTop: insets.top + 8 }]}>
           <View style={styles.modalHeader}><Pressable onPress={() => setSimplePicker(null)} hitSlop={12}><Text style={styles.modalCancel}>Cancel</Text></Pressable><Text style={styles.modalTitle}>{simplePicker === "date" ? "Date format" : "Number format"}</Text><View style={{ width: 56 }} /></View>
-          <FlatList
+          <FlatList keyboardShouldPersistTaps="handled"
             data={simplePicker === "date" ? DATE_FORMAT_OPTIONS.map((d) => ({ id: d.id as string, label: d.label })) : NUMBER_FORMAT_OPTIONS.map((n) => ({ id: n.id as string, label: `${n.label}  ·  ${n.example}` }))}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => {

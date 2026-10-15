@@ -73,7 +73,7 @@ export function NotificationsScreen() {
   return (
     <ScreenContainer>
       <ScreenHeader title="Notifications & Reminders" back />
-      {!preferences ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+      {!preferences ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
         <AppCard style={styles.permissionCard}>
           <View style={styles.permissionCopy}><Text style={styles.title}>Receive reminders on this device</Text><Text style={styles.description}>{allowed ? "Notifications are on for this phone. Choose which ones you want below." : "Allow notifications first. Receipt Cycle will ask for your phone's permission."}</Text></View>
           {allowed ? <View style={[styles.enableButton, styles.enabledButton]}><Text style={styles.enableText}>Enabled</Text></View> : <Pressable accessibilityRole="button" onPress={() => void enableOnDevice()} style={styles.enableButton}><Text style={styles.enableText}>Enable</Text></Pressable>}

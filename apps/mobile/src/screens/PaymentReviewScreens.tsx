@@ -44,7 +44,7 @@ export function PaymentInvoiceDetailScreen() {
 
   return <ScreenContainer>
     <ScreenHeader title="Invoice Details" back rightIcon="ellipsis-vertical" onRightPress={() => Alert.alert("Invoice actions", invoice.invoiceNumber, [{ text: "Record Payment", onPress: record }, { text: "Send Reminder", onPress: () => void reminder() }, { text: "Cancel", style: "cancel" }], { cancelable: true })} />
-    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <AppCard style={styles.invoiceCard}>
         <View style={styles.invoiceHead}><View><StatusBadge status={balance === 0 ? "paid" : paid > 0 ? "partially_paid" : invoice.status === "overdue" ? "overdue" : "sent"} /><Text style={styles.invoiceNumber}>{invoice.invoiceNumber}</Text></View><Text style={styles.issueDate}>{formatDate(invoice.issueDate)}</Text></View>
         <View style={styles.customerRow}><InitialsAvatar name={invoice.customerName} size={42} /><View style={{ flex: 1 }}><Text style={styles.customerName}>{invoice.customerName}</Text><Text style={styles.meta}>{invoice.customerEmail || "Customer invoice"}</Text></View><Ionicons name="chevron-forward" size={18} color={colors.gray400} /></View>
@@ -75,7 +75,7 @@ export function PaymentConfirmationScreen() {
   if (!payment) return <ScreenContainer><ScreenHeader title="Payment" back /><EmptyState icon="checkmark-circle-outline" title="Payment unavailable" description="Return to Payments to review saved records." /></ScreenContainer>;
   return <ScreenContainer>
     <ScreenHeader title="" rightIcon="close" onRightPress={() => backToPayments(navigation)} />
-    <ScrollView contentContainerStyle={styles.confirmContent} showsVerticalScrollIndicator={false}>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.confirmContent} showsVerticalScrollIndicator={false}>
       <PaymentSuccessIcon />
       <Text style={styles.confirmTitle}>Payment Recorded!</Text>
       <Text style={styles.confirmCopy}>Payment of <Text style={styles.strong}>{formatMoney(payment.amount)}</Text> has been successfully recorded for <Text style={styles.strong}>{payment.invoiceNumber}</Text>.</Text>
@@ -106,7 +106,7 @@ export function ReceiptPreviewScreen() {
   if (!payment) return <ScreenContainer><ScreenHeader title="Receipt Preview" back /><EmptyState icon="receipt-outline" title="Receipt unavailable" description="The payment record could not be found." /></ScreenContainer>;
   return <ScreenContainer>
     <ScreenHeader title="Receipt Preview" back rightLabel="Share" onRightPress={() => navigation.navigate("ReceiptShare", { paymentId: payment.id })} />
-    <ScrollView contentContainerStyle={styles.receiptContent} showsVerticalScrollIndicator={false}><ReceiptPreviewCard payment={payment} business={businessProfile} formatMoney={formatMoney} formatDate={formatDate} /></ScrollView>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.receiptContent} showsVerticalScrollIndicator={false}><ReceiptPreviewCard payment={payment} business={businessProfile} formatMoney={formatMoney} formatDate={formatDate} /></ScrollView>
   </ScreenContainer>;
 }
 
@@ -139,7 +139,7 @@ export function ReceiptShareScreen() {
 
   return <ScreenContainer>
     <ScreenHeader title="Share Receipt" back />
-    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <AppCard style={styles.shareSummary}><View style={styles.thumbnail}><Ionicons name="receipt-outline" size={42} color={colors.primary} /><Text style={styles.thumbnailText}>{payment.receiptNumber}</Text></View><View style={{ flex: 1 }}><View style={styles.readyRow}><Ionicons name="checkmark-circle" size={25} color={colors.success} /><Text style={styles.readyText}>Receipt ready to share</Text></View><Text style={styles.shareReceipt}>{payment.receiptNumber} · {formatMoney(payment.amount)}</Text><Text style={styles.meta}>{payment.customerName} · {payment.invoiceNumber}</Text><Text style={styles.meta}>{formatDate(payment.paymentDate)}</Text></View></AppCard>
       <View style={styles.shareOptions}>
         <SendOptionRow icon="image-outline" tone="blue" title="Share as Image" subtitle="Send via any compatible app" onPress={() => void share("image")} />

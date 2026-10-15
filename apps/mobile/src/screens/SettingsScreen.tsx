@@ -33,7 +33,7 @@ export function SettingsScreen() {
 
   return (
     <LinearGradient colors={[...gradients.page]} style={styles.flex}>
-      <ScrollView contentContainerStyle={styles.pad} showsVerticalScrollIndicator={false}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.pad} showsVerticalScrollIndicator={false}>
         <View style={styles.top}>
           <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
             <Ionicons name="chevron-back" size={22} color={colors.gray900} />

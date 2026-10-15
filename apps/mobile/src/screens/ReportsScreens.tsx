@@ -62,7 +62,7 @@ export function ReportsHomeScreen() {
   return (
     <ScreenContainer>
       <ScreenHeader title="Reports" />
-      <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
         <SegmentedTabs options={["this_month", "all_time"] as const} value={period} onChange={setPeriod} />
         {rows === undefined ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : <>
           <View style={styles.kpiRow}>
@@ -119,7 +119,7 @@ export function CashFlowReportScreen() {
   return (
     <ScreenContainer>
       <ScreenHeader title="Cash Flow Report" back />
-      <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
         <SegmentedTabs options={["last_6_months", "this_year"] as const} value={period} onChange={setPeriod} />
         {rows === undefined ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : <>
           <View style={styles.kpiRow}>
@@ -195,7 +195,7 @@ export function OverdueInvoicesReportScreen() {
         <KpiCard title="Avg. days overdue" value={`${averageDays} days`} detail="Open balances" tone="info" />
       </View>
       <View style={styles.listHeading}><Text style={styles.sectionTitle}>{filter === "all" ? "All invoices" : filter === "paid" ? "Paid invoices" : filter === "due_soon" ? "Due soon" : "Overdue invoices"}</Text><Text style={styles.countLabel}>{shown.length}</Text></View>
-      <ScrollView contentContainerStyle={styles.invoiceList} showsVerticalScrollIndicator={false}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.invoiceList} showsVerticalScrollIndicator={false}>
         {shown.length === 0 ? <AppCard style={styles.emptyCard}><Ionicons name="checkmark-circle-outline" size={34} color={colors.success} /><Text style={styles.rowTitle}>Nothing here</Text><Text style={styles.rowSub}>No invoices match this filter.</Text></AppCard> : shown.map(({ invoice, remaining, isPaid, isOverdue, days }) => (
           <Pressable key={invoice.invoiceNumber} onPress={() => navigation.navigate("PaymentInvoiceDetail", { invoiceNumber: invoice.invoiceNumber })} style={styles.invoiceRow} accessibilityRole="button">
             <IconTile icon="document-text-outline" tone={isPaid ? "mint" : isOverdue ? "rose" : "blue"} size={40} />

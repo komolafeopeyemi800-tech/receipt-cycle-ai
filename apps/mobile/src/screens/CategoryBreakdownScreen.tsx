@@ -134,7 +134,7 @@ export function CategoryBreakdownScreen() {
       ) : (rows?.length ?? 0) === 0 ? (
         <Text style={styles.empty}>No transactions in this view.</Text>
       ) : (
-        <FlatList
+        <FlatList keyboardShouldPersistTaps="handled"
           data={rows as DocTx[]}
           keyExtractor={keyOfTx}
           renderItem={renderTx}

@@ -64,7 +64,7 @@ export function AccountsScreen() {
         rightIcon="add"
         onRightPress={() => navigation.navigate("AccountForm")}
       />
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >

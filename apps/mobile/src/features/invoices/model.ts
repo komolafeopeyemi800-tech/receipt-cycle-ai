@@ -127,12 +127,15 @@ export function createInvoiceDraft(settings: InvoiceSettings, saved: SavedInvoic
   };
 }
 
+/** Money is kept to whole cents everywhere, so a total shown as 1,196.00 really is 1196 and can be paid exactly. */
+export const roundCents = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
+
 export function calculateInvoiceTotals(draft: InvoiceDraft) {
-  const subtotal = draft.items.reduce((sum, item) => sum + item.quantity * item.rate, 0);
-  const discountAmount = Math.min(subtotal, draft.discountType === "percentage" ? subtotal * Math.max(0, draft.discountValue) / 100 : Math.max(0, draft.discountValue));
-  const taxable = Math.max(0, subtotal - discountAmount);
-  const taxAmount = taxable * Math.max(0, draft.taxRate) / 100;
-  const total = taxable + taxAmount + Math.max(0, draft.shipping);
+  const subtotal = roundCents(draft.items.reduce((sum, item) => sum + item.quantity * item.rate, 0));
+  const discountAmount = roundCents(Math.min(subtotal, draft.discountType === "percentage" ? subtotal * Math.max(0, draft.discountValue) / 100 : Math.max(0, draft.discountValue)));
+  const taxable = roundCents(Math.max(0, subtotal - discountAmount));
+  const taxAmount = roundCents(taxable * Math.max(0, draft.taxRate) / 100);
+  const total = roundCents(taxable + taxAmount + Math.max(0, draft.shipping));
   return { subtotal, discountAmount, taxable, taxAmount, total };
 }
 

@@ -105,7 +105,7 @@ export function AccountDetailScreen() {
       ) : !account ? (
         <Text style={styles.empty}>This account is unavailable.</Text>
       ) : (
-        <ScrollView
+        <ScrollView keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >

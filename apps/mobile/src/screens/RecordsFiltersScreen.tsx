@@ -60,7 +60,7 @@ export function RecordsFiltersScreen() {
       <Text style={styles.title}>Records Filters & Search</Text>
       <Pressable onPress={() => setDraft(defaultRecordsFilters)} hitSlop={8}><Text style={styles.clear}>Clear</Text></Pressable>
     </View>
-    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <SearchInput value={draft.search} onChangeText={(search) => update({ search })} placeholder="Search transactions, merchants..." />
       <Text style={styles.label}>Type</Text>
       <SegmentedTabs options={typeOptions} value={draft.type} onChange={(type) => update({ type, category: null })} />

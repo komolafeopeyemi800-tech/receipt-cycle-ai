@@ -1,3 +1,4 @@
+import { roundCents } from "../features/invoices/model";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation } from "../lib/api";
@@ -79,7 +80,7 @@ export function PaymentFlowProvider({ children }: { children: ReactNode }) {
       });
     return local;
   }, [customers, invoices, state.payments]);
-  const availableInvoices = useMemo(() => paymentInvoices.filter((invoice) => invoice.amountPaid < invoice.total), [paymentInvoices]);
+  const availableInvoices = useMemo(() => paymentInvoices.filter((invoice) => roundCents(invoice.amountPaid) < roundCents(invoice.total)), [paymentInvoices]);
 
   const value = useMemo<Value>(() => ({
     ...state,
@@ -92,8 +93,8 @@ export function PaymentFlowProvider({ children }: { children: ReactNode }) {
       if (!user?.id || !token) throw new Error("Sign in to record a customer payment.");
       const invoice = availableInvoices.find((item) => item.invoiceNumber === state.draft.invoiceNumber);
       if (!invoice) throw new Error("Choose an open invoice.");
-      const balance = Math.max(0, invoice.total - invoice.amountPaid);
-      const paymentAmount = amountOverride ?? state.draft.amount;
+      const balance = Math.max(0, roundCents(roundCents(invoice.total) - roundCents(invoice.amountPaid)));
+      const paymentAmount = roundCents(amountOverride ?? state.draft.amount);
       if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) throw new Error("Enter an amount greater than zero.");
       if (paymentAmount > balance) throw new Error(`The payment cannot exceed the remaining balance of ${balance.toFixed(2)}.`);
       if (!state.draft.accountId || !state.draft.accountName) throw new Error("Choose the account receiving this payment.");
@@ -102,7 +103,7 @@ export function PaymentFlowProvider({ children }: { children: ReactNode }) {
         date: state.draft.paymentDate, description: state.draft.note || `Payment for ${invoice.invoiceNumber}`, payment_method: state.draft.method,
         accountId: state.draft.accountId as Id<"accounts">, tags: ["payment", invoice.invoiceNumber], is_recurring: false, entrySource: "manual",
       });
-      const remainingBalance = Math.max(0, balance - paymentAmount);
+      const remainingBalance = Math.max(0, roundCents(balance - paymentAmount));
       const payment: SavedPayment = {
         ...state.draft, amount: paymentAmount, id: `payment-${Date.now()}`, receiptNumber: nextReceiptNumber(state.payments), customerId: invoice.customerId,
         customerName: invoice.customerName, customerEmail: invoice.customerEmail, customerAddress: invoice.customerAddress,

@@ -284,7 +284,7 @@ export function TransactionsListScreen() {
   return (
     <LinearGradient colors={[...gradients.page]} style={styles.flex}>
       <ScreenHeader title="Transactions" />
-      <FlatList
+      <FlatList keyboardShouldPersistTaps="handled"
         data={flatRows}
         keyExtractor={(row) => (row.kind === "day" ? `d-${row.day}` : row.tx.id)}
         contentContainerStyle={styles.pad}

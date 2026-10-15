@@ -30,7 +30,7 @@ export function BackupExportScreen() {
   return (
     <ScreenContainer>
       <ScreenHeader title="Backup & Export Data" back />
-      <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
         <View style={[styles.banner, !online && styles.bannerWait]}>
           <Ionicons name={online ? "information-circle" : "time-outline"} size={22} color={online ? colors.primary : colors.gray500} />
           <Text style={[styles.bannerText, !online && { color: colors.gray500 }]}>{online ? "All your data has been successfully and securely backed up." : "Checking your backup…"}</Text>

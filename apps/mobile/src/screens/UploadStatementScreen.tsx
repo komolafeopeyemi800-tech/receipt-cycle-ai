@@ -360,7 +360,7 @@ export function UploadStatementScreen() {
               export the statement as CSV, or photograph a receipt.
             </Text>
           ) : (
-            <ScrollView style={styles.previewBox} nestedScrollEnabled>
+            <ScrollView keyboardShouldPersistTaps="handled" style={styles.previewBox} nestedScrollEnabled>
               <Text style={styles.previewTxt}>
                 {previewText ?? (busy ? "Loading preview…" : "No text preview.")}
               </Text>

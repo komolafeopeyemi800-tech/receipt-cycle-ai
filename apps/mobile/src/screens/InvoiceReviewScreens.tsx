@@ -69,7 +69,7 @@ export function InvoicePreviewScreen() {
   return <ScreenContainer>
     <ScreenHeader title="Invoice Preview" back rightIcon="share-outline" onRightPress={() => void onShare()} />
     <DocumentProgress active={4} />
-    <ScrollView contentContainerStyle={styles.previewContent} showsVerticalScrollIndicator={false}>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.previewContent} showsVerticalScrollIndicator={false}>
       <SegmentedTabs options={["PDF Preview", "Details"] as const} value={tab} onChange={setTab} />
       {tab === "PDF Preview" ? <DocumentPreviewCard draft={draft} business={businessProfile} customer={customer} currency={currency} formatMoney={formatMoney} formatDate={formatDate} /> : <AppCard style={styles.detailsCard}>
         <DetailLine label="Invoice" value={draft.invoiceNumber} />
@@ -163,7 +163,7 @@ export function InvoiceSendScreen() {
   }
 
   return <ScreenContainer>
-    <ScrollView contentContainerStyle={styles.sendContent} showsVerticalScrollIndicator={false}>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.sendContent} showsVerticalScrollIndicator={false}>
       <View style={styles.sendHero}><View style={styles.planeHalo}><Ionicons name="paper-plane" size={48} color={colors.primary} /></View><Text style={styles.readyTitle}>{sent ? "Invoice Sent" : "Invoice Ready to Send"}</Text><Text style={styles.readyCopy}>Your invoice <Text style={styles.strong}>{draft.invoiceNumber}</Text>{sent ? " is marked as sent." : " is ready to share."}</Text></View>
       <View style={styles.options}>
         <SendOptionRow icon="mail-outline" tone="blue" title="Send by Email" subtitle="Attach the invoice PDF to an email" onPress={() => void sendEmailWithPdf()} />

@@ -127,7 +127,7 @@ export function TransactionDetailScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.pad}
         showsVerticalScrollIndicator={false}
       >

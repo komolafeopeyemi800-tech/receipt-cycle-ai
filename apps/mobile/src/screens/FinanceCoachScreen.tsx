@@ -335,7 +335,7 @@ export function FinanceCoachScreen() {
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
         >
-          <FlatList
+          <FlatList keyboardShouldPersistTaps="handled"
             ref={listRef}
             data={messages}
             keyExtractor={(_, i) => `${i}`}

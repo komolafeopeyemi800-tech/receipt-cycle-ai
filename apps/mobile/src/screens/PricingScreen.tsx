@@ -21,7 +21,7 @@ export function PricingScreen() {
   return (
     <ScreenContainer>
       <ScreenHeader title="Plan & Access" back />
-      <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <IconTile icon={subscription?.pro ? "diamond" : "person-outline"} tone={subscription?.pro ? "amber" : "mint"} size={58} />
           <Text style={styles.title}>{accessLabel}</Text>

@@ -281,7 +281,7 @@ export function SalesHubScreen() {
         title="Sales"
         onRightPress={() => navigation.navigate("BusinessProfile")}
       />
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.pageContent}
         showsVerticalScrollIndicator={false}
       >

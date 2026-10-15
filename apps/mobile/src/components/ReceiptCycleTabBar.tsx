@@ -47,7 +47,7 @@ export function ReceiptCycleTabBar({ state, descriptors, navigation }: BottomTab
     const isFocused = state.index === index;
     const nested = name === "More" || name === "Sales" ? route.state as { index?: number; routes?: { name: string }[] } | undefined : undefined;
     const moduleName = nested?.routes?.[nested.index ?? 0]?.name;
-    const contextualIcons = name === "More" ? moreModuleIcons : name === "Sales" ? salesModuleIcons : {};
+    const contextualIcons = name === "More" ? moreModuleIcons : {}; // Sales keeps one steady name and icon so the tab is easy to find
     const contextualModule = moduleName && contextualIcons[moduleName] ? moduleName : null;
     const label = name === "More" ? "Me" : name === "Records" ? "Transactions" : contextualModule === "SalesInvoices" ? "Invoices" : contextualModule === "SalesEstimates" ? "Estimates" : contextualModule === "SalesPayments" ? "Payments" : contextualModule === "SalesReports" ? "Reports" : contextualModule ?? descriptors[route.key]?.options.tabBarLabel ?? name;
     const icon = name === "More" ? tabIcons.More : contextualModule ? contextualIcons[contextualModule]! : tabIcons[name];
@@ -57,6 +57,8 @@ export function ReceiptCycleTabBar({ state, descriptors, navigation }: BottomTab
       // Always return Me to its landing screen. React Navigation otherwise keeps
       // the previous nested More route (for example Budgets or Categories).
       if (name === "More") navigation.navigate("More", { screen: "MoreHome" });
+      // Sales also returns to its hub, so one tap always gets you back to the Sales menu.
+      else if (name === "Sales") navigation.navigate("Sales", { screen: "SalesHome" });
       else navigation.navigate(name);
     };
     return <Pressable key={name} style={styles.tabBtn} onPress={openTab} accessibilityRole="tab" accessibilityState={{ selected: isFocused }} accessibilityLabel={String(label)}>

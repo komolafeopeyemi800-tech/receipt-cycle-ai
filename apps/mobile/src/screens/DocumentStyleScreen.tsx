@@ -63,7 +63,7 @@ export function DocumentStyleScreen() {
   return (
     <ScreenContainer>
       <ScreenHeader title={kind === "INVOICE" ? "Invoice Style & Color" : "Estimate Style & Color"} back />
-      <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
         <DocumentPreview input={input} />
         <Text style={styles.section}>LAYOUT</Text>
         <View style={styles.row}>

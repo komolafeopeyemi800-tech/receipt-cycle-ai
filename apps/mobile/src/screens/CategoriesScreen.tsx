@@ -27,7 +27,7 @@ export function CategoriesScreen() {
 
   return <View style={styles.root}>
     <ScreenHeader title="Categories" rightIcon="add" onRightPress={() => navigation.navigate("CategoryEditor", { initialKind: kind })} />
-    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <SegmentedTabs options={["expense", "income"] as const} value={kind} onChange={setKind} />
       {list === undefined ? <ActivityIndicator color={colors.primary} style={{ marginTop: 36 }} /> : rows.length === 0 ? <EmptyState icon="grid-outline" title={showHidden ? "No categories" : "No visible categories"} description="Add a category with the + button." /> : <View style={styles.grid}>{rows.map((category) => { const hidden = appearance.archivedCategoryIds.includes(category.id); return <Pressable key={category.id} style={[styles.tile, hidden && { opacity: 0.5 }]} onPress={() => navigation.navigate("CategoryEditor", { categoryId: category.id })} accessibilityRole="button" accessibilityLabel={`Edit ${category.name} category`}><CategoryGlyph name={category.name} color={category.color} icon={appearance.categoryIcons[category.id]} size={48} /><Text style={styles.tileName} numberOfLines={2}>{category.name}</Text>{hidden ? <Text style={styles.hiddenLabel}>Hidden</Text> : null}</Pressable>; })}</View>}
       {hiddenCount > 0 ? <Pressable style={styles.hiddenButton} onPress={() => setShowHidden((value) => !value)}><Text style={styles.hiddenButtonText}>{showHidden ? "Hide" : "Show"} hidden categories ({hiddenCount})</Text></Pressable> : null}

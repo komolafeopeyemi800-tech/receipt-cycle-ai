@@ -1103,7 +1103,7 @@ export function AddTransactionScreen() {
           <View style={{ width: 24 }} />
         )}
       </View>
-      <ScrollView contentContainerStyle={styles.pad}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.pad}>
         {sub && !sub.pro && sub.trialTimeActive && sub.canCreateTransaction ? (
           <View style={styles.subBannerTrial}>
             <Text style={styles.subBannerTitle}>Pro trial</Text>
@@ -1358,7 +1358,7 @@ export function AddTransactionScreen() {
             onPress={(e) => e.stopPropagation()}
           >
             <Text style={styles.modalTitle}>Categories</Text>
-            <ScrollView style={{ maxHeight: 220 }}>
+            <ScrollView keyboardShouldPersistTaps="handled" style={{ maxHeight: 220 }}>
               {filteredCats.map((c) => (
                 <Pressable
                   key={String(c.id)}
@@ -1416,7 +1416,7 @@ export function AddTransactionScreen() {
             onPress={(e) => e.stopPropagation()}
           >
             <Text style={styles.modalTitle}>Accounts</Text>
-            <ScrollView style={{ maxHeight: 220 }}>
+            <ScrollView keyboardShouldPersistTaps="handled" style={{ maxHeight: 220 }}>
               {(accounts ?? []).map((a) => (
                 <Pressable
                   key={String(a.id)}

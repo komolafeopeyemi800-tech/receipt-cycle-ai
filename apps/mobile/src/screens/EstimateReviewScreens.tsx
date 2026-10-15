@@ -55,7 +55,7 @@ export function EstimatePreviewScreen() {
 
   return <ScreenContainer>
     <ScreenHeader title="Estimate Preview" back rightIcon="share-outline" onRightPress={() => void share()} />
-    <ScrollView contentContainerStyle={styles.previewContent} showsVerticalScrollIndicator={false}>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.previewContent} showsVerticalScrollIndicator={false}>
       <SegmentedTabs options={["PDF Preview", "Details"] as const} value={tab} onChange={setTab} />
       {tab === "PDF Preview" ? <DocumentPreviewCard draft={estimateAsInvoiceDraft(draft)} business={businessProfile} customer={customer} currency={currency} formatMoney={formatMoney} formatDate={formatDate} label="ESTIMATE" /> : <AppCard style={styles.detailsCard}>
         <DetailLine label="Estimate" value={draft.estimateNumber} />
@@ -121,7 +121,7 @@ export function EstimateSendScreen() {
 
   return <ScreenContainer>
     <ScreenHeader title="Send Estimate" back />
-    <ScrollView contentContainerStyle={styles.sendContent} showsVerticalScrollIndicator={false}>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.sendContent} showsVerticalScrollIndicator={false}>
       <View style={styles.sendHero}><View style={styles.sendHalo}><Ionicons name="paper-plane" size={42} color={colors.primary} /></View><Text style={styles.convertTitle}>Estimate Ready to Send</Text><Text style={styles.convertCopy}>{draft.estimateNumber} is ready for {customer.name}.</Text></View>
       <SendOptionRow icon="mail-outline" tone="blue" title="Send by Email" subtitle="Attach the estimate PDF to an email" onPress={() => void email()} />
       <SendOptionRow icon="document-text-outline" tone="rose" title="Share PDF" subtitle="Share or save the PDF file" onPress={() => void sharePdf().catch((error) => Alert.alert("Could not share PDF", error instanceof Error ? error.message : "Please try again."))} />
@@ -197,7 +197,7 @@ export function EstimateDetailScreen() {
 
   return <ScreenContainer>
     <ScreenHeader title="Estimate Detail" back rightIcon="ellipsis-vertical" onRightPress={more} />
-    <ScrollView contentContainerStyle={styles.detailContent} showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic" nestedScrollEnabled>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.detailContent} showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic" nestedScrollEnabled>
       {estimate.status === "accepted" ? <AppCard style={styles.acceptedBanner}><View style={styles.acceptedIcon}><Ionicons name="checkmark" size={23} color="#fff" /></View><View style={{ flex: 1 }}><Text style={styles.acceptedTitle}>Accepted</Text><Text style={styles.acceptedCopy}>This estimate was accepted on {formatDate((estimate.acceptedAt ?? estimate.updatedAt).slice(0, 10))}.</Text></View></AppCard> : null}
       <View style={styles.documentHero}><View style={{ flex: 1 }}><Text style={styles.documentNumber}>{estimate.estimateNumber}</Text><Text style={styles.documentCustomer}>{estimate.customerName}</Text><Text style={styles.documentDate}>{formatDate(estimate.estimateDate)} · Valid until {formatDate(estimate.validUntil)}</Text></View><Text style={styles.documentAmount}>{formatMoney(estimate.total)}</Text></View>
       <View style={styles.actions}><ContactAction icon="paper-plane-outline" label="Send" onPress={() => loadAndNavigate("EstimatePreview")} /><ContactAction icon="pencil-outline" label="Edit" onPress={() => loadAndNavigate("EstimateCreate")} /><ContactAction icon="copy-outline" label="Duplicate" onPress={duplicate} /><ContactAction icon="ellipsis-horizontal" label="More" onPress={more} /></View>
@@ -225,7 +225,7 @@ export function EstimateConvertScreen() {
   }
 
   return <ScreenContainer>
-    <ScrollView contentContainerStyle={styles.convertContent} showsVerticalScrollIndicator={false}>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.convertContent} showsVerticalScrollIndicator={false}>
       <View style={styles.confettiRow}><Text style={styles.confetti}>✦</Text><Text style={[styles.confetti, { color: colors.amber600 }]}>│</Text><Text style={[styles.confetti, { color: colors.blue600 }]}>✦</Text></View>
       <View style={styles.convertGraphic}>
         <View style={styles.documentIcon}><Text style={styles.docCode}>EST</Text></View>

@@ -1,3 +1,6 @@
+import { usePaymentFlow } from "../contexts/PaymentFlowContext";
+import { useEstimateFlow } from "../contexts/EstimateFlowContext";
+import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
 import {
   useEffect,
   useMemo,
@@ -65,6 +68,9 @@ export function MobileHomeScreen() {
   const summary = useMemo(() => buildSummary(filterByMonth(rows)), [rows]);
   const firstName = user?.name?.trim().split(/\s+/)[0] || "there";
   const root = navigation.getParent();
+  const { startNewPayment } = usePaymentFlow();
+  const { startNewInvoice } = useInvoiceFlow();
+  const { startNewEstimate } = useEstimateFlow();
   const openRoot = (route: string, params?: object) =>
     root?.navigate(route, params);
   const promotionRef = useRef<ScrollView>(null);
@@ -111,7 +117,7 @@ export function MobileHomeScreen() {
       label: "Invoice",
       icon: "document-text-outline",
       tone: "blue",
-      action: () => openRoot("InvoiceCreate"),
+      action: () => { startNewInvoice(); openRoot("InvoiceCreate"); },
     },
   ];
   const secondaryTools: {
@@ -121,10 +127,10 @@ export function MobileHomeScreen() {
     action: () => void;
   }[] = [
     {
-      label: "Payment",
+      label: "Payments",
       icon: "card-outline",
       tone: "mint",
-      action: () => openRoot("PaymentCreate"),
+      action: () => navigation.navigate("Sales", { screen: "SalesPayments" }),
     },
     {
       label: "Reports",
@@ -157,10 +163,10 @@ export function MobileHomeScreen() {
       action: () => navigation.navigate("More", { screen: "Categories" }),
     },
     {
-      label: "Sales",
-      icon: "trending-up-outline",
+      label: "Record payment",
+      icon: "cash-outline",
       tone: "amber",
-      action: () => navigation.navigate("Sales"),
+      action: () => { startNewPayment(); openRoot("PaymentCreate"); },
     },
     {
       label: "More",
@@ -184,7 +190,7 @@ export function MobileHomeScreen() {
       cta: "Create estimate",
       icon: "calculator-outline" as IconName,
       tone: ["#1d4ed8", "#2563eb"] as const,
-      action: () => openRoot("EstimateCreate"),
+      action: () => { startNewEstimate(); openRoot("EstimateCreate"); },
     },
     {
       title: "Plan before you spend",
@@ -332,7 +338,7 @@ export function MobileHomeScreen() {
     <LinearGradient colors={[...gradients.page]} style={styles.flex}>
       <Modal visible={showDailyAccess} transparent={false} animationType="slide" onRequestClose={dismissDailyAccess} statusBarTranslucent navigationBarTranslucent>
         <LinearGradient colors={["#07131c", "#0b2528", "#07131c"]} style={styles.accessOverlay}>
-          <ScrollView contentContainerStyle={[styles.accessScroll, { paddingTop: insets.top + spacing.xl }]} showsVerticalScrollIndicator={false}>
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.accessScroll, { paddingTop: insets.top + spacing.xl }]} showsVerticalScrollIndicator={false}>
             <View style={styles.accessBadge}><Ionicons name="shield-checkmark" size={27} color="#07131c" /></View>
             <Text style={styles.accessEyebrow}>RECEIPT CYCLE ACCESS</Text>
             <Text style={styles.accessTitle}>{subscription?.phase === "trial" ? `${Math.max(0, Math.ceil(((subscription.trialEndsAt ?? Date.now()) - Date.now()) / 86_400_000))} days left in your trial` : "Your free trial has ended"}</Text>

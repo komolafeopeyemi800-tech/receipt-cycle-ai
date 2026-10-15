@@ -34,6 +34,7 @@ export type SalesStackParamList = {
 };
 
 export type RootStackParamList = {
+  BackupExport: undefined;
   Main:
     | {
         screen?: keyof MainTabParamList;

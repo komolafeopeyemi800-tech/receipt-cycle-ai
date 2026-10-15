@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import * as Notifications from "expo-notifications";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ScreenHeader } from "../components/ScreenHeader";
@@ -31,11 +33,24 @@ export function NotificationsScreen() {
   const remote = useQuery(api.notifications.preferences, token ? { token } : "skip");
   const save = useMutation(api.notifications.savePreferences);
   const register = useMutation(api.notifications.registerDevice);
-  const preferences = remote;
+  // The switches follow the screen at once and are saved in the background; they only go back if saving fails.
+  const [local, setLocal] = useState<PushPreferences | null>(null);
+  const [allowed, setAllowed] = useState(false);
+  useEffect(() => { if (remote && !local) setLocal(remote); }, [remote, local]);
+  useEffect(() => { void Notifications.getPermissionsAsync().then((p) => setAllowed(p.granted)).catch(() => undefined); }, []);
+  const preferences = local;
 
   async function setValue(key: PreferenceKey, value: boolean) {
     if (!token || !preferences) return;
-    await save({ token, ...preferences, [key]: value, timezone: phoneZone() });
+    const previous = preferences;
+    const next = { ...preferences, [key]: value };
+    setLocal(next);
+    try {
+      await save({ token, ...next, timezone: phoneZone() });
+    } catch {
+      setLocal(previous);
+      Alert.alert("Could not save", "Check your connection and try again.");
+    }
   }
 
   async function enableOnDevice() {
@@ -48,6 +63,7 @@ export function NotificationsScreen() {
       }
       await register({ token, pushToken: result.token, platform: result.platform, deviceId: result.deviceId, permissionStatus: result.status });
       if (preferences) await save({ token, ...preferences, timezone: phoneZone() }); // so the daily reminder arrives at 7 pm where you are
+      setAllowed(true);
       Alert.alert("Notifications allowed", "You will receive only the reminders switched on below.");
     } catch (error) {
       Alert.alert("Could not enable notifications", error instanceof Error ? error.message : "Please try again.");
@@ -59,8 +75,8 @@ export function NotificationsScreen() {
       <ScreenHeader title="Notifications & Reminders" back />
       {!preferences ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
         <AppCard style={styles.permissionCard}>
-          <View style={styles.permissionCopy}><Text style={styles.title}>Receive reminders on this device</Text><Text style={styles.description}>Choose this when you are ready. Receipt Cycle will then ask for your phone's permission.</Text></View>
-          <Pressable accessibilityRole="button" onPress={() => void enableOnDevice()} style={styles.enableButton}><Text style={styles.enableText}>Enable</Text></Pressable>
+          <View style={styles.permissionCopy}><Text style={styles.title}>Receive reminders on this device</Text><Text style={styles.description}>{allowed ? "Notifications are on for this phone. Choose which ones you want below." : "Allow notifications first. Receipt Cycle will ask for your phone's permission."}</Text></View>
+          {allowed ? <View style={[styles.enableButton, styles.enabledButton]}><Text style={styles.enableText}>Enabled</Text></View> : <Pressable accessibilityRole="button" onPress={() => void enableOnDevice()} style={styles.enableButton}><Text style={styles.enableText}>Enable</Text></Pressable>}
         </AppCard>
         <AppCard style={styles.card}>
           {rows.map((row, index) => <View key={row.key} style={[styles.row, index < rows.length - 1 && styles.divider]}>
@@ -87,6 +103,7 @@ const styles = StyleSheet.create({
   enableButton: { minHeight: 42, justifyContent: "center", paddingHorizontal: spacing.lg, borderRadius: 12, backgroundColor: colors.primary },
   testButton: { minHeight: 44, alignItems: "center", justifyContent: "center", borderRadius: 12, borderWidth: 1, borderColor: colors.primary, marginBottom: spacing.md },
   testText: { color: colors.primary, fontWeight: "800", fontSize: uiType.body },
+  enabledButton: { backgroundColor: colors.gray500, opacity: 0.85 },
   enableText: { color: "#fff", fontWeight: "800", fontSize: uiType.body },
   row: { minHeight: 74, flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.sm },
   divider: { borderBottomWidth: 1, borderBottomColor: colors.divider },

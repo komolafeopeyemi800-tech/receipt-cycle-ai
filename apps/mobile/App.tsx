@@ -74,6 +74,7 @@ import { CashFlowReportScreen, OverdueInvoicesReportScreen, ReportsHomeScreen } 
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { colors } from "./src/theme/tokens";
 import { ReceiptCycleLogo } from "./src/components/ReceiptCycleLogo";
+import { BackupExportScreen } from "./src/screens/BackupExportScreen";
 import type { RootStackParamList } from "./src/navigation/types";
 
 /** v2 is retained so completed users are not forced through setup again. */
@@ -174,6 +175,7 @@ function MainStackNavigator() {
       <Stack.Screen name="AddTransaction" component={AddTransactionScreen} options={{ presentation: "modal" }} />
       <Stack.Screen name="RecordsFilters" component={RecordsFiltersScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen name="BackupExport" component={BackupExportScreen} />
       <Stack.Screen name="ScanReceipt" component={ScanReceiptScreen} options={{ animation: "fade" }} />
       <Stack.Screen name="ScanReview" component={ScanReviewScreen} options={{ presentation: "card" }} />
       <Stack.Screen name="UploadStatement" component={UploadStatementScreen} options={{ presentation: "modal" }} />

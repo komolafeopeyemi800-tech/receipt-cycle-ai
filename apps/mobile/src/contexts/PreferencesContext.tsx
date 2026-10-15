@@ -15,6 +15,9 @@ import {
   PREF_KEYS,
   SETTINGS_STORAGE_KEYS,
   type DateFormatId,
+  type NumberFormatId,
+  isNumberFormatId,
+  setActiveNumberFormat,
   type SavedLocation,
   formatMoneyAmount,
   formatMoneyCompact,
@@ -27,6 +30,8 @@ type Ctx = {
   ready: boolean;
   currency: string;
   setCurrency: (c: string) => Promise<void>;
+  numberFormat: NumberFormatId;
+  setNumberFormat: (f: NumberFormatId) => Promise<void>;
   dateFormat: DateFormatId;
   setDateFormat: (d: DateFormatId) => Promise<void>;
   locations: SavedLocation[];
@@ -66,6 +71,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [currency, setCurrencyState] = useState("USD");
   const [dateFormat, setDateFormatState] = useState<DateFormatId>("iso");
+  const [numberFormat, setNumberFormatState] = useState<NumberFormatId>("standard");
+  setActiveNumberFormat(numberFormat);
   const [locations, setLocationsState] = useState<SavedLocation[]>([]);
   const [merchants, setMerchantsState] = useState<string[]>([]);
   const [reimbursements, setReimbursementsState] = useState(false);
@@ -147,6 +154,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         const keys = [
           PREF_KEYS.currency,
           PREF_KEYS.dateFormat,
+          PREF_KEYS.numberFormat,
           PREF_KEYS.locationsJson,
           PREF_KEYS.merchantsJson,
           SETTINGS_STORAGE_KEYS.reimbursements,
@@ -163,6 +171,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
           savedCurrency.current = localCurrency;
           setCurrencyState(localCurrency);
         }
+        if (isNumberFormatId(map[PREF_KEYS.numberFormat])) setNumberFormatState(map[PREF_KEYS.numberFormat] as NumberFormatId);
         const df = map[PREF_KEYS.dateFormat];
         if (df === "iso" || df === "us" || df === "eu") setDateFormatState(df);
         setLocationsState(parseJson(map[PREF_KEYS.locationsJson], []));
@@ -316,6 +325,15 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     [scheduleConvexSync, upsertRemote, user?.id],
   );
 
+  const setNumberFormat = useCallback(async (f: NumberFormatId) => {
+    setNumberFormatState(f);
+    try {
+      await AsyncStorage.setItem(PREF_KEYS.numberFormat, f);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const setDateFormat = useCallback(
     async (d: DateFormatId) => {
       setDateFormatState(d);
@@ -439,9 +457,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     [scheduleConvexSync],
   );
 
-  const formatMoney = useCallback((n: number) => formatMoneyAmount(n, currency), [currency]);
+  const formatMoney = useCallback((n: number) => formatMoneyAmount(n, currency), [currency, numberFormat]);
 
-  const formatMoneyCompactCb = useCallback((n: number) => formatMoneyCompact(n, currency), [currency]);
+  const formatMoneyCompactCb = useCallback((n: number) => formatMoneyCompact(n, currency), [currency, numberFormat]);
 
   const formatDate = useCallback((ymd: string) => formatDateYmd(ymd, dateFormat), [dateFormat]);
 
@@ -450,6 +468,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       ready,
       currency,
       setCurrency,
+      numberFormat,
+      setNumberFormat,
       dateFormat,
       setDateFormat,
       locations,
@@ -476,6 +496,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       ready,
       currency,
       setCurrency,
+      numberFormat,
+      setNumberFormat,
       dateFormat,
       setDateFormat,
       locations,

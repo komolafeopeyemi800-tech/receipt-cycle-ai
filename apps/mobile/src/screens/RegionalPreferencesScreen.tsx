@@ -15,7 +15,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { data as ISO_CURRENCY_DATA } from "currency-codes";
-import { DATE_FORMAT_OPTIONS, VOICE_INPUT_LANGUAGE_OPTIONS } from "../lib/preferences";
+import { DATE_FORMAT_OPTIONS, NUMBER_FORMAT_OPTIONS, VOICE_INPUT_LANGUAGE_OPTIONS } from "../lib/preferences";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
@@ -30,6 +30,8 @@ export function RegionalPreferencesScreen() {
     setCurrency,
     dateFormat,
     setDateFormat,
+    numberFormat,
+    setNumberFormat,
     voiceInputLanguage,
     setVoiceInputLanguage,
     formatMoney,
@@ -101,6 +103,17 @@ export function RegionalPreferencesScreen() {
             >
               <Text style={styles.rowTxt}>{d.label}</Text>
               {dateFormat === d.id ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}
+            </Pressable>
+          ))}
+        </View>
+
+        <Text style={[styles.section, { marginTop: 20 }]}>NUMBER FORMAT</Text>
+        <Text style={styles.hint}>How big amounts are grouped. Example: {formatMoney(1234567.89)}</Text>
+        <View style={styles.card}>
+          {NUMBER_FORMAT_OPTIONS.map((f) => (
+            <Pressable key={f.id} style={[styles.row, numberFormat === f.id && styles.rowOn]} onPress={() => void setNumberFormat(f.id)}>
+              <Text style={styles.rowTxt}>{f.label}  ·  {f.example}</Text>
+              {numberFormat === f.id ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}
             </Pressable>
           ))}
         </View>

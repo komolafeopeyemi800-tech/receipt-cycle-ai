@@ -4,6 +4,7 @@ import { data as ISO_CURRENCY_DATA } from "currency-codes";
 export const PREF_KEYS = {
   currency: "pref_currency_iso",
   dateFormat: "pref_date_format",
+  numberFormat: "pref_number_format",
   locationsJson: "pref_locations_json",
   merchantsJson: "pref_merchants_json",
 } as const;
@@ -75,17 +76,68 @@ export const DATE_FORMAT_OPTIONS: { id: DateFormatId; label: string }[] = [
 
 export type SavedLocation = { id: string; label: string; address: string };
 
-export function formatMoneyAmount(amount: number, currencyCode: string): string {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: currencyCode.length === 3 ? currencyCode : "USD",
-      currencyDisplay: "narrowSymbol",
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `${currencyCode} ${amount.toFixed(2)}`;
+export type NumberFormatId = "standard" | "indian" | "european" | "space" | "swiss";
+
+export const NUMBER_FORMAT_OPTIONS: { id: NumberFormatId; label: string; example: string }[] = [
+  { id: "standard", label: "Standard (default)", example: "1,000,000.00" },
+  { id: "indian", label: "Indian (lakh and crore)", example: "10,00,000.00" },
+  { id: "european", label: "European", example: "1.000.000,00" },
+  { id: "space", label: "Space separated", example: "1 000 000,00" },
+  { id: "swiss", label: "Swiss", example: "1’000’000.00" },
+];
+
+const SEPARATORS: Record<NumberFormatId, { group: string; decimal: string }> = {
+  standard: { group: ",", decimal: "." },
+  indian: { group: ",", decimal: "." },
+  european: { group: ".", decimal: "," },
+  space: { group: " ", decimal: "," },
+  swiss: { group: "’", decimal: "." },
+};
+
+let activeNumberFormat: NumberFormatId = "standard";
+export function setActiveNumberFormat(id: NumberFormatId) {
+  activeNumberFormat = id;
+}
+export function isNumberFormatId(v: unknown): v is NumberFormatId {
+  return typeof v === "string" && v in SEPARATORS;
+}
+
+/** Groups the whole-number digits of a non-negative integer string, e.g. "1000000" -> "1,000,000" or "10,00,000". */
+function groupDigits(digits: string, format: NumberFormatId): string {
+  const { group } = SEPARATORS[format];
+  if (digits.length <= 3) return digits;
+  if (format === "indian") {
+    const last3 = digits.slice(-3);
+    const rest = digits.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, group);
+    return `${rest}${group}${last3}`;
   }
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, group);
+}
+
+/** Formats a plain number with the person's chosen grouping, e.g. 1234567.5 -> "1,234,567.50". */
+export function formatNumberGrouped(value: number, fractionDigits = 2, format: NumberFormatId = activeNumberFormat): string {
+  if (!Number.isFinite(value)) return "0";
+  const fixed = Math.abs(value).toFixed(fractionDigits);
+  const [whole, frac] = fixed.split(".");
+  const { decimal } = SEPARATORS[format];
+  return `${value < 0 && Number(fixed) !== 0 ? "-" : ""}${groupDigits(whole, format)}${frac ? `${decimal}${frac}` : ""}`;
+}
+
+function currencySymbol(code: string): string {
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: code, currencyDisplay: "narrowSymbol" })
+      .formatToParts(0).find((p) => p.type === "currency")?.value ?? code;
+  } catch {
+    return code;
+  }
+}
+
+export function formatMoneyAmount(amount: number, currencyCode: string): string {
+  const code = currencyCode.length === 3 ? currencyCode : "USD";
+  const symbol = currencySymbol(code);
+  const body = formatNumberGrouped(Math.abs(amount), 2);
+  const sign = amount < 0 && Number(Math.abs(amount).toFixed(2)) !== 0 ? "-" : "";
+  return `${sign}${symbol}${body}`;
 }
 
 /**

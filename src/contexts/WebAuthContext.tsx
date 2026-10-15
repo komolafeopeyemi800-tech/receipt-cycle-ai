@@ -316,3 +316,8 @@ export function useWebAuth(): WebAuthCtx {
   if (!ctx) throw new Error("useWebAuth must be used within WebAuthProvider");
   return ctx;
 }
+
+/** Like useWebAuth, but returns null instead of throwing when there is no provider (static prerender, tests). */
+export function useOptionalWebAuth(): WebAuthCtx | null {
+  return useContext(Ctx);
+}

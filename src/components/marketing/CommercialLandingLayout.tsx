@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ReceiptCycleLogo } from "@/components/brand/ReceiptCycleLogo";
 import { INSTAGRAM_URL, PLAY_STORE_URL, SUPPORT_EMAIL, TWITTER_URL } from "@/content/site";
 import { cn } from "@/lib/utils";
+import { useOptionalWebAuth } from "@/contexts/WebAuthContext";
 
 export function LandingPrimaryCta({
   children,
@@ -73,7 +74,10 @@ const resourceLinks = [
   ["About Receipt Cycle", "/about", "Why we are building the workspace"],
 ] as const;
 
-export function CommercialHeader({ ctaLabel, ctaHref, announcement }: { ctaLabel: string; ctaHref: string; announcement?: string }) {
+export function CommercialHeader({ ctaLabel: baseLabel, ctaHref: baseHref, announcement }: { ctaLabel: string; ctaHref: string; announcement?: string }) {
+  const signedIn = Boolean(useOptionalWebAuth()?.user);
+  const ctaLabel = signedIn ? "Dashboard" : baseLabel;
+  const ctaHref = signedIn ? "/dashboard" : baseHref;
   const [menuOpen, setMenuOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const headerRef = useRef<HTMLElement>(null);
@@ -137,12 +141,14 @@ export function CommercialHeader({ ctaLabel, ctaHref, announcement }: { ctaLabel
             <i className="fab fa-google-play text-lg" aria-hidden />
             <span>Google Play</span>
           </a>
-          <Link
-            to="/signin"
-            className="inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
-          >
-            Sign in
-          </Link>
+          {signedIn ? null : (
+            <Link
+              to="/signin"
+              className="inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+            >
+              Sign in
+            </Link>
+          )}
           <LandingPrimaryCta to={ctaHref} className="min-h-11 px-5 py-2.5">{ctaLabel}</LandingPrimaryCta>
         </div>
 
@@ -203,9 +209,9 @@ export function CommercialHeader({ ctaLabel, ctaHref, announcement }: { ctaLabel
               <Link to="/pricing" className="block rounded-lg px-3 py-2 text-sm font-bold text-slate-700">Pricing</Link>
               <Link to="/contact" className="block rounded-lg px-3 py-2 text-sm font-bold text-slate-700">Contact Us</Link>
             </div>
-            <Link to="/signin" className="rounded-lg px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
+            {signedIn ? null : <Link to="/signin" className="rounded-lg px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
               Sign in
-            </Link>
+            </Link>}
             <a
               href={PLAY_STORE_URL}
               target="_blank"
@@ -232,6 +238,7 @@ function MenuGroup({ title, links, close }: { title: string; links: ReadonlyArra
 }
 
 export function CommercialFooter() {
+  const signedIn = Boolean(useOptionalWebAuth()?.user);
   const year = new Date().getFullYear();
 
   return (
@@ -302,7 +309,7 @@ export function CommercialFooter() {
               <li><Link to="/about" className="hover:text-teal-700">About</Link></li>
               <li><Link to="/contact" className="hover:text-teal-700">Contact</Link></li>
               <li><Link to="/pricing" className="hover:text-teal-700">Pricing</Link></li>
-              <li><Link to="/signin" className="hover:text-teal-700">Sign in</Link></li>
+              <li>{signedIn ? <Link to="/dashboard" className="hover:text-teal-700">Dashboard</Link> : <Link to="/signin" className="hover:text-teal-700">Sign in</Link>}</li>
             </ul>
           </div>
 

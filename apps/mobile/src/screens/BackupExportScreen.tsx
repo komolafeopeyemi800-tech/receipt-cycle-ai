@@ -23,7 +23,7 @@ export function BackupExportScreen() {
   const online = Boolean(checkedAt);
   function onExport() {
     if (exportDisabledByAdmin) return Alert.alert("Export disabled", "Export is currently turned off.");
-    if (!canExport) return Alert.alert("Pro feature", "Exporting your data is part of Pro access. You can manage access on the Receipt Cycle web version.");
+    if (!canExport) return Alert.alert("Pro feature", "Exporting your data is part of Pro access.");
     void exportCsvDownload();
   }
 

@@ -185,17 +185,6 @@ export const api = {
     }),
   },
 
-  billing: {
-    /** Starts a Polar checkout for a paid plan and returns the hosted checkout address. */
-    checkout: fn<SessionArgs & { plan: "monthly" | "yearly"; returnUrl?: string }, { url: string }>("action", "billing.checkout", (c, a) =>
-      c.request("POST", "/api/billing/checkout", { token: tok(a), body: { plan: a.plan, returnUrl: a.returnUrl } }),
-    ),
-    /** Address of the Polar customer portal (invoices, payment method, cancel). */
-    portal: fn<SessionArgs, { url: string }>("action", "billing.portal", (c, a) =>
-      c.request("POST", "/api/billing/portal", { token: tok(a), body: {} }),
-    ),
-  },
-
   subscription: {
     getSubscriptionState: fn<SessionArgs, SubscriptionState | null>("query", "subscription.getSubscriptionState", (c, a) =>
       c.request("GET", "/api/subscription", { token: tok(a), onUnauthorized: "null" }),
@@ -422,15 +411,6 @@ export const api = {
       c.request("POST", "/api/ai/voice/transaction", {
         token: tok(a),
         body: { audioBase64: a.audioBase64, mimeType: a.mimeType, language: a.language, hints: { ...a.hints, today: todayLocalYmd() } },
-      }),
-    ),
-    financeCoachChat: fn<
-      SessionArgs & { periodLabel: string; rows: LedgerRow[]; messages: { role: "user" | "assistant"; content: string }[] },
-      Ok & { reply: string }
-    >("action", "voiceFinance.financeCoachChat", (c, a) =>
-      c.request("POST", "/api/ai/coach", {
-        token: tok(a),
-        body: { periodLabel: a.periodLabel, rows: a.rows, messages: a.messages },
       }),
     ),
   },

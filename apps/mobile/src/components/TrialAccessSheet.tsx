@@ -47,7 +47,7 @@ export function TrialAccessSheet({ visible, onDismiss, subscription }: { visible
   const title = active ? `${daysShown} ${daysShown === 1 ? "day" : "days"} left in your free trial` : exhausted ? "You have used all 25 trial entries" : "Your free trial has ended";
   const copy = active
     ? "Use every entry method during your trial. Access continues until the seven-day timer ends or you reach 25 transactions."
-    : "Your records are still here and you can view them any time. Pro features are managed on the Receipt Cycle web version.";
+    : "Your records are still here and you can view them any time. Adding new records and Pro features are paused until access is renewed.";
 
   return (
     <Modal visible={visible} transparent={false} animationType="slide" onRequestClose={onDismiss} statusBarTranslucent navigationBarTranslucent>
@@ -90,7 +90,6 @@ export function TrialAccessSheet({ visible, onDismiss, subscription }: { visible
               <View style={{ flex: 1 }}><Text style={styles.benefitTitle}>{name}</Text><Text style={styles.benefitText}>{text}</Text></View>
             </View>
           ))}
-          <Text style={styles.web}>Account plans and billing are managed on the Receipt Cycle web version.</Text>
         </ScrollView>
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
           <Pressable style={styles.cta} onPress={onDismiss} accessibilityRole="button">

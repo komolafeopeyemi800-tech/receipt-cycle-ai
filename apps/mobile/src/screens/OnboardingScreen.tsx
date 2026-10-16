@@ -22,7 +22,11 @@ import { usePreferences } from "../contexts/PreferencesContext";
 import { VOICE_INPUT_LANGUAGE_OPTIONS, normalizeVoiceInputLanguage } from "../lib/preferences";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
 import { Switch } from "react-native";
-import { PENDING_NOTIFICATION_PREFS_KEY, requestNotificationPermission } from "../lib/pushNotifications";
+import { api, useMutation } from "../lib/api";
+import { useAuth } from "../contexts/AuthContext";
+import { TrialAccessSheet } from "../components/TrialAccessSheet";
+import { useSubscriptionState } from "../hooks/useSubscriptionState";
+import { PENDING_NOTIFICATION_PREFS_KEY, existingPushRegistration, requestNotificationPermission } from "../lib/pushNotifications";
 import { openHttpsOrExternalUrl } from "../lib/openExternalUrl";
 
 const ONBOARDING_DATA_KEY = "onboardingData";
@@ -75,6 +79,11 @@ export function OnboardingScreen({ onDone }: Props) {
   const insets = useSafeAreaInsets();
   const { setCurrency, setVoiceInputLanguage } = usePreferences();
   const [step, setStep] = useState(1);
+  const [showSheet, setShowSheet] = useState(false);
+  const { token: authToken } = useAuth();
+  const savePrefs = useMutation(api.notifications.savePreferences);
+  const registerDevice = useMutation(api.notifications.registerDevice);
+  const subscription = useSubscriptionState();
   const [notif, setNotif] = useState({ dailyReminder: true, invoiceReminders: true, overdueReminders: true, paymentConfirmations: true, budgetAlerts: true, weeklyReports: false, marketingUpdates: true });
   const [currency, setCurrencyLocal] = useState("USD");
   const [goals, setGoals] = useState<string[]>([]);
@@ -175,13 +184,27 @@ export function OnboardingScreen({ onDone }: Props) {
       void (async () => {
         const phoneZone = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; } })();
         try { await AsyncStorage.setItem(PENDING_NOTIFICATION_PREFS_KEY, JSON.stringify({ ...notif, timezone: phoneZone })); } catch { /* ignore */ }
-        if (Object.values(notif).some(Boolean)) await requestNotificationPermission().catch(() => undefined);
+        let granted = false;
+        if (Object.values(notif).some(Boolean)) granted = await requestNotificationPermission().catch(() => false);
+        // Save the choices and connect this phone to the account right now, so notifications work from the first day.
+        if (authToken) {
+          try {
+            await savePrefs({ token: authToken, ...notif, timezone: phoneZone });
+            await AsyncStorage.removeItem(PENDING_NOTIFICATION_PREFS_KEY);
+          } catch { /* the saved copy is applied on the next start */ }
+          if (granted) {
+            try {
+              const device = await existingPushRegistration();
+              if (device) await registerDevice({ token: authToken, pushToken: device.token, platform: device.platform, deviceId: device.deviceId, permissionStatus: device.permissionStatus });
+            } catch { /* registration is retried each time the app opens */ }
+          }
+        }
         setStep(4);
       })();
       return;
     }
     if (step < 4) setStep((s) => s + 1);
-    else void persistAndFinish();
+    else setShowSheet(true); // the trial sheet is the last screen before the dashboard
   };
 
   const back = () => {
@@ -242,7 +265,7 @@ export function OnboardingScreen({ onDone }: Props) {
               <Text style={styles.miniHint}>Tap to search {currencyRows.length}+ currencies by code, name, or country.</Text>
               <Text style={[styles.h2, { marginTop: 22 }]}>Voice input language</Text>
               <Text style={styles.p}>
-                Used when you dictate expenses or use Ask AI. Choose a language or leave Auto-detect.
+                Used when you dictate expenses. Choose a language or leave Auto-detect.
               </Text>
               <Pressable style={styles.choiceCard} onPress={() => setVoiceLangModal(true)}>
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -438,7 +461,7 @@ export function OnboardingScreen({ onDone }: Props) {
 
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 14) }]}>
           <Pressable style={styles.mainBtn} onPress={next}>
-            <Text style={styles.mainBtnTxt}>{step === 4 ? "Open dashboard" : "Continue"}</Text>
+            <Text style={styles.mainBtnTxt}>Continue</Text>
             <Ionicons name="arrow-forward" size={20} color="#fff" />
           </Pressable>
         </View>
@@ -558,6 +581,7 @@ export function OnboardingScreen({ onDone }: Props) {
             />
           </View>
         </Modal>
+        <TrialAccessSheet visible={showSheet} onDismiss={() => void persistAndFinish()} subscription={subscription} />
       </LinearGradient>
     </KeyboardAvoidingView>
   );

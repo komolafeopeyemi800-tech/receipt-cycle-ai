@@ -207,22 +207,6 @@ export function InsightsScreen() {
           <IncomeExpenseBars transactions={(all ?? []) as DocTx[]} />
         </View>
 
-        <View style={[styles.card, { marginTop: 12, display: "none" }]}>
-          <Text style={styles.cardHdr}>Ask AI</Text>
-          <Text style={styles.subHint}>
-            Tell AI what to do with the entries you saved this period—summaries, labels, or plain-language recap. For organization only, not advice. Same period as above.
-          </Text>
-          <Pressable
-            style={[styles.coachBtn, { display: "none" }]}
-            onPress={() => undefined}
-            disabled={loading || !aiOk || !token}
-          >
-            <Ionicons name="chatbubbles-outline" size={18} color={colors.primary} />
-            <Text style={styles.coachBtnTxt}>Open Ask AI</Text>
-            <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
-          </Pressable>
-        </View>
-
         <View style={[styles.card, { marginTop: 12 }]}>
           <Text style={styles.cardHdr}>Entry pattern highlights</Text>
           <Text style={styles.subHint}>

@@ -32,7 +32,16 @@ export function PushNotificationBridge() {
       await savePrefsRef.current({ token, ...JSON.parse(raw) });
       await AsyncStorage.removeItem(PENDING_NOTIFICATION_PREFS_KEY);
     }).catch(() => undefined);
-    const appState = AppState.addEventListener("change", (state) => { if (state === "active") void openedRef.current({ token, kind: "app_opened" }).catch(() => undefined); });
+    const appState = AppState.addEventListener("change", (state) => {
+      if (state !== "active") return;
+      void openedRef.current({ token, kind: "app_opened" }).catch(() => undefined);
+      // Permission can be granted after sign-in (onboarding, phone settings): connect the phone as soon as it is.
+      void existingPushRegistration().then((device) => {
+        if (!device || device.token === lastToken.current) return;
+        lastToken.current = device.token;
+        return registerRef.current({ token, pushToken: device.token, platform: device.platform, deviceId: device.deviceId, permissionStatus: device.permissionStatus });
+      }).catch(() => undefined);
+    });
     const response = Notifications.addNotificationResponseReceivedListener((event) => {
       const jobId = event.notification.request.content.data?.jobId;
       void openedRef.current({ token, kind: "opened", ...(typeof jobId === "string" ? { jobId } : {}) }).catch(() => undefined);

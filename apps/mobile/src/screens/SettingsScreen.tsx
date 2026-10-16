@@ -80,7 +80,7 @@ export function SettingsScreen() {
           <RowNav
             icon="diamond-outline"
             title="Plan & Access"
-            sub={sub?.pro ? "Pro access active · Manage on the web" : sub?.phase === "trial" ? "Trial active · Plans are managed on the web" : "Free access · Plans are managed on the web"}
+            sub={sub?.pro ? "Pro access active" : sub?.phase === "trial" ? "Trial active" : "Free access"}
             onPress={() => navigation.navigate("Pricing")}
           />
           <Divider />

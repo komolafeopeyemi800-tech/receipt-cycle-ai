@@ -109,7 +109,7 @@ export function RegionalPreferencesScreen() {
 
         <Text style={[styles.section, { marginTop: 20 }]}>VOICE INPUT LANGUAGE</Text>
         <Text style={styles.hint}>
-          Used for speech-to-text when you dictate transactions or use Ask AI. Auto lets the model detect
+          Used for speech-to-text when you dictate transactions. Auto lets the model detect
           the language.
         </Text>
         <Pressable style={styles.currencyCard} onPress={() => setLanguageOpen(true)} accessibilityRole="button" accessibilityLabel={`Voice input language: ${currentLanguage}`}>

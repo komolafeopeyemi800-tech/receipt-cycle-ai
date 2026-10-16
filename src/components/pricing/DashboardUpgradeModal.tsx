@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { yearlyDiscountPercent, type PaywallPlanId } from "@mobile-lib/pricingPaywall";
+import { yearlyDiscountPercent, type PaywallPlanId } from "@/lib/pricingPaywall";
 import { useBilling } from "@/lib/billing";
 import { useSubscriptionState } from "@/hooks/use-subscription-state";
 

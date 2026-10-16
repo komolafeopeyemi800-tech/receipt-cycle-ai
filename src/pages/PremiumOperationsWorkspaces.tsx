@@ -13,11 +13,13 @@ import { useWebPreferences } from "@/contexts/WebPreferencesContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useSubscriptionState } from "@/hooks/use-subscription-state";
 import { useBilling } from "@/lib/billing";
+import { formatMoneyCompact } from "@mobile-lib/preferences";
+import { getActiveCurrency, money } from "@/lib/money";
 import { buildSummary, type DocTx } from "@/lib/transactionMath";
 
 function Shell({ children }: { children: React.ReactNode }) { return <AppChrome><div className="min-h-full text-slate-900">{children}</div></AppChrome>; }
 function useTransactions() { const { workspace, ready } = useWorkspace(); const { user } = useWebAuth(); return useQuery(api.transactions.list, ready && user ? { workspace, userId: user.id } : "skip") as DocTx[] | undefined; }
-function shortMoney(value: number) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", notation: Math.abs(value) >= 10000 ? "compact" : "standard", maximumFractionDigits: 1 }).format(value); }
+function shortMoney(value: number) { return Math.abs(value) >= 10000 ? formatMoneyCompact(value, getActiveCurrency()) : money(value); }
 
 function CashBars({ rows, monthCount = 6 }: { rows: DocTx[]; monthCount?: number }) { const months = useMemo(() => Array.from({ length: monthCount }, (_, index) => { const now = new Date(); const date = new Date(now.getFullYear(), now.getMonth() - (monthCount - 1) + index, 1); const key = localDate(date).slice(0, 7); const subset = rows.filter((row) => row.date.startsWith(key)); const total = (kind: string) => subset.filter((row) => row.type.trim().toLowerCase() === kind).reduce((sum, row) => sum + Math.abs(row.amount), 0); return { key, label: date.toLocaleString("en-US", { month: "short" }), income: total("income"), expense: total("expense") }; }), [rows, monthCount]); const peak = Math.max(1, ...months.flatMap((month) => [month.income, month.expense])); return <div><div className="flex h-56 items-end gap-1.5 border-b border-slate-200 px-2 sm:gap-5 sm:px-4">{months.map((month) => <div key={month.key} className="flex h-full min-w-0 flex-1 flex-col justify-end"><div className="flex flex-1 items-end justify-center gap-1"><div className="w-2.5 rounded-t sm:w-4 bg-teal-600" style={{ height: `${Math.max(2, month.income / peak * 100)}%` }} /><div className="w-2.5 rounded-t sm:w-4 bg-rose-400" style={{ height: `${Math.max(2, month.expense / peak * 100)}%` }} /></div><p className="py-2 text-center text-[10px] font-bold text-slate-500">{month.label}</p></div>)}</div><div className="mt-3 flex justify-center gap-5 text-xs text-slate-500"><span><i className="fas fa-square mr-1 text-teal-600" />Income</span><span><i className="fas fa-square mr-1 text-rose-400" />Expense</span></div></div>; }
 

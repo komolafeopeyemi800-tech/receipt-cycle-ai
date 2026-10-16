@@ -1,6 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { VoiceQuickAddWeb } from "@/components/dashboard/VoiceQuickAddWeb";
 import { AppChrome } from "@/components/layout/AppChrome";
+import { money } from "@/lib/money";
+import { CustomerAvatar } from "@/components/workspace/CustomerAvatar";
+import { DocumentPages, useDocumentLayout } from "@/components/documents/DocumentSheet";
+import { DocumentStyleControls } from "@/components/documents/DocumentStyleControls";
+import { InkPreview, SignaturePad } from "@/components/documents/SignaturePad";
+import type { DocKind } from "@/lib/documents/build";
 import { DetailRow, Drawer, EmptyState, Field, IconBox, MobileList, MobileRow, PrimaryButton, SecondaryButton, Segmented, StatCard, StatusPill, Surface, SurfaceHeader, WorkspaceHeader, inputClass, textareaClass } from "@/components/workspace/DesktopWorkspaceUI";
 import {
   documentTotal,
@@ -11,16 +17,12 @@ import {
   type BusinessProfile,
   type DesktopCatalogItem,
   type DesktopCustomer,
+  type DesktopEstimate,
+  type DesktopInvoice,
   type InvoicePreferences,
   useDesktopBusiness,
 } from "@/contexts/DesktopBusinessContext";
 
-const money = (value: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 2,
-  }).format(value);
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -258,9 +260,7 @@ export function SalesAnalyticsPage() {
               key={customer.id}
               className="flex items-center gap-3 p-4 hover:bg-slate-50"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-100 text-sm font-extrabold text-teal-800">
-                {customer.company.slice(0, 2).toUpperCase()}
-              </div>
+              <CustomerAvatar name={customer.company || customer.name} email={customer.email} className="h-10 w-10 text-sm" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-slate-900">
                   {customer.company}
@@ -364,9 +364,7 @@ export function CustomersPage() {
                 onClick={() => setSelectedId(customer.id)}
                 label={`Open ${customer.name}`}
                 lead={
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-100 text-xs font-extrabold text-teal-800">
-                    {(customer.company || customer.name).slice(0, 2).toUpperCase()}
-                  </div>
+                  <CustomerAvatar name={customer.company || customer.name} email={customer.email} className="h-10 w-10 text-xs" />
                 }
                 title={customer.name}
                 subtitle={customer.company}
@@ -413,9 +411,7 @@ export function CustomersPage() {
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-100 text-xs font-extrabold text-teal-800">
-                          {customer.company.slice(0, 2).toUpperCase()}
-                        </div>
+                        <CustomerAvatar name={customer.company || customer.name} email={customer.email} className="h-9 w-9 text-xs" />
                         <div>
                           <p className="font-bold text-slate-900">
                             {customer.name}
@@ -867,6 +863,7 @@ export function BusinessProfilePage() {
   const { business, saveBusiness, ready } = useDesktopBusiness();
   const [draft, setDraft] = useState<BusinessProfile>(business);
   const [saved, setSaved] = useState(false);
+  const [padOpen, setPadOpen] = useState(false);
   useEffect(() => {
     if (ready) setDraft(business);
   }, [ready, business]);
@@ -924,7 +921,29 @@ export function BusinessProfilePage() {
                 onChange={(e) => update("website", e.target.value)}
               />
             </Field>
+            <div className="block text-xs font-bold text-slate-600 sm:col-span-2" role="group" aria-label="Signature">
+              Signature
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                {draft.signature ? (
+                  <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
+                    <InkPreview ink={draft.signature} />
+                  </div>
+                ) : (
+                  <p className="text-xs font-normal text-slate-500">No signature yet. Draw one to print it on invoices that ask for a signature.</p>
+                )}
+                <SecondaryButton icon="fa-signature" onClick={() => setPadOpen(true)}>
+                  {draft.signature ? "Redraw" : "Draw signature"}
+                </SecondaryButton>
+                {draft.signature ? (
+                  <SecondaryButton icon="fa-trash" onClick={() => setDraft({ ...draft, signature: null })}>
+                    Remove
+                  </SecondaryButton>
+                ) : null}
+              </div>
+              <p className="mt-2 text-[11px] font-normal text-slate-500">Shared with the phone app, so you only draw it once.</p>
+            </div>
           </div>
+          <SignaturePad open={padOpen} onClose={() => setPadOpen(false)} onSave={(ink) => { setDraft({ ...draft, signature: ink }); setPadOpen(false); }} />
           <div className="mt-5 flex items-center gap-3">
             <PrimaryButton
               icon="fa-check"
@@ -943,15 +962,16 @@ export function BusinessProfilePage() {
         </Surface>
         <Surface className="self-start overflow-hidden">
           <div className="bg-gradient-to-br from-teal-700 to-teal-500 p-6 text-white">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/15 text-xl">
-              <i className="fas fa-receipt" />
+            <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-white/15 text-xl font-extrabold">
+              {draft.logoUri && /^(https?:|data:image\/)/.test(draft.logoUri) ? (
+                <img src={draft.logoUri} alt="" className="h-full w-full object-contain" />
+              ) : (
+                (draft.name || "B").trim().charAt(0).toUpperCase()
+              )}
             </div>
             <h2 className="mt-5 text-xl font-extrabold">
               {draft.name || "Your business"}
             </h2>
-            <p className="mt-1 text-sm text-teal-50">
-              Simple financial tools for a brighter tomorrow
-            </p>
           </div>
           <div className="space-y-2 p-5 text-sm text-slate-600">
             <p>{draft.email}</p>
@@ -969,9 +989,25 @@ export function InvoiceSettingsPage() {
   const { invoicePreferences, saveInvoicePreferences, business, ready } =
     useDesktopBusiness();
   const [draft, setDraft] = useState<InvoicePreferences>(invoicePreferences);
+  const [docKind, setDocKind] = useState<DocKind>("INVOICE");
+  const [savedNote, setSavedNote] = useState(false);
   useEffect(() => {
     if (ready) setDraft(invoicePreferences);
   }, [ready, invoicePreferences]);
+  // A sample document drawn with the unsaved choices, so the preview is what will print.
+  const sample = useMemo(() => {
+    const items = [
+      { id: "s1", name: "Brand identity design", description: "Logo, colour palette and usage guide", quantity: 1, rate: 1200 },
+      { id: "s2", name: "Website hosting", description: "12 months", quantity: 12, rate: 25 },
+      { id: "s3", name: "Monthly support", description: "", quantity: 3, rate: 150 },
+    ];
+    const base = { id: "sample", customerId: "sample", issueDate: "2026-01-15", items, discountPct: 0, taxPct: draft.taxRate || 7.5, title: undefined };
+    return docKind === "INVOICE"
+      ? ({ ...base, number: "INV-2026-001", dueDate: "2026-02-14", status: "draft", paidAmount: 0, notes: draft.notes || "Thank you for your business.", _raw: { signatureEnabled: true } } as DesktopInvoice)
+      : ({ ...base, number: "EST-2026-001", validUntil: "2026-02-14", status: "draft", terms: draft.notes || "Thank you for your business." } as DesktopEstimate);
+  }, [docKind, draft.taxRate, draft.notes]);
+  const sampleCustomers = useMemo<DesktopCustomer[]>(() => [{ id: "sample", name: "Northwind Traders", company: "Northwind Traders Ltd", email: "accounts@northwind.example", phone: "+1 555 010 2030", address: "48 Harbour Road\nPort City 10021", status: "active", notes: "" }], []);
+  const { layout: sampleLayout } = useDocumentLayout(docKind, sample, { prefs: draft, customers: sampleCustomers });
   const set = <K extends keyof InvoicePreferences>(
     key: K,
     value: InvoicePreferences[K],
@@ -1068,62 +1104,27 @@ export function InvoiceSettingsPage() {
                 )}
               </div>
             </Field>
+            <DocumentStyleControls prefs={draft} onChange={setDraft} kind={docKind} onKind={setDocKind} />
           </div>
-          <PrimaryButton
-            icon="fa-check"
-            className="mt-5"
-            onClick={() => saveInvoicePreferences(draft)}
-          >
-            Save settings
-          </PrimaryButton>
+          <div className="mt-5 flex items-center gap-3">
+            <PrimaryButton
+              icon="fa-check"
+              onClick={() => {
+                saveInvoicePreferences(draft.paymentInstructions === undefined ? draft : { ...draft, paymentInstructions: draft.paymentInstructions.trim() });
+                setSavedNote(true);
+                window.setTimeout(() => setSavedNote(false), 1800);
+              }}
+            >
+              Save settings
+            </PrimaryButton>
+            {savedNote ? <span className="text-xs font-bold text-emerald-700">Saved</span> : null}
+          </div>
         </Surface>
         <Surface className="self-start p-5">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2">
-              <div
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-white"
-                style={{ backgroundColor: draft.accent }}
-              >
-                <i className="fas fa-receipt" />
-              </div>
-              <div>
-                <p className="font-extrabold text-slate-900">{business.name}</p>
-                <p className="text-[10px] text-slate-500">INVOICE PREVIEW</p>
-              </div>
-            </div>
-            <p
-              className="text-lg font-extrabold"
-              style={{ color: draft.accent }}
-            >
-              {draft.prefix || "INV"}-0001
-            </p>
-          </div>
-          <div className="my-5 h-px bg-slate-200" />
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <p className="font-bold text-slate-400">BILL TO</p>
-              <p className="mt-1 font-bold">Sample customer</p>
-            </div>
-            <div className="text-right">
-              <p>Terms: {draft.paymentTerms}</p>
-              <p>
-                {draft.taxLabel}: {draft.taxRate}%
-              </p>
-            </div>
-          </div>
-          <div className="mt-5 rounded-lg bg-slate-50 p-3">
-            <div className="flex justify-between text-sm">
-              <span>Sample service</span>
-              <strong>{money(2500)}</strong>
-            </div>
-            <div className="mt-2 flex justify-between border-t border-slate-200 pt-2 text-base font-extrabold">
-              <span>Total</span>
-              <span style={{ color: draft.accent }}>
-                {money(2500 * (1 + draft.taxRate / 100))}
-              </span>
-            </div>
-          </div>
-          <p className="mt-5 text-xs italic text-slate-500">{draft.notes}</p>
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            {docKind === "INVOICE" ? "Invoice" : "Estimate"} preview
+          </p>
+          <DocumentPages layout={sampleLayout} />
         </Surface>
       </div>
     </Shell>

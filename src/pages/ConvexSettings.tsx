@@ -7,11 +7,14 @@ import { useSubscriptionState } from "@/hooks/use-subscription-state";
 import { useWebPreferences } from "@/contexts/WebPreferencesContext";
 import { AppChrome } from "@/components/layout/AppChrome";
 import { useBilling } from "@/lib/billing";
+import { todayLocalYmd } from "@mobile-lib/dates";
 import {
   CURRENCY_OPTIONS,
   DATE_FORMAT_OPTIONS,
+  NUMBER_FORMAT_OPTIONS,
   VOICE_INPUT_LANGUAGE_OPTIONS,
   type DateFormatId,
+  type NumberFormatId,
   type SavedLocation,
 } from "@mobile-lib/preferences";
 
@@ -46,6 +49,9 @@ function ConvexSettingsInner() {
     setCurrency,
     dateFormat,
     setDateFormat,
+    numberFormat,
+    setNumberFormat,
+    formatMoney,
     voiceInputLanguage,
     setVoiceInputLanguage,
     merchants,
@@ -115,7 +121,7 @@ function ConvexSettingsInner() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `receipt-cycle-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.download = `receipt-cycle-transactions-${todayLocalYmd()}.csv`;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
@@ -283,6 +289,19 @@ function ConvexSettingsInner() {
               {DATE_FORMAT_OPTIONS.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.label}
+                </option>
+              ))}
+            </select>
+            <label className="mt-3 block text-xs font-semibold text-slate-600">Number format</label>
+            <p className="mb-2 text-xs text-slate-500">How big amounts are grouped. Example: {formatMoney(1234567.89)}</p>
+            <select
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              value={numberFormat}
+              onChange={(e) => void setNumberFormat(e.target.value as NumberFormatId)}
+            >
+              {NUMBER_FORMAT_OPTIONS.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label} · {o.example}
                 </option>
               ))}
             </select>

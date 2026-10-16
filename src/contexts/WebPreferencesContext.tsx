@@ -18,6 +18,9 @@ import {
   PREF_KEYS,
   SETTINGS_STORAGE_KEYS,
   type DateFormatId,
+  type NumberFormatId,
+  isNumberFormatId,
+  setActiveNumberFormat,
   type SavedLocation,
   formatMoneyAmount,
   formatMoneyCompact,
@@ -25,6 +28,7 @@ import {
   normalizeVoiceInputLanguage,
 } from "@mobile-lib/preferences";
 import { useWebAuth } from "@/contexts/WebAuthContext";
+import { setActiveCurrency } from "@/lib/money";
 
 type Ctx = {
   ready: boolean;
@@ -32,6 +36,9 @@ type Ctx = {
   setCurrency: (c: string) => Promise<void>;
   dateFormat: DateFormatId;
   setDateFormat: (d: DateFormatId) => Promise<void>;
+  /** How big amounts are grouped (1,000,000.00 / 10,00,000.00 / ...). Kept on this device, like the phone app. */
+  numberFormat: NumberFormatId;
+  setNumberFormat: (f: NumberFormatId) => Promise<void>;
   locations: SavedLocation[];
   setLocations: (rows: SavedLocation[]) => Promise<void>;
   merchants: string[];
@@ -86,6 +93,13 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [currency, setCurrencyState] = useState("USD");
   const [dateFormat, setDateFormatState] = useState<DateFormatId>("iso");
+  const [numberFormat, setNumberFormatState] = useState<NumberFormatId>(() => {
+    const saved = storageGet(PREF_KEYS.numberFormat);
+    return isNumberFormatId(saved) ? saved : "standard";
+  });
+  // Money helpers read these two, so they are set before anything below renders amounts.
+  setActiveNumberFormat(numberFormat);
+  setActiveCurrency(currency);
   const [locations, setLocationsState] = useState<SavedLocation[]>([]);
   const [merchants, setMerchantsState] = useState<string[]>([]);
   const [reimbursements, setReimbursementsState] = useState(false);
@@ -308,6 +322,11 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
     [scheduleConvexSync],
   );
 
+  const setNumberFormat = useCallback(async (f: NumberFormatId) => {
+    setNumberFormatState(f);
+    storageSet(PREF_KEYS.numberFormat, f);
+  }, []);
+
   const setLocations = useCallback(
     async (rows: SavedLocation[]) => {
       setLocationsState(rows);
@@ -386,9 +405,9 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
     [scheduleConvexSync],
   );
 
-  const formatMoney = useCallback((n: number) => formatMoneyAmount(n, currency), [currency]);
+  const formatMoney = useCallback((n: number) => formatMoneyAmount(n, currency), [currency, numberFormat]);
 
-  const formatMoneyCompactCb = useCallback((n: number) => formatMoneyCompact(n, currency), [currency]);
+  const formatMoneyCompactCb = useCallback((n: number) => formatMoneyCompact(n, currency), [currency, numberFormat]);
 
   const formatDate = useCallback((ymd: string) => formatDateYmd(ymd, dateFormat), [dateFormat]);
 
@@ -399,6 +418,8 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
       setCurrency,
       dateFormat,
       setDateFormat,
+      numberFormat,
+      setNumberFormat,
       locations,
       setLocations,
       merchants,
@@ -425,6 +446,8 @@ export function WebPreferencesProvider({ children }: { children: ReactNode }) {
       setCurrency,
       dateFormat,
       setDateFormat,
+      numberFormat,
+      setNumberFormat,
       locations,
       setLocations,
       merchants,

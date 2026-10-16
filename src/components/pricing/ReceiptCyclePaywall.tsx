@@ -8,7 +8,7 @@ import {
   formatUsd,
   PAYWALL_PRICING,
   type PaywallPlanId,
-} from "@mobile-lib/pricingPaywall";
+} from "@/lib/pricingPaywall";
 import { useBilling } from "@/lib/billing";
 
 function TierCheck() {

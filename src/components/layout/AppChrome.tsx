@@ -5,7 +5,8 @@ import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { useSubscriptionState } from "@/hooks/use-subscription-state";
 import { DashboardUpgradeModal } from "@/components/pricing/DashboardUpgradeModal";
-import { yearlyDiscountPercent } from "@mobile-lib/pricingPaywall";
+import { yearlyDiscountPercent } from "@/lib/pricingPaywall";
+import { todayLocalYmd } from "@mobile-lib/dates";
 
 type AppChromeProps = {
   children: ReactNode;
@@ -29,7 +30,7 @@ export function AppChrome({ children }: AppChromeProps) {
 
   useEffect(() => {
     if (!user || !subscription || subscription.pro) return;
-    const day = new Date().toISOString().slice(0, 10);
+    const day = todayLocalYmd();
     const key = `receipt-cycle:upgrade-impressions:${user.id}:${day}`;
     const count = Number(localStorage.getItem(key) ?? 0);
     if (count >= 2) return;

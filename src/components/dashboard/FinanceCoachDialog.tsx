@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { api } from "@mobile-lib/api";
 import { userFacingError } from "@/lib/userFacingErrors";
+import { apiClient } from "@/lib/api";
 import { useWebPreferences } from "@/contexts/WebPreferencesContext";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 
@@ -49,7 +50,12 @@ type Props = {
 export function FinanceCoachDialog({ open, onOpenChange, periodLabel, rowsForAi, userId }: Props) {
   const { token } = useWebAuth();
   const { voiceInputLanguage } = useWebPreferences();
-  const coachChat = useAction(api.voiceFinance.financeCoachChat);
+  // The phone app dropped its Ask AI chat, so the web calls the coach route directly.
+  const coachChat = (args: { periodLabel: string; rows: CoachRow[]; messages: Msg[]; sessionToken: string | null | undefined }) =>
+    apiClient.request<{ ok: boolean; error?: string; reply: string }>("POST", "/api/ai/coach", {
+      token: args.sessionToken ?? undefined,
+      body: { periodLabel: args.periodLabel, rows: args.rows, messages: args.messages },
+    });
   const transcribe = useAction(api.voiceFinance.transcribeUserAudio);
 
   const [messages, setMessages] = useState<Msg[]>(() => [

@@ -24,6 +24,7 @@ import { useWebPreferences } from "@/contexts/WebPreferencesContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import type { Transaction } from "@/types/transaction";
 import { toLocalISODate } from "@/lib/transactionMath";
+import { trustedTransactionDate } from "@mobile-lib/dates";
 import { useSubscriptionState } from "@/hooks/use-subscription-state";
 
 type EntryMode = "manual" | "ai" | "upload";
@@ -98,9 +99,10 @@ function normalizeExtracted(data: unknown) {
     merchant:
       typeof source.merchant_name === "string" ? source.merchant_name : "",
     category: typeof source.category === "string" ? source.category : "",
+    // Only a real calendar day that makes sense for a transaction; otherwise empty, so the form says no date was read.
     date:
       typeof source.date === "string" && /^\d{4}-\d{2}-\d{2}/.test(source.date)
-        ? source.date.slice(0, 10)
+        ? (trustedTransactionDate(source.date.slice(0, 10)) ?? "")
         : "",
     paymentMethod:
       typeof source.payment_method === "string" ? source.payment_method : "",
@@ -157,6 +159,8 @@ export default function TransactionWorkspace() {
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  /** True when a scan found no reliable date and today's date was filled in instead. */
+  const [dateAssumed, setDateAssumed] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [processStep, setProcessStep] = useState(0);
   const [fileName, setFileName] = useState("");
@@ -269,7 +273,7 @@ export default function TransactionWorkspace() {
       amount: parsed.amount ? String(parsed.amount) : current.amount,
       merchant: parsed.merchant ?? "",
       category: parsed.category || current.category,
-      date: parsed.date ?? current.date,
+      date: trustedTransactionDate(parsed.date?.trim()) ?? current.date,
       description: parsed.description ?? "",
       paymentMethod: parsed.payment_method ?? current.paymentMethod,
     }));
@@ -375,12 +379,13 @@ export default function TransactionWorkspace() {
         ? (result.extracted_data as Record<string, unknown>)
         : null;
       setReceiptData(raw && raw.data && typeof raw.data === "object" ? raw.data as Record<string, unknown> : raw);
+      setDateAssumed(!extracted.date);
       setDraft((current) => ({
         ...current,
         amount: extracted.amount || current.amount,
         merchant: extracted.merchant || current.merchant,
         category: extracted.category || current.category,
-        date: extracted.date || current.date,
+        date: extracted.date || toLocalISODate(new Date()),
         paymentMethod: extracted.paymentMethod || current.paymentMethod,
         type: extracted.transactionType === "income" ? "income" : "expense",
         accountId: String(
@@ -815,10 +820,16 @@ export default function TransactionWorkspace() {
                       className={inputClass}
                       type="date"
                       value={draft.date}
-                      onChange={(e) =>
-                        setDraft({ ...draft, date: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setDateAssumed(false);
+                        setDraft({ ...draft, date: e.target.value });
+                      }}
                     />
+                    {dateAssumed ? (
+                      <p className="mt-1 text-[11px] font-semibold text-amber-700">
+                        No date could be read from this document, so today&apos;s date is filled in. Please check it.
+                      </p>
+                    ) : null}
                   </Field>
                   <Field label="Account">
                     <select

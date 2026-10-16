@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api, useMutation } from "@mobile-lib/api";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { apiClient } from "@/lib/api";
+import { money } from "@/lib/money";
+import { DocumentPages, useDocumentLayout } from "@/components/documents/DocumentSheet";
 import { AppChrome } from "@/components/layout/AppChrome";
 import { VoiceQuickAddWeb, type VoiceDraft } from "@/components/dashboard/VoiceQuickAddWeb";
 import { Drawer, EmptyState, Field, IconBox, MobileList, MobileRow, Modal, PrimaryButton, SecondaryButton, Segmented, StatCard, StatusPill, Surface, SurfaceHeader, WorkspaceHeader, inputClass, textareaClass } from "@/components/workspace/DesktopWorkspaceUI";
@@ -25,10 +27,6 @@ import {
   useDesktopBusiness,
 } from "@/contexts/DesktopBusinessContext";
 
-const money = (value: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
-    value,
-  );
 const today = () => localDate();
 const plusDays = (days: number) => addDaysLocal(days);
 const normalizedItemName = (value: string) => value.trim().toLocaleLowerCase().replace(/\s+/g, " ");
@@ -167,122 +165,6 @@ function ProgressSteps({
   );
 }
 
-function DocumentPreview({
-  title,
-  number,
-  customer,
-  issueDate,
-  dueDate,
-  items,
-  discountPct,
-  taxPct,
-  notes,
-  status,
-}: {
-  title: string;
-  number: string;
-  customer: string;
-  issueDate: string;
-  dueDate: string;
-  items: DesktopLineItem[];
-  discountPct: number;
-  taxPct: number;
-  notes: string;
-  status?: string;
-}) {
-  const subtotal = invoiceSubtotal({ items });
-  const total = documentTotal({ items, discountPct, taxPct });
-  const discounted = Math.min(
-    subtotal,
-    subtotal * (1 - Math.min(100, Math.max(0, discountPct || 0)) / 100),
-  );
-  const tax = total - discounted;
-  return (
-    <div className="mx-auto w-full max-w-2xl rounded-sm border border-slate-200 bg-white p-7 shadow-sm">
-      <div className="flex items-start justify-between border-b border-slate-200 pb-5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-700 text-white">
-            <i className="fas fa-receipt" />
-          </div>
-          <div>
-            <p className="font-extrabold text-slate-950">Receipt Cycle</p>
-            <p className="text-[10px] text-slate-500">
-              Simple financial tools for a brighter tomorrow
-            </p>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className="text-xl font-black text-teal-800">{title}</p>
-          <p className="text-xs font-bold text-slate-700">{number}</p>
-          {status ? (
-            <div className="mt-2">
-              <StatusPill status={status} />
-            </div>
-          ) : null}
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-4 py-5 text-xs">
-        <div>
-          <p className="font-bold uppercase tracking-wider text-slate-400">
-            Bill to
-          </p>
-          <p className="mt-1 font-extrabold text-slate-900">{customer}</p>
-        </div>
-        <div className="text-right text-slate-600">
-          <p>Issue date: {issueDate}</p>
-          <p>Due date: {dueDate}</p>
-        </div>
-      </div>
-      <table className="w-full text-left text-xs">
-        <thead className="bg-slate-50 text-[10px] uppercase text-slate-500">
-          <tr>
-            <th className="px-2 py-2">Description</th>
-            <th>Qty</th>
-            <th>Rate</th>
-            <th className="text-right">Amount</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {items.map((item) => (
-            <tr key={item.id}>
-              <td className="px-2 py-3">
-                <p className="font-bold text-slate-800">
-                  {item.name || "Line item"}
-                </p>
-                <p className="text-[10px] text-slate-500">{item.description}</p>
-              </td>
-              <td>{item.quantity}</td>
-              <td>{money(item.rate)}</td>
-              <td className="text-right font-bold">
-                {money(item.quantity * item.rate)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="ml-auto mt-5 w-64 space-y-2 text-xs">
-        <div className="flex justify-between">
-          <span>Subtotal</span>
-          <strong>{money(subtotal)}</strong>
-        </div>
-        <div className="flex justify-between text-emerald-700">
-          <span>Discount ({discountPct}%)</span>
-          <strong>-{money(subtotal - discounted)}</strong>
-        </div>
-        <div className="flex justify-between">
-          <span>Tax ({taxPct}%)</span>
-          <strong>{money(tax)}</strong>
-        </div>
-        <div className="flex justify-between border-t border-slate-200 pt-2 text-base font-black text-teal-800">
-          <span>Total</span>
-          <span>{money(total)}</span>
-        </div>
-      </div>
-      <p className="mt-8 text-xs text-slate-500">{notes}</p>
-    </div>
-  );
-}
-
 function InvoiceBuilder({
   open,
   onClose,
@@ -386,6 +268,8 @@ function InvoiceBuilder({
           : status,
       items: catalogLines,
       discountPct,
+      discountFixed: invoice?.discountFixed,
+      shipping: invoice?.shipping,
       taxPct,
       paidAmount: invoice?.paidAmount ?? 0,
       notes,
@@ -393,12 +277,20 @@ function InvoiceBuilder({
       recurrenceFrequency,
       recurrenceStartDate,
       automatedReminders,
+      // Keep everything the phone stored on this invoice (signature, terms, tax label, attachment...); a new invoice
+      // starts with the signature line on when the person chose that in the invoice style settings.
+      _raw: invoice?._raw ?? (invoicePreferences.docOptions?.INVOICE?.signatureDefault ? { signatureEnabled: true } : undefined),
     };
     if (next.dueDate < next.issueDate || (status !== "draft" && (!next.customerId || !next.items.length)))
       return;
     saveInvoice(next);
     onClose();
   };
+  const previewInvoice = useMemo<DesktopInvoice | null>(
+    () => step === 4 ? { id: invoice?.id ?? "preview", number, title: title.trim() || undefined, customerId, issueDate, dueDate, status: "draft", items: lines.filter((line) => line.name || line.rate), discountPct, discountFixed: invoice?.discountFixed, shipping: invoice?.shipping, taxPct, paidAmount: invoice?.paidAmount ?? 0, notes, _raw: invoice?._raw ?? (invoicePreferences.docOptions?.INVOICE?.signatureDefault ? { signatureEnabled: true } : undefined) } : null,
+    [step, invoice, number, title, customerId, issueDate, dueDate, lines, discountPct, taxPct, notes, invoicePreferences.docOptions],
+  );
+  const { layout: previewLayout } = useDocumentLayout("INVOICE", previewInvoice);
   return (
     <Drawer
       open={open}
@@ -592,17 +484,7 @@ function InvoiceBuilder({
         </div><DocumentAutomationControls noun="invoice" recurring={recurringEnabled} frequency={recurrenceFrequency} startDate={recurrenceStartDate} reminders={automatedReminders} onRecurring={setRecurringEnabled} onFrequency={setRecurrenceFrequency} onStartDate={setRecurrenceStartDate} onReminders={setAutomatedReminders} /></>
       ) : null}
       {step === 4 ? (
-        <DocumentPreview
-          title="INVOICE"
-          number={number}
-          customer={customerName(customerId, customers)}
-          issueDate={issueDate}
-          dueDate={dueDate}
-          items={lines}
-          discountPct={discountPct}
-          taxPct={taxPct}
-          notes={notes}
-        />
+        <DocumentPages layout={previewLayout} />
       ) : null}
       <div className="mt-8 flex flex-col-reverse justify-between gap-3 border-t border-slate-200 pt-5 sm:flex-row">
         <SecondaryButton
@@ -648,6 +530,7 @@ export function InvoicesPage() {
     params.get("invoice"),
   );
   const [preview, setPreview] = useState<DesktopInvoice | null>(null);
+  const { layout: previewLayout, print: printPreview } = useDocumentLayout("INVOICE", preview);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [method, setMethod] = useState("Bank Transfer");
@@ -956,22 +839,11 @@ export function InvoicesPage() {
       >
         {preview ? (
           <>
-            <DocumentPreview
-              title="INVOICE"
-              number={preview.number}
-              customer={customerName(preview.customerId, customers)}
-              issueDate={preview.issueDate}
-              dueDate={preview.dueDate}
-              items={preview.items}
-              discountPct={preview.discountPct}
-              taxPct={preview.taxPct}
-              notes={preview.notes}
-              status={invoiceStatus(preview)}
-            />
+            <DocumentPages layout={previewLayout} />
             <div className="mt-4 flex justify-end gap-2">
               <SecondaryButton
                 icon="fa-download"
-                onClick={() => window.print()}
+                onClick={printPreview}
               >
                 Download / Print
               </SecondaryButton>
@@ -1022,6 +894,15 @@ export function InvoicesPage() {
                 value={paymentAmount}
                 onChange={(e) => setPaymentAmount(Number(e.target.value))}
               />
+              {selected ? (
+                <button
+                  type="button"
+                  className="mt-2 text-xs font-bold text-teal-700 hover:underline"
+                  onClick={() => setPaymentAmount(invoiceBalance(selected))}
+                >
+                  Pay full balance ({money(invoiceBalance(selected))})
+                </button>
+              ) : null}
             </Field>
             <Field label="Payment method">
               <select
@@ -1143,6 +1024,11 @@ function EstimateBuilder({
     saveEstimate(estimate);
     onClose();
   };
+  const previewEstimate = useMemo<DesktopEstimate | null>(
+    () => step === 4 ? { id: "preview", number, title: title.trim() || undefined, customerId, issueDate, validUntil, status: "draft", items: lines.filter((line) => line.name || line.rate), discountPct, taxPct, terms } : null,
+    [step, number, title, customerId, issueDate, validUntil, lines, discountPct, taxPct, terms],
+  );
+  const { layout: previewLayout } = useDocumentLayout("ESTIMATE", previewEstimate);
   return (
     <Drawer
       open={open}
@@ -1308,17 +1194,7 @@ function EstimateBuilder({
         </div><DocumentAutomationControls noun="estimate" recurring={recurringEnabled} frequency={recurrenceFrequency} startDate={recurrenceStartDate} reminders={automatedReminders} onRecurring={setRecurringEnabled} onFrequency={setRecurrenceFrequency} onStartDate={setRecurrenceStartDate} onReminders={setAutomatedReminders} /></>
       ) : null}
       {step === 4 ? (
-        <DocumentPreview
-          title="ESTIMATE"
-          number={number}
-          customer={customerName(customerId, customers)}
-          issueDate={issueDate}
-          dueDate={validUntil}
-          items={lines}
-          discountPct={discountPct}
-          taxPct={taxPct}
-          notes={terms}
-        />
+        <DocumentPages layout={previewLayout} />
       ) : null}
       <div className="mt-8 flex flex-col-reverse justify-between gap-3 border-t border-slate-200 pt-5 sm:flex-row">
         <SecondaryButton
@@ -1355,6 +1231,7 @@ export function EstimatesPage() {
   const [builder, setBuilder] = useState(params.get("create") === "1");
   const [selected, setSelected] = useState<DesktopEstimate | null>(null);
   const [preview, setPreview] = useState<DesktopEstimate | null>(null);
+  const { layout: previewLayout, print: printPreview } = useDocumentLayout("ESTIMATE", preview);
   const [converted, setConverted] = useState<DesktopInvoice | null>(null);
   return (
     <Shell>
@@ -1507,22 +1384,11 @@ export function EstimatesPage() {
       >
         {preview ? (
           <>
-            <DocumentPreview
-              title="ESTIMATE"
-              number={preview.number}
-              customer={customerName(preview.customerId, customers)}
-              issueDate={preview.issueDate}
-              dueDate={preview.validUntil}
-              items={preview.items}
-              discountPct={preview.discountPct}
-              taxPct={preview.taxPct}
-              notes={preview.terms}
-              status={estimateStatus(preview)}
-            />
+            <DocumentPages layout={previewLayout} />
             <div className="mt-4 flex justify-end gap-2">
               <SecondaryButton
                 icon="fa-download"
-                onClick={() => window.print()}
+                onClick={printPreview}
               >
                 Download
               </SecondaryButton>
@@ -1603,7 +1469,7 @@ function ReceiptSuccess({
   const share = async () => {
     const text = `${payment?.receiptNumber} · ${money(payment?.amount ?? 0)} received for ${invoice?.number}`;
     if (navigator.share)
-      await navigator.share({ title: "Receipt Cycle payment receipt", text });
+      await navigator.share({ title: `${business.name || "Payment"} receipt`, text });
     else await navigator.clipboard?.writeText(text);
   };
   return (

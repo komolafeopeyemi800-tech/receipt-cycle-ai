@@ -19,8 +19,18 @@ export type DocumentAutomation = { recurringEnabled?: boolean; recurrenceFrequen
 export type DesktopInvoice = { id: string; number: string; title?: string; customerId: string; issueDate: string; dueDate: string; status: "draft" | "sent" | "paid" | "overdue" | "partially_paid"; items: DesktopLineItem[]; discountPct: number; taxPct: number; paidAmount: number; notes: string; discountFixed?: number; shipping?: number; _raw?: SalesData } & DocumentAutomation;
 export type DesktopEstimate = { id: string; number: string; title?: string; customerId: string; issueDate: string; validUntil: string; status: "draft" | "sent" | "accepted" | "expired"; items: DesktopLineItem[]; discountPct: number; taxPct: number; terms: string; discountFixed?: number; shipping?: number; _raw?: SalesData } & DocumentAutomation;
 export type DesktopPayment = { id: string; invoiceId: string; amount: number; date: string; method: string; reference: string; receiptNumber: string; _raw?: SalesData };
-export type BusinessProfile = { name: string; email: string; phone: string; address: string; taxId: string; website: string; _raw?: SalesData };
-export type InvoicePreferences = { currency: string; dateFormat: string; prefix: string; taxRate: number; taxLabel: string; paymentTerms: string; notes: string; accent: string; _raw?: SalesData };
+/** A signature drawn with a finger or mouse: strokes of points (0..1) and the pad's width / height ratio. Same shape as the phone app. */
+export type SignatureInk = { strokes: number[][][]; aspect: number };
+export type BusinessProfile = { name: string; email: string; phone: string; address: string; taxId: string; website: string; /** Shared with the phone: only a web address or embedded image, never a file on a device. */ logoUri?: string | null; signature?: SignatureInk | null; _raw?: SalesData };
+/** What to print on each kind of document; same keys as the phone app (see features/documents/layout DocOptions). */
+export type DocOptionsByKind = { INVOICE?: Record<string, boolean>; ESTIMATE?: Record<string, boolean> };
+export type InvoicePreferences = {
+  currency: string; dateFormat: string; prefix: string; taxRate: number; taxLabel: string; paymentTerms: string; notes: string; accent: string;
+  /** Printed look, shared with the phone through `invoice_settings`. Missing values mean Standard, Teal, A4. */
+  invoiceTemplate?: "standard" | "compact"; invoiceColor?: string; estimateTemplate?: "standard" | "compact"; estimateColor?: string;
+  paperSize?: "a4" | "letter"; docOptions?: DocOptionsByKind; paymentInstructions?: string;
+  _raw?: SalesData;
+};
 export type ReminderPreferences = { invoice: boolean; overdue: boolean; payment: boolean; budget: boolean; weekly: boolean; marketing: boolean };
 
 type DesktopBusinessState = {
@@ -95,8 +105,10 @@ export function addDaysLocal(days: number) { const date = new Date(); date.setDa
 export function paymentTermDays(terms: string) { const match = /(\d+)/.exec(terms); return match ? Number(match[1]) : 0; }
 /** Next sequential document number: highest trailing number already used + 1 (safe when rows are removed or prefixes change). */
 export function nextDocNumber(prefix: string, existing: string[]) { const highest = existing.reduce((max, value) => { const match = /(\d+)\s*$/.exec(value); return match ? Math.max(max, Number(match[1])) : max; }, 0); return `${prefix}-${String(highest + 1).padStart(4, "0")}`; }
-export function invoiceSubtotal(invoice: Pick<DesktopInvoice, "items"> | Pick<DesktopEstimate, "items">) { return invoice.items.reduce((sum, item) => sum + num(item.quantity) * num(item.rate), 0); }
-export function documentTotal(doc: Pick<DesktopInvoice, "items" | "discountPct" | "taxPct" | "discountFixed" | "shipping">) { const subtotal = invoiceSubtotal(doc); const pct = Math.min(100, Math.max(0, num(doc.discountPct))); const discount = pct > 0 || !(num(doc.discountFixed) > 0) ? subtotal * pct / 100 : Math.min(subtotal, num(doc.discountFixed)); const taxable = Math.max(0, subtotal - discount); return round2(taxable + taxable * Math.max(0, num(doc.taxPct)) / 100 + Math.max(0, num(doc.shipping))); }
+export function invoiceSubtotal(invoice: Pick<DesktopInvoice, "items"> | Pick<DesktopEstimate, "items">) { return round2(invoice.items.reduce((sum, item) => sum + num(item.quantity) * num(item.rate), 0)); }
+/** Every step is kept to whole cents (subtotal, discount, tax), exactly as the phone app does, so both show the same total. */
+export function documentBreakdown(doc: Pick<DesktopInvoice, "items" | "discountPct" | "taxPct" | "discountFixed" | "shipping">) { const subtotal = invoiceSubtotal(doc); const pct = Math.min(100, Math.max(0, num(doc.discountPct))); const discount = round2(pct > 0 || !(num(doc.discountFixed) > 0) ? subtotal * pct / 100 : Math.min(subtotal, num(doc.discountFixed))); const taxable = round2(Math.max(0, subtotal - discount)); const tax = round2(taxable * Math.max(0, num(doc.taxPct)) / 100); return { subtotal, discount, taxable, tax, total: round2(taxable + tax + Math.max(0, num(doc.shipping))) }; }
+export function documentTotal(doc: Pick<DesktopInvoice, "items" | "discountPct" | "taxPct" | "discountFixed" | "shipping">) { return documentBreakdown(doc).total; }
 /** Amount still owed on an invoice, rounded to cents and never negative. */
 export function invoiceBalance(invoice: DesktopInvoice) { return Math.max(0, round2(documentTotal(invoice) - num(invoice.paidAmount))); }
 /** Drafts have not been issued, so they do not count toward receivables. */

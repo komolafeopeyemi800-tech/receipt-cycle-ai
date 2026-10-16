@@ -17,6 +17,7 @@ import {
   type DesktopLineItem,
   type DesktopPayment,
   type InvoicePreferences,
+  type SignatureInk,
   type ReminderPreferences,
 } from "@/contexts/DesktopBusinessContext";
 
@@ -257,6 +258,8 @@ export const paymentFromShared = (d: SalesData, invoices: DesktopInvoice[]): Des
 export const businessToShared = (b: BusinessProfile, before: Raw): SalesData => ({
   ...(before ?? {}),
   logoUri: (before?.logoUri as string | null | undefined) ?? null,
+  // The signature drawn on either device; `undefined` leaves whatever is already stored untouched.
+  ...(b.signature !== undefined ? { signature: b.signature } : {}),
   businessName: b.name,
   email: b.email,
   phone: b.phone,
@@ -264,6 +267,15 @@ export const businessToShared = (b: BusinessProfile, before: Raw): SalesData => 
   taxId: b.taxId,
   website: b.website,
 });
+/** A signature as the phone stores it, or null when it is missing or malformed. */
+export function parseInk(value: unknown): SignatureInk | null {
+  const v = value as { strokes?: unknown; aspect?: unknown } | null | undefined;
+  if (!v || !Array.isArray(v.strokes) || !v.strokes.length) return null;
+  const strokes = (v.strokes as unknown[]).map((stroke) => (Array.isArray(stroke) ? (stroke as unknown[]).filter((p): p is number[] => Array.isArray(p) && Number.isFinite(Number(p[0])) && Number.isFinite(Number(p[1]))).map((p) => [Number(p[0]), Number(p[1])]) : [])).filter((stroke) => stroke.length);
+  const aspect = Number(v.aspect);
+  return strokes.length ? { strokes, aspect: Number.isFinite(aspect) && aspect > 0 ? aspect : 3 } : null;
+}
+
 export const businessFromShared = (d: SalesData): BusinessProfile => ({
   name: str(d.businessName),
   email: str(d.email),
@@ -271,6 +283,8 @@ export const businessFromShared = (d: SalesData): BusinessProfile => ({
   address: str(d.address),
   taxId: str(d.taxId),
   website: str(d.website),
+  logoUri: typeof d.logoUri === "string" && /^(https?:|data:)/.test(d.logoUri) ? d.logoUri : null,
+  signature: parseInk(d.signature),
   _raw: d,
 });
 
@@ -284,6 +298,14 @@ export const prefsToShared = (p: InvoicePreferences, before: Raw): SalesData => 
   paymentTerms: p.paymentTerms,
   defaultNotes: p.notes,
   accent: p.accent,
+  // Printed look shared with the phone: only written once chosen, so a device that never changed them cannot overwrite the other's.
+  ...(p.invoiceTemplate !== undefined ? { invoiceTemplate: p.invoiceTemplate } : {}),
+  ...(p.invoiceColor !== undefined ? { invoiceColor: p.invoiceColor } : {}),
+  ...(p.estimateTemplate !== undefined ? { estimateTemplate: p.estimateTemplate } : {}),
+  ...(p.estimateColor !== undefined ? { estimateColor: p.estimateColor } : {}),
+  ...(p.paperSize !== undefined ? { paperSize: p.paperSize } : {}),
+  ...(p.docOptions !== undefined ? { docOptions: p.docOptions } : {}),
+  ...(p.paymentInstructions !== undefined ? { paymentInstructions: p.paymentInstructions } : {}),
 });
 export const prefsFromShared = (d: SalesData): InvoicePreferences => ({
   currency: str(d.currency, "USD"),
@@ -294,6 +316,13 @@ export const prefsFromShared = (d: SalesData): InvoicePreferences => ({
   paymentTerms: str(d.paymentTerms, "Net 30"),
   notes: str(d.defaultNotes),
   accent: str(d.accent, "#0f766e"),
+  invoiceTemplate: d.invoiceTemplate === "compact" ? "compact" : d.invoiceTemplate === "standard" ? "standard" : undefined,
+  invoiceColor: typeof d.invoiceColor === "string" ? d.invoiceColor : undefined,
+  estimateTemplate: d.estimateTemplate === "compact" ? "compact" : d.estimateTemplate === "standard" ? "standard" : undefined,
+  estimateColor: typeof d.estimateColor === "string" ? d.estimateColor : undefined,
+  paperSize: d.paperSize === "letter" ? "letter" : d.paperSize === "a4" ? "a4" : undefined,
+  docOptions: d.docOptions && typeof d.docOptions === "object" ? (d.docOptions as InvoicePreferences["docOptions"]) : undefined,
+  paymentInstructions: typeof d.paymentInstructions === "string" ? d.paymentInstructions : undefined,
   _raw: d,
 });
 

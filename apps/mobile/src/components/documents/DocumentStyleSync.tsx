@@ -5,8 +5,8 @@ import { setDocumentStyleSource } from "../../features/documents/styleStore";
 
 /** Renders nothing; keeps the PDF builder in step with the person's invoice / estimate style settings. */
 export function DocumentStyleSync() {
-  const { invoiceSettings } = useSalesSetup();
+  const { invoiceSettings, ready } = useSalesSetup();
   const { formatDate, numberFormat } = usePreferences();
-  useEffect(() => { setDocumentStyleSource(invoiceSettings, formatDate); }, [invoiceSettings, formatDate, numberFormat]);
+  useEffect(() => { setDocumentStyleSource(invoiceSettings, formatDate, ready); }, [invoiceSettings, formatDate, numberFormat, ready]);
   return null;
 }

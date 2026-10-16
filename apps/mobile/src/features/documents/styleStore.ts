@@ -6,9 +6,11 @@ export type ResolvedStyle = { template: DocTemplate; accent: string; paper: Pape
 const fallbackDate = (ymd: string) => ymd;
 let formatDateFn: (ymd: string) => string = fallbackDate;
 let settings: InvoiceSettings | null = null;
+let loaded = false;
 
 /** Called by <DocumentStyleSync/> whenever settings or the date format change, so every PDF is built with the current look. */
-export function setDocumentStyleSource(next: InvoiceSettings | null, formatDate: (ymd: string) => string) {
+export function setDocumentStyleSource(next: InvoiceSettings | null, formatDate: (ymd: string) => string, ready = true) {
+  loaded = ready && next !== null;
   settings = next;
   formatDateFn = formatDate || fallbackDate;
 }
@@ -21,6 +23,8 @@ export function resolveDocumentStyle(kind: DocKind, source: InvoiceSettings | nu
   return { template, accent, paper: source?.paperSize === "letter" ? "letter" : "a4", formatDate, options: { ...DEFAULT_DOC_OPTIONS, ...saved } as DocOptions, paymentInstructions: source?.paymentInstructions ?? "" };
 }
 
+/** The saved style for PDFs. Refuses to answer before the settings are loaded, so nobody gets a generic default by accident. */
 export function getDocumentStyle(kind: DocKind): ResolvedStyle {
+  if (!loaded) throw new Error("Your invoice style settings are still loading. Please try again in a moment.");
   return resolveDocumentStyle(kind);
 }

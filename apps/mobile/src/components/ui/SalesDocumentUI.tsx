@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useSalesSetup } from "../../contexts/SalesSetupContext";
 import { usePreferences } from "../../contexts/PreferencesContext";
+import { makeDocInput } from "../../features/documents/input";
 import { DocumentPreview } from "../documents/DocumentPreview";
 import { resolveDocumentStyle } from "../../features/documents/styleStore";
 import { documentLogo } from "../../features/invoices/pdf";
@@ -37,12 +38,10 @@ export function DocumentPreviewCard({ draft, business, customer, currency, label
   const { formatDate, numberFormat } = usePreferences();
   const style = useMemo(() => resolveDocumentStyle(label, invoiceSettings, formatDate), [label, invoiceSettings, formatDate]);
   const logo = documentLogo(business);
-  const input = useMemo(() => ({
-    kind: label, template: style.template, accent: style.accent, paper: style.paper, draft, business, customer, currency,
-    formatDate, signature: business.signature ?? null, logo, options: style.options, paymentInstructions: style.paymentInstructions,
-  // numberFormat is read through documentMoney(), so it must refresh the layout when it changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [label, style.template, style.accent, style.paper, style.options, style.paymentInstructions, draft, business, customer, currency, formatDate, numberFormat]);
+  const input = useMemo(() => makeDocInput({ kind: label, draft, business, customer, currency, style, logo }),
+    // numberFormat is read through documentMoney(), so it must refresh the layout when it changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [label, style, draft, business, customer, currency, logo, numberFormat]);
   return <DocumentPreview input={input} />;
 }
 

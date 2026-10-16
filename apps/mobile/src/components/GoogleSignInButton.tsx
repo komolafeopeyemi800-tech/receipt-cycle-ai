@@ -11,6 +11,8 @@ WebBrowser.maybeCompleteAuthSession();
 type Props = {
   onError: (message: string) => void;
   disabled?: boolean;
+  blocked?: boolean;
+  onBlocked?: () => void;
 };
 
 /**
@@ -19,7 +21,7 @@ type Props = {
  * Expo's installed-app redirect is used on Android (`com.receiptcycle.mobile:/oauthredirect`),
  * which is handled by MainActivity and returns the browser session to this component.
  */
-export function GoogleSignInButton({ onError, disabled = false }: Props) {
+export function GoogleSignInButton({ onError, disabled = false, blocked = false, onBlocked }: Props) {
   const { signInWithGoogle } = useAuth();
   const iosId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim() ?? "";
   const androidId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID?.trim() ?? "";
@@ -69,9 +71,13 @@ export function GoogleSignInButton({ onError, disabled = false }: Props) {
 
   return (
     <Pressable
-      style={[styles.btn, (disabled || busy || (configured && !request)) && styles.btnDisabled]}
+      style={[styles.btn, styles.btnTall, (disabled || busy || (configured && !request)) && styles.btnDisabled]}
       disabled={disabled || busy || (configured && !request)}
       onPress={() => {
+        if (blocked) {
+          onBlocked?.();
+          return;
+        }
         if (!configured) {
           onError("Google sign-in needs the Android OAuth client ID for com.receiptcycle.mobile.");
           return;
@@ -92,6 +98,7 @@ export function GoogleSignInButton({ onError, disabled = false }: Props) {
 }
 
 const styles = StyleSheet.create({
+  btnTall: { minHeight: 52 },
   btn: {
     flexDirection: "row",
     alignItems: "center",

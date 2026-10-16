@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useKeyboardHeight } from "../hooks/useKeyboardHeight";
 import { useAuth } from "../contexts/AuthContext";
 import { GoogleSignInButton } from "../components/GoogleSignInButton";
 import { colors, gradients, type as typeScale } from "../theme/tokens";
@@ -28,6 +29,7 @@ export function SignInScreen() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const keyboard = useKeyboardHeight();
   const scrollRef = useRef<ScrollView>(null);
   const revealPassword = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 120);
 
@@ -56,10 +58,10 @@ export function SignInScreen() {
   return (
     <LinearGradient colors={[...gradients.page]} style={styles.flex}>
       <SafeAreaView style={styles.flex} edges={["top", "left", "right"]}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.flex}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.flex}>
           <ScrollView
             ref={scrollRef}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[styles.scrollContent, keyboard > 0 && { paddingBottom: keyboard + 32 }]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             automaticallyAdjustKeyboardInsets
@@ -119,10 +121,12 @@ export function SignInScreen() {
               </Pressable>
             </View>
 
-            <Pressable style={styles.linkRow} onPress={() => navigation.navigate("SignUp")}>
-              <Text style={styles.link}>Create account</Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-            </Pressable>
+            <View style={styles.newHere}>
+              <Text style={styles.newHereText}>New to Receipt Cycle?</Text>
+              <Pressable style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.8 }]} onPress={() => navigation.navigate("SignUp")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Create account">
+                <Text style={styles.createBtnTxt}>Create account</Text>
+              </Pressable>
+            </View>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -138,7 +142,6 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 36,
     justifyContent: "center",
-    minHeight: "100%",
   },
   hero: { alignItems: "center", marginBottom: 22 },
   shield: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.mintSoft, alignItems: "center", justifyContent: "center", marginBottom: 9 },
@@ -191,6 +194,10 @@ const styles = StyleSheet.create({
   orRow: { flexDirection: "row", alignItems: "center", gap: 10, marginVertical: 4 },
   orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.gray200 },
   orTxt: { fontSize: typeScale.sm, color: colors.gray400, fontWeight: "600" },
+  newHere: { alignItems: "center", marginTop: 26, gap: 12 },
+  newHereText: { fontSize: 15, color: colors.gray600, fontWeight: "600" },
+  createBtn: { alignSelf: "stretch", minHeight: 56, borderRadius: 14, borderWidth: 2, borderColor: colors.primary, alignItems: "center", justifyContent: "center", backgroundColor: colors.surface },
+  createBtnTxt: { fontSize: 19, fontWeight: "800", color: colors.primary },
   linkRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 22 },
   link: { fontSize: typeScale.body, color: colors.primary, fontWeight: "600" },
 });

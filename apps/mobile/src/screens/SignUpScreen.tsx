@@ -15,6 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
+import { useKeyboardHeight } from "../hooks/useKeyboardHeight";
 import { useAuth } from "../contexts/AuthContext";
 import { GoogleSignInButton } from "../components/GoogleSignInButton";
 import { getRememberedEmailAsync } from "../lib/rememberedEmail";
@@ -30,6 +31,7 @@ export function SignUpScreen() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
+  const keyboard = useKeyboardHeight();
   const scrollRef = useRef<ScrollView>(null);
   const revealLowerFields = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 120);
 
@@ -61,8 +63,8 @@ export function SignUpScreen() {
 
   return (
     <LinearGradient colors={[...gradients.page]} style={styles.flex}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.flex}>
-        <ScrollView ref={scrollRef} contentContainerStyle={styles.pad} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets nestedScrollEnabled scrollEventThrottle={16} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.flex}>
+        <ScrollView ref={scrollRef} contentContainerStyle={[styles.pad, keyboard > 0 && { paddingBottom: keyboard + 40 }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets nestedScrollEnabled scrollEventThrottle={16} showsVerticalScrollIndicator={false}>
           <Pressable style={styles.back} onPress={() => navigation.goBack()} hitSlop={12}>
             <Ionicons name="chevron-back" size={22} color={colors.gray900} />
           </Pressable>
@@ -74,7 +76,7 @@ export function SignUpScreen() {
             <Text style={styles.trustTitle}>Never lose another receipt with automated cloud backups</Text>
           </View>
 
-          <GoogleSignInButton onError={onGoogleError} disabled={!accepted} />
+          <GoogleSignInButton onError={onGoogleError} blocked={!accepted} onBlocked={() => setErr("Tick the box below to agree to the Terms of Service and Privacy Policy, then tap Continue with Google.")} />
 
           <View style={styles.orRow}>
             <View style={styles.orLine} />
@@ -124,9 +126,8 @@ export function SignUpScreen() {
             {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnTxt}>Sign up</Text>}
           </Pressable>
 
-          <Pressable style={styles.linkRow} onPress={() => navigation.navigate("SignIn")}>
-            <Text style={styles.link}>Already have an account? Sign in</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+          <Pressable style={({ pressed }) => [styles.signInBtn, pressed && { opacity: 0.8 }]} onPress={() => navigation.navigate("SignIn")} hitSlop={8} accessibilityRole="button">
+            <Text style={styles.signInTxt}>Already have an account? Sign in</Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -170,6 +171,8 @@ const styles = StyleSheet.create({
   orRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 18, marginBottom: 12 },
   orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.gray200 },
   orTxt: { fontSize: typeScale.sm, color: colors.gray400, fontWeight: "600" },
+  signInBtn: { marginTop: 18, minHeight: 52, alignItems: "center", justifyContent: "center" },
+  signInTxt: { fontSize: 16, fontWeight: "700", color: colors.primary },
   linkRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 16 },
   link: { fontSize: typeScale.body, color: colors.primary, fontWeight: "600" },
 });

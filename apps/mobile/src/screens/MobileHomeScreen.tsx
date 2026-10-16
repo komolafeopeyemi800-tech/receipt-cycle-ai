@@ -1,5 +1,5 @@
 import { TrialAccessSheet } from "../components/TrialAccessSheet";
-import { todayLocalYmd, ymdOf } from "../lib/dates";
+import { shouldShowTrialSheet } from "../lib/paywallSession";
 import { usePaymentFlow } from "../contexts/PaymentFlowContext";
 import { useEstimateFlow } from "../contexts/EstimateFlowContext";
 import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
@@ -59,7 +59,7 @@ export function MobileHomeScreen() {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { workspace, ready } = useWorkspace();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { formatMoney, formatDate } = usePreferences();
   const subscription = useSubscriptionState();
   const all = useQuery(
@@ -221,22 +221,13 @@ export function MobileHomeScreen() {
   };
 
   useEffect(() => {
-    // Free accounts only: never for paid plans, and never on the day the account was made (that day is onboarding).
+    // Free accounts only (never paid plans), once per sign-in, and never in the session where onboarding was just finished.
     if (!user?.id || !subscription || subscription.pro) return;
-    const trialStart = subscription.trialEndsAt - 7 * 86_400_000;
-    const today = todayLocalYmd();
-    if (ymdOf(new Date(trialStart)) === today) return;
-    const key = `receipt-cycle:access-notice:${user.id}`;
-    void AsyncStorage.getItem(key).then((lastShown) => {
-      if (lastShown !== today) setShowDailyAccess(true);
-    });
-  }, [subscription, user?.id]);
+    if (shouldShowTrialSheet(user.id, token ?? null)) setShowDailyAccess(true);
+  }, [subscription, user?.id, token]);
 
   const dismissDailyAccess = () => {
     setShowDailyAccess(false);
-    if (!user?.id) return;
-    const today = todayLocalYmd();
-    void AsyncStorage.setItem(`receipt-cycle:access-notice:${user.id}`, today);
   };
 
   // The looping voice animations only run while Home is the focused tab, the Voice card is shown and the page is idle.

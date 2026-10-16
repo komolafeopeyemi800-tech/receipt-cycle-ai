@@ -123,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           password,
           name: name?.trim() || undefined,
         });
+        await markNewRegistration(res.user.id);
         await setSessionTokenAsync(res.token);
         setToken(res.token);
         await setRememberedEmailAsync(res.user.email);
@@ -138,6 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (idToken: string) => {
       try {
         const res = await signInWithGoogleAction({ idToken });
+        if (res.isNewRegistration) await markNewRegistration(res.user.id);
         await setSessionTokenAsync(res.token);
         setToken(res.token);
         await setRememberedEmailAsync(res.user.email);
@@ -165,6 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, otp: string) => {
       try {
         const res = await signInWithEmailCodeAction({ email, otp });
+        if (res.isNewRegistration) await markNewRegistration(res.user.id);
         await setSessionTokenAsync(res.token);
         setToken(res.token);
         await setRememberedEmailAsync(res.user.email);

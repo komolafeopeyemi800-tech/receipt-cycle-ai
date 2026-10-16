@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import Svg, { Ellipse, Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,25 +8,6 @@ import { spacing, uiType } from "../theme/tokens";
 
 const MINT = "#68e0ca";
 const DAY = 86_400_000;
-
-/** One side of the laurel wreath: leaves along an arc. `flip` mirrors it for the right side. */
-function Branch({ flip }: { flip?: boolean }) {
-  const leaves = Array.from({ length: 9 }, (_, i) => {
-    const angle = ((112 + i * 17.5) * Math.PI) / 180;
-    const x = 66 + 52 * Math.cos(angle);
-    const y = 80 + 62 * Math.sin(angle);
-    const rotate = (angle * 180) / Math.PI + 90 + (i % 2 ? 36 : -36);
-    return { x, y, rotate, key: i };
-  });
-  return (
-    <Svg width={62} height={150} viewBox="0 0 62 150" style={flip ? { transform: [{ scaleX: -1 }] } : undefined}>
-      <Path d="M58 14 C 20 34, 8 112, 56 140" stroke={MINT} strokeWidth={2} fill="none" strokeLinecap="round" opacity={0.9} />
-      {leaves.map((l) => (
-        <Ellipse key={l.key} cx={l.x - 8} cy={l.y - 4} rx={4.6} ry={10} fill={MINT} opacity={0.92} transform={`rotate(${l.rotate} ${l.x - 8} ${l.y - 4})`} />
-      ))}
-    </Svg>
-  );
-}
 
 function Tile({ value, label }: { value: number; label: string }) {
   return (
@@ -40,7 +20,7 @@ function Tile({ value, label }: { value: number; label: string }) {
 
 /**
  * Shown to free accounts on a later day, not on the day they sign up. Counts down to the exact moment the
- * 7-day trial ends. The laurel badge carries the real number of days left (no invented ratings or reviews).
+ * 7-day trial ends.
  */
 export function TrialAccessSheet({ visible, onDismiss, subscription }: { visible: boolean; onDismiss: () => void; subscription: SubscriptionState | null | undefined }) {
   const insets = useSafeAreaInsets();
@@ -66,22 +46,15 @@ export function TrialAccessSheet({ visible, onDismiss, subscription }: { visible
 
   const title = active ? `${daysShown} ${daysShown === 1 ? "day" : "days"} left in your free trial` : exhausted ? "You have used all 25 trial entries" : "Your free trial has ended";
   const copy = active
-    ? "Scan receipts, speak your expenses and send invoices while your trial runs. Your records stay safe either way."
+    ? "Use every entry method during your trial. Access continues until the seven-day timer ends or you reach 25 transactions."
     : "Your records are still here and you can view them any time. Pro features are managed on the Receipt Cycle web version.";
 
   return (
     <Modal visible={visible} transparent={false} animationType="slide" onRequestClose={onDismiss} statusBarTranslucent navigationBarTranslucent>
       <LinearGradient colors={["#07131c", "#0b2528", "#07131c"]} style={styles.root}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.scroll, { paddingTop: insets.top + spacing.xl }]} showsVerticalScrollIndicator={false}>
-          <View style={styles.badgeRow}>
-            <Branch />
-            <View style={styles.badgeCenter}>
-              <Text style={styles.badgeNumber}>{active ? daysShown : 0}</Text>
-              <Text style={styles.badgeCaption}>{active ? (daysShown === 1 ? "DAY LEFT" : "DAYS LEFT") : "TRIAL ENDED"}</Text>
-            </View>
-            <Branch flip />
-          </View>
-          <Text style={styles.eyebrow}>RECEIPT CYCLE</Text>
+          <View style={styles.badge}><Ionicons name="shield-checkmark" size={27} color="#07131c" /></View>
+          <Text style={styles.eyebrow}>RECEIPT CYCLE ACCESS</Text>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.copy}>{copy}</Text>
 
@@ -108,9 +81,9 @@ export function TrialAccessSheet({ visible, onDismiss, subscription }: { visible
 
           <Text style={styles.included}>Included in your trial</Text>
           {[
-            ["scan-outline", "Receipt capture", "Scan or upload receipts and review what was read"],
-            ["mic-outline", "Voice and typed entry", "Say or type an expense and it becomes a record"],
-            ["document-text-outline", "Invoices and estimates", "Create professional documents with your own logo"],
+            ["scan-outline", "Receipt capture", "Scan or upload receipts and review the extracted evidence"],
+            ["mic-outline", "AI transaction entry", "Create records naturally with voice or typed instructions"],
+            ["document-text-outline", "Business documents", "Create invoices, estimates and organized financial records"],
           ].map(([icon, name, text]) => (
             <View key={name} style={styles.benefit}>
               <View style={styles.benefitIcon}><Ionicons name={icon as "scan-outline"} size={23} color={MINT} /></View>
@@ -133,13 +106,10 @@ export function TrialAccessSheet({ visible, onDismiss, subscription }: { visible
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flexGrow: 1, paddingHorizontal: spacing.xl, paddingBottom: 132, alignItems: "center" },
-  badgeRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: spacing.md },
-  badgeCenter: { alignItems: "center", minWidth: 112 },
-  badgeNumber: { color: "#fff", fontSize: 76, lineHeight: 84, fontWeight: "900" },
-  badgeCaption: { color: MINT, fontSize: 12, fontWeight: "900", letterSpacing: 2, marginTop: -2 },
-  eyebrow: { color: MINT, fontSize: 12, fontWeight: "900", letterSpacing: 1.8, marginTop: spacing.sm },
-  title: { color: "#fff", fontSize: 30, lineHeight: 37, fontWeight: "900", textAlign: "center", marginTop: spacing.sm },
-  copy: { color: "#a9bac2", fontSize: uiType.body, lineHeight: 23, textAlign: "center", marginTop: spacing.md, marginBottom: spacing.xl },
+  badge: { width: 56, height: 56, borderRadius: 18, backgroundColor: MINT, alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: spacing.md },
+  eyebrow: { color: MINT, fontSize: 12, fontWeight: "900", letterSpacing: 1.6, textAlign: "center", alignSelf: "stretch" },
+  title: { color: "#fff", fontSize: 32, lineHeight: 39, fontWeight: "900", textAlign: "center", alignSelf: "stretch", marginTop: spacing.sm },
+  copy: { color: "#a9bac2", fontSize: uiType.body, lineHeight: 24, textAlign: "center", alignSelf: "stretch", marginTop: spacing.md, marginBottom: spacing.xl },
   timer: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: spacing.xl },
   tile: { width: 66, paddingVertical: 12, borderRadius: 16, backgroundColor: "#102a2e", borderWidth: 1, borderColor: "#1d4448", alignItems: "center" },
   tileValue: { color: "#fff", fontSize: 26, fontWeight: "900", fontVariant: ["tabular-nums"] },

@@ -67,6 +67,7 @@ import { UploadStatementScreen } from "./src/screens/UploadStatementScreen";
 import { TransactionDetailScreen } from "./src/screens/TransactionDetailScreen";
 import { CategoryBreakdownScreen } from "./src/screens/CategoryBreakdownScreen";
 import { AccountDetailScreen } from "./src/screens/AccountDetailScreen";
+import { markOnboardedThisSession } from "./src/lib/paywallSession";
 import { AuthProvider, NEW_REGISTRATION_KEY, useAuth } from "./src/contexts/AuthContext";
 import { SignInScreen } from "./src/screens/SignInScreen";
 import { SignUpScreen } from "./src/screens/SignUpScreen";
@@ -245,7 +246,7 @@ function onboardingUserKey(userId: string) {
 }
 
 function RootGate() {
-  const { loading, user } = useAuth();
+  const { loading, user, token } = useAuth();
   const [launchComplete, setLaunchComplete] = useState(false);
   const [gateReady, setGateReady] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
@@ -267,7 +268,10 @@ function RootGate() {
       try {
         const userKey = onboardingUserKey(user.id);
         let done = await AsyncStorage.getItem(userKey);
-        if (done !== "1") {
+        // A brand-new account always gets the full onboarding, even if someone onboarded on this phone before.
+        const justCreated = (await AsyncStorage.getItem(NEW_REGISTRATION_KEY)) === user.id;
+        if (justCreated) done = null;
+        if (done !== "1" && !justCreated) {
           let v2 = await AsyncStorage.getItem(ONBOARDING_KEY);
           const legacy = await AsyncStorage.getItem(ONBOARDING_LEGACY);
           if (v2 !== "1" && legacy === "1") {
@@ -309,6 +313,8 @@ function RootGate() {
           try {
             await AsyncStorage.setItem(onboardingUserKey(user.id), "1");
             await AsyncStorage.setItem(ONBOARDING_KEY, "1");
+            await AsyncStorage.removeItem(NEW_REGISTRATION_KEY);
+            markOnboardedThisSession(user.id, token ?? null);
           } catch {
             /* ignore */
           }

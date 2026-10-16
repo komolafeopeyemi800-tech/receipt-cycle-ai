@@ -19,7 +19,7 @@ import { ApiError } from "../lib/errors";
 import { googleVerifier } from "../lib/googleIdToken";
 import { parseBody } from "../lib/http";
 import { requireUser } from "../middleware/auth";
-import { salesRecords } from "../db/schema";
+import { billingEntitlements, publicDocumentLinks, rateLimits, salesRecords } from "../db/schema";
 import { defaultAvatarUrl } from "../lib/avatar";
 import { deleteAllReceipts } from "./receipts";
 import type { AppEnv } from "../types";
@@ -215,8 +215,15 @@ meRoutes.delete("/", async (c) => {
     );
   }
   // Deleting the user cascades to sessions, credentials, profile, transactions, preferences and memberships.
+  // Customer-facing invoice links, billing snapshot by email, and usage counters are not tied to the user by a foreign key.
+  stmts.push(
+    db.delete(publicDocumentLinks).where(like(publicDocumentLinks.scope, scopes)),
+    db.delete(billingEntitlements).where(eq(billingEntitlements.email, c.get("user").email.trim().toLowerCase())),
+    db.delete(rateLimits).where(like(rateLimits.key, `%:${id}`)),
+  );
   stmts.push(db.delete(user).where(eq(user.id, id)));
   await runBatch(db, stmts);
   await deleteAllReceipts(c.env.FILES, id);
+  try { await c.env.FILES.delete(`avatars/${id}`); } catch (error) { console.error("avatar cleanup failed", { id, error }); }
   return c.json({ ok: true });
 });

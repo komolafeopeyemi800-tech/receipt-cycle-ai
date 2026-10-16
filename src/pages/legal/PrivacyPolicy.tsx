@@ -3,7 +3,7 @@ import { SUPPORT_EMAIL } from "@/content/site";
 
 export default function PrivacyPolicy() {
   return (
-    <LegalLayout title="Privacy Policy" updated="October 2, 2026">
+    <LegalLayout title="Privacy Policy" updated="October 16, 2026">
       <p>
         This Privacy Policy explains how Receipt Cycle ("Receipt Cycle," "we," "us," or "our") collects, uses,
         discloses, and protects personal information when you visit our website, use our web or mobile applications,
@@ -26,6 +26,10 @@ export default function PrivacyPolicy() {
         <li><strong>AI and OCR inputs:</strong> files, images, prompts, and related context you choose to submit for extraction, categorization, analysis, or assistance, together with the generated output.</li>
         <li><strong>Subscription information:</strong> plan, subscription status, purchase history, and limited transaction details. Payment processors or app stores generally process full payment-card details rather than Receipt Cycle.</li>
         <li><strong>Device and usage information:</strong> IP address, browser and device type, operating system, app version, language, approximate region, pages or features used, timestamps, crash data, and security logs.</li>
+        <li><strong>Voice recordings:</strong> when you use voice entry or the voice assistant, the audio you record is sent to our speech-to-text provider to be turned into text and is not kept after processing.</li>
+        <li><strong>Contacts you choose:</strong> if you tap "Fill from phone contacts", the app asks for permission to read your contacts, shows you the list on your phone, and copies only the one contact you pick (name, phone, email, address) into a customer record. Your address book is not uploaded.</li>
+        <li><strong>Notification and device identifiers:</strong> a push-notification token for each device you allow, a device identifier, your time zone and your reminder choices, so we can send only the notifications you switched on.</li>
+        <li><strong>Information about your customers:</strong> names, contact details and invoice or estimate content you enter about your own customers. You are responsible for having a lawful reason to store it.</li>
         <li><strong>Communications:</strong> messages, feedback, support requests, and any files you send to our team.</li>
         <li><strong>Integration information:</strong> data required to connect or use an optional service you authorize, such as sign-in or backup functionality.</li>
       </ul>
@@ -123,9 +127,18 @@ export default function PrivacyPolicy() {
 
       <h2>13. Account deletion and exports</h2>
       <p>
-        Where available, use the account tools to export records or request deletion. Deleting the mobile app does not by
-        itself delete an online account or records stored with the service. If you cannot access the relevant control,
-        contact support from the email associated with your account.
+        You can delete your account and its data yourself at any time: in the mobile app go to Me, then Security, then
+        Delete account; on the website open <a href="/delete-account">receiptcycle.com/delete-account</a>. Deleting the
+        mobile app does not by itself delete your online account. If you cannot sign in, email{" "}
+        <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> from the address on the account. You can also export your
+        transactions as a spreadsheet before deleting.
+      </p>
+      <p>
+        Deleting an account removes your profile, sign-in sessions, transactions, receipts and images, budgets, accounts,
+        categories, customers, invoices, estimates, payments, shared document links, notification devices and
+        preferences. Copies in protected backups are removed on their normal cycle, within about 30 days. Records our
+        payment provider must keep for tax or legal reasons stay with that provider under its own policy. If you have a
+        paid plan, cancel it first so you are not billed again.
       </p>
 
       <h2>14. Children's privacy</h2>
@@ -140,6 +153,17 @@ export default function PrivacyPolicy() {
         Our services may link to or integrate with third-party products. Their privacy practices are governed by their own
         notices, and we encourage you to review them before authorizing a connection or submitting information.
       </p>
+      <p>We use these service providers to run Receipt Cycle, and they receive only what the feature needs:</p>
+      <ul>
+        <li><strong>Cloudflare</strong>: hosting, database and file storage for your account, records and receipt images.</li>
+        <li><strong>OpenAI</strong>: reads receipt images and documents, turns voice recordings into text, understands typed or spoken entries, and answers questions in the AI assistant. Content you submit to these features is sent to OpenAI.</li>
+        <li><strong>Google (Gemini), OpenRouter and Landing AI</strong>: alternative providers that may read a receipt image or document if the first provider cannot.</li>
+        <li><strong>Google</strong>: sign-in with your Google account and, only if you turn it on, backup to your own Google Drive.</li>
+        <li><strong>Firebase Cloud Messaging</strong>: delivers the push notifications you allow.</li>
+        <li><strong>Polar</strong>: processes payments for paid plans on our website.</li>
+        <li><strong>Resend</strong>: sends account emails such as sign-in codes.</li>
+      </ul>
+      <p>We do not sell your personal information and we do not show third-party advertising based on your records.</p>
 
       <h2>16. Changes to this Policy</h2>
       <p>

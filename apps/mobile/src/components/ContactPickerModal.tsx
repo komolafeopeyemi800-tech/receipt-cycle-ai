@@ -15,7 +15,7 @@ type Row = PickedContact & { id: string; search: string };
  */
 export function ContactPickerModal({ visible, onClose, onPick }: { visible: boolean; onClose: () => void; onPick: (contact: PickedContact) => void }) {
   const insets = useSafeAreaInsets();
-  const [state, setState] = useState<"loading" | "denied" | "ready" | "error">("loading");
+  const [state, setState] = useState<"intro" | "loading" | "denied" | "ready" | "error">("intro");
   const [rows, setRows] = useState<Row[]>([]);
   const [query, setQuery] = useState("");
 
@@ -42,7 +42,8 @@ export function ContactPickerModal({ visible, onClose, onPick }: { visible: bool
     }
   }, []);
 
-  useEffect(() => { if (visible) { setQuery(""); void load(); } }, [visible, load]);
+  // Show a plain explanation first; the phone's permission prompt only appears after the person agrees.
+  useEffect(() => { if (visible) { setQuery(""); setState("intro"); } }, [visible]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -57,6 +58,15 @@ export function ContactPickerModal({ visible, onClose, onPick }: { visible: bool
           <Text style={styles.title}>Choose from contacts</Text>
           <View style={{ width: 56 }} />
         </View>
+        {state === "intro" ? (
+          <View style={styles.center}>
+            <Ionicons name="people-outline" size={44} color={colors.primary} />
+            <Text style={styles.msgTitle}>Use your phone contacts?</Text>
+            <Text style={styles.msg}>Receipt Cycle needs to read your contacts so you can pick a customer and fill in their name, phone, email and address. Your contact list is only shown on this phone. It is not uploaded, and only the one contact you choose is copied into the form.</Text>
+            <Pressable style={styles.btn} onPress={() => void load()} accessibilityRole="button"><Text style={styles.btnText}>Continue</Text></Pressable>
+            <Pressable onPress={onClose} accessibilityRole="button" style={{ padding: spacing.md }}><Text style={{ color: colors.gray600, fontWeight: "700" }}>Not now</Text></Pressable>
+          </View>
+        ) : null}
         {state === "loading" ? <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} /> : null}
         {state === "denied" ? (
           <View style={styles.center}>

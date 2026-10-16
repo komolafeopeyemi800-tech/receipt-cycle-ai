@@ -1521,6 +1521,12 @@ const staticRoutes: RouteSeo[] = [
     structuredData: [organization],
   },
   {
+    path: "/delete-account",
+    title: "Delete your account — Receipt Cycle",
+    description: "How to delete your Receipt Cycle account and the data stored with it, from the Android app, the website, or by email.",
+    structuredData: [organization],
+  },
+  {
     path: "/terms",
     title: "Terms of Service — Receipt Cycle",
     description: "Terms of service for Receipt Cycle web and mobile apps.",

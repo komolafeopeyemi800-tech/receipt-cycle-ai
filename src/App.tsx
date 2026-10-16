@@ -15,6 +15,7 @@ import MarketingLanding from "./pages/MarketingLanding";
 import { DesktopBusinessProvider } from "@/contexts/DesktopBusinessContext";
 
 const PrivacyPolicy = lazy(() => import("./pages/legal/PrivacyPolicy"));
+const DeleteAccount = lazy(() => import("./pages/legal/DeleteAccount"));
 const TermsOfService = lazy(() => import("./pages/legal/TermsOfService"));
 const Impressum = lazy(() => import("./pages/legal/Impressum"));
 const CookiePolicy = lazy(() => import("./pages/legal/CookiePolicy"));
@@ -180,6 +181,7 @@ const App = () => (
           }
         >
           <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/delete-account" element={<DeleteAccount />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/impressum" element={<Impressum />} />
           <Route path="/cookies" element={<CookiePolicy />} />

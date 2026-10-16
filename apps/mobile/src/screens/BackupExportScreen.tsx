@@ -33,12 +33,12 @@ export function BackupExportScreen() {
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
         <View style={[styles.banner, !online && styles.bannerWait]}>
           <Ionicons name={online ? "information-circle" : "time-outline"} size={22} color={online ? colors.primary : colors.gray500} />
-          <Text style={[styles.bannerText, !online && { color: colors.gray500 }]}>{online ? "All your data has been successfully and securely backed up." : "Checking your backup…"}</Text>
+          <Text style={[styles.bannerText, !online && { color: colors.gray500 }]}>{online ? "Your account is connected and your records sync to your Receipt Cycle account." : "Checking your backup…"}</Text>
         </View>
         <View style={styles.hero}>{online ? <Ionicons name="sync" size={86} color="#fff" /> : <ActivityIndicator color="#fff" size="large" />}</View>
         <Text style={styles.title}>Backup & Export Data</Text>
-        <Text style={styles.body}>Your data is automatically backed up whenever you are connected to the internet, and you can recover it easily if you lose or change your phone by just signing in again.</Text>
-        {checkedAt ? <Text style={styles.last}>Last backup: {when(checkedAt)}</Text> : null}
+        <Text style={styles.body}>Your records are saved to your Receipt Cycle account whenever you are online, so you can get them back on a new phone by signing in again. You can also download a spreadsheet copy below.</Text>
+        {checkedAt ? <Text style={styles.last}>Last synced: {when(checkedAt)}</Text> : null}
         <Pressable accessibilityRole="button" onPress={onExport} style={styles.button}>
           <Ionicons name="download-outline" size={20} color="#fff" />
           <Text style={styles.buttonText}>Export my data</Text>

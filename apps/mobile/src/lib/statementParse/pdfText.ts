@@ -32,7 +32,7 @@ function segments(text: string): Segment[] {
   const flat = text.replace(/\s+/g, " ").trim();
   const found: { index: number; end: number; raw: string }[] = [];
   for (const m of flat.matchAll(DATE_RE)) found.push({ index: m.index!, end: m.index! + m[0].length, raw: m[0] });
-  const order: DateOrder = detectDateOrder(found.map((f) => f.raw)) ?? "dmy";
+  const order: DateOrder = detectDateOrder(found.map((f) => f.raw)) ?? "mdy";
 
   const valid = found.filter((f) => parseDate(f.raw, order) !== null);
   const out: Segment[] = [];

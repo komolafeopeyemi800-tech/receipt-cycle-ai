@@ -7,7 +7,7 @@ describe("parseDate", () => {
     expect(parseDate("2026/10/05")).toBe("2026-10-05");
     expect(parseDate("2026-10-05T14:30:00Z")).toBe("2026-10-05");
     expect(parseDate("05.10.2026")).toBe("2026-10-05");
-    expect(parseDate("5-10-26")).toBe("2026-10-05");
+    expect(parseDate("5-10-26")).toBe("2026-05-10"); // US month/day unless the data says otherwise
   });
 
   it("uses the column order for ambiguous dates but trusts impossible months", () => {

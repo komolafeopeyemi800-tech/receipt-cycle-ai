@@ -44,8 +44,8 @@ export function detectDateOrder(values: string[]): DateOrder | null {
   return null;
 }
 
-/** Parses one date cell to YYYY-MM-DD, or null. `order` resolves 03/04/2026. */
-export function parseDate(raw: unknown, order: DateOrder = "dmy"): string | null {
+/** Parses one date cell to YYYY-MM-DD, or null. `order` resolves 03/04/2026 (US month/day by default). */
+export function parseDate(raw: unknown, order?: DateOrder): string | null {
   const s = String(raw ?? "").trim();
   if (!s) return null;
 
@@ -60,7 +60,9 @@ export function parseDate(raw: unknown, order: DateOrder = "dmy"): string | null
     // A part above 12 can only be the day, whatever the column's usual order.
     if (a > 12) return validYmd(y, b, a);
     if (b > 12) return validYmd(y, a, b);
-    return order === "dmy" ? validYmd(y, b, a) : validYmd(y, a, b);
+    // US month/day unless told otherwise; dotted dates (05.10.2026) are day.month by convention.
+    const effective: DateOrder = order ?? (s.includes(".") ? "dmy" : "mdy");
+    return effective === "dmy" ? validYmd(y, b, a) : validYmd(y, a, b);
   }
 
   // 5 Oct 2026, 05-Oct-26, 5th October 2026
@@ -73,6 +75,42 @@ export function parseDate(raw: unknown, order: DateOrder = "dmy"): string | null
 
   if (/^\d{5}(\.\d+)?$/.test(s)) return excelSerialToIso(Number(s));
   return null;
+}
+
+/**
+ * Dates with no year: "03/04", "3-4", "Mar 4", "4 Mar". Bank statements print these and give the year once in the
+ * statement period. Returns month/day, resolved with `order`; null when it is not such a date.
+ */
+export function parseYearlessMonthDay(raw: unknown, order: DateOrder = "mdy"): { month: number; day: number } | null {
+  const s = String(raw ?? "").trim();
+  let m = /^(\d{1,2})[/.-](\d{1,2})$/.exec(s);
+  if (m) {
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    const [month, day] = a > 12 ? [b, a] : b > 12 ? [a, b] : order === "dmy" ? [b, a] : [a, b];
+    return month >= 1 && month <= 12 && day >= 1 && day <= 31 ? { month, day } : null;
+  }
+  m = /^([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?$/.exec(s);
+  if (m && MONTHS[m[1]!.toLowerCase()]) return { month: MONTHS[m[1]!.toLowerCase()]!, day: Number(m[2]) };
+  m = /^(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,9})\.?$/.exec(s);
+  if (m && MONTHS[m[2]!.toLowerCase()]) return { month: MONTHS[m[2]!.toLowerCase()]!, day: Number(m[1]) };
+  return null;
+}
+
+/**
+ * Builds YYYY-MM-DD from a month/day and a statement period (rolling into the previous year for a Dec/Jan period).
+ * With no period known, the most recent past occurrence of that day: a statement never lists transactions in the future.
+ */
+export function dateWithPeriodYear(md: { month: number; day: number }, period: { startYear: number; startMonth: number; endYear: number } | null, fallbackYear?: number, now: Date = new Date()): string | null {
+  if (period) {
+    const year = period.startYear !== period.endYear && md.month >= period.startMonth ? period.startYear : period.endYear;
+    return validYmd(year, md.month, md.day);
+  }
+  const limit = new Date(now.getTime() + 7 * 86_400_000).toISOString().slice(0, 10);
+  const year = fallbackYear ?? now.getUTCFullYear();
+  const iso = validYmd(year, md.month, md.day);
+  if (iso && fallbackYear === undefined && iso > limit) return validYmd(year - 1, md.month, md.day);
+  return iso;
 }
 
 /**
@@ -91,7 +129,9 @@ export function parseAmount(raw: unknown): number | null {
   }
   if (/(^|\s)(dr|debit)\.?$/i.test(s)) negative = true;
   s = s.replace(/(^|\s)(cr|credit|dr|debit)\.?$/i, "");
-  s = s.replace(/[^\d.,\-+]/g, ""); // currency symbols, letters, spaces
+  // Free text such as "DOORDASH*5405DOORDASH.COM CA" is not money: only currency marks may surround the digits.
+  if (/[A-Za-z]/.test(s.replace(/(?<![A-Za-z])(?:USD|CAD|EUR|GBP|NGN|US|Rs)(?![A-Za-z])\.?|R\$/gi, ""))) return null;
+  s = s.replace(/[^\d.,\-+]/g, ""); // currency symbols, spaces
   if (s.endsWith("-")) {
     negative = true;
     s = s.slice(0, -1);
@@ -129,3 +169,27 @@ export const round2 = (n: number) => Math.round(n * 100) / 100;
 
 /** First money-looking tokens inside free text ("Coffee Shop -4.50 1,200.00"). */
 export const MONEY_TOKEN = /\(?[-+]?[$€£₦]?\s?\d{1,3}(?:[,.\s]\d{3})*(?:[.,]\d{2})\)?(?:\s?(?:CR|DR))?|\(?[-+]?[$€£₦]?\d+[.,]\d{2}\)?(?:\s?(?:CR|DR))?/gi;
+
+/** The statement period printed on a statement ("03/01/2026 through 03/31/2026", "Mar 1 - Mar 31, 2026"), for yearless dates. */
+export function findStatementPeriod(text: string): { startYear: number; startMonth: number; endYear: number } | null {
+  const flat = text.replace(/\s+/g, " ");
+  let m = /(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})\s*(?:through|thru|to|-|–|—)\s*(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})/i.exec(flat);
+  if (m) {
+    const sy = fullYear(Number(m[3]));
+    const ey = fullYear(Number(m[6]));
+    if (sy >= 1990 && ey >= sy && ey - sy <= 1) return { startYear: sy, startMonth: Number(m[1]), endYear: ey };
+  }
+  m = /([A-Za-z]{3,9})\.?\s+\d{1,2}(?:,?\s*(\d{4}))?\s*(?:through|thru|to|-|–|—)\s*([A-Za-z]{3,9})\.?\s+\d{1,2},?\s*(\d{4})/i.exec(flat);
+  if (m && MONTHS[m[1]!.toLowerCase()] && MONTHS[m[3]!.toLowerCase()]) {
+    const ey = Number(m[4]);
+    const sm = MONTHS[m[1]!.toLowerCase()]!;
+    const em = MONTHS[m[3]!.toLowerCase()]!;
+    const sy = m[2] ? Number(m[2]) : sm > em ? ey - 1 : ey;
+    return { startYear: sy, startMonth: sm, endYear: ey };
+  }
+  // No period printed: the most common 4-digit year in the text.
+  const counts = new Map<number, number>();
+  for (const y of flat.matchAll(/(?<!\d)(20\d{2})(?!\d)/g)) counts.set(Number(y[1]), (counts.get(Number(y[1])) ?? 0) + 1);
+  const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+  return best ? { startYear: best[0], startMonth: 1, endYear: best[0] } : null;
+}

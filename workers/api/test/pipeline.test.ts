@@ -1,12 +1,14 @@
 import { env } from "cloudflare:test";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { aiExtractChunk, aiMapColumns, aiOcrPdf } from "../src/docs/ai";
-import { MAX_ROWS, gridsFromMarkdown, parseStatement } from "../../../apps/mobile/src/lib/statementParse/pipeline";
+import { MAX_ROWS, gridsFromMarkdown, parseStatement, scannedPdfOcr } from "../../../apps/mobile/src/lib/statementParse/pipeline";
 import { createStatementAi } from "../../../apps/mobile/src/lib/statementParse/serverAi";
 import { testEngine } from "./anydocEngine";
 import { makeImageOnlyPdf, makeTextPdf, makeXlsx } from "./fixtures";
 
 afterEach(() => vi.unstubAllGlobals());
+// The scanned-statement reader ships switched off; these tests exercise it, so they switch it on.
+beforeAll(() => { scannedPdfOcr.enabled = true; });
 
 const enc = (s: string) => new TextEncoder().encode(s);
 const withKey = { ...env, OPENAI_API_KEY: "sk-test" };
@@ -189,7 +191,7 @@ describe("scanned PDF", () => {
   it("is declined clearly when the AI helper is not available", async () => {
     const r = await run(makeImageOnlyPdf(), "scan.pdf", false);
     expect(r).toMatchObject({ status: "needs_ocr", needsOcr: { pages: [1], pageCount: 1 } });
-    expect(r.message).toMatch(/scanned/);
+    expect(r.message).toMatch(/scan/);
   });
 
   it("uses the PDF-capable model when allowed (stubbed here)", async () => {
@@ -222,5 +224,18 @@ describe("markdown tables", () => {
   it("are split into grids", () => {
     const md = "intro\n| A | B |\n| --- | --- |\n| 1 | 2 |\n\ntext\n| C |\n| --- |\n| 3 |";
     expect(gridsFromMarkdown(md)).toEqual([[["A", "B"], ["1", "2"]], [["C"], ["3"]]]);
+  });
+});
+
+describe("scanned statements are off by default", () => {
+  it("tells the person to upload a CSV, Excel or regular PDF instead of reading the scan", async () => {
+    scannedPdfOcr.enabled = false;
+    try {
+      const out = await parseStatement(makeImageOnlyPdf(), { fileName: "scan.pdf", engine: testEngine, ai: { mapColumns: async () => null, extractRows: async () => ({ rows: [], calls: 0, truncated: false }), ocrPdf: async () => { throw new Error("must not be called"); } } as never });
+      expect(out.status).toBe("needs_ocr");
+      expect(out.message).toMatch(/cannot read reliably yet/i);
+    } finally {
+      scannedPdfOcr.enabled = true;
+    }
   });
 });

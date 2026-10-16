@@ -1,11 +1,23 @@
-import { useCallback, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useMutation, useQuery } from "@mobile-lib/api";
-import { api, type StatementRow } from "@mobile-lib/api";
-import { parseStatementCsv } from "@mobile-lib/statementCsv";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAction, useMutation, useQuery } from "@mobile-lib/api";
+import { api } from "@mobile-lib/api";
 import { describeParse, importInChunks } from "@mobile-lib/statementUpload";
 import { apiStatementTools } from "@mobile-lib/statementParse/apiTools";
-import { readStatement } from "@mobile-lib/statementParse/pipeline";
+import { parseCsvText } from "@mobile-lib/statementParse/csv";
+import { readStatement, type ParseResult } from "@mobile-lib/statementParse/pipeline";
+import {
+  type PreviewRow,
+  documentToRow,
+  importPayload,
+  money,
+  previewTotals,
+  setFlagged,
+  swapDirections,
+  toPreviewRows,
+  toggleRow,
+  updateRow,
+} from "@mobile-lib/statementParse/preview";
 import { apiClient } from "@/lib/api";
 import { loadStatementEngine } from "@/lib/statementReader";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -13,25 +25,33 @@ import { useWebAuth } from "@/contexts/WebAuthContext";
 import { AppChrome } from "@/components/layout/AppChrome";
 
 const primary = "#0f766e";
+const PAGE = 200;
 
-function defaultCategory(type: "expense" | "income") {
-  return type === "expense" ? "Other" : "Salary";
-}
+type Review = { rows: PreviewRow[]; warnings: string[]; note: string; file: File; shown: number };
 
-/** Web: statement import (CSV, Excel, PDF, Word). Every file is read in the browser; the API is only asked for AI help as a last resort. */
+const cell: React.CSSProperties = { padding: "6px 8px", borderTop: "1px solid #e2e8f0", fontSize: 13, verticalAlign: "middle" };
+const input: React.CSSProperties = { border: "1px solid #cbd5e1", borderRadius: 4, padding: "4px 6px", fontSize: 13, width: "100%", boxSizing: "border-box" };
+const pill: React.CSSProperties = { border: `1px solid ${primary}`, color: primary, background: "#fff", borderRadius: 16, padding: "5px 12px", fontWeight: 600, fontSize: 12, cursor: "pointer" };
+
+const today = () => new Date().toISOString().slice(0, 10);
+
+/** Web: statement import (CSV, Excel, PDF, Word). Every file is read in the browser, shown for review, and only saved when the person confirms. */
 function ConvexUploadStatementInner() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { workspace, ready } = useWorkspace();
   const { user, token } = useWebAuth();
   const userId = user!.id;
   const runtime = useQuery(api.admin.publicConfig, {});
   const bulkImport = useMutation(api.transactions.bulkImport);
   const uploadReceipt = useMutation(api.receipts.upload);
+  const scanText = useAction(api.scanReceipt.scanFromDocumentText);
 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [review, setReview] = useState<Review | null>(null);
 
-  const runImport = useCallback(
+  const runRead = useCallback(
     async (file: File) => {
       if (file.type.startsWith("image/")) {
         navigate("/transactions#upload-document", { state: { uploadFile: file } });
@@ -54,64 +74,97 @@ function ConvexUploadStatementInner() {
         return;
       }
       setBusy(true);
-      setMsg(null);
+      setMsg("Reading your file…");
+      setReview(null);
       try {
         const name = file.name.toLowerCase();
-        let rows: StatementRow[] | null = null;
+        let parsed: ParseResult | null = null;
         let note = "";
 
-        // CSV: try the fast in-browser reader first (works offline, tuned for bank exports).
+        // CSV: the quick reader first (instant, works offline); the full reader (with AI column help) only if it fails.
         if (name.endsWith(".csv") || file.type.includes("csv")) {
-          const local = parseStatementCsv(await file.text());
-          if (local.ok) {
-            rows = local.rows.map((r) => ({
-              amount: r.amount,
-              type: r.type,
-              category: defaultCategory(r.type),
-              date: r.date,
-              merchant: r.merchant,
-              description: r.description,
-            }));
-            note = local.warnings.join(" ");
-          }
+          const local = await parseCsvText(await file.text());
+          if (local.status === "ok") parsed = local;
         }
 
         // Excel, PDF, Word (or a CSV the quick reader could not understand): read in the browser with anydoc.
-        if (!rows) {
-          setMsg("Reading your file…");
+        if (!parsed) {
           const engine = await loadStatementEngine();
           const tools = apiStatementTools(apiClient);
-          const parsed = await readStatement(new Uint8Array(await file.arrayBuffer()), {
+          const read = await readStatement(new Uint8Array(await file.arrayBuffer()), {
             fileName: file.name,
             engine,
             ai: tools.ai,
             cache: tools.cache,
           });
-          if (parsed.status !== "ok") {
-            setMsg(parsed.message ?? "Could not read this file.");
-            return;
-          }
-          rows = parsed.rows;
-          note = describeParse(parsed);
+          parsed = read;
+          note = describeParse(read);
         }
 
-        const total = rows.length;
-        const evidenceKey = (await uploadReceipt({ file, fileName: file.name })).key;
-        const res = await importInChunks(
-          rows,
-          (chunk) =>
-            bulkImport({ workspace, userId, token, receipt_url: evidenceKey, rows: chunk.map((r) => ({ ...r, payment_method: "Import" })) }),
-          (done) => setMsg(`Importing… ${done} of ${total}`),
-        );
-        setMsg(`Imported ${res.inserted} transaction(s).${note ? ` ${note}` : ""}`);
+        // An invoice or bill PDF is one transaction: read its total rather than hunting for statement rows.
+        if (parsed.status === "document" && parsed.documentText) {
+          setMsg("This looks like an invoice. Reading its total…");
+          const out = (await scanText({ text: parsed.documentText.slice(0, 40000), sessionToken: token })) as { extracted_data?: unknown; error?: string };
+          const data = out.extracted_data as Record<string, unknown> | null | undefined;
+          const doc = documentToRow((data && "data" in data && data.data ? data.data : data) as never, today());
+          if (!doc) {
+            setMsg(out.error ?? "Could not read a total from this invoice. Add it manually, or upload a clear photo of it.");
+            return;
+          }
+          setReview({ rows: toPreviewRows([doc.row]), warnings: ["Read as one transaction (the invoice total). Check the amount and date.", ...doc.warnings], note, file, shown: PAGE });
+          setMsg(null);
+          return;
+        }
+
+        if (parsed.status !== "ok") {
+          setMsg(parsed.message ?? "Could not read this file.");
+          return;
+        }
+        setReview({ rows: toPreviewRows(parsed.rows), warnings: parsed.warnings, note, file, shown: PAGE });
+        setMsg(null);
       } catch (e) {
-        setMsg(e instanceof Error ? e.message : "Import failed");
+        setMsg(e instanceof Error ? e.message : "Could not read this file.");
       } finally {
         setBusy(false);
       }
     },
-    [ready, workspace, userId, token, bulkImport, uploadReceipt, runtime?.maintenanceMode, runtime?.uploadEnabled, navigate],
+    [ready, token, runtime?.maintenanceMode, runtime?.uploadEnabled, navigate, scanText],
   );
+
+  const runImport = useCallback(async () => {
+    if (!review || !token) return;
+    const rows = importPayload(review.rows);
+    if (rows.length === 0) {
+      setMsg("Tick at least one transaction to import.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const total = rows.length;
+      const evidenceKey = (await uploadReceipt({ file: review.file, fileName: review.file.name })).key;
+      const res = await importInChunks(
+        rows,
+        (chunk) =>
+          bulkImport({ workspace, userId, token, receipt_url: evidenceKey, rows: chunk.map((r) => ({ ...r, payment_method: "Import" })) }),
+        (done) => setMsg(`Importing… ${done} of ${total}`),
+      );
+      setMsg(`Imported ${res.inserted} transaction(s).`);
+      setReview(null);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Import failed");
+    } finally {
+      setBusy(false);
+    }
+  }, [review, token, workspace, userId, bulkImport, uploadReceipt]);
+
+  // A file chosen on the Transactions page arrives here in the router state: start reading it straight away.
+  const started = useRef(false);
+  useEffect(() => {
+    const incoming = (location.state as { uploadFile?: File } | null)?.uploadFile;
+    if (!incoming || started.current || !ready || !token) return;
+    started.current = true;
+    void runRead(incoming);
+  }, [location.state, ready, token, runRead]);
 
   const onPick = () => {
     const input = document.createElement("input");
@@ -119,10 +172,14 @@ function ConvexUploadStatementInner() {
     input.accept = ".jpg,.jpeg,.png,.webp,.csv,.xlsx,.xls,.ods,.pdf,.docx,.odt,image/*,text/csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     input.onchange = () => {
       const f = input.files?.[0];
-      if (f) void runImport(f);
+      if (f) void runRead(f);
     };
     input.click();
   };
+
+  const totals = review ? previewTotals(review.rows) : null;
+  const update = (rows: PreviewRow[]) => review && setReview({ ...review, rows });
+  const transfersOn = !!review?.rows.some((r) => r.transfer && r.selected);
 
   return (
     <div style={{ color: "#0f172a" }}>
@@ -139,52 +196,151 @@ function ConvexUploadStatementInner() {
         <p style={{ fontSize: 12, color: "#64748b", marginBottom: 16, lineHeight: 1.45 }}>
           Upload one source and Receipt Cycle will choose the right extraction flow for receipts, invoices, statements, spreadsheets and PDFs.
         </p>
-        <div
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={(event) => {
-            event.preventDefault();
-            const file = event.dataTransfer.files?.[0];
-            if (file) void runImport(file);
-          }}
-          style={{
-            border: "2px dashed #cbd5e1",
-            borderRadius: 8,
-            padding: "96px 24px",
-            textAlign: "center",
-            background: "#f8fafc",
-          }}
-        >
-          <div style={{ color: "#94a3b8", fontSize: 58, lineHeight: 1, marginBottom: 22 }}><i className="far fa-folder-open" /></div>
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Upload your files</h2>
-          <p style={{ margin: "10px 0 20px", color: "#64748b", fontSize: 16 }}>Drag and drop files or browse</p>
-          <button
-            type="button"
-            onClick={onPick}
-            disabled={busy || !ready}
+
+        {review && totals ? (
+          <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: 16, background: "#fff" }}>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>
+              {totals.total} transaction{totals.total === 1 ? "" : "s"} found in {review.file.name}
+            </h2>
+            <p style={{ margin: "4px 0 10px", fontSize: 13, color: "#475569" }}>
+              {totals.selected} selected · Money in {money(totals.moneyIn)} · Money out {money(totals.moneyOut)}. Nothing is saved until you press Import.
+            </p>
+            {[review.note, ...review.warnings].filter(Boolean).map((w, i) => (
+              <p key={i} style={{ margin: "0 0 6px", fontSize: 12, color: "#78350f", background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 6, padding: "6px 8px" }}>
+                {w}
+              </p>
+            ))}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "8px 0" }}>
+              <button type="button" style={pill} onClick={() => update(swapDirections(review.rows))}>
+                Swap money in / out
+              </button>
+              {totals.transfers > 0 && (
+                <button type="button" style={pill} onClick={() => update(setFlagged(review.rows, "transfer", !transfersOn))}>
+                  {transfersOn ? "Skip" : "Include"} {totals.transfers} transfer{totals.transfers === 1 ? "" : "s"}
+                </button>
+              )}
+              <button type="button" style={pill} onClick={() => { setReview(null); setMsg(null); }}>
+                Choose a different file
+              </button>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
+                <thead>
+                  <tr style={{ textAlign: "left", fontSize: 12, color: "#64748b" }}>
+                    <th style={{ ...cell, borderTop: "none", width: 32 }} />
+                    <th style={{ ...cell, borderTop: "none", width: 120 }}>Date</th>
+                    <th style={{ ...cell, borderTop: "none" }}>Description</th>
+                    <th style={{ ...cell, borderTop: "none", width: 110 }}>Amount</th>
+                    <th style={{ ...cell, borderTop: "none", width: 110 }}>Type</th>
+                    <th style={{ ...cell, borderTop: "none", width: 130 }}>Note</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {review.rows.slice(0, review.shown).map((r) => (
+                    <tr key={r.id} style={{ opacity: r.selected ? 1 : 0.5 }}>
+                      <td style={cell}>
+                        <input type="checkbox" checked={r.selected} aria-label={`Include ${r.merchant ?? "transaction"}`} onChange={() => update(toggleRow(review.rows, r.id))} />
+                      </td>
+                      <td style={cell}>
+                        <input style={input} value={r.date} onChange={(e) => update(updateRow(review.rows, r.id, { date: e.target.value }))} aria-label="Date (YYYY-MM-DD)" />
+                      </td>
+                      <td style={cell}>
+                        <input style={input} value={r.merchant ?? ""} onChange={(e) => update(updateRow(review.rows, r.id, { merchant: e.target.value }))} aria-label="Description" />
+                      </td>
+                      <td style={cell}>
+                        <input
+                          style={input}
+                          defaultValue={String(r.amount)}
+                          inputMode="decimal"
+                          aria-label="Amount"
+                          onBlur={(e) => {
+                            const n = Number(e.target.value.replace(/[$,]/g, ""));
+                            if (Number.isFinite(n) && n > 0) update(updateRow(review.rows, r.id, { amount: Math.round(n * 100) / 100 }));
+                            else e.target.value = String(r.amount);
+                          }}
+                        />
+                      </td>
+                      <td style={cell}>
+                        <select style={input} value={r.type} onChange={(e) => update(updateRow(review.rows, r.id, { type: e.target.value === "income" ? "income" : "expense" }))} aria-label="Money in or out">
+                          <option value="expense">Money out</option>
+                          <option value="income">Money in</option>
+                        </select>
+                      </td>
+                      <td style={{ ...cell, fontSize: 12, color: "#b45309" }}>
+                        {r.transfer ? "Transfer" : ""}
+                        {r.duplicate ? "Possible duplicate" : ""}
+                        {r.future ? "Check the date" : ""}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {review.shown < review.rows.length && (
+              <button type="button" style={{ ...pill, marginTop: 8 }} onClick={() => setReview({ ...review, shown: review.shown + PAGE })}>
+                Show more ({review.rows.length - review.shown} left)
+              </button>
+            )}
+            <div style={{ marginTop: 14 }}>
+              <button
+                type="button"
+                onClick={() => void runImport()}
+                disabled={busy || totals.selected === 0}
+                style={{ background: busy || totals.selected === 0 ? "#94a3b8" : primary, color: "#fff", border: "none", borderRadius: 6, padding: "12px 22px", fontWeight: 700, fontSize: 14, cursor: busy ? "not-allowed" : "pointer" }}
+              >
+                {busy ? "Importing…" : `Import ${totals.selected} transaction${totals.selected === 1 ? "" : "s"}`}
+              </button>
+            </div>
+            {msg && <p style={{ fontSize: 12, color: "#b91c1c", marginTop: 10 }}>{msg}</p>}
+          </div>
+        ) : (
+          <div
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault();
+              const file = event.dataTransfer.files?.[0];
+              if (file) void runRead(file);
+            }}
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              background: busy || !ready ? "#94a3b8" : primary,
-              color: "#fff",
-              border: "none",
-              borderRadius: 6,
-              padding: "13px 24px",
-              fontWeight: 700,
-              fontSize: 13,
-              cursor: busy || !ready ? "not-allowed" : "pointer",
+              border: "2px dashed #cbd5e1",
+              borderRadius: 8,
+              padding: "96px 24px",
+              textAlign: "center",
+              background: "#f8fafc",
             }}
           >
-            {busy ? "Importing…" : "Choose file"}
-          </button>
-          <p style={{ marginTop: 22, color: "#64748b", fontSize: 14 }}>Upload any <span style={{ color: "#2563eb", background: "#eff6ff", padding: "4px 8px", borderRadius: 5 }}>receipt</span> · <span style={{ color: "#7c3aed", background: "#f5f3ff", padding: "4px 8px", borderRadius: 5 }}>invoice</span> · <span style={{ color: "#c2410c", background: "#fff7ed", padding: "4px 8px", borderRadius: 5 }}>credit card statement</span> or <span style={{ color: "#047857", background: "#ecfdf5", padding: "4px 8px", borderRadius: 5 }}>bank statement</span></p>
-          <p style={{ marginTop: 14, color: "#94a3b8", fontSize: 13, fontWeight: 600 }}>PDF, JPG, PNG, CSV, Excel or Word</p>
-          {msg && (
-            <p style={{ fontSize: 12, color: msg.startsWith("Imported") ? primary : "#b91c1c", marginTop: 12, lineHeight: 1.4 }}>
-              {msg}
-            </p>
-          )}
-        </div>
+            <div style={{ color: "#94a3b8", fontSize: 58, lineHeight: 1, marginBottom: 22 }}><i className="far fa-folder-open" /></div>
+            <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Upload your files</h2>
+            <p style={{ margin: "10px 0 20px", color: "#64748b", fontSize: 16 }}>Drag and drop files or browse</p>
+            <button
+              type="button"
+              onClick={onPick}
+              disabled={busy || !ready}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                background: busy || !ready ? "#94a3b8" : primary,
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                padding: "13px 24px",
+                fontWeight: 700,
+                fontSize: 13,
+                cursor: busy || !ready ? "not-allowed" : "pointer",
+              }}
+            >
+              {busy ? "Reading…" : "Choose file"}
+            </button>
+            <p style={{ marginTop: 22, color: "#64748b", fontSize: 14 }}>Upload any <span style={{ color: "#2563eb", background: "#eff6ff", padding: "4px 8px", borderRadius: 5 }}>receipt</span> · <span style={{ color: "#7c3aed", background: "#f5f3ff", padding: "4px 8px", borderRadius: 5 }}>invoice</span> · <span style={{ color: "#c2410c", background: "#fff7ed", padding: "4px 8px", borderRadius: 5 }}>credit card statement</span> or <span style={{ color: "#047857", background: "#ecfdf5", padding: "4px 8px", borderRadius: 5 }}>bank statement</span></p>
+            <p style={{ marginTop: 14, color: "#94a3b8", fontSize: 13, fontWeight: 600 }}>PDF, JPG, PNG, CSV, Excel or Word</p>
+            {msg && (
+              <p style={{ fontSize: 12, color: msg.startsWith("Imported") ? primary : msg.endsWith("…") ? "#475569" : "#b91c1c", marginTop: 12, lineHeight: 1.4 }}>
+                {msg}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

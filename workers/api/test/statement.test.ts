@@ -30,8 +30,8 @@ describe("bank statement with debit / credit columns and a preamble", () => {
       { date: "2026-10-05", amount: 50000, type: "income", category: "Other", merchant: "Transfer from Ada" },
       { date: "2026-10-25", amount: 1000, type: "expense", category: "Other", merchant: "Airtime" },
     ]);
-    expect(res!.skipped).toBe(1);
-    expect(res!.warnings.join(" ")).toMatch(/1 row without a date or amount/);
+    expect(res!.skipped).toBe(0);
+    expect(res!.warnings.join(" ")).toMatch(/1 total or balance line was left out/);
   });
 });
 

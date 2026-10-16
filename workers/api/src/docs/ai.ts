@@ -10,15 +10,17 @@ import type { ColumnMapping, Grid, ParsedRow } from "../../../../apps/mobile/src
 import type { Env } from "../types";
 
 const model = (env: Env) => env.OPENAI_VISION_MODEL?.trim() || "gpt-4o-mini";
+/** Scanned PDFs are the hardest read; OPENAI_OCR_MODEL (e.g. gpt-4o) can give them a stronger model than the text jobs. */
+const ocrModel = (env: Env) => env.OPENAI_OCR_MODEL?.trim() || model(env);
 
-async function chatJson(env: Env, messages: unknown[], maxTokens = 4096): Promise<Record<string, unknown>> {
+async function chatJson(env: Env, messages: unknown[], maxTokens = 4096, modelName?: string): Promise<Record<string, unknown>> {
   const key = env.OPENAI_API_KEY?.trim();
   if (!key) throw new Error("The AI helper is not configured on the server.");
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: model(env),
+      model: modelName ?? model(env),
       temperature: 0,
       max_tokens: maxTokens,
       response_format: { type: "json_object" },
@@ -31,6 +33,8 @@ async function chatJson(env: Env, messages: unknown[], maxTokens = 4096): Promis
   if (!content) throw new Error("Empty model response.");
   return JSON.parse(content) as Record<string, unknown>;
 }
+
+const today = () => new Date().toISOString().slice(0, 10);
 
 const idx = (v: unknown, width: number): number | undefined =>
   typeof v === "number" && Number.isInteger(v) && v >= 0 && v < width ? v : undefined;
@@ -90,33 +94,52 @@ function validateRows(list: unknown): ParsedRow[] {
 const EXTRACT_SYSTEM =
   "You extract transactions from text taken from a bank statement or sales report. " +
   'Reply with JSON: {"transactions":[{"date":"YYYY-MM-DD","description":string,"amount":positive number,"type":"expense"|"income"}]}. ' +
-  "Money leaving the account is an expense; money arriving is income. Ignore opening/closing balances, totals and page headers. Never invent rows.";
+  "Money leaving the account (withdrawals, debits, purchases, fees) is an expense; money arriving (deposits, credits, refunds, interest) is income. " +
+  "On a credit card statement a purchase or fee is an expense and a payment or credit is income. Use the running balance to confirm direction when the text has one. " +
+  "Dates are US month/day/year. If a date has no year, use the year given in the [Context] line; if there is none, use the most recent past year for that date (a statement never lists future dates). " +
+  "Ignore opening/closing balances, totals, page headers and footers. Copy each row's description as printed. One output row per transaction, in the order printed. " +
+  "Only output transactions that are really in the text. Never invent, merge or duplicate rows.";
 
 /** One piece of statement text to rows. The browser splits long text and calls this per piece. */
 export async function aiExtractChunk(env: Env, text: string): Promise<ParsedRow[]> {
-  const out = await chatJson(env, [{ role: "system", content: EXTRACT_SYSTEM }, { role: "user", content: text }], 8192);
+  const out = await chatJson(env, [{ role: "system", content: `${EXTRACT_SYSTEM} Today is ${today()}.` }, { role: "user", content: text }], 8192);
   return validateRows(out.transactions);
 }
 
 /**
- * Scanned PDF to rows using the model's PDF file input. NOTE: written from OpenAI's documented
- * `file` content part; not exercised against the live API in tests (a stub is used).
- * The browser sends the PDF already base64-encoded, so the Worker only forwards it (no CPU spent encoding).
+ * Scanned PDF to rows using the model's PDF file input. Returns the opening and closing balance as well, so the caller
+ * can check that the rows add up (a model that cannot read a scan tends to invent plausible rows; the totals expose that).
  */
-export async function aiOcrPdf(env: Env, pdfBase64: string): Promise<ParsedRow[]> {
+export async function aiOcrPdf(env: Env, pdfBase64: string): Promise<{ rows: ParsedRow[]; opening: number | null; closing: number | null }> {
   const out = await chatJson(
     env,
     [
-      { role: "system", content: EXTRACT_SYSTEM },
+      {
+        role: "system",
+        content:
+          "You transcribe a scanned bank or card statement. Reply with JSON: " +
+          '{"opening_balance": number|null, "closing_balance": number|null, "transactions":[{"date":"YYYY-MM-DD","description":string,"amount":positive number,"type":"expense"|"income"}]}. ' +
+          "Copy only transactions you can actually read on the pages, in the order printed, one entry per printed transaction line. " +
+          "Withdrawals, debits, purchases and fees are expense; deposits, credits and refunds are income (use the running balance to confirm). " +
+          "Dates are US month/day/year; if a date has no year use the statement period's year. " +
+          "opening_balance and closing_balance are the beginning and ending balances printed on the statement (null if not shown). " +
+          "If a line is blurred or unreadable, SKIP it; never guess, invent, repeat or fill in rows. Ignore totals, balances and page headers as transactions. " +
+          `Today is ${today()}.`,
+      },
       {
         role: "user",
         content: [
           { type: "file", file: { filename: "statement.pdf", file_data: `data:application/pdf;base64,${pdfBase64}` } },
-          { type: "text", text: "Extract every transaction from this scanned statement." },
+          { type: "text", text: "Transcribe every readable transaction from this scanned statement, plus its opening and closing balance." },
         ],
       },
     ],
     8192,
+    ocrModel(env),
   );
-  return validateRows(out.transactions);
+  const bal = (v: unknown) => {
+    const n = parseAmount(v);
+    return n === null ? null : round2(n);
+  };
+  return { rows: validateRows(out.transactions), opening: bal(out.opening_balance), closing: bal(out.closing_balance) };
 }

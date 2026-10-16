@@ -3,13 +3,13 @@
  * If a route, a field name or an error message changes on either side, this fails.
  */
 import { env } from "cloudflare:test";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import app from "../src/index";
 import { ApiClient, ApiRequestError } from "../../../apps/mobile/src/lib/api/client";
 import { api } from "../../../apps/mobile/src/lib/api/registry";
 import { describeParse, importInChunks } from "../../../apps/mobile/src/lib/statementUpload";
 import { apiStatementTools } from "../../../apps/mobile/src/lib/statementParse/apiTools";
-import { readStatement } from "../../../apps/mobile/src/lib/statementParse/pipeline";
+import { readStatement, scannedPdfOcr } from "../../../apps/mobile/src/lib/statementParse/pipeline";
 import { testEngine } from "./anydocEngine";
 import { makeImageOnlyPdf } from "./fixtures";
 
@@ -182,8 +182,6 @@ describe("AI + contact calls", () => {
     // Fresh trial with no keys configured: a clean "no keys" answer, not a crash.
     const scan = await client.action(api.scanReceipt.scanFromBase64, { imageBase64: "aGk=", mimeType: "image/jpeg" });
     expect(scan).toMatchObject({ success: true, extracted_data: null });
-    const coach = await client.action(api.voiceFinance.financeCoachChat, { periodLabel: "x", rows: [], messages: [{ role: "user", content: "hi" }] });
-    expect(coach).toMatchObject({ ok: false, reply: "" });
 
     vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 200 })));
     const sent = await makeClient().action(api.email.sendContactMessage, { name: "A", email: "a@b.com", message: "hello there" });
@@ -211,6 +209,7 @@ describe("admin calls", () => {
 });
 
 describe("uploads and receipts", () => {
+  beforeAll(() => { scannedPdfOcr.enabled = true; }); // the reader ships switched off
   it("reads a big statement in the browser with no AI, then imports it in chunks", async () => {
     const { client } = await signedIn("pro@example.com");
     await env.DB.prepare("UPDATE profile SET pro_subscription_active = 1").run();

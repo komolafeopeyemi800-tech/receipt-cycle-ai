@@ -422,8 +422,8 @@ export const api = {
     aiExtract: fn<{ text: string }, StatementRow[]>("action", "uploads.aiExtract", async (c, a) =>
       (await c.request<{ rows: StatementRow[] }>("POST", "/api/uploads/ai/extract", { body: { text: a.text } })).rows,
     ),
-    aiOcrPdf: fn<{ pdfBase64: string }, StatementRow[]>("action", "uploads.aiOcrPdf", async (c, a) =>
-      (await c.request<{ rows: StatementRow[] }>("POST", "/api/uploads/ai/ocr-pdf", { body: { pdfBase64: a.pdfBase64 } })).rows,
+    aiOcrPdf: fn<{ pdfBase64: string }, { rows: StatementRow[]; opening?: number | null; closing?: number | null }>("action", "uploads.aiOcrPdf", async (c, a) =>
+      c.request<{ rows: StatementRow[]; opening?: number | null; closing?: number | null }>("POST", "/api/uploads/ai/ocr-pdf", { body: { pdfBase64: a.pdfBase64 } }),
     ),
     cacheGet: fn<{ hash: string }, unknown | null>("action", "uploads.cacheGet", async (c, a) => {
       const res = await c.request<{ result: unknown } | null>("GET", "/api/uploads/cache", { query: { hash: a.hash }, nullOn404: true });

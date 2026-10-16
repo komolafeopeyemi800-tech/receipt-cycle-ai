@@ -12,10 +12,12 @@
  */
 import { type DocEngine, type DocFormat, type DocShape, type StatementAi, type ResultCache } from "./types";
 import { rowsFromFlowingText } from "./pdfText";
-import { type Grid, type ParsedRow, mapColumns, rowsFromGrid } from "./statement";
+import { findStatementPeriod, parseAmount, parseDate, parseYearlessMonthDay } from "./normalize";
+import { type Grid, type ParsedRow, type StatementPeriod, annotateRows, mapColumns, reconcile, rowsFromGrid } from "./statement";
 
 export type { DocEngine, DocFormat, StatementAi, ResultCache } from "./types";
 export type { ParsedRow } from "./statement";
+export { defaultSelection } from "./statement";
 
 export const MAX_FILE_BYTES = 20 * 1024 * 1024;
 export const MAX_ROWS = 5000;
@@ -25,7 +27,13 @@ const CONFIDENT = 0.8;
 export const TEXT_CHUNK_CHARS = 12_000;
 export const MAX_AI_CHUNKS = 15;
 
-export type ParseStatus = "ok" | "needs_ocr" | "unreadable" | "unsupported" | "too_large";
+/**
+ * Scanned or photographed statements are NOT read by AI for now: in testing the model returned invented rows for them,
+ * and wrong rows in a finance app are worse than none. Flip this on only after real-world accuracy checks pass.
+ */
+export const scannedPdfOcr = { enabled: false };
+
+export type ParseStatus = "ok" | "needs_ocr" | "unreadable" | "unsupported" | "too_large" | "document";
 
 export type ParseResult = {
   status: ParseStatus;
@@ -40,6 +48,10 @@ export type ParseResult = {
   warnings: string[];
   message?: string;
   needsOcr?: { pages: number[]; pageCount: number };
+  /** Do the rows add up to the statement's own opening and closing balance? Set only when the file prints both. */
+  verification?: { opening: number; closing: number; ok: boolean };
+  /** status "document": the text of an invoice or receipt PDF, to be read as one transaction instead of a statement. */
+  documentText?: string;
   sheets?: { name: string; rows: number }[];
 };
 
@@ -129,8 +141,9 @@ function pickFormat(engine: DocEngine, bytes: Uint8Array, fileName: string): Doc
   const ext = fileName.includes(".") ? fileName.split(".").pop()!.toLowerCase() : "";
   const byExt = ext ? engine.formatForExtension(ext) : undefined;
   const bySignature = engine.detectFormat(bytes);
-  if (byExt === "csv" || ext === "tsv" || ext === "txt") return "csv";
-  return bySignature ?? byExt ?? (looksLikeText(bytes) ? "csv" : undefined);
+  if (byExt === "csv" || ext === "tsv" || ext === "txt") return looksLikeText(bytes) ? "csv" : undefined;
+  // Trust the file's contents over its name: a CSV saved as ".xlsx" (or the reverse) still opens.
+  return bySignature ?? (looksLikeText(bytes) && (!byExt || byExt === "xlsx" || byExt === "ods") ? "csv" : byExt);
 }
 
 const base = (over: Partial<ParseResult>): ParseResult => ({
@@ -148,9 +161,10 @@ const base = (over: Partial<ParseResult>): ParseResult => ({
 function finish(r: ParseResult): ParseResult {
   const totalRows = r.rows.length;
   const rows = totalRows > MAX_ROWS ? r.rows.slice(0, MAX_ROWS) : r.rows;
-  const warnings = [...r.warnings];
+  const annotated = annotateRows(rows);
+  const warnings = [...r.warnings, ...annotated.warnings];
   if (totalRows > MAX_ROWS) warnings.push(`This file has ${totalRows} rows; the first ${MAX_ROWS} were read. Split the file to import the rest.`);
-  return { ...r, rows, totalRows, truncated: totalRows > MAX_ROWS, warnings, status: rows.length ? "ok" : r.status === "ok" ? "unreadable" : r.status };
+  return { ...r, rows: annotated.rows, totalRows, truncated: totalRows > MAX_ROWS, warnings, status: rows.length ? "ok" : r.status === "ok" ? "unreadable" : r.status };
 }
 
 export type ParseOptions = {
@@ -162,9 +176,11 @@ export type ParseOptions = {
 
 const errText = (e: unknown) => (e instanceof Error ? e.message : "error");
 
-async function fromTables(tables: NamedGrid[], opts: ParseOptions, fileType: string): Promise<ParseResult> {
+async function fromTables(tables: NamedGrid[], opts: ParseOptions, fileType: string, period: StatementPeriod | null = null): Promise<ParseResult & { balanceCheck?: { checked: number; agreed: number } }> {
   const warnings: string[] = [];
   const rows: ParsedRow[] = [];
+  let checked = 0;
+  let agreed = 0;
   const sheets: { name: string; rows: number }[] = [];
   let aiCalls = 0;
   let usedAi = false;
@@ -183,9 +199,11 @@ async function fromTables(tables: NamedGrid[], opts: ParseOptions, fileType: str
       }
     }
     if (!mapping) continue;
-    const res = rowsFromGrid(t.grid, mapping);
+    const res = rowsFromGrid(t.grid, mapping, { period });
     if (res.rows.length === 0) continue;
     rows.push(...res.rows);
+    checked += res.balanceCheck?.checked ?? 0;
+    agreed += res.balanceCheck?.agreed ?? 0;
     sheets.push({ name: t.name, rows: res.rows.length });
     warnings.push(...res.warnings.map((w) => (tables.length > 1 ? `${t.name}: ${w}` : w)));
   }
@@ -193,32 +211,97 @@ async function fromTables(tables: NamedGrid[], opts: ParseOptions, fileType: str
 
   const result = base({ fileType, rows, warnings, aiCalls, sheets, source: usedAi ? "ai" : "heuristic" });
   if (rows.length === 0) {
-    result.message = opts.ai && !aiNote
+    const hasBody = tables.some((t) => t.grid.slice(1).some((r) => r.some((c) => String(c ?? "").trim())));
+    if (!hasBody) result.message = "This file has a header row but no transactions in it.";
+    else result.message = opts.ai && !aiNote
       ? "Could not find a table of transactions in this file."
       : "Could not tell which columns are the date and amount. Use a file with headers such as Date, Description and Amount.";
   }
-  return finish(result);
+  return { ...finish(result), ...(checked > 0 ? { balanceCheck: { checked, agreed } } : {}) };
+}
+
+const cellText = (c: unknown) => String(c ?? "").replace(/\s+/g, " ").trim();
+
+/** A statement table that runs over several pages arrives as several tables: join the ones that continue each other. */
+export function mergePageTables(grids: Grid[]): Grid[] {
+  const out: Grid[] = [];
+  for (const g of grids) {
+    const last = out[out.length - 1];
+    const width = g[0]?.length ?? 0;
+    if (last && width > 2 && (last[0]?.length ?? 0) === width) {
+      const sameHeader = g[0]!.map(cellText).join("|").toLowerCase() === last[0]!.map(cellText).join("|").toLowerCase();
+      const startsWithDate = parseDate(cellText(g[0]![0])) !== null || parseYearlessMonthDay(cellText(g[0]![0])) !== null;
+      if (sameHeader || startsWithDate) {
+        last.push(...(sameHeader ? g.slice(1) : g));
+        continue;
+      }
+    }
+    out.push(g.map((r) => [...r]));
+  }
+  return out;
+}
+
+/** Opening and closing balance as printed in a statement's summary box. */
+export function findStatementBalances(text: string): { opening: number; closing: number } | null {
+  const flat = text.replace(/\s+/g, " ");
+  const num = String.raw`[^0-9-]{0,8}(-?\$?\s?-?[0-9][0-9,]*\.[0-9]{2})`;
+  const o = new RegExp(String.raw`(?:beginning|opening|previous|starting)\s+balance` + num, "i").exec(flat);
+  const c = new RegExp(String.raw`(?:ending|closing|new)\s+balance` + num, "i").exec(flat);
+  if (!o || !c) return null;
+  const opening = parseAmount(o[1]);
+  const closing = parseAmount(c[1]);
+  return opening === null || closing === null ? null : { opening, closing };
+}
+
+/** Rows that agree with the statement's own balances are very likely complete and right; rows that do not are worth a warning. */
+function withVerification(result: ParseResult, text: string): ParseResult {
+  if (result.rows.length === 0) return result;
+  const bal = findStatementBalances(text);
+  if (!bal) return result;
+  const ok = reconcile(result.rows, bal.opening, bal.closing);
+  const warnings = [...result.warnings];
+  warnings.push(
+    ok
+      ? "Checked: these transactions add up exactly to the opening and closing balance printed on the statement."
+      : `These transactions do not add up to the statement's balances (opening ${bal.opening.toFixed(2)}, closing ${bal.closing.toFixed(2)}). Some rows may be missing or wrong, so check them carefully before importing.`,
+  );
+  return { ...result, warnings, verification: { ...bal, ok } };
 }
 
 async function fromText(text: string, opts: ParseOptions, fileType: string): Promise<ParseResult> {
-  const warnings: string[] = [];
-  const tables = gridsFromMarkdown(text).map((grid, i) => ({ name: `Table ${i + 1}`, grid }));
-  if (tables.length) {
-    const viaTables = await fromTables(tables, opts, fileType);
-    if (viaTables.rows.length) return viaTables;
-  }
+  return withVerification(await fromTextRows(text, opts, fileType), text);
+}
 
+async function fromTextRows(text: string, opts: ParseOptions, fileType: string): Promise<ParseResult> {
+  const warnings: string[] = [];
+  const period = findStatementPeriod(text);
+  const tables = mergePageTables(gridsFromMarkdown(text)).map((grid, i) => ({ name: `Table ${i + 1}`, grid }));
   const flowing = rowsFromFlowingText(text);
-  warnings.push(...flowing.warnings);
-  if (flowing.confidence >= CONFIDENT) return finish(base({ fileType, rows: flowing.rows, warnings }));
+  let viaTables: Awaited<ReturnType<typeof fromTables>> | null = null;
+  if (tables.length) {
+    viaTables = await fromTables(tables, opts, fileType, period);
+    if (viaTables.rows.length) {
+      const bc = viaTables.balanceCheck;
+      const balanceDisagrees = !!bc && bc.checked >= 5 && bc.agreed / bc.checked < 0.8;
+      // The text has far more dated lines than rows were found (the table was only partly understood).
+      const missedRows = flowing.dateCount >= 8 && viaTables.rows.length < (flowing.dateCount - 4) * 0.8;
+      if (!balanceDisagrees && !missedRows) return viaTables;
+      warnings.push(...viaTables.warnings);
+    }
+  }
+  if (!viaTables?.rows.length) {
+    warnings.push(...flowing.warnings);
+    if (flowing.confidence >= CONFIDENT) return finish(base({ fileType, rows: flowing.rows, warnings }));
+  }
+  const fallbackRows = viaTables?.rows.length ? viaTables.rows : flowing.rows;
 
   let aiRefused = false;
   if (opts.ai) {
     try {
       const ai = await opts.ai.extractRows(text);
       // Trust the model only if it found at least as many rows as the splitter did.
-      if (ai.rows.length >= flowing.rows.length * 0.8 && ai.rows.length > 0) {
-        const w = ai.truncated ? ["The file was long; only the first part was read by the AI helper."] : [];
+      if (ai.rows.length >= fallbackRows.length * 0.8 && ai.rows.length > 0) {
+        const w = [...warnings, ...(ai.truncated ? ["The file was long; only the first part was read by the AI helper."] : [])];
         return finish(base({ fileType, rows: ai.rows, warnings: w, aiCalls: ai.calls, source: "ai" }));
       }
     } catch (e) {
@@ -226,17 +309,29 @@ async function fromText(text: string, opts: ParseOptions, fileType: string): Pro
       warnings.push(`AI helper unavailable: ${errText(e)}`);
     }
   }
-  if (flowing.rows.length && (!opts.ai || aiRefused)) {
+  if (fallbackRows.length && (!opts.ai || aiRefused)) {
     warnings.push("Low confidence: please check these rows carefully before importing them.");
   }
-  const result = base({ fileType, rows: flowing.rows, warnings });
-  if (!flowing.rows.length) result.message = "Could not find transactions in this document.";
+  const result = base({ fileType, rows: fallbackRows, warnings });
+  if (!fallbackRows.length) result.message = "Could not find transactions in this document.";
   return finish(result);
+}
+
+/** An invoice, bill or receipt (one purchase with line items and a total), as opposed to a statement (many dated transactions). */
+export function looksLikeInvoice(text: string): boolean {
+  const t = text.slice(0, 20000);
+  const statement = /(?:beginning|opening|previous|ending|closing)\s+balance|statement\s+period|account\s+activity|transactions?\s+for\s+the\s+period/i;
+  if (statement.test(t)) return false;
+  const signals = [/\binvoice\b/i, /bill\s+to/i, /due\s+date|payment\s+terms|net\s+\d{1,3}/i, /amount\s+due|balance\s+due|total\s+due/i, /sub-?total/i, /purchase\s+order|PO\s*(?:#|number)/i, /invoice\s*(?:#|no|number)/i];
+  return /\binvoice\b/i.test(t) && signals.filter((re) => re.test(t)).length >= 3;
 }
 
 export async function parseStatement(bytes: Uint8Array, opts: ParseOptions): Promise<ParseResult> {
   if (bytes.length > MAX_FILE_BYTES) {
     return base({ status: "too_large", message: `Files up to ${MAX_FILE_BYTES / 1024 / 1024} MB are supported. Split the file or export a smaller date range.` });
+  }
+  if (bytes.length === 0 || (looksLikeText(bytes) && bytes.length < 4096 && !new TextDecoder().decode(bytes).trim())) {
+    return base({ status: "unreadable", message: "This file is empty. Choose a file that has your transactions in it." });
   }
   if (/\.(xls|xlsb)$/i.test(opts.fileName)) {
     return base({
@@ -245,6 +340,9 @@ export async function parseStatement(bytes: Uint8Array, opts: ParseOptions): Pro
     });
   }
   const fmt = pickFormat(opts.engine, bytes, opts.fileName);
+  if (!fmt && /\.(csv|tsv|txt)$/i.test(opts.fileName)) {
+    return base({ status: "unreadable", message: "This file is named like a text or CSV file but contains binary data, so it cannot be a statement. Check that it is not damaged or renamed." });
+  }
   if (!fmt || !SUPPORTED.includes(fmt)) {
     return base({ status: "unsupported", message: "This file type is not supported. Use Excel (.xlsx), CSV or PDF." });
   }
@@ -256,15 +354,38 @@ export async function parseStatement(bytes: Uint8Array, opts: ParseOptions): Pro
       if (tables.length) return await fromTables(tables, opts, fmt);
       return await fromText(plainText(doc), opts, fmt);
     }
-    return await fromText(opts.engine.toMarkdown(bytes, "pdf"), opts, "pdf");
+    const markdown = opts.engine.toMarkdown(bytes, "pdf");
+    if (looksLikeInvoice(markdown)) {
+      return base({
+        status: "document",
+        fileType: "pdf",
+        documentText: markdown,
+        message: "This looks like an invoice or bill rather than a statement, so it is read as one transaction (its total).",
+      });
+    }
+    return await fromText(markdown, opts, "pdf");
   } catch (e) {
     const err = e as Error & { code?: string; pages?: number[]; pageCount?: number };
     if (err.code === "needsOcr") {
       const needsOcr = { pages: err.pages ?? [], pageCount: err.pageCount ?? 0 };
-      if (opts.ai && needsOcr.pageCount > 0 && needsOcr.pageCount <= MAX_OCR_PAGES && bytes.length <= MAX_OCR_BYTES) {
+      if (scannedPdfOcr.enabled && opts.ai && needsOcr.pageCount > 0 && needsOcr.pageCount <= MAX_OCR_PAGES && bytes.length <= MAX_OCR_BYTES) {
         try {
-          const rows = await opts.ai.ocrPdf(bytes);
-          return finish(base({ fileType: "pdf", rows, aiCalls: 1, source: "ai", needsOcr, warnings: ["This is a scanned PDF, so it was read with the AI helper. Please check the rows."] }));
+          const out = await opts.ai.ocrPdf(bytes);
+          const rows = Array.isArray(out) ? out : out.rows;
+          const warnings = ["This is a scanned PDF, so it was read with the AI helper. Check every row against your statement."];
+          let verification: ParseResult["verification"];
+          if (!Array.isArray(out) && typeof out.opening === "number" && typeof out.closing === "number" && rows.length > 0) {
+            const ok = reconcile(rows, out.opening, out.closing);
+            verification = { opening: out.opening, closing: out.closing, ok };
+            warnings.push(
+              ok
+                ? "Checked: these transactions add up exactly to the opening and closing balance on the scan."
+                : `These transactions do NOT add up to the balances on the scan (opening ${out.opening.toFixed(2)}, closing ${out.closing.toFixed(2)}), so rows are missing or misread. Do not import without checking, or upload the CSV/Excel version from your bank.`,
+            );
+          } else if (rows.length > 0) {
+            warnings.push("The scan has no balances to check the rows against, so every row needs a look.");
+          }
+          return finish(base({ fileType: "pdf", rows, aiCalls: 1, source: "ai", needsOcr, warnings, ...(verification ? { verification } : {}) }));
         } catch (ocrError) {
           return base({ status: "needs_ocr", fileType: "pdf", needsOcr, message: `Could not read the scanned PDF: ${errText(ocrError)}` });
         }
@@ -276,9 +397,7 @@ export async function parseStatement(bytes: Uint8Array, opts: ParseOptions): Pro
         needsOcr,
         message: tooLong
           ? `This PDF is scanned and has ${needsOcr.pageCount} pages (the limit for scanned PDFs is ${MAX_OCR_PAGES}). Download the statement as Excel/CSV from your bank, or split the PDF.`
-          : opts.ai
-            ? "This PDF is scanned. Try uploading photos of the pages with the camera scanner instead."
-            : "This scanned PDF contains pictures of text. Upload an Excel or CSV version instead.",
+          : "This PDF is a scan or photo of a statement, which we cannot read reliably yet. Download the statement from your bank as a CSV or Excel file (or the regular PDF, not a scan) and upload that instead.",
       });
     }
     const message =
@@ -320,4 +439,10 @@ export async function readStatement(
     }
   }
   return { ...result, fileHash, fileName: opts.fileName, cached: false };
+}
+
+/** A table the caller already has (e.g. a CSV read on the phone): same column mapping and row conversion as every other file type. */
+export async function parseGrid(grid: Grid, fileType: string, ai?: StatementAi): Promise<ParseResult> {
+  const opts: ParseOptions = { fileName: `statement.${fileType}`, engine: null as unknown as DocEngine, ai };
+  return fromTables([{ name: "Table 1", grid }], opts, fileType);
 }

@@ -80,8 +80,11 @@ uploadRoutes.post("/ai/extract", async (c) => {
 
 uploadRoutes.post("/ai/ocr-pdf", async (c) => {
   const { pdfBase64 } = await parseBody(c, z.object({ pdfBase64: z.string().min(100).max(MAX_PDF_BASE64_CHARS) }));
+  // Off until scanned statements read reliably: in testing the model invented rows for them.
+  if (c.env.OCR_PDF_ENABLED !== "true") throw new ApiError(400, "Scanned statements cannot be read yet. Upload a CSV, Excel or regular PDF statement instead.");
   await aiGate(c, true);
-  return c.json({ rows: await viaAi(() => aiOcrPdf(c.env, pdfBase64)) });
+  const out = await viaAi(() => aiOcrPdf(c.env, pdfBase64));
+  return c.json({ rows: out.rows, opening: out.opening, closing: out.closing });
 });
 
 // ---- cache of AI-assisted results, keyed by the file's SHA-256 --------------------------------

@@ -44,6 +44,10 @@ export type Env = {
   ADMIN_DASHBOARD_ADMIN_EMAILS?: string;
   OPENAI_API_KEY?: string;
   OPENAI_VISION_MODEL?: string;
+  /** Optional stronger model for scanned-PDF statements only (e.g. gpt-4o). Falls back to OPENAI_VISION_MODEL. */
+  OPENAI_OCR_MODEL?: string;
+  /** "true" turns the scanned-statement route on (off by default: it invented rows in testing). */
+  OCR_PDF_ENABLED?: string;
   OPENAI_VISION_MAX_TOKENS?: string;
   OPENROUTER_API_KEY?: string;
   OPENROUTER_GEMINI_MODEL?: string;

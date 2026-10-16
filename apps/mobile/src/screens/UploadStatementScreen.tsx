@@ -24,9 +24,19 @@ import type { RootStackParamList } from "../navigation/types";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useSubscriptionState } from "../hooks/useSubscriptionState";
-import { parseStatementCsv } from "../lib/statementCsv";
+import { parseCsvText } from "../lib/statementParse/csv";
+import {
+  type PreviewRow,
+  importPayload,
+  money,
+  previewTotals,
+  setFlagged,
+  setRowType,
+  swapDirections,
+  toPreviewRows,
+  toggleRow,
+} from "../lib/statementParse/preview";
 import { importInChunks } from "../lib/statementUpload";
-import type { StatementRow } from "../lib/api";
 import { userFacingError, userFacingErrorFromUnknown } from "../lib/userFacingErrors";
 import type { ScannedExtracted } from "../types/transaction";
 
@@ -40,9 +50,7 @@ type Picked = {
   kind: "image" | "csv" | "statement";
 };
 
-function defaultCategory(type: "expense" | "income") {
-  return type === "expense" ? "Other" : "Salary";
-}
+const PREVIEW_PAGE = 100;
 
 /** Images are scanned; CSV, Excel, PDF and Word are read as statements. */
 function classify(name: string, mime: string): "image" | "csv" | "statement" | null {
@@ -74,11 +82,14 @@ export function UploadStatementScreen() {
   const [previewText, setPreviewText] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  /** Rows read from the file, waiting for the person to check them before anything is saved. */
+  const [review, setReview] = useState<ReviewState | null>(null);
 
   const reset = useCallback(() => {
     setPicked(null);
     setPreviewText(null);
     setStatus(null);
+    setReview(null);
   }, []);
 
   const loadPreview = useCallback(async (p: Picked) => {
@@ -208,7 +219,8 @@ export function UploadStatementScreen() {
     }
   }, [picked, ready, scanImage, scanText, navigation, reset, token, sub]);
 
-  const importTable = useCallback(async () => {
+  /** Step 1: read the CSV on the phone and show what was found. Nothing is saved yet. */
+  const prepareCsv = useCallback(async () => {
     if (!picked || !ready || picked.kind !== "csv") return;
     if (!user?.id || !token) {
       Alert.alert("Sign in required", "Sign in to import transactions into your account.");
@@ -221,35 +233,32 @@ export function UploadStatementScreen() {
     setBusy(true);
     setStatus(null);
     try {
-      await ensureCats({ workspace });
-      let rows: StatementRow[] | null = null;
-      const w: string[] = [];
-
-      // CSV: the fast on-device reader first.
-      if (picked.kind === "csv") {
-        const res = await fetch(picked.uri);
-        const parsed = parseStatementCsv(await res.text());
-        if (parsed.ok) {
-          rows = parsed.rows.map((r) => ({
-            amount: r.amount,
-            type: r.type,
-            category: defaultCategory(r.type),
-            date: r.date,
-            merchant: r.merchant,
-            description: r.description,
-          }));
-          w.push(...parsed.warnings);
-        } else {
-          Alert.alert("Import", userFacingError(parsed.error));
-          return;
-        }
-      }
-
-      if (!rows) {
-        Alert.alert("Import", userFacingError("Could not read this CSV. It needs Date, Description and Amount (or Debit/Credit) columns."));
+      const res = await fetch(picked.uri);
+      const parsed = await parseCsvText(await res.text());
+      if (parsed.status !== "ok") {
+        Alert.alert("Could not read this file", userFacingError(parsed.message ?? "Could not read this CSV. It needs Date, Description and Amount (or Debit/Credit) columns."));
         return;
       }
+      setReview({ rows: toPreviewRows(parsed.rows), warnings: parsed.warnings, shown: PREVIEW_PAGE });
+    } catch (e) {
+      Alert.alert("Could not read this file", userFacingErrorFromUnknown(e));
+    } finally {
+      setBusy(false);
+    }
+  }, [picked, ready, user?.id, token, sub]);
 
+  /** Step 2: save only the rows the person left ticked. */
+  const confirmImport = useCallback(async () => {
+    if (!picked || !review || !user?.id || !token) return;
+    const rows = importPayload(review.rows);
+    if (rows.length === 0) {
+      Alert.alert("Nothing selected", "Tick at least one transaction to import.");
+      return;
+    }
+    setBusy(true);
+    setStatus(null);
+    try {
+      await ensureCats({ workspace });
       const total = rows.length;
       const sourceFile = Platform.OS === "web"
         ? await (await fetch(picked.uri)).blob()
@@ -268,18 +277,16 @@ export function UploadStatementScreen() {
         (done) => setStatus(`Importing… ${done} of ${total}`),
       );
       setStatus(`Imported ${out.inserted} row(s).`);
-      Alert.alert(
-        "Import complete",
-        `Added ${out.inserted} transaction(s).${w.length ? `\n\n${w.join("\n")}` : ""}`,
-        [{ text: "OK", onPress: () => navigation.navigate("Main", { screen: "Records" }) }],
-      );
+      Alert.alert("Import complete", `Added ${out.inserted} transaction(s).`, [
+        { text: "OK", onPress: () => navigation.navigate("Main", { screen: "Records" }) },
+      ]);
       reset();
     } catch (e) {
       Alert.alert("Import failed", userFacingErrorFromUnknown(e));
     } finally {
       setBusy(false);
     }
-  }, [picked, ready, workspace, user?.id, token, ensureCats, bulkImport, uploadReceipt, navigation, reset, sub]);
+  }, [picked, review, workspace, user?.id, token, ensureCats, bulkImport, uploadReceipt, navigation, reset]);
 
   const canPick = () => {
     if (!ready || busy) return false;
@@ -335,9 +342,9 @@ export function UploadStatementScreen() {
           <Pressable style={styles.dropZone} onPress={onPick} disabled={busy || !ready} accessibilityRole="button" accessibilityLabel="Choose a file to upload">
             <View style={styles.folderIcon}><Ionicons name="folder-open-outline" size={48} color={colors.gray500} /></View>
             <Text style={styles.title}>Upload your files</Text>
-            <Text style={styles.sub}>Tap here to choose a receipt, invoice or statement: photos from your gallery, PDF, CSV or Excel</Text>
+            <Text style={styles.sub}>Tap here to choose a receipt or invoice photo, or a bank or card statement as CSV. PDF and Excel statements are imported at receiptcycle.com.</Text>
             <View style={styles.documentKinds}><Text style={[styles.kindChip, styles.receiptChip]}>receipt</Text><Text style={[styles.kindChip, styles.invoiceChip]}>invoice</Text><Text style={[styles.kindChip, styles.cardChip]}>card statement</Text><Text style={[styles.kindChip, styles.bankChip]}>bank statement</Text></View>
-            <Text style={styles.fileTypes}>PDF, CSV, XLSX, JPG or PNG · up to 12 MB</Text>
+            <Text style={styles.fileTypes}>Phone: JPG, PNG, CSV · Web: also PDF and Excel · up to 12 MB</Text>
             <Pressable style={styles.chooseButton} onPress={onPick} disabled={busy || !ready}><Ionicons name="cloud-upload-outline" size={17} color="#fff" /><Text style={styles.chooseText}>Browse files</Text></Pressable>
           </Pressable>
           <View style={styles.infoCard}><Ionicons name="sparkles-outline" size={19} color={colors.primary} /><Text style={styles.infoText}>Receipt images open with a visual evidence preview and editable extracted fields. Statements are prepared as transaction rows for review.</Text></View>
@@ -359,7 +366,7 @@ export function UploadStatementScreen() {
               Excel and PDF statements are imported from the web app (receiptcycle.com), where large files take seconds. On your phone,
               export the statement as CSV, or photograph a receipt.
             </Text>
-          ) : (
+          ) : review ? null : (
             <ScrollView keyboardShouldPersistTaps="handled" style={styles.previewBox} nestedScrollEnabled>
               <Text style={styles.previewTxt}>
                 {previewText ?? (busy ? "Loading preview…" : "No text preview.")}
@@ -367,7 +374,7 @@ export function UploadStatementScreen() {
             </ScrollView>
           )}
 
-          {picked.kind !== "statement" ? (
+          {picked.kind === "image" ? (
             <>
           <Pressable
             style={[styles.btn, (busy || !ready || !aiScanOk) && { opacity: 0.55 }]}
@@ -387,15 +394,19 @@ export function UploadStatementScreen() {
             </>
           ) : null}
 
-          {picked.kind === "csv" ? (
+          {picked.kind === "csv" && !review ? (
             <Pressable
-              style={[styles.btnSecondary, (busy || !ready || !canImportRows) && { opacity: 0.55 }]}
-              onPress={() => void importTable()}
+              style={[styles.btn, (busy || !ready || !canImportRows) && { opacity: 0.55 }]}
+              onPress={() => void prepareCsv()}
               disabled={busy || !ready || !canImportRows}
+              accessibilityRole="button"
+              accessibilityLabel="Read the transactions in this file"
             >
-              <Text style={styles.btnSecondaryTxt}>Import as bank / CSV table</Text>
+              {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnTxt}>Read transactions</Text>}
             </Pressable>
           ) : null}
+
+          {review ? <ReviewPanel review={review} setReview={setReview} busy={busy} onImport={() => void confirmImport()} /> : null}
 
           <Pressable style={styles.linkBtn} onPress={reset} disabled={busy}>
             <Text style={styles.linkTxt}>Choose a different file</Text>
@@ -405,6 +416,71 @@ export function UploadStatementScreen() {
         </View>
       )}
     </ScrollView>
+  );
+}
+
+type ReviewState = { rows: PreviewRow[]; warnings: string[]; shown: number };
+
+/** The check-before-saving step: totals, flags, and per-row tick boxes and in/out switches. */
+function ReviewPanel({ review, setReview, busy, onImport }: { review: ReviewState; setReview: (r: ReviewState | null) => void; busy: boolean; onImport: () => void }) {
+  const totals = previewTotals(review.rows);
+  const update = (rows: PreviewRow[]) => setReview({ ...review, rows });
+  const visible = review.rows.slice(0, review.shown);
+  const transfersOn = review.rows.some((r) => r.transfer && r.selected);
+  return (
+    <View style={styles.reviewBox}>
+      <Text style={styles.reviewTitle}>
+        {totals.total} transaction{totals.total === 1 ? "" : "s"} found · {totals.selected} selected
+      </Text>
+      <Text style={styles.reviewSub}>
+        Money in {money(totals.moneyIn)} · Money out {money(totals.moneyOut)}
+      </Text>
+      {review.warnings.map((w, i) => (
+        <Text key={i} style={styles.reviewWarn}>{w}</Text>
+      ))}
+      <View style={styles.reviewActions}>
+        <Pressable style={styles.chip} onPress={() => update(swapDirections(review.rows))} accessibilityRole="button" accessibilityLabel="Swap money in and money out for every row">
+          <Text style={styles.chipTxt}>Swap in / out</Text>
+        </Pressable>
+        {totals.transfers > 0 ? (
+          <Pressable style={styles.chip} onPress={() => update(setFlagged(review.rows, "transfer", !transfersOn))} accessibilityRole="button">
+            <Text style={styles.chipTxt}>
+              {transfersOn ? "Skip" : "Include"} {totals.transfers} transfer{totals.transfers === 1 ? "" : "s"}
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
+      {visible.map((r) => (
+        <View key={r.id} style={[styles.reviewRow, !r.selected && { opacity: 0.45 }]}>
+          <Pressable onPress={() => update(toggleRow(review.rows, r.id))} hitSlop={8} accessibilityRole="checkbox" accessibilityState={{ checked: r.selected }} accessibilityLabel={`Include ${r.merchant ?? "transaction"}`}>
+            <Ionicons name={r.selected ? "checkbox" : "square-outline"} size={22} color={r.selected ? colors.primary : colors.gray400} />
+          </Pressable>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.reviewMerchant} numberOfLines={1}>{r.merchant || "(no description)"}</Text>
+            <Text style={styles.reviewMeta}>
+              {r.date}
+              {r.transfer ? " · Transfer" : ""}
+              {r.duplicate ? " · Possible duplicate" : ""}
+              {r.future ? " · Check the date" : ""}
+            </Text>
+          </View>
+          <Pressable onPress={() => update(setRowType(review.rows, r.id, r.type === "expense" ? "income" : "expense"))} hitSlop={6} accessibilityRole="button" accessibilityLabel={`Marked as ${r.type === "income" ? "money in" : "money out"}. Tap to change.`}>
+            <Text style={[styles.reviewAmount, { color: r.type === "income" ? colors.primary : colors.gray900 }]}>
+              {r.type === "income" ? "+" : "-"}{money(r.amount)}
+            </Text>
+            <Text style={styles.reviewMeta}>{r.type === "income" ? "money in" : "money out"}</Text>
+          </Pressable>
+        </View>
+      ))}
+      {review.shown < review.rows.length ? (
+        <Pressable style={styles.linkBtn} onPress={() => setReview({ ...review, shown: review.shown + PREVIEW_PAGE })}>
+          <Text style={styles.linkTxt}>Show more ({review.rows.length - review.shown} left)</Text>
+        </Pressable>
+      ) : null}
+      <Pressable style={[styles.btn, (busy || totals.selected === 0) && { opacity: 0.55 }]} onPress={onImport} disabled={busy || totals.selected === 0} accessibilityRole="button">
+        {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnTxt}>Import {totals.selected} transaction{totals.selected === 1 ? "" : "s"}</Text>}
+      </Pressable>
+    </View>
   );
 }
 
@@ -496,5 +572,16 @@ const styles = StyleSheet.create({
   btnSecondaryTxt: { color: colors.primary, fontWeight: "700", fontSize: typeScale.body },
   linkBtn: { paddingVertical: 8, alignItems: "center" },
   linkTxt: { color: colors.gray600, fontWeight: "600", fontSize: typeScale.sm },
+  reviewBox: { gap: 8 },
+  reviewTitle: { fontSize: typeScale.bodyStrong, fontWeight: "700", color: colors.gray900 },
+  reviewSub: { fontSize: typeScale.sm, color: colors.gray600 },
+  reviewWarn: { fontSize: typeScale.sm, color: "#78350f", backgroundColor: "#fffbeb", borderRadius: 8, borderWidth: 1, borderColor: "#fcd34d", padding: 8, lineHeight: 18 },
+  reviewActions: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chip: { borderWidth: 1, borderColor: colors.primary, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6 },
+  chipTxt: { color: colors.primary, fontWeight: "700", fontSize: typeScale.sm },
+  reviewRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.gray200 },
+  reviewMerchant: { fontSize: typeScale.body, color: colors.gray900, fontWeight: "600" },
+  reviewMeta: { fontSize: 11, color: colors.gray500 },
+  reviewAmount: { fontSize: typeScale.body, fontWeight: "700", textAlign: "right" },
   hint: { fontSize: typeScale.md, color: colors.primary, marginTop: 8, textAlign: "center" },
 });

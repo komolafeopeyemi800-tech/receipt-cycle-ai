@@ -23,6 +23,7 @@ export default defineConfig(async () => {
             BETTER_AUTH_URL: "http://localhost",
             RESEND_API_KEY: "re_test",
             PASSWORD_AUTH_ENABLED: "true",
+            OCR_PDF_ENABLED: "true",
             GOOGLE_ANDROID_CLIENT_ID: "android-client.apps.googleusercontent.com",
             GOOGLE_WEB_CLIENT_ID: "web-client.apps.googleusercontent.com",
           },

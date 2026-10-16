@@ -67,7 +67,7 @@ import { UploadStatementScreen } from "./src/screens/UploadStatementScreen";
 import { TransactionDetailScreen } from "./src/screens/TransactionDetailScreen";
 import { CategoryBreakdownScreen } from "./src/screens/CategoryBreakdownScreen";
 import { AccountDetailScreen } from "./src/screens/AccountDetailScreen";
-import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
+import { AuthProvider, NEW_REGISTRATION_KEY, useAuth } from "./src/contexts/AuthContext";
 import { SignInScreen } from "./src/screens/SignInScreen";
 import { SignUpScreen } from "./src/screens/SignUpScreen";
 import { ForgotPasswordScreen } from "./src/screens/ForgotPasswordScreen";

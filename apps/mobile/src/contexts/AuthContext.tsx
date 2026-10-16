@@ -2,8 +2,15 @@ import { useAction, useApiClient, useMutation, useQuery } from "../lib/api";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "../lib/api";
 import { formatAuthError } from "../lib/authErrors";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { clearSessionTokenAsync, getSessionTokenAsync, setSessionTokenAsync } from "../lib/sessionStorage";
 import { setRememberedEmailAsync } from "../lib/rememberedEmail";
+
+/** Remembers that this account was just created, so the full onboarding runs even on a phone that has onboarded before. */
+export const NEW_REGISTRATION_KEY = "receiptcycle_new_registration_user";
+async function markNewRegistration(userId: string) {
+  try { await AsyncStorage.setItem(NEW_REGISTRATION_KEY, userId); } catch { /* ignore */ }
+}
 
 export type AuthUser = {
   id: string;

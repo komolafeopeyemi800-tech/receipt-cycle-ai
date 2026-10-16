@@ -1,4 +1,5 @@
-import { todayLocalYmd } from "../lib/dates";
+import { TrialAccessSheet } from "../components/TrialAccessSheet";
+import { todayLocalYmd, ymdOf } from "../lib/dates";
 import { usePaymentFlow } from "../contexts/PaymentFlowContext";
 import { useEstimateFlow } from "../contexts/EstimateFlowContext";
 import { useInvoiceFlow } from "../contexts/InvoiceFlowContext";
@@ -220,8 +221,11 @@ export function MobileHomeScreen() {
   };
 
   useEffect(() => {
+    // Free accounts only: never for paid plans, and never on the day the account was made (that day is onboarding).
     if (!user?.id || !subscription || subscription.pro) return;
+    const trialStart = subscription.trialEndsAt - 7 * 86_400_000;
     const today = todayLocalYmd();
+    if (ymdOf(new Date(trialStart)) === today) return;
     const key = `receipt-cycle:access-notice:${user.id}`;
     void AsyncStorage.getItem(key).then((lastShown) => {
       if (lastShown !== today) setShowDailyAccess(true);
@@ -337,25 +341,7 @@ export function MobileHomeScreen() {
 
   return (
     <LinearGradient colors={[...gradients.page]} style={styles.flex}>
-      <Modal visible={showDailyAccess} transparent={false} animationType="slide" onRequestClose={dismissDailyAccess} statusBarTranslucent navigationBarTranslucent>
-        <LinearGradient colors={["#07131c", "#0b2528", "#07131c"]} style={styles.accessOverlay}>
-          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.accessScroll, { paddingTop: insets.top + spacing.xl }]} showsVerticalScrollIndicator={false}>
-            <View style={styles.accessBadge}><Ionicons name="shield-checkmark" size={27} color="#07131c" /></View>
-            <Text style={styles.accessEyebrow}>RECEIPT CYCLE ACCESS</Text>
-            <Text style={styles.accessTitle}>{subscription?.phase === "trial" ? `${Math.max(0, Math.ceil(((subscription.trialEndsAt ?? Date.now()) - Date.now()) / 86_400_000))} days left in your trial` : "Your free trial has ended"}</Text>
-            <Text style={styles.accessCopy}>Use every entry method during your trial. Access continues until the seven-day timer ends or you reach 25 transactions.</Text>
-            <View style={styles.accessUsage}><View><Text style={styles.accessUsageLabel}>TRANSACTIONS USED</Text><Text style={styles.accessUsageValue}>{subscription?.trialAddsUsed ?? 0} of {subscription?.trialAddsLimit ?? 25}</Text></View><View style={styles.accessUsageIcon}><Ionicons name="receipt-outline" size={25} color="#68e0ca" /></View></View>
-            <Text style={styles.accessIncluded}>Included in your trial</Text>
-            {[
-              ["scan-outline", "Receipt capture", "Scan or upload receipts and review the extracted evidence"],
-              ["mic-outline", "AI transaction entry", "Create records naturally with voice or typed instructions"],
-              ["document-text-outline", "Business documents", "Create invoices, estimates and organized financial records"],
-            ].map(([icon, title, copy]) => <View key={title} style={styles.accessBenefit}><View style={styles.accessBenefitIcon}><Ionicons name={icon as IconName} size={23} color="#68e0ca" /></View><View style={styles.accessBenefitCopy}><Text style={styles.accessBenefitTitle}>{title}</Text><Text style={styles.accessBenefitText}>{copy}</Text></View></View>)}
-            <Text style={styles.accessWebNote}>Account plans and billing are managed on the Receipt Cycle web version.</Text>
-          </ScrollView>
-          <View style={[styles.accessFooter, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}><Pressable style={styles.accessSkip} onPress={dismissDailyAccess}><Text style={styles.accessSkipText}>Continue to dashboard</Text><Ionicons name="arrow-forward" size={19} color="#07131c" /></Pressable></View>
-        </LinearGradient>
-      </Modal>
+      <TrialAccessSheet visible={showDailyAccess} onDismiss={dismissDailyAccess} subscription={subscription} />
       <ScrollView
         contentContainerStyle={[
           styles.page,

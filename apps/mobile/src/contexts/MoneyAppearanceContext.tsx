@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useWorkspace } from "./WorkspaceContext";
+import { useAuth } from "./AuthContext";
 import type { MoneyIcon } from "../features/money/model";
 
 type Appearance = { categoryIcons: Record<string, MoneyIcon>; archivedCategoryIds: string[]; accountColors: Record<string, string> };
@@ -15,9 +16,10 @@ const Context = createContext<ContextValue | null>(null);
 
 export function MoneyAppearanceProvider({ children }: { children: ReactNode }) {
   const { workspace } = useWorkspace();
+  const { user } = useAuth();
   const [appearance, setAppearance] = useState<Appearance>(emptyAppearance);
   const [loadedWorkspace, setLoadedWorkspace] = useState<string | null>(null);
-  const key = `receipt_cycle_money_appearance_${workspace}`;
+  const key = `receipt_cycle_money_appearance_${user?.id ?? "guest"}_${workspace}`;
 
   useEffect(() => {
     let live = true;

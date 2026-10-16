@@ -1,3 +1,4 @@
+import { plural } from "../lib/plural";
 import { useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -204,7 +205,7 @@ export function EstimateDetailScreen() {
       <AppCard style={styles.customerSummary}><InitialsAvatar name={customer.name} email={customer.email} size={40} /><View style={{ flex: 1 }}><Text style={styles.customerName}>{customer.name}</Text><Text style={styles.customerMeta}>{customer.email || customer.billingAddress}</Text></View><Ionicons name="chevron-forward" size={18} color={colors.gray400} /></AppCard>
       <AppCard style={styles.detailsCard}>
         <DetailLine label="Customer" value={customer.name} />
-        <DetailLine label="Items" value={`${estimate.items.length} items`} />
+        <DetailLine label="Items" value={plural(estimate.items.length, "item")} />
         <DetailLine label="Total" value={formatMoney(estimate.total)} strong />
         <DetailLine label="Status" value={estimate.status} badge={estimate.status} />
         {estimate.acceptedAt ? <DetailLine label="Accepted On" value={formatDate(estimate.acceptedAt.slice(0, 10))} /> : null}

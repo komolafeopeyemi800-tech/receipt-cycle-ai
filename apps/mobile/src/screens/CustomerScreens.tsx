@@ -78,7 +78,7 @@ export function CustomerDetailScreen() {
 
   const invoices = savedInvoices.filter((item) => item.customerId === customer.id).map((item) => ({ id: item.invoiceNumber, customer: item.customerName, issuedAt: item.issueDate, amount: item.total, status: item.status }));
   const estimates = savedEstimates.filter((item) => item.customerId === customer.id).map((item) => ({ id: item.estimateNumber, customer: item.customerName, issuedAt: item.estimateDate, amount: item.total, status: item.status }));
-  const totalInvoiced = invoices.reduce((sum, item) => sum + item.amount, 0);
+  const totalInvoiced = invoices.filter((item) => item.status !== "draft").reduce((sum, item) => sum + item.amount, 0);
   const amountPaid = payments.filter((item) => item.customerId === customer.id && item.status !== "refunded").reduce((sum, item) => sum + item.amount, 0);
   const balance = Math.max(0, totalInvoiced - amountPaid);
   const documents = tab === "Invoices" ? invoices : estimates;

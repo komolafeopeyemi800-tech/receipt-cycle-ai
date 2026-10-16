@@ -97,6 +97,12 @@ export class SalesSyncEngine {
       .catch(() => undefined);
   }
 
+  /** Forget what was synced (used after the account's data is reset or deleted). */
+  resetMeta() {
+    this.meta = { since: 0, known: [], pending: [] };
+    if (this.flushTimer) { clearTimeout(this.flushTimer); this.flushTimer = null; }
+  }
+
   acquire() {
     this.refs += 1;
     if (!this.timer) this.timer = setInterval(() => void this.syncNow(), SYNC_EVERY_MS);
@@ -242,6 +248,11 @@ export class SalesSyncEngine {
 }
 
 const engines = new Map<string, SalesSyncEngine>();
+
+/** Drops the in-memory sync position of every engine that belongs to this user. */
+export function resetSalesEngineMeta(userId: string) {
+  for (const [key, engine] of engines) if (key.startsWith(`${userId}|`)) engine.resetMeta();
+}
 
 export function getSalesEngine(client: ApiClient, userId: string, workspace: string, kv: KeyValueStore): SalesSyncEngine {
   const key = `${userId}|${workspace}`;

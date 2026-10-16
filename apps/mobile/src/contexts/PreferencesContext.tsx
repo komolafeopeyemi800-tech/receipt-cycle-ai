@@ -199,8 +199,40 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     nullRemoteSeeded.current = false;
   }, [user?.id]);
 
+  // The saved settings on this phone belong to one person. If a different person signs in, drop them first so
+  // their merchants, places and currency are never shown to (or uploaded for) the new account.
+  const [ownerChecked, setOwnerChecked] = useState(false);
   useEffect(() => {
+    setOwnerChecked(false);
     if (!ready || !user?.id) return;
+    let live = true;
+    void (async () => {
+      try {
+        const owner = await AsyncStorage.getItem("receiptcycle_prefs_owner_v1");
+        if (owner && owner !== user.id) {
+          await AsyncStorage.multiRemove([...Object.values(PREF_KEYS), ...Object.values(SETTINGS_STORAGE_KEYS)]);
+          savedCurrency.current = null;
+          setCurrencyState("USD");
+          setDateFormatState("iso");
+          setNumberFormatState("standard");
+          setLocationsState([]);
+          setMerchantsState([]);
+          setReimbursementsState(false);
+          setTxnNumberState(false);
+          setScanPaymentState(true);
+          setRequirePayState(false);
+          setRequireNotesState(false);
+          setVoiceInputLanguageState("auto");
+        }
+        await AsyncStorage.setItem("receiptcycle_prefs_owner_v1", user.id);
+      } catch { /* ignore */ }
+      if (live) setOwnerChecked(true);
+    })();
+    return () => { live = false; };
+  }, [ready, user?.id]);
+
+  useEffect(() => {
+    if (!ready || !user?.id || !ownerChecked) return;
     if (remoteRow === undefined) return;
     if (remoteRow === null) {
       if (nullRemoteSeeded.current) return;
@@ -279,7 +311,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         /* ignore */
       }
     })();
-  }, [ready, user?.id, remoteRow, upsertRemote]);
+  }, [ready, user?.id, ownerChecked, remoteRow, upsertRemote]);
 
   useEffect(() => {
     if (!runtime?.adminManagedPreferences) return;

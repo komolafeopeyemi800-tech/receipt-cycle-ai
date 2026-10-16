@@ -43,14 +43,6 @@ export function PricingScreen() {
           <UsageRow label="AI features" value={aiAccess} />
           <UsageRow label="CSV export" value={subscription?.canExportCsv ? "Available" : "Not included"} />
         </AppCard>
-
-        <View style={styles.notice}>
-          <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
-          <View style={styles.flex}>
-            <Text style={styles.noticeTitle}>Manage access on the web</Text>
-            <Text style={styles.noticeText}>Account plans and billing are handled securely on the Receipt Cycle website.</Text>
-          </View>
-        </View>
       </ScrollView>
     </ScreenContainer>
   );

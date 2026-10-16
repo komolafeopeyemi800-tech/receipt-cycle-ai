@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1045047345639",
+    "project_id": "receiptcycleapp",
+    "storage_bucket": "receiptcycleapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1045047345639:android:96a3832476355882a43d42",
+        "android_client_info": {
+          "package_name": "com.receiptcycle.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD1GWYN5irqi-kE4M2ETvzj6dE2O090vZU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

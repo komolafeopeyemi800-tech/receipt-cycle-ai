@@ -26,7 +26,7 @@ type ContextValue = InvoiceFlowState & {
 const InvoiceFlowContext = createContext<ContextValue | null>(null);
 
 export function InvoiceFlowProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, dataEpoch } = useAuth();
   const { workspace } = useWorkspace();
   const { customers, invoiceSettings } = useSalesSetup();
   const [state, setState] = useState<InvoiceFlowState>(() => ({ draft: createInvoiceDraft(invoiceSettings, []), invoices: [] }));
@@ -49,7 +49,7 @@ export function InvoiceFlowProvider({ children }: { children: ReactNode }) {
       setLoadedKey(storageKey);
     }).catch(() => { if (live) { setState({ draft: createInvoiceDraft(invoiceSettings, []), invoices: [] }); setLoadedKey(storageKey); } });
     return () => { live = false; };
-  }, [storageKey]);
+  }, [storageKey, dataEpoch]);
 
   const sync = useSalesSync({
     userId: user?.id,

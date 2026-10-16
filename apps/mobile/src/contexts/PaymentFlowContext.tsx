@@ -11,6 +11,7 @@ import { useAuth } from "./AuthContext";
 import { useInvoiceFlow } from "./InvoiceFlowContext";
 import { useSalesSetup } from "./SalesSetupContext";
 import { useWorkspace } from "./WorkspaceContext";
+import { usePreferences } from "./PreferencesContext";
 
 type State = { draft: PaymentDraft; payments: SavedPayment[] };
 type Value = State & {
@@ -26,8 +27,9 @@ type Value = State & {
 const Context = createContext<Value | null>(null);
 
 export function PaymentFlowProvider({ children }: { children: ReactNode }) {
-  const { user, token } = useAuth();
+  const { user, token, dataEpoch } = useAuth();
   const { workspace } = useWorkspace();
+  const { formatMoney } = usePreferences();
   const { invoices, applyPayment } = useInvoiceFlow();
   const { customers } = useSalesSetup();
   const createTransaction = useMutation(api.transactions.create);
@@ -48,7 +50,7 @@ export function PaymentFlowProvider({ children }: { children: ReactNode }) {
       setLoadedKey(storageKey);
     }).catch(() => { if (live) { setState({ draft: createPaymentDraft(), payments: [] }); setLoadedKey(storageKey); } });
     return () => { live = false; };
-  }, [storageKey]);
+  }, [storageKey, dataEpoch]);
 
   const sync = useSalesSync({
     userId: user?.id,
@@ -96,7 +98,7 @@ export function PaymentFlowProvider({ children }: { children: ReactNode }) {
       const balance = Math.max(0, roundCents(roundCents(invoice.total) - roundCents(invoice.amountPaid)));
       const paymentAmount = roundCents(amountOverride ?? state.draft.amount);
       if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) throw new Error("Enter an amount greater than zero.");
-      if (paymentAmount > balance) throw new Error(`The payment cannot exceed the remaining balance of ${balance.toFixed(2)}.`);
+      if (paymentAmount > balance) throw new Error(`The payment cannot exceed the remaining balance of ${formatMoney(balance)}.`);
       if (!state.draft.accountId || !state.draft.accountName) throw new Error("Choose the account receiving this payment.");
       const transactionId = await createTransaction({
         workspace, userId: user.id, token, amount: paymentAmount, type: "income", category: "Client Payment", merchant: invoice.customerName,
@@ -115,7 +117,7 @@ export function PaymentFlowProvider({ children }: { children: ReactNode }) {
       return payment;
     },
     findPayment: (id) => state.payments.find((payment) => payment.id === id),
-  }), [state, loadedKey, storageKey, paymentInvoices, availableInvoices, user?.id, token, workspace, createTransaction, applyPayment]);
+  }), [state, loadedKey, storageKey, paymentInvoices, availableInvoices, user?.id, token, workspace, createTransaction, applyPayment, formatMoney]);
 
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }

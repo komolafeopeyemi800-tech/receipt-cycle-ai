@@ -26,7 +26,7 @@ type Value = State & {
 const Context = createContext<Value | null>(null);
 
 export function EstimateFlowProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, dataEpoch } = useAuth();
   const { workspace } = useWorkspace();
   const { customers, invoiceSettings } = useSalesSetup();
   const [state, setState] = useState<State>(() => ({ draft: createEstimateDraft(invoiceSettings, []), estimates: [] }));
@@ -46,7 +46,7 @@ export function EstimateFlowProvider({ children }: { children: ReactNode }) {
       setLoadedKey(storageKey);
     }).catch(() => { if (live) { setState({ draft: createEstimateDraft(invoiceSettings, []), estimates: [] }); setLoadedKey(storageKey); } });
     return () => { live = false; };
-  }, [storageKey]);
+  }, [storageKey, dataEpoch]);
 
   const sync = useSalesSync({
     userId: user?.id,

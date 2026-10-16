@@ -44,7 +44,7 @@ const shareableProfile = (profile: BusinessProfile): BusinessProfile =>
 
 export function SalesSetupProvider({ children }: { children: ReactNode }) {
   const { workspace } = useWorkspace();
-  const { user } = useAuth();
+  const { user, dataEpoch } = useAuth();
   const [state, setState] = useState<SalesSetupState>(() => cloneDefaultSalesSetupState());
   const [loadedStorageKey, setLoadedStorageKey] = useState<string | null>(null);
   const storageKey = `receipt_cycle_sales_setup_${user?.id ?? "guest"}_${workspace}`;
@@ -65,7 +65,7 @@ export function SalesSetupProvider({ children }: { children: ReactNode }) {
       if (live) { setState(cloneDefaultSalesSetupState()); setLoadedStorageKey(storageKey); }
     });
     return () => { live = false; };
-  }, [storageKey, workspace]);
+  }, [storageKey, workspace, dataEpoch]);
 
   const sync = useSalesSync({
     userId: user?.id,

@@ -1,3 +1,4 @@
+import { plural } from "../lib/plural";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -191,7 +192,7 @@ export function OverdueInvoicesReportScreen() {
       <ScreenHeader title="Overdue Invoices" back />
       <View style={styles.filterWrap}><SegmentedTabs options={["all", "overdue", "due_soon", "paid"] as const} value={filter} onChange={setFilter} /></View>
       <View style={[styles.kpiRow, styles.horizontalPage]}>
-        <KpiCard title="Overdue amount" value={formatMoneyCompact(overdueAmount)} detail={`${overdue.length} invoices`} tone="negative" />
+        <KpiCard title="Overdue amount" value={formatMoneyCompact(overdueAmount)} detail={plural(overdue.length, "invoice")} tone="negative" />
         <KpiCard title="Avg. days overdue" value={`${averageDays} days`} detail="Open balances" tone="info" />
       </View>
       <View style={styles.listHeading}><Text style={styles.sectionTitle}>{filter === "all" ? "All invoices" : filter === "paid" ? "Paid invoices" : filter === "due_soon" ? "Due soon" : "Overdue invoices"}</Text><Text style={styles.countLabel}>{shown.length}</Text></View>

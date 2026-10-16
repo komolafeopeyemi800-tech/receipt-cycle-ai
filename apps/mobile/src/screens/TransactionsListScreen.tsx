@@ -1,3 +1,4 @@
+import { plural } from "../lib/plural";
 import { todayLocalYmd } from "../lib/dates";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "../lib/api";
@@ -379,7 +380,7 @@ loading ? (
             <Text style={styles.listEndTxt}>
               {list.length === 1
                 ? "1 transaction"
-                : `${list.length} transactions`}
+                : plural(list.length, "transaction")}
             </Text>
           </View>
         ) : null}

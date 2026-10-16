@@ -1,3 +1,4 @@
+import { plural } from "../lib/plural";
 import { useMemo, useState } from "react";
 import {
   Alert,
@@ -301,7 +302,7 @@ export function SalesHubScreen() {
             <KpiCard
               title="Outstanding Invoices"
               value={formatMoney(localOutstanding)}
-              detail={`${outstandingCount} invoices`}
+              detail={plural(outstandingCount, "invoice")}
             />
           </Pressable>
           <Pressable
@@ -311,7 +312,7 @@ export function SalesHubScreen() {
             <KpiCard
               title={period === "This Month" ? "Paid This Month" : "Total Paid"}
               value={formatMoney(localPaid)}
-              detail={`${payments.length} payments`}
+              detail={plural(payments.length, "payment")}
               tone="positive"
             />
           </Pressable>
@@ -324,7 +325,7 @@ export function SalesHubScreen() {
             <KpiCard
               title="Overdue"
               value={formatMoney(localOverdue)}
-              detail={`${savedInvoices.filter((item) => item.status === "overdue").length} invoices`}
+              detail={plural(savedInvoices.filter((item) => item.status === "overdue").length, "invoice")}
               tone="negative"
             />
           </Pressable>
@@ -337,7 +338,7 @@ export function SalesHubScreen() {
               value={formatMoney(
                 openEstimates.reduce((sum, item) => sum + item.total, 0),
               )}
-              detail={`${openEstimates.length} estimates`}
+              detail={plural(openEstimates.length, "estimate")}
               tone="info"
             />
           </Pressable>

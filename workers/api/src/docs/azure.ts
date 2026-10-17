@@ -56,7 +56,7 @@ export type AzureStatement = {
   model: "prebuilt-bankStatement.us" | "prebuilt-layout";
 };
 
-type Json = Record<string, any>;
+export type Json = Record<string, any>;
 
 export function azureConfigured(env: Env): boolean {
   return !!(env.AZURE_DI_ENDPOINT?.trim() && env.AZURE_DI_KEY?.trim());
@@ -131,9 +131,9 @@ async function analyze(env: Env, model: string, base64: string, budget: Budget, 
   }
 }
 
-const field = (obj: Json | undefined, name: string): Json | undefined => obj?.[name];
-const text = (f: Json | undefined): string => String(f?.valueString ?? f?.content ?? "").replace(/\s+/g, " ").trim();
-const amount = (f: Json | undefined): number | null => {
+export const field = (obj: Json | undefined, name: string): Json | undefined => obj?.[name];
+export const text = (f: Json | undefined): string => String(f?.valueString ?? f?.content ?? "").replace(/\s+/g, " ").trim();
+export const amount = (f: Json | undefined): number | null => {
   if (!f) return null;
   if (typeof f.valueNumber === "number") return f.valueNumber;
   if (typeof f.valueCurrency?.amount === "number") return f.valueCurrency.amount;
@@ -318,4 +318,13 @@ async function readLayout(env: Env, base64: string, budget: Budget, opts: AzureO
     pages,
     model: "prebuilt-layout",
   };
+}
+
+/** One Azure analysis (any prebuilt model) with the same auth, polling, subrequest budget and page-count check. */
+export async function azureAnalyze(env: Env, model: string, base64: string, opts: AzureOptions = {}, query = ""): Promise<Json> {
+  if (!azureConfigured(env)) throw new AzureError(UNAVAILABLE, 503, "Azure DI is not configured (AZURE_DI_ENDPOINT / AZURE_DI_KEY)");
+  const budget = new Budget(opts.timeoutMs ?? TIMEOUT_MS, opts.pollMs ?? POLL_MS, opts.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms))));
+  const result = await analyze(env, model, base64, budget, query);
+  checkPages(pageCount(result), opts);
+  return result;
 }

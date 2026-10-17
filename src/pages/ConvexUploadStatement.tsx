@@ -3,12 +3,13 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAction, useMutation, useQuery } from "@mobile-lib/api";
 import { api } from "@mobile-lib/api";
 import { describeParse, importInChunks } from "@mobile-lib/statementUpload";
-import { apiStatementTools } from "@mobile-lib/statementParse/apiTools";
+import { apiReadDocument, apiStatementTools } from "@mobile-lib/statementParse/apiTools";
 import { parseCsvText } from "@mobile-lib/statementParse/csv";
-import { readStatement, type ParseResult } from "@mobile-lib/statementParse/pipeline";
+import { readStatement, readStatementPhoto, type ParseResult } from "@mobile-lib/statementParse/pipeline";
 import {
   type PreviewRow,
   documentToRow,
+  markExistingDuplicates,
   importPayload,
   money,
   previewTotals,
@@ -46,16 +47,36 @@ function ConvexUploadStatementInner() {
   const bulkImport = useMutation(api.transactions.bulkImport);
   const uploadReceipt = useMutation(api.receipts.upload);
   const scanText = useAction(api.scanReceipt.scanFromDocumentText);
+  const existing = useQuery(api.transactions.list, ready ? { workspace } : "skip");
 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [review, setReview] = useState<Review | null>(null);
+  /** A photo waiting for the answer to "receipt or invoice, or a bank statement?". */
+  const [pendingImage, setPendingImage] = useState<File | null>(null);
+
+  /** Rows to review: transactions the person already has (same date, amount, merchant) start unticked. */
+  const buildReview = useCallback(
+    (rows: Parameters<typeof toPreviewRows>[0], warnings: string[], note: string, file: File): Review => {
+      const marked = markExistingDuplicates(toPreviewRows(rows), (existing ?? []) as never);
+      return { rows: marked.rows, warnings: marked.warning ? [...warnings, marked.warning] : warnings, note, file, shown: PAGE };
+    },
+    [existing],
+  );
 
   const runRead = useCallback(
-    async (file: File) => {
+    async (file: File, imageAs?: "statement" | "receipt") => {
       if (file.type.startsWith("image/")) {
-        navigate("/transactions#upload-document", { state: { uploadFile: file } });
-        return;
+        if (imageAs === "receipt") {
+          navigate("/transactions#upload-document", { state: { uploadFile: file } });
+          return;
+        }
+        if (imageAs !== "statement") {
+          setPendingImage(file);
+          setMsg(null);
+          return;
+        }
+        setPendingImage(null);
       }
       if (!ready) {
         setMsg("Workspace loading…");
@@ -77,6 +98,22 @@ function ConvexUploadStatementInner() {
       setMsg("Reading your file…");
       setReview(null);
       try {
+        // A photo of a bank or card statement: read by text recognition, shown only when it adds up to the printed balances.
+        if (file.type.startsWith("image/")) {
+          if (!/^image\/(png|jpeg)$/.test(file.type)) {
+            setMsg("Statement photos need to be JPG or PNG.");
+            return;
+          }
+          setMsg("Reading your statement. This can take up to 30 seconds.");
+          const photo = await readStatementPhoto(new Uint8Array(await file.arrayBuffer()), file.type, apiStatementTools(apiClient).ai);
+          if (photo.status !== "ok") {
+            setMsg(photo.message ?? "We could not read this scan reliably. Upload a clearer scan or a CSV or Excel version.");
+            return;
+          }
+          setReview(buildReview(photo.rows, photo.warnings, "", file));
+          setMsg(null);
+          return;
+        }
         const name = file.name.toLowerCase();
         let parsed: ParseResult | null = null;
         let note = "";
@@ -103,24 +140,49 @@ function ConvexUploadStatementInner() {
 
         // An invoice or bill PDF is one transaction: read its total rather than hunting for statement rows.
         if (parsed.status === "document" && parsed.documentText) {
-          setMsg("This looks like an invoice. Reading its total…");
-          const out = (await scanText({ text: parsed.documentText.slice(0, 40000), sessionToken: token })) as { extracted_data?: unknown; error?: string };
-          const data = out.extracted_data as Record<string, unknown> | null | undefined;
-          const doc = documentToRow((data && "data" in data && data.data ? data.data : data) as never, today());
+          setMsg(`This looks like ${parsed.documentKind === "receipt" ? "a receipt" : "an invoice"}. Reading its total and line items…`);
+          let extracted: unknown = null;
+          let problem: string | undefined;
+          try {
+            // Azure reads the invoice number, due date, PO, terms and every line item.
+            extracted = await apiReadDocument(apiClient)(new Uint8Array(await file.arrayBuffer()), { kind: parsed.documentKind ?? "invoice", mimeType: "application/pdf" });
+          } catch {
+            const out = (await scanText({ text: parsed.documentText.slice(0, 40000), sessionToken: token })) as { extracted_data?: unknown; error?: string };
+            problem = out.error;
+            const data = out.extracted_data as Record<string, unknown> | null | undefined;
+            extracted = data && "data" in data && data.data ? data.data : data;
+          }
+          const doc = documentToRow(extracted as never, today());
           if (!doc) {
-            setMsg(out.error ?? "Could not read a total from this invoice. Add it manually, or upload a clear photo of it.");
+            setMsg(problem ?? "Could not read a total from this invoice. Add it manually, or upload a clear photo of it.");
             return;
           }
-          setReview({ rows: toPreviewRows([doc.row]), warnings: ["Read as one transaction (the invoice total). Check the amount and date.", ...doc.warnings], note, file, shown: PAGE });
+          setReview(buildReview([doc.row], ["Read as one transaction (the document total). Its details and line items are saved in the note. Check the amount and date.", ...doc.warnings], note, file));
           setMsg(null);
           return;
+        }
+
+        // A scanned receipt or invoice PDF is not a statement: when the statement read is refused, try it as a document.
+        if (parsed.status !== "ok" && parsed.fileType === "pdf" && parsed.needsOcr) {
+          setMsg("Not a statement we can check. Trying it as a receipt or invoice…");
+          try {
+            const extracted = await apiReadDocument(apiClient)(new Uint8Array(await file.arrayBuffer()), { kind: "auto", mimeType: "application/pdf", pageCount: parsed.needsOcr.pageCount });
+            const doc = documentToRow(extracted as never, today());
+            if (doc) {
+              setReview(buildReview([doc.row], ["Read as one transaction (the document total). Check the amount and date.", ...doc.warnings], note, file));
+              setMsg(null);
+              return;
+            }
+          } catch {
+            /* keep the statement refusal message below */
+          }
         }
 
         if (parsed.status !== "ok") {
           setMsg(parsed.message ?? "Could not read this file.");
           return;
         }
-        setReview({ rows: toPreviewRows(parsed.rows), warnings: parsed.warnings, note, file, shown: PAGE });
+        setReview(buildReview(parsed.rows, parsed.warnings, note, file));
         setMsg(null);
       } catch (e) {
         setMsg(e instanceof Error ? e.message : "Could not read this file.");
@@ -128,7 +190,7 @@ function ConvexUploadStatementInner() {
         setBusy(false);
       }
     },
-    [ready, token, runtime?.maintenanceMode, runtime?.uploadEnabled, navigate, scanText],
+    [ready, token, runtime?.maintenanceMode, runtime?.uploadEnabled, navigate, scanText, buildReview],
   );
 
   const runImport = useCallback(async () => {
@@ -196,6 +258,24 @@ function ConvexUploadStatementInner() {
         <p style={{ fontSize: 12, color: "#64748b", marginBottom: 16, lineHeight: 1.45 }}>
           Upload one source and Receipt Cycle will choose the right extraction flow for receipts, invoices, statements, spreadsheets and PDFs.
         </p>
+
+        {pendingImage && !review ? (
+          <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: 20, background: "#fff", textAlign: "center" }}>
+            <h2 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 800 }}>What is this photo?</h2>
+            <p style={{ margin: "0 0 14px", fontSize: 13, color: "#475569" }}>{pendingImage.name}</p>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+              <button type="button" style={{ ...pill, background: primary, color: "#fff" }} onClick={() => void runRead(pendingImage, "receipt")}>
+                Receipt or invoice
+              </button>
+              <button type="button" style={pill} onClick={() => void runRead(pendingImage, "statement")}>
+                Bank or card statement
+              </button>
+              <button type="button" style={pill} onClick={() => setPendingImage(null)}>
+                Choose a different file
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {review && totals ? (
           <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: 16, background: "#fff" }}>
@@ -270,6 +350,7 @@ function ConvexUploadStatementInner() {
                         {r.transfer ? "Transfer" : ""}
                         {r.duplicate ? "Possible duplicate" : ""}
                         {r.future ? "Check the date" : ""}
+                        {r.existing ? "Already in your records" : ""}
                       </td>
                     </tr>
                   ))}
@@ -293,7 +374,7 @@ function ConvexUploadStatementInner() {
             </div>
             {msg && <p style={{ fontSize: 12, color: "#b91c1c", marginTop: 10 }}>{msg}</p>}
           </div>
-        ) : (
+        ) : pendingImage ? null : (
           <div
             onDragOver={(event) => event.preventDefault()}
             onDrop={(event) => {

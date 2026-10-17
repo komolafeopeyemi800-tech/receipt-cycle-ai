@@ -7,6 +7,8 @@ import {
   type FormEvent,
 } from "react";
 import { compressImage } from "@/lib/compressImage";
+import { apiClient } from "@/lib/api";
+import { apiReadDocument } from "@mobile-lib/statementParse/apiTools";
 import { useAction, useMutation, useQuery } from "@mobile-lib/api";
 import { api } from "@mobile-lib/api";
 import type { Id } from "@mobile-lib/api";
@@ -374,9 +376,19 @@ export default function TransactionWorkspace() {
       });
       setProcessStep(3);
       if ("error" in result && result.error) throw new Error(result.error);
-      const extracted = normalizeExtracted(result.extracted_data);
-      const raw = result.extracted_data && typeof result.extracted_data === "object"
-        ? (result.extracted_data as Record<string, unknown>)
+      // An invoice photo: the invoice reader also gets the number, due date, PO, terms and every line item.
+      let scanData: unknown = result.extracted_data;
+      const firstRead = (scanData && typeof scanData === "object" && "data" in (scanData as object) && (scanData as { data?: unknown }).data ? (scanData as { data: unknown }).data : scanData) as Record<string, unknown> | null;
+      if (firstRead?.document_type === "invoice" && /^image\/(png|jpeg)$/.test(receiptFile.type)) {
+        try {
+          scanData = await apiReadDocument(apiClient)(new Uint8Array(await receiptFile.arrayBuffer()), { kind: "invoice", mimeType: receiptFile.type });
+        } catch {
+          /* keep the first read */
+        }
+      }
+      const extracted = normalizeExtracted(scanData);
+      const raw = scanData && typeof scanData === "object"
+        ? (scanData as Record<string, unknown>)
         : null;
       setReceiptData(raw && raw.data && typeof raw.data === "object" ? raw.data as Record<string, unknown> : raw);
       setDateAssumed(!extracted.date);

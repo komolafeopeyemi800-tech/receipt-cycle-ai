@@ -1,7 +1,7 @@
 /** The review step between "file read" and "saved": pure helpers shared by the phone and the web page. */
 import type { ParsedRow } from "./statement";
 
-export type PreviewRow = ParsedRow & { id: number; selected: boolean };
+export type PreviewRow = ParsedRow & { id: number; selected: boolean; /** Same date, amount and a similar merchant as a transaction the person already has. */ existing?: true };
 
 /**
  * A readable merchant name from a raw bank description: "POS PURCHASE 0302 CHEVRON 44792210 SAN JOSE CA" -> "Chevron".
@@ -45,17 +45,18 @@ export const swapDirections = (rows: PreviewRow[]): PreviewRow[] => rows.map((r)
 export const setAllSelected = (rows: PreviewRow[], selected: boolean): PreviewRow[] => rows.map((r) => ({ ...r, selected }));
 
 /** Tick or untick one kind of flagged row at once ("include transfers"). */
-export const setFlagged = (rows: PreviewRow[], flag: "transfer" | "duplicate" | "future", selected: boolean): PreviewRow[] =>
+export const setFlagged = (rows: PreviewRow[], flag: "transfer" | "duplicate" | "future" | "existing", selected: boolean): PreviewRow[] =>
   rows.map((r) => (r[flag] ? { ...r, selected } : r));
 
-export type PreviewTotals = { selected: number; total: number; moneyIn: number; moneyOut: number; transfers: number; duplicates: number; future: number };
+export type PreviewTotals = { selected: number; total: number; moneyIn: number; moneyOut: number; transfers: number; duplicates: number; future: number; existing: number };
 
 export function previewTotals(rows: PreviewRow[]): PreviewTotals {
-  const t: PreviewTotals = { selected: 0, total: rows.length, moneyIn: 0, moneyOut: 0, transfers: 0, duplicates: 0, future: 0 };
+  const t: PreviewTotals = { selected: 0, total: rows.length, moneyIn: 0, moneyOut: 0, transfers: 0, duplicates: 0, future: 0, existing: 0 };
   for (const r of rows) {
     if (r.transfer) t.transfers++;
     if (r.duplicate) t.duplicates++;
     if (r.future) t.future++;
+    if (r.existing) t.existing++;
     if (!r.selected) continue;
     t.selected++;
     if (r.type === "income") t.moneyIn += r.amount;
@@ -96,6 +97,8 @@ export type ScannedDocument = {
   transaction_type?: "expense" | "income";
   description?: string;
   category?: string;
+  /** Receipt / invoice preview text (items, subtotal, tax, tip, invoice number, due date, PO, terms): saved as the note. */
+  formatted_receipt_text?: string;
 };
 
 /** An invoice or receipt read as one transaction (its total). Null when no total could be read. */
@@ -115,7 +118,45 @@ export function documentToRow(e: ScannedDocument | null | undefined, today: stri
       type: e.transaction_type === "income" ? "income" : "expense",
       category: e.category && e.category.trim() ? e.category.trim() : "Other",
       ...(e.merchant_name?.trim() ? { merchant: e.merchant_name.trim().slice(0, 120) } : {}),
+      ...((e.formatted_receipt_text ?? e.description)?.trim() ? { description: (e.formatted_receipt_text ?? e.description)!.trim().slice(0, 4000) } : {}),
     },
     warnings,
+  };
+}
+
+export type ExistingTx = { date: string; amount: number; merchant?: string | null; description?: string | null };
+
+const tokens = (s: string) => new Set(cleanMerchant(s).toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length > 1));
+const similar = (a: string, b: string) => {
+  const A = tokens(a);
+  const B = tokens(b);
+  if (A.size === 0 || B.size === 0) return true; // nothing to compare: date and amount decide
+  let shared = 0;
+  for (const t of A) if (B.has(t)) shared++;
+  return shared / Math.min(A.size, B.size) >= 0.5;
+};
+
+/**
+ * Rows that look like transactions the person already has (same date, same amount, similar merchant) are marked and
+ * unticked, so importing a statement twice or over manual entries does not double count. Ticking one again overrides it.
+ */
+export function markExistingDuplicates(rows: PreviewRow[], existing: ExistingTx[]): { rows: PreviewRow[]; warning: string | null } {
+  const byKey = new Map<string, ExistingTx[]>();
+  for (const e of existing) {
+    const key = `${String(e.date).slice(0, 10)}|${Math.round(Math.abs(Number(e.amount)) * 100)}`;
+    const list = byKey.get(key);
+    if (list) list.push(e);
+    else byKey.set(key, [e]);
+  }
+  let count = 0;
+  const out = rows.map((r) => {
+    const hits = byKey.get(`${r.date}|${Math.round(r.amount * 100)}`);
+    if (!hits || !hits.some((e) => similar(r.merchant ?? r.description ?? "", e.merchant ?? e.description ?? ""))) return r;
+    count++;
+    return { ...r, existing: true as const, selected: false };
+  });
+  return {
+    rows: out,
+    warning: count > 0 ? `${count} transaction${count === 1 ? " looks" : "s look"} like ${count === 1 ? "one" : "ones"} you already have (same date, amount and merchant) and ${count === 1 ? "is" : "are"} unticked. Tick ${count === 1 ? "it" : "them"} to import anyway.` : null,
   };
 }

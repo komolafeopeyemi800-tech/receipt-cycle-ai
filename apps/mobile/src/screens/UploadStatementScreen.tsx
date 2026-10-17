@@ -8,6 +8,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -24,12 +25,15 @@ import type { RootStackParamList } from "../navigation/types";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useSubscriptionState } from "../hooks/useSubscriptionState";
-import { apiStatementTools } from "../lib/statementParse/apiTools";
-import { parseCsvText } from "../lib/statementParse/csv";
+import { apiReadDocument, apiStatementTools } from "../lib/statementParse/apiTools";
+import { decodeText, parseCsvText } from "../lib/statementParse/csv";
+import { parseDate } from "../lib/statementParse/normalize";
+import { parseXlsxBytes } from "../lib/statementParse/xlsx";
 import { readPdfOnServer, readStatementPhoto } from "../lib/statementParse/pipeline";
 import {
   type PreviewRow,
   importPayload,
+  markExistingDuplicates,
   money,
   previewTotals,
   setFlagged,
@@ -37,6 +41,7 @@ import {
   swapDirections,
   toPreviewRows,
   toggleRow,
+  updateRow,
 } from "../lib/statementParse/preview";
 import { importInChunks } from "../lib/statementUpload";
 import { userFacingError, userFacingErrorFromUnknown } from "../lib/userFacingErrors";
@@ -49,22 +54,24 @@ type Picked = {
   name: string;
   mime: string;
   /** "statement" = Excel, PDF or Word: imported from the web app (phones cannot run the reader). */
-  kind: "image" | "csv" | "pdf" | "statement";
+  kind: "image" | "csv" | "xlsx" | "pdf" | "statement";
 };
 
 /** What a photo or PDF is: a statement (many rows, read by text recognition) or a receipt / invoice (one transaction). */
-type Intent = "statement" | "receipt";
+type Intent = "statement" | "receipt" | "invoice";
 
 export const STATEMENT_WAIT = "Reading your statement. This can take up to 30 seconds.";
+export const DOCUMENT_WAIT = "Reading your document. This can take up to 30 seconds.";
 
 const PREVIEW_PAGE = 100;
 
 /** Images are scanned; CSV, Excel, PDF and Word are read as statements. */
-function classify(name: string, mime: string): "image" | "csv" | "pdf" | "statement" | null {
+function classify(name: string, mime: string): "image" | "csv" | "xlsx" | "pdf" | "statement" | null {
   const n = name.toLowerCase();
   if (n.match(/\.(jpg|jpeg|png|webp|heic)$/i) || mime.startsWith("image/")) return "image";
   if (n.endsWith(".csv") || mime.includes("csv")) return "csv";
   if (n.endsWith(".pdf") || mime === "application/pdf") return "pdf";
+  if (n.endsWith(".xlsx") || mime === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") return "xlsx";
   if (n.match(/\.(xlsx|xls|xlsb|ods|pdf|docx|odt)$/i) || mime === "application/pdf" || mime.includes("spreadsheet") || mime.includes("wordprocessing")) {
     return "statement";
   }
@@ -94,6 +101,16 @@ export function UploadStatementScreen() {
   const [review, setReview] = useState<ReviewState | null>(null);
   const [intent, setIntent] = useState<Intent | null>(null);
   const client = useApiClient();
+  const existing = useQuery(api.transactions.list, ready ? { workspace, userId: user?.id } : "skip");
+
+  /** Show rows for review; any that match a transaction the person already has start unticked. */
+  const showReview = useCallback(
+    (rows: Parameters<typeof toPreviewRows>[0], warnings: string[]) => {
+      const marked = markExistingDuplicates(toPreviewRows(rows), (existing ?? []) as never);
+      setReview({ rows: marked.rows, warnings: marked.warning ? [...warnings, marked.warning] : warnings, shown: PREVIEW_PAGE });
+    },
+    [existing],
+  );
 
   const reset = useCallback(() => {
     setPicked(null);
@@ -108,7 +125,7 @@ export function UploadStatementScreen() {
     if (p.kind !== "csv") return;
     try {
       const res = await fetch(p.uri);
-      const txt = await res.text();
+      const txt = decodeText(new Uint8Array(await res.arrayBuffer()));
       setPreviewText(txt.slice(0, 8000));
     } catch (e) {
       setPreviewText(`(Could not load preview: ${userFacingErrorFromUnknown(e)})`);
@@ -232,7 +249,7 @@ export function UploadStatementScreen() {
 
   /** Step 1: read the CSV on the phone and show what was found. Nothing is saved yet. */
   const prepareCsv = useCallback(async () => {
-    if (!picked || !ready || picked.kind !== "csv") return;
+    if (!picked || !ready || (picked.kind !== "csv" && picked.kind !== "xlsx")) return;
     if (!user?.id || !token) {
       Alert.alert("Sign in required", "Sign in to import transactions into your account.");
       return;
@@ -245,18 +262,20 @@ export function UploadStatementScreen() {
     setStatus(null);
     try {
       const res = await fetch(picked.uri);
-      const parsed = await parseCsvText(await res.text());
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      // CSV bytes are decoded as UTF-8 or Windows-1252 (curly quotes survive); Excel workbooks are read sheet by sheet.
+      const parsed = picked.kind === "xlsx" ? await parseXlsxBytes(bytes, picked.name, apiStatementTools(client).ai) : await parseCsvText(decodeText(bytes), apiStatementTools(client).ai);
       if (parsed.status !== "ok") {
         Alert.alert("Could not read this file", userFacingError(parsed.message ?? "Could not read this CSV. It needs Date, Description and Amount (or Debit/Credit) columns."));
         return;
       }
-      setReview({ rows: toPreviewRows(parsed.rows), warnings: parsed.warnings, shown: PREVIEW_PAGE });
+      showReview(parsed.rows, parsed.warnings);
     } catch (e) {
       Alert.alert("Could not read this file", userFacingErrorFromUnknown(e));
     } finally {
       setBusy(false);
     }
-  }, [picked, ready, user?.id, token, sub]);
+  }, [picked, ready, user?.id, token, sub, client, showReview]);
 
   /** Step 2: save only the rows the person left ticked. */
   const confirmImport = useCallback(async () => {
@@ -327,14 +346,48 @@ export function UploadStatementScreen() {
         Alert.alert("Could not read this statement", userFacingError(parsed.message ?? "We could not read this scan reliably. Upload a clearer scan or a CSV or Excel version."));
         return;
       }
-      setReview({ rows: toPreviewRows(parsed.rows), warnings: parsed.warnings, shown: PREVIEW_PAGE });
+      showReview(parsed.rows, parsed.warnings);
     } catch (e) {
       Alert.alert("Could not read this statement", userFacingErrorFromUnknown(e));
     } finally {
       setStatus(null);
       setBusy(false);
     }
-  }, [picked, ready, user?.id, token, sub, client]);
+  }, [picked, ready, user?.id, token, sub, client, showReview]);
+
+  /** A PDF receipt or invoice: read on the server (Azure receipt / invoice models), then the same review screen as camera receipts. */
+  const readServerDocument = useCallback(async () => {
+    if (!picked || !ready || (picked.kind !== "pdf" && picked.kind !== "image")) return;
+    if (!token) {
+      Alert.alert("Sign in", "Sign in to read documents.");
+      return;
+    }
+    setBusy(true);
+    setStatus(DOCUMENT_WAIT);
+    try {
+      const res = await fetch(picked.uri);
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      if (bytes.length > 10 * 1024 * 1024) {
+        Alert.alert("File too large", "PDFs up to 10 MB are supported on the phone.");
+        return;
+      }
+      const isPng = /png/i.test(picked.mime) || /\.png$/i.test(picked.name);
+      const isJpg = /jpe?g/i.test(picked.mime) || /\.jpe?g$/i.test(picked.name);
+      if (picked.kind === "image" && !isPng && !isJpg) {
+        Alert.alert("Use a JPG or PNG", "Invoice photos need to be JPG or PNG. Take the photo again.");
+        return;
+      }
+      const mimeType = picked.kind === "pdf" ? "application/pdf" : isPng ? "image/png" : "image/jpeg";
+      const extracted = await apiReadDocument(client)(bytes, { kind: intent === "invoice" ? "invoice" : "auto", mimeType });
+      navigation.navigate("ScanReview", { scannedData: extracted, source: "upload" });
+      reset();
+    } catch (e) {
+      Alert.alert("Could not read this document", userFacingErrorFromUnknown(e));
+    } finally {
+      setStatus(null);
+      setBusy(false);
+    }
+  }, [picked, ready, token, client, navigation, reset, intent]);
 
   const canPick = () => {
     if (!ready || busy) return false;
@@ -374,8 +427,10 @@ export function UploadStatementScreen() {
   return (
     <ScrollView
       style={[styles.root, { paddingTop: insets.top + 8 }]}
-      contentContainerStyle={{ paddingBottom: 32 }}
+      contentContainerStyle={{ paddingBottom: 120 }}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      automaticallyAdjustKeyboardInsets
     >
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
@@ -409,12 +464,12 @@ export function UploadStatementScreen() {
 
           {picked.kind === "image" ? (
             <Image source={{ uri: picked.uri }} style={styles.previewImg} resizeMode="contain" />
-          ) : picked.kind === "pdf" ? (
-            <Text style={styles.previewTxt}>PDF selected.</Text>
+          ) : picked.kind === "pdf" || picked.kind === "xlsx" ? (
+            review ? null : <Text style={styles.previewTxt}>{picked.kind === "pdf" ? "PDF selected." : "Excel workbook selected."}</Text>
           ) : picked.kind === "statement" ? (
             <Text style={styles.previewTxt}>
-              Excel statements are imported from the web app (receiptcycle.com), where large files take seconds. On your phone,
-              export the statement as CSV or PDF, or photograph a receipt.
+              This file type cannot be read on the phone (old .xls, .ods and Word files). Save it as .xlsx, CSV or PDF and choose it again, or
+              import it at receiptcycle.com.
             </Text>
           ) : review ? null : (
             <ScrollView keyboardShouldPersistTaps="handled" style={styles.previewBox} nestedScrollEnabled>
@@ -431,7 +486,10 @@ export function UploadStatementScreen() {
                 <Text style={styles.btnTxt}>Bank or card statement</Text>
               </Pressable>
               <Pressable style={styles.btnSecondary} onPress={() => setIntent("receipt")} accessibilityRole="button">
-                <Text style={styles.btnSecondaryTxt}>Receipt or invoice</Text>
+                <Text style={styles.btnSecondaryTxt}>Receipt</Text>
+              </Pressable>
+              <Pressable style={styles.btnSecondary} onPress={() => setIntent("invoice")} accessibilityRole="button">
+                <Text style={styles.btnSecondaryTxt}>Invoice</Text>
               </Pressable>
             </View>
           ) : null}
@@ -452,8 +510,18 @@ export function UploadStatementScreen() {
             </>
           ) : null}
 
-          {picked.kind === "pdf" && intent === "receipt" ? (
-            <Text style={styles.previewTxt}>Receipt and invoice PDFs are read at receiptcycle.com. On your phone, take a photo of the receipt or invoice instead.</Text>
+          {((picked.kind === "pdf" && (intent === "receipt" || intent === "invoice")) || (picked.kind === "image" && intent === "invoice")) ? (
+            <>
+              <Pressable
+                style={[styles.btn, (busy || !ready || !aiScanOk) && { opacity: 0.55 }]}
+                onPress={() => void readServerDocument()}
+                disabled={busy || !ready || !aiScanOk}
+                accessibilityRole="button"
+              >
+                {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnTxt}>{intent === "invoice" ? "Read invoice" : "Read receipt"}</Text>}
+              </Pressable>
+              <Text style={styles.scanHint}>{busy ? DOCUMENT_WAIT : "Opens the review screen: check the total and date, then save. Invoice numbers, due dates and line items are kept in the note."}</Text>
+            </>
           ) : null}
 
           {picked.kind === "image" && intent === "receipt" ? (
@@ -476,7 +544,7 @@ export function UploadStatementScreen() {
             </>
           ) : null}
 
-          {picked.kind === "csv" && !review ? (
+          {(picked.kind === "csv" || picked.kind === "xlsx") && !review ? (
             <Pressable
               style={[styles.btn, (busy || !ready || !canImportRows) && { opacity: 0.55 }]}
               onPress={() => void prepareCsv()}
@@ -508,6 +576,20 @@ function ReviewPanel({ review, setReview, busy, onImport }: { review: ReviewStat
   const totals = previewTotals(review.rows);
   const update = (rows: PreviewRow[]) => setReview({ ...review, rows });
   const visible = review.rows.slice(0, review.shown);
+  const [editing, setEditing] = useState<number | null>(null);
+  const [draft, setDraft] = useState({ date: "", merchant: "", amount: "" });
+  const startEdit = (r: PreviewRow) => {
+    setDraft({ date: r.date, merchant: r.merchant ?? "", amount: String(r.amount) });
+    setEditing(r.id);
+  };
+  const draftAmount = Number(draft.amount.replace(/[$,\s]/g, ""));
+  const draftDate = parseDate(draft.date, "mdy");
+  const draftOk = Number.isFinite(draftAmount) && draftAmount > 0 && draftDate !== null;
+  const saveEdit = () => {
+    if (editing === null || !draftOk) return;
+    update(updateRow(review.rows, editing, { date: draftDate!, merchant: draft.merchant.trim() || undefined, amount: Math.round(draftAmount * 100) / 100 } as never));
+    setEditing(null);
+  };
   const transfersOn = review.rows.some((r) => r.transfer && r.selected);
   return (
     <View style={styles.reviewBox}>
@@ -533,7 +615,8 @@ function ReviewPanel({ review, setReview, busy, onImport }: { review: ReviewStat
         ) : null}
       </View>
       {visible.map((r) => (
-        <View key={r.id} style={[styles.reviewRow, !r.selected && { opacity: 0.45 }]}>
+        <View key={r.id}>
+        <View style={[styles.reviewRow, !r.selected && { opacity: 0.45 }]}>
           <Pressable onPress={() => update(toggleRow(review.rows, r.id))} hitSlop={8} accessibilityRole="checkbox" accessibilityState={{ checked: r.selected }} accessibilityLabel={`Include ${r.merchant ?? "transaction"}`}>
             <Ionicons name={r.selected ? "checkbox" : "square-outline"} size={22} color={r.selected ? colors.primary : colors.gray400} />
           </Pressable>
@@ -544,7 +627,11 @@ function ReviewPanel({ review, setReview, busy, onImport }: { review: ReviewStat
               {r.transfer ? " · Transfer" : ""}
               {r.duplicate ? " · Possible duplicate" : ""}
               {r.future ? " · Check the date" : ""}
+              {r.existing ? " · Already in your records" : ""}
             </Text>
+            <Pressable onPress={() => (editing === r.id ? setEditing(null) : startEdit(r))} hitSlop={6} accessibilityRole="button" accessibilityLabel={`Edit ${r.merchant ?? "transaction"}`}>
+              <Text style={styles.editLink}>{editing === r.id ? "Cancel" : "Edit"}</Text>
+            </Pressable>
           </View>
           <Pressable onPress={() => update(setRowType(review.rows, r.id, r.type === "expense" ? "income" : "expense"))} hitSlop={6} accessibilityRole="button" accessibilityLabel={`Marked as ${r.type === "income" ? "money in" : "money out"}. Tap to change.`}>
             <Text style={[styles.reviewAmount, { color: r.type === "income" ? colors.primary : colors.gray900 }]}>
@@ -552,6 +639,21 @@ function ReviewPanel({ review, setReview, busy, onImport }: { review: ReviewStat
             </Text>
             <Text style={styles.reviewMeta}>{r.type === "income" ? "money in" : "money out"}</Text>
           </Pressable>
+        </View>
+        {editing === r.id ? (
+          <View style={styles.editBox}>
+            <Text style={styles.editLabel}>Date (month/day/year or YYYY-MM-DD)</Text>
+            <TextInput style={styles.editInput} value={draft.date} onChangeText={(t) => setDraft({ ...draft, date: t })} autoCapitalize="none" autoCorrect={false} returnKeyType="next" accessibilityLabel="Date" />
+            <Text style={styles.editLabel}>Description</Text>
+            <TextInput style={styles.editInput} value={draft.merchant} onChangeText={(t) => setDraft({ ...draft, merchant: t })} returnKeyType="next" accessibilityLabel="Description" />
+            <Text style={styles.editLabel}>Amount</Text>
+            <TextInput style={styles.editInput} value={draft.amount} onChangeText={(t) => setDraft({ ...draft, amount: t })} keyboardType="decimal-pad" returnKeyType="done" onSubmitEditing={saveEdit} accessibilityLabel="Amount" />
+            {!draftOk ? <Text style={styles.reviewWarn}>Enter a real date and an amount above zero.</Text> : null}
+            <Pressable style={[styles.chip, !draftOk && { opacity: 0.5 }]} onPress={saveEdit} disabled={!draftOk} accessibilityRole="button">
+              <Text style={styles.chipTxt}>Save changes</Text>
+            </Pressable>
+          </View>
+        ) : null}
         </View>
       ))}
       {review.shown < review.rows.length ? (
@@ -663,6 +765,10 @@ const styles = StyleSheet.create({
   chipTxt: { color: colors.primary, fontWeight: "700", fontSize: typeScale.sm },
   reviewRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.gray200 },
   reviewMerchant: { fontSize: typeScale.body, color: colors.gray900, fontWeight: "600" },
+  editLink: { color: colors.primary, fontWeight: "700", fontSize: typeScale.sm, paddingVertical: 4 },
+  editBox: { gap: 6, paddingBottom: 10, paddingLeft: 32 },
+  editLabel: { fontSize: 11, color: colors.gray500 },
+  editInput: { borderWidth: 1, borderColor: colors.gray200, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: typeScale.body, color: colors.gray900, backgroundColor: "#fff" },
   reviewMeta: { fontSize: 11, color: colors.gray500 },
   reviewAmount: { fontSize: typeScale.body, fontWeight: "700", textAlign: "right" },
   hint: { fontSize: typeScale.md, color: colors.primary, marginTop: 8, textAlign: "center" },

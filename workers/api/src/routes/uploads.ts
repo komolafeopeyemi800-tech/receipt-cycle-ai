@@ -4,6 +4,7 @@ import { z } from "zod";
 import { uploadParses } from "../db/schema";
 import { aiExtractChunk, aiMapColumns, aiOcrPdf } from "../docs/ai";
 import { AzureError, azureConfigured } from "../docs/azure";
+import { azureReadDocument } from "../docs/azureDoc";
 import { getRuntimeConfig } from "../lib/config";
 import { useDaily } from "../lib/dailyLimit";
 import { ApiError } from "../lib/errors";
@@ -109,6 +110,35 @@ uploadRoutes.post("/ai/ocr-pdf", async (c) => {
     }
     console.error("scanned statement read failed", e);
     throw new ApiError(503, "Scanned statements cannot be read right now. Please try again later, or upload a CSV or Excel version.");
+  }
+});
+
+/**
+ * A receipt or invoice (PDF or photo) read by Azure prebuilt-receipt / prebuilt-invoice, returned in the shape the
+ * receipt-review screens already use plus invoice fields. Same switch, gates and daily upload limit as the statement route.
+ */
+uploadRoutes.post("/ai/read-document", async (c) => {
+  const body = await parseBody(
+    c,
+    z.object({
+      fileBase64: z.string().min(100).max(MAX_PDF_BASE64_CHARS),
+      kind: z.enum(["receipt", "invoice", "auto"]).default("auto"),
+      mimeType: z.enum(["image/png", "image/jpeg", "image/jpg", "application/pdf"]).optional(),
+      pageCount: z.number().int().min(1).max(2000).optional(),
+    }),
+  );
+  if (c.env.OCR_PDF_ENABLED !== "true") throw new ApiError(400, "Reading receipts and invoices from PDFs is not available yet. Take a photo of it instead.");
+  await aiGate(c, true, false);
+  try {
+    const extracted = await azureReadDocument(c.env, body.fileBase64, body.kind, { expectedPages: body.mimeType && body.mimeType !== "application/pdf" ? 1 : body.pageCount });
+    return c.json({ extracted_data: extracted });
+  } catch (e) {
+    if (e instanceof AzureError) {
+      console.error("document read failed", e.message);
+      throw new ApiError(e.status === 503 || e.status === 504 ? 503 : 400, e.userMessage);
+    }
+    console.error("document read failed", e);
+    throw new ApiError(503, "This document cannot be read right now. Please try again later.");
   }
 });
 

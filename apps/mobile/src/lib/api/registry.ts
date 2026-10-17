@@ -7,6 +7,7 @@ import { todayLocalYmd } from "../dates";
 import { defaultAvatarUrl } from "../avatar";
 import type { ApiClient } from "./client";
 import type { ColumnMapping } from "../statementParse/statement";
+import type { ScannedExtracted } from "../../types/transaction";
 import type {
   Account,
   AdminArgs,
@@ -427,6 +428,14 @@ export const api = {
       { rows: StatementRow[]; opening?: number | null; closing?: number | null; warnings?: string[] }
     >("action", "uploads.aiOcrPdf", async (c, a) =>
       c.request<{ rows: StatementRow[]; opening?: number | null; closing?: number | null; warnings?: string[] }>("POST", "/api/uploads/ai/ocr-pdf", {
+        body: { fileBase64: a.fileBase64, kind: a.kind, mimeType: a.mimeType, pageCount: a.pageCount },
+      }),
+    ),
+    aiReadDocument: fn<
+      { fileBase64: string; kind?: "receipt" | "invoice" | "auto"; mimeType?: string; pageCount?: number },
+      { extracted_data: ScannedExtracted }
+    >("action", "uploads.aiReadDocument", async (c, a) =>
+      c.request<{ extracted_data: ScannedExtracted }>("POST", "/api/uploads/ai/read-document", {
         body: { fileBase64: a.fileBase64, kind: a.kind, mimeType: a.mimeType, pageCount: a.pageCount },
       }),
     ),

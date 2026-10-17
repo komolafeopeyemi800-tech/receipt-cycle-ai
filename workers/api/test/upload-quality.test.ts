@@ -302,3 +302,12 @@ describe("phone: statement photos and PDFs sent to the server", () => {
     expect(r.message).toBe("This PDF is too long to read right now. Upload a CSV or Excel version.");
   });
 });
+
+describe("text receipt PDFs", () => {
+  it("are told apart from statements", async () => {
+    const { looksLikeReceipt } = await import("../../../apps/mobile/src/lib/statementParse/pipeline");
+    expect(looksLikeReceipt("DAILY GRIND COFFEE\n03/05/2026 8:03 AM\nLATTE 5.25\nSUBTOTAL 14.90\nTAX 1.53\nTIP 1.50\nTOTAL 17.93\nPaid VISA ****1007")).toBe(true);
+    expect(looksLikeReceipt("Statement period 03/01/2026 through 03/31/2026\nBeginning balance 100\nSUBTOTAL TOTAL TAX")).toBe(false);
+    expect(looksLikeReceipt("03/01/2026 A 5.00\n03/02/2026 B 6.00\n03/03/2026 C 7.00\n03/04/2026 D 8.00\nTotal 26 subtotal tax")).toBe(false);
+  });
+});

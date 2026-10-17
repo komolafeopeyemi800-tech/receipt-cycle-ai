@@ -47,4 +47,11 @@ export type ScannedExtracted = {
   formatted_receipt_text?: string;
   ocr_confidence?: string;
   currency?: string;
+  /** Invoices and tips (read by the document reader). */
+  tip?: number | null;
+  invoice_number?: string;
+  due_date?: string;
+  po_number?: string;
+  payment_terms?: string;
+  bill_to?: string;
 };

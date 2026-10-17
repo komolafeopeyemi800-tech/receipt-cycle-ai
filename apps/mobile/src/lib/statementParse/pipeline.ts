@@ -53,6 +53,8 @@ export type ParseResult = {
   verification?: { opening: number; closing: number; ok: boolean };
   /** status "document": the text of an invoice or receipt PDF, to be read as one transaction instead of a statement. */
   documentText?: string;
+  /** With status "document": whether it reads as an invoice or a receipt. */
+  documentKind?: "invoice" | "receipt";
   sheets?: { name: string; rows: number }[];
 };
 
@@ -364,6 +366,14 @@ export async function readPdfOnServer(bytes: Uint8Array, ai: StatementAi): Promi
   }
 }
 
+/** A text receipt (subtotal, tax or tip, total, a payment line, only a date or two), as opposed to a statement. */
+export function looksLikeReceipt(text: string): boolean {
+  const t = text.slice(0, 20000);
+  if (/(?:beginning|opening|previous|ending|closing)\s+balance|statement\s+period|account\s+activity/i.test(t)) return false;
+  const dates = t.match(/\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b|\b\d{4}-\d{2}-\d{2}\b/g) ?? [];
+  return /sub-?total/i.test(t) && /\btotal\b/i.test(t) && /\b(?:tax|tip|change|cash|visa|mastercard|amex|debit|credit\s+card)\b/i.test(t) && dates.length <= 3;
+}
+
 export async function parseStatement(bytes: Uint8Array, opts: ParseOptions): Promise<ParseResult> {
   if (bytes.length > MAX_FILE_BYTES) {
     return base({ status: "too_large", message: `Files up to ${MAX_FILE_BYTES / 1024 / 1024} MB are supported. Split the file or export a smaller date range.` });
@@ -393,12 +403,14 @@ export async function parseStatement(bytes: Uint8Array, opts: ParseOptions): Pro
       return await fromText(plainText(doc), opts, fmt);
     }
     const markdown = opts.engine.toMarkdown(bytes, "pdf");
-    if (looksLikeInvoice(markdown)) {
+    const isInvoice = looksLikeInvoice(markdown);
+    if (isInvoice || looksLikeReceipt(markdown)) {
       return base({
         status: "document",
         fileType: "pdf",
         documentText: markdown,
-        message: "This looks like an invoice or bill rather than a statement, so it is read as one transaction (its total).",
+        documentKind: isInvoice ? "invoice" : "receipt",
+        message: `This looks like ${isInvoice ? "an invoice or bill" : "a receipt"} rather than a statement, so it is read as one transaction (its total).`,
       });
     }
     return await fromText(markdown, opts, "pdf");
@@ -477,4 +489,10 @@ export async function parseGrid(grid: Grid, fileType: string, ai?: StatementAi):
  */
 export async function parseExtractedDocument(text: string, grids: Grid[]): Promise<ParseResult> {
   return fromText(text, { fileName: "scan.pdf", engine: null as unknown as DocEngine }, "pdf", grids);
+}
+
+/** Several named tables (the sheets of a workbook read on the phone) through the same reader as every other file. */
+export async function parseTables(tables: { name: string; grid: Grid }[], fileType: string, ai?: StatementAi): Promise<ParseResult> {
+  const opts: ParseOptions = { fileName: `statement.${fileType}`, engine: null as unknown as DocEngine, ai };
+  return fromTables(tables, opts, fileType);
 }

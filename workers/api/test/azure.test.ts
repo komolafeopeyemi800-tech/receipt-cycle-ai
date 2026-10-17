@@ -1,7 +1,7 @@
 import { env } from "cloudflare:test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import app from "../src/index";
-import { AZURE_TOO_LONG, AzureError, azureReadStatement } from "../src/docs/azure";
+import { AZURE_TOO_LONG, AzureError, SCAN_NO_BALANCES, SCAN_UNRELIABLE, azureReadStatement, plainText } from "../src/docs/azure";
 import { makeUser } from "./helpers";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -15,7 +15,7 @@ const B64 = "QUJD".repeat(40);
 const num = (n: number, confidence = 0.98) => ({ type: "number", valueNumber: n, content: String(n), confidence });
 const date = (iso: string, confidence = 0.98) => ({ type: "date", valueDate: iso, content: iso, confidence });
 const str = (s: string, confidence = 0.98) => ({ type: "string", valueString: s, content: s, confidence });
-function bankResult(opts: { pages?: number; txns?: any[]; period?: [string, string]; docConfidence?: number } = {}) {
+function bankResult(opts: { pages?: number; txns?: any[]; period?: [string, string]; docConfidence?: number; opening?: number; closing?: number } = {}) {
   const txns = opts.txns ?? [
     { Date: date("2026-03-02"), Description: str("POS PURCHASE CHEVRON SAN JOSE CA"), WithdrawalAmount: num(174.35) },
     { Date: date("2026-03-07"), Description: str("STRIPE TRANSFER ST-2612ABC"), DepositAmount: num(2297.22) },
@@ -40,8 +40,8 @@ function bankResult(opts: { pages?: number; txns?: any[]; period?: [string, stri
                 {
                   type: "object",
                   valueObject: {
-                    BeginningBalance: num(5250.75),
-                    EndingBalance: num(7356.45),
+                    BeginningBalance: num(opts.opening ?? 5250.75),
+                    EndingBalance: num(opts.closing ?? 7356.45),
                     Transactions: { type: "array", valueArray: txns.map((o) => ({ type: "object", valueObject: o })) },
                   },
                 },
@@ -125,7 +125,7 @@ describe("Azure bank statement model", () => {
   it("puts a yearless date in the statement period's year when Azure guessed another year", async () => {
     stubAzure([
       { match: /:analyze/, method: "POST", respond: accepted },
-      { match: /analyzeResults/, respond: polls(bankResult({ txns: [{ Date: date("2024-03-02"), Description: str("X"), WithdrawalAmount: num(5) }] })) },
+      { match: /analyzeResults/, respond: polls(bankResult({ txns: [{ Date: date("2024-03-02"), Description: str("X"), WithdrawalAmount: num(5) }], opening: 100, closing: 95 })) },
     ]);
     const out = await azureReadStatement(azureEnv, B64, { sleep: noSleep });
     expect(out.rows[0]!.date).toBe("2026-03-02");
@@ -148,6 +148,71 @@ describe("layout fallback", () => {
     expect(out.opening).toBe(1000);
     expect(out.closing).toBe(1195.5);
     expect(calls.find((c) => /prebuilt-layout/.test(c.url))!.url).toContain("outputContentFormat=markdown");
+  });
+});
+
+describe("rows that do not add up to the printed balances", () => {
+  const slid = [
+    { Date: date("2026-03-01"), Description: str("BEGINNING BALANCE"), WithdrawalAmount: num(4.5) },
+    { Date: date("2026-03-02"), Description: str("COFFEE SHOP"), WithdrawalAmount: num(200) },
+  ];
+  it("tries the layout model and uses it when its rows reconcile (a skewed photo)", async () => {
+    stubAzure([
+      { match: /bankStatement\.us:analyze/, method: "POST", respond: accepted },
+      { match: /prebuilt-layout:analyze/, method: "POST", respond: accepted },
+      { match: /analyzeResults\/op1/, respond: polls(bankResult({ txns: slid, opening: 1000, closing: 1195.5 }), layoutResult()) },
+    ]);
+    const out = await azureReadStatement(azureEnv, B64, { sleep: noSleep, expectedPages: 1 });
+    expect(out.model).toBe("prebuilt-layout");
+    expect(out.rows.map((r) => [r.amount, r.type])).toEqual([[4.5, "expense"], [200, "income"]]);
+    expect(out.opening).toBe(1000);
+  });
+
+  it("refuses the scan when neither read adds up (never shows wrong rows)", async () => {
+    stubAzure([
+      { match: /bankStatement\.us:analyze/, method: "POST", respond: accepted },
+      { match: /prebuilt-layout:analyze/, method: "POST", respond: accepted },
+      { match: /analyzeResults\/op1/, respond: polls(bankResult({ txns: slid, opening: 1000, closing: 5000 }), (() => { const l = layoutResult(); (l.analyzeResult as any).content = "Beginning balance $1,000.00 Ending balance $5,000.00"; return l; })()) },
+    ]);
+    const err = (await azureReadStatement(azureEnv, B64, { sleep: noSleep, expectedPages: 1 }).catch((e) => e)) as AzureError;
+    expect(err.userMessage).toBe(SCAN_UNRELIABLE);
+    expect(err.status).toBe(422);
+  });
+
+  it("refuses a statement that prints no balances", async () => {
+    const noBalances = bankResult();
+    const acct = (noBalances.analyzeResult.documents[0]!.fields.Accounts.valueArray[0] as any).valueObject;
+    delete acct.BeginningBalance;
+    delete acct.EndingBalance;
+    stubAzure([
+      { match: /:analyze/, method: "POST", respond: accepted },
+      { match: /analyzeResults/, respond: polls(noBalances) },
+    ]);
+    const err = (await azureReadStatement(azureEnv, B64, { sleep: noSleep }).catch((e) => e)) as AzureError;
+    expect(err.userMessage).toBe(SCAN_NO_BALANCES);
+  });
+});
+
+describe("layout fallback with HTML tables in the markdown", () => {
+  it("never lets raw HTML reach a merchant name", async () => {
+    const html = layoutResult();
+    (html.analyzeResult as any).content =
+      "Statement period: 03/01/2026 through 03/31/2026\n<!-- PageBreak -->\n<table><tr><th>Date</th><th>Description</th><th>Amount</th></tr><tr><td>03/02/2026</td><td>A &amp; B Hardware</td><td>-18.50</td></tr><tr><td>03/03/2026</td><td>Cafe &lt;Main&gt;</td><td>-4.00</td></tr></table>\nBeginning balance $1,000.00 Ending balance $977.50";
+    // tables that are not statements: the text path must still not echo markup
+    (html.analyzeResult as any).tables = [];
+    stubAzure([
+      { match: /bankStatement\.us:analyze/, method: "POST", respond: accepted },
+      { match: /prebuilt-layout:analyze/, method: "POST", respond: accepted },
+      { match: /analyzeResults\/op1/, respond: polls(bankResult({ txns: [] }), html) },
+    ]);
+    const out = await azureReadStatement(azureEnv, B64, { sleep: noSleep }).catch((e) => e);
+    expect(out).not.toBeInstanceOf(Error);
+    const rows = out instanceof Error ? [] : out.rows;
+    expect(rows.length).toBe(2);
+    expect(rows[0]!.merchant).toBe("A & B Hardware");
+    for (const r of rows) expect(`${r.merchant ?? ""}`).not.toMatch(/<\/?t[dhr]|<table|<!--/);
+    expect(plainText("<table><tr><td>A &amp; B</td></tr></table><!-- x -->")).not.toMatch(/[<]/);
+    expect(plainText("<td>A &amp; B</td>")).toContain("A & B");
   });
 });
 

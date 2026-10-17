@@ -13,7 +13,7 @@
  */
 import { dateWithPeriodYear, parseAmount, parseDate, parseYearlessMonthDay, round2 } from "../../../../apps/mobile/src/lib/statementParse/normalize";
 import { parseExtractedDocument } from "../../../../apps/mobile/src/lib/statementParse/pipeline";
-import type { Grid, ParsedRow, StatementPeriod } from "../../../../apps/mobile/src/lib/statementParse/statement";
+import { type Grid, type ParsedRow, type StatementPeriod, isSummaryText, reconcile } from "../../../../apps/mobile/src/lib/statementParse/statement";
 import type { Env } from "../types";
 
 const API_VERSION = "2024-11-30";
@@ -187,6 +187,7 @@ function fromBankModel(result: Json): { rows: ParsedRow[]; opening: number | nul
       const value = isIncome ? deposit : withdrawal;
       if (!date || value === null || value === 0) continue;
       const description = text(field(o, "Description"));
+      if (isSummaryText(description)) continue; // "BEGINNING BALANCE" / "ENDING BALANCE" lines are not transactions
       rows.push({
         date,
         amount: round2(Math.abs(value)),
@@ -224,6 +225,21 @@ function gridsOf(result: Json): Grid[] {
   return grids;
 }
 
+/** Azure's markdown output draws tables as HTML (and adds comments such as PageBreak): keep only the words. */
+export function plainText(content: string): string {
+  return content
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<\/?(?:table|thead|tbody|tr|figure|figcaption)[^>]*>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/[ \t]+/g, " ");
+}
+
 const pageCount = (result: Json): number => (Array.isArray(result.pages) ? result.pages.length : 0);
 
 function checkPages(analysed: number, opts: AzureOptions) {
@@ -237,7 +253,24 @@ function checkPages(analysed: number, opts: AzureOptions) {
   }
 }
 
+export const SCAN_UNRELIABLE = "We could not read this scan reliably. Upload a clearer scan or a CSV or Excel version.";
+export const SCAN_NO_BALANCES = "We could not find the opening and closing balances on this statement, so the scan cannot be checked. Upload a CSV or Excel version.";
+
+/**
+ * Scanned statements are accepted only when the rows add up exactly to the opening and closing balance printed on the
+ * statement. Anything else is refused, so wrong rows are never shown.
+ */
+function gate(r: AzureStatement): AzureStatement {
+  if (r.opening === null || r.closing === null) throw new AzureError(SCAN_NO_BALANCES, 422, `Azure DI: refused, no printed balances (${r.model}, ${r.rows.length} rows)`);
+  if (!reconcile(r.rows, r.opening, r.closing)) throw new AzureError(SCAN_UNRELIABLE, 422, `Azure DI: refused, ${r.rows.length} rows do not add up to ${r.opening} -> ${r.closing} (${r.model})`);
+  return r;
+}
+
 export async function azureReadStatement(env: Env, base64: string, opts: AzureOptions = {}): Promise<AzureStatement> {
+  return gate(await readUngated(env, base64, opts));
+}
+
+async function readUngated(env: Env, base64: string, opts: AzureOptions = {}): Promise<AzureStatement> {
   if (!azureConfigured(env)) throw new AzureError(UNAVAILABLE, 503, "Azure DI is not configured (AZURE_DI_ENDPOINT / AZURE_DI_KEY)");
   const budget = new Budget(opts.timeoutMs ?? TIMEOUT_MS, opts.pollMs ?? POLL_MS, opts.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms))));
 
@@ -245,15 +278,35 @@ export async function azureReadStatement(env: Env, base64: string, opts: AzureOp
   checkPages(pageCount(bank), opts);
   const parsed = fromBankModel(bank);
   const docConfidence = typeof (bank.documents as Json[] | undefined)?.[0]?.confidence === "number" ? (bank.documents as Json[])[0]!.confidence : 1;
-  if (parsed.rows.length > 0 && docConfidence >= 0.3) {
-    return { ...parsed, pages: pageCount(bank), model: "prebuilt-bankStatement.us" };
-  }
+  const bankResult: AzureStatement = { ...parsed, pages: pageCount(bank), model: "prebuilt-bankStatement.us" };
+  const bankAddsUp = parsed.opening !== null && parsed.closing !== null ? reconcile(parsed.rows, parsed.opening, parsed.closing) : null;
+  if (parsed.rows.length > 0 && docConfidence >= 0.3 && bankAddsUp !== false) return bankResult;
 
-  // The statement model found nothing (or little confidence): read the tables with the layout model instead.
+  // The statement model found nothing, was unsure, or its rows do not add up to the printed balances (typical for a
+  // skewed photo, where amounts slide out of line): read the tables with the layout model instead. Its running-balance
+  // column lets the shared reader recover each amount from the balances.
+  const hadBankRows = parsed.rows.length > 0 && docConfidence >= 0.3;
+  let layoutResult: AzureStatement | null = null;
+  try {
+    layoutResult = await readLayout(env, base64, budget, opts);
+  } catch (e) {
+    if (!hadBankRows || (e instanceof AzureError && e.status !== 422)) throw e; // keep the statement model's rows (the browser warns that they do not add up)
+  }
+  if (layoutResult && hadBankRows) {
+    const opening = layoutResult.opening ?? parsed.opening;
+    const closing = layoutResult.closing ?? parsed.closing;
+    if (opening !== null && closing !== null && reconcile(layoutResult.rows, opening, closing)) return { ...layoutResult, opening, closing };
+    return bankResult;
+  }
+  if (!layoutResult) throw new AzureError("No transactions could be found in this document. Upload a CSV or Excel version.", 422, "Azure DI: no transactions found");
+  return layoutResult;
+}
+
+async function readLayout(env: Env, base64: string, budget: Budget, opts: AzureOptions): Promise<AzureStatement> {
   const layout = await analyze(env, "prebuilt-layout", base64, budget, "&outputContentFormat=markdown");
   const pages = pageCount(layout);
   checkPages(pages, opts);
-  const content = String(layout.content ?? "");
+  const content = plainText(String(layout.content ?? ""));
   const read = await parseExtractedDocument(content, gridsOf(layout));
   if (read.rows.length === 0) throw new AzureError("No transactions could be found in this document. Upload a CSV or Excel version.", 422, "Azure DI: layout fallback found no transactions");
   return {

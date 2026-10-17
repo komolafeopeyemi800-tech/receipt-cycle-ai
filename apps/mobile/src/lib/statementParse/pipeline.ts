@@ -28,10 +28,11 @@ export const TEXT_CHUNK_CHARS = 12_000;
 export const MAX_AI_CHUNKS = 15;
 
 /**
- * Scanned or photographed statements are NOT read by AI for now: in testing the model returned invented rows for them,
- * and wrong rows in a finance app are worse than none. Flip this on only after real-world accuracy checks pass.
+ * Scanned PDFs and statement photos are read by text recognition on the server (Azure Document Intelligence) and are
+ * accepted ONLY when the rows add up exactly to the opening and closing balance printed on the statement; otherwise they
+ * are refused. Digital PDFs never use this: they are read by the free local reader.
  */
-export const scannedPdfOcr = { enabled: false };
+export const scannedPdfOcr = { enabled: true };
 
 export type ParseStatus = "ok" | "needs_ocr" | "unreadable" | "unsupported" | "too_large" | "document";
 
@@ -329,22 +330,19 @@ export function looksLikeInvoice(text: string): boolean {
 /** A scanned statement read by the OCR service, checked against the balances it printed. */
 function scannedResult(out: ParsedRow[] | OcrOutcome, fileType: string, needsOcr?: ParseResult["needsOcr"]): ParseResult {
   const rows = Array.isArray(out) ? out : out.rows;
+  const refuse = (message: string) => base({ status: "unreadable", fileType, ...(needsOcr ? { needsOcr } : {}), message });
+  if (rows.length === 0) return refuse("No transactions could be found in this scan. Upload a clearer scan or a CSV or Excel version.");
+  // A scan is accepted only when its rows add up exactly to the opening and closing balance printed on it.
+  if (Array.isArray(out) || typeof out.opening !== "number" || typeof out.closing !== "number") return refuse(SCAN_NO_BALANCES);
+  if (!reconcile(rows, out.opening, out.closing)) return refuse(SCAN_UNRELIABLE);
   const warnings = [`This is a ${fileType === "pdf" ? "scanned PDF" : "photo"}, so it was read by text recognition. Check every row against your statement.`];
-  if (!Array.isArray(out) && out.warnings) warnings.push(...out.warnings);
-  let verification: ParseResult["verification"];
-  if (!Array.isArray(out) && typeof out.opening === "number" && typeof out.closing === "number" && rows.length > 0) {
-    const ok = reconcile(rows, out.opening, out.closing);
-    verification = { opening: out.opening, closing: out.closing, ok };
-    warnings.push(
-      ok
-        ? "Checked: these transactions add up exactly to the opening and closing balance on the scan."
-        : `These transactions do NOT add up to the balances on the scan (opening ${out.opening.toFixed(2)}, closing ${out.closing.toFixed(2)}), so rows are missing or misread. Do not import without checking, or upload the CSV/Excel version from your bank.`,
-    );
-  } else if (rows.length > 0) {
-    warnings.push("The scan has no balances to check the rows against, so every row needs a look.");
-  }
-  return finish(base({ fileType, rows, aiCalls: 1, source: "ai", ...(needsOcr ? { needsOcr } : {}), warnings, ...(verification ? { verification } : {}) }));
+  if (out.warnings) warnings.push(...out.warnings);
+  warnings.push("Checked: these transactions add up exactly to the opening and closing balance on the scan.");
+  return finish(base({ fileType, rows, aiCalls: 1, source: "ai", ...(needsOcr ? { needsOcr } : {}), warnings, verification: { opening: out.opening, closing: out.closing, ok: true } }));
 }
+
+export const SCAN_UNRELIABLE = "We could not read this scan reliably. Upload a clearer scan or a CSV or Excel version.";
+export const SCAN_NO_BALANCES = "We could not find the opening and closing balances on this statement, so the scan cannot be checked. Upload a CSV or Excel version.";
 
 /** A photo (png / jpeg) of a multi-row statement, read as a statement rather than as one receipt. Used by the phone. */
 export async function readStatementPhoto(bytes: Uint8Array, mimeType: string, ai: StatementAi): Promise<ParseResult> {

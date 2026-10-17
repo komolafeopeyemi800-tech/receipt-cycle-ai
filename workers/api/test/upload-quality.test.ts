@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { dateWithPeriodYear, findStatementPeriod, parseAmount, parseDate, parseYearlessMonthDay } from "../../../apps/mobile/src/lib/statementParse/normalize";
 import { annotateRows, defaultSelection, mapColumns, reconcile, rowsFromGrid } from "../../../apps/mobile/src/lib/statementParse/statement";
 import { csvToGrid, parseCsvText } from "../../../apps/mobile/src/lib/statementParse/csv";
-import { findStatementBalances, looksLikeInvoice, mergePageTables, parseStatement, scannedPdfOcr } from "../../../apps/mobile/src/lib/statementParse/pipeline";
+import { findStatementBalances, looksLikeInvoice, mergePageTables, parseStatement, readPdfOnServer, readStatementPhoto, scannedPdfOcr } from "../../../apps/mobile/src/lib/statementParse/pipeline";
 import { chunkContext } from "../../../apps/mobile/src/lib/statementParse/serverAi";
 import { documentToRow, importPayload, previewTotals, swapDirections, toPreviewRows } from "../../../apps/mobile/src/lib/statementParse/preview";
 
@@ -243,22 +243,24 @@ describe("scanned PDF safety net", () => {
       ai: { mapColumns: async () => null, extractRows: async () => ({ rows: [], calls: 0, truncated: false }), ocrPdf: async () => ({ rows, opening, closing }) },
     });
 
-  it("says the rows were checked when they add up to the balances on the scan", async () => {
+  it("accepts a scan whose rows add up to the balances on it", async () => {
     const r = await read(1000, 1060);
     expect(r.status).toBe("ok");
     expect(r.verification).toEqual({ opening: 1000, closing: 1060, ok: true });
     expect(r.warnings.join(" ")).toMatch(/Checked/);
   });
 
-  it("warns loudly when they do not (rows missing or invented)", async () => {
+  it("refuses a scan whose rows do not add up (rows missing or invented)", async () => {
     const r = await read(1000, 1500);
-    expect(r.verification?.ok).toBe(false);
-    expect(r.warnings.join(" ")).toMatch(/do NOT add up/);
+    expect(r.status).toBe("unreadable");
+    expect(r.rows).toHaveLength(0);
+    expect(r.message).toBe("We could not read this scan reliably. Upload a clearer scan or a CSV or Excel version.");
   });
 
-  it("asks for a careful look when the scan has no balances", async () => {
+  it("refuses a scan that prints no balances to check against", async () => {
     const r = await read(null, null);
-    expect(r.warnings.join(" ")).toMatch(/no balances/);
+    expect(r.status).toBe("unreadable");
+    expect(r.message).toMatch(/could not find the opening and closing balances/);
   });
 });
 
@@ -267,5 +269,36 @@ describe("yearless dates without a statement period", () => {
     const now = new Date("2026-10-16T12:00:00Z");
     expect(dateWithPeriodYear({ month: 3, day: 5 }, null, undefined, now)).toBe("2026-03-05");
     expect(dateWithPeriodYear({ month: 12, day: 20 }, null, undefined, now)).toBe("2025-12-20");
+  });
+});
+
+describe("phone: statement photos and PDFs sent to the server", () => {
+  const rows = [
+    { date: "2026-03-01", amount: 100, type: "income" as const, category: "Other", merchant: "A" },
+    { date: "2026-03-02", amount: 40, type: "expense" as const, category: "Other", merchant: "B" },
+  ];
+  const aiWith = (outcome: unknown, seen: unknown[] = []) =>
+    ({ mapColumns: async () => null, extractRows: async () => ({ rows: [], calls: 0, truncated: false }), ocrPdf: async (_b: Uint8Array, o: unknown) => { seen.push(o); if (outcome instanceof Error) throw outcome; return outcome; } }) as never;
+
+  it("sends a photo as kind statement and accepts it when the rows add up", async () => {
+    const seen: any[] = [];
+    const r = await readStatementPhoto(new Uint8Array([1]), "image/jpeg", aiWith({ rows, opening: 1000, closing: 1060 }, seen));
+    expect(r.status).toBe("ok");
+    expect(r.verification?.ok).toBe(true);
+    expect(seen[0]).toMatchObject({ kind: "statement", mimeType: "image/jpeg" });
+  });
+
+  it("refuses when the rows do not add up, and when no balances were found", async () => {
+    const bad = await readPdfOnServer(new Uint8Array([1]), aiWith({ rows, opening: 1000, closing: 9999 }));
+    expect(bad).toMatchObject({ status: "unreadable", rows: [] });
+    expect(bad.message).toBe("We could not read this scan reliably. Upload a clearer scan or a CSV or Excel version.");
+    const none = await readPdfOnServer(new Uint8Array([1]), aiWith({ rows, opening: null, closing: null }));
+    expect(none.message).toMatch(/could not find the opening and closing balances/);
+  });
+
+  it("shows the server's own friendly message when the server refuses", async () => {
+    const r = await readStatementPhoto(new Uint8Array([1]), "image/png", aiWith(new Error("This PDF is too long to read right now. Upload a CSV or Excel version.")));
+    expect(r.status).toBe("unreadable");
+    expect(r.message).toBe("This PDF is too long to read right now. Upload a CSV or Excel version.");
   });
 });

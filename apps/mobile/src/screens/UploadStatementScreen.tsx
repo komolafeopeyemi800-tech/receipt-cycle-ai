@@ -17,14 +17,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { useAction, useMutation, useQuery } from "../lib/api";
+import { useAction, useApiClient, useMutation, useQuery } from "../lib/api";
 import { api } from "../lib/api";
 import { colors, type as typeScale } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useSubscriptionState } from "../hooks/useSubscriptionState";
+import { apiStatementTools } from "../lib/statementParse/apiTools";
 import { parseCsvText } from "../lib/statementParse/csv";
+import { readPdfOnServer, readStatementPhoto } from "../lib/statementParse/pipeline";
 import {
   type PreviewRow,
   importPayload,
@@ -47,16 +49,22 @@ type Picked = {
   name: string;
   mime: string;
   /** "statement" = Excel, PDF or Word: imported from the web app (phones cannot run the reader). */
-  kind: "image" | "csv" | "statement";
+  kind: "image" | "csv" | "pdf" | "statement";
 };
+
+/** What a photo or PDF is: a statement (many rows, read by text recognition) or a receipt / invoice (one transaction). */
+type Intent = "statement" | "receipt";
+
+export const STATEMENT_WAIT = "Reading your statement. This can take up to 30 seconds.";
 
 const PREVIEW_PAGE = 100;
 
 /** Images are scanned; CSV, Excel, PDF and Word are read as statements. */
-function classify(name: string, mime: string): "image" | "csv" | "statement" | null {
+function classify(name: string, mime: string): "image" | "csv" | "pdf" | "statement" | null {
   const n = name.toLowerCase();
   if (n.match(/\.(jpg|jpeg|png|webp|heic)$/i) || mime.startsWith("image/")) return "image";
   if (n.endsWith(".csv") || mime.includes("csv")) return "csv";
+  if (n.endsWith(".pdf") || mime === "application/pdf") return "pdf";
   if (n.match(/\.(xlsx|xls|xlsb|ods|pdf|docx|odt)$/i) || mime === "application/pdf" || mime.includes("spreadsheet") || mime.includes("wordprocessing")) {
     return "statement";
   }
@@ -84,12 +92,15 @@ export function UploadStatementScreen() {
   const [status, setStatus] = useState<string | null>(null);
   /** Rows read from the file, waiting for the person to check them before anything is saved. */
   const [review, setReview] = useState<ReviewState | null>(null);
+  const [intent, setIntent] = useState<Intent | null>(null);
+  const client = useApiClient();
 
   const reset = useCallback(() => {
     setPicked(null);
     setPreviewText(null);
     setStatus(null);
     setReview(null);
+    setIntent(null);
   }, []);
 
   const loadPreview = useCallback(async (p: Picked) => {
@@ -288,6 +299,43 @@ export function UploadStatementScreen() {
     }
   }, [picked, review, workspace, user?.id, token, ensureCats, bulkImport, uploadReceipt, navigation, reset]);
 
+  /** Statement photo or PDF: read on the server (the phone cannot run the text reader); shown only if it adds up. */
+  const readScannedStatement = useCallback(async () => {
+    if (!picked || !ready || (picked.kind !== "image" && picked.kind !== "pdf")) return;
+    if (!user?.id || !token) {
+      Alert.alert("Sign in required", "Sign in to import transactions into your account.");
+      return;
+    }
+    if (sub && !sub.canCreateTransaction) {
+      Alert.alert("Feature unavailable", "Statement importing is not included with your current access.");
+      return;
+    }
+    const isPng = /png/i.test(picked.mime) || /\.png$/i.test(picked.name);
+    const isJpg = /jpe?g/i.test(picked.mime) || /\.jpe?g$/i.test(picked.name);
+    if (picked.kind === "image" && !isPng && !isJpg) {
+      Alert.alert("Use a JPG or PNG", "Statement photos need to be JPG or PNG. Take the photo again, or upload a CSV or Excel version at receiptcycle.com.");
+      return;
+    }
+    setBusy(true);
+    setStatus(STATEMENT_WAIT);
+    try {
+      const res = await fetch(picked.uri);
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      const { ai } = apiStatementTools(client);
+      const parsed = picked.kind === "pdf" ? await readPdfOnServer(bytes, ai) : await readStatementPhoto(bytes, isPng ? "image/png" : "image/jpeg", ai);
+      if (parsed.status !== "ok") {
+        Alert.alert("Could not read this statement", userFacingError(parsed.message ?? "We could not read this scan reliably. Upload a clearer scan or a CSV or Excel version."));
+        return;
+      }
+      setReview({ rows: toPreviewRows(parsed.rows), warnings: parsed.warnings, shown: PREVIEW_PAGE });
+    } catch (e) {
+      Alert.alert("Could not read this statement", userFacingErrorFromUnknown(e));
+    } finally {
+      setStatus(null);
+      setBusy(false);
+    }
+  }, [picked, ready, user?.id, token, sub, client]);
+
   const canPick = () => {
     if (!ready || busy) return false;
     if (runtime?.maintenanceMode) {
@@ -342,9 +390,9 @@ export function UploadStatementScreen() {
           <Pressable style={styles.dropZone} onPress={onPick} disabled={busy || !ready} accessibilityRole="button" accessibilityLabel="Choose a file to upload">
             <View style={styles.folderIcon}><Ionicons name="folder-open-outline" size={48} color={colors.gray500} /></View>
             <Text style={styles.title}>Upload your files</Text>
-            <Text style={styles.sub}>Tap here to choose a receipt or invoice photo, or a bank or card statement as CSV. PDF and Excel statements are imported at receiptcycle.com.</Text>
+            <Text style={styles.sub}>Tap here to choose a receipt or invoice photo, or a bank or card statement as a PDF, a photo or a CSV. Excel statements are imported at receiptcycle.com.</Text>
             <View style={styles.documentKinds}><Text style={[styles.kindChip, styles.receiptChip]}>receipt</Text><Text style={[styles.kindChip, styles.invoiceChip]}>invoice</Text><Text style={[styles.kindChip, styles.cardChip]}>card statement</Text><Text style={[styles.kindChip, styles.bankChip]}>bank statement</Text></View>
-            <Text style={styles.fileTypes}>Phone: JPG, PNG, CSV · Web: also PDF and Excel · up to 12 MB</Text>
+            <Text style={styles.fileTypes}>Phone: JPG, PNG, PDF, CSV · Web: also Excel · up to 10 MB</Text>
             <Pressable style={styles.chooseButton} onPress={onPick} disabled={busy || !ready}><Ionicons name="cloud-upload-outline" size={17} color="#fff" /><Text style={styles.chooseText}>Browse files</Text></Pressable>
           </Pressable>
           <View style={styles.infoCard}><Ionicons name="sparkles-outline" size={19} color={colors.primary} /><Text style={styles.infoText}>Receipt images open with a visual evidence preview and editable extracted fields. Statements are prepared as transaction rows for review.</Text></View>
@@ -361,10 +409,12 @@ export function UploadStatementScreen() {
 
           {picked.kind === "image" ? (
             <Image source={{ uri: picked.uri }} style={styles.previewImg} resizeMode="contain" />
+          ) : picked.kind === "pdf" ? (
+            <Text style={styles.previewTxt}>PDF selected.</Text>
           ) : picked.kind === "statement" ? (
             <Text style={styles.previewTxt}>
-              Excel and PDF statements are imported from the web app (receiptcycle.com), where large files take seconds. On your phone,
-              export the statement as CSV, or photograph a receipt.
+              Excel statements are imported from the web app (receiptcycle.com), where large files take seconds. On your phone,
+              export the statement as CSV or PDF, or photograph a receipt.
             </Text>
           ) : review ? null : (
             <ScrollView keyboardShouldPersistTaps="handled" style={styles.previewBox} nestedScrollEnabled>
@@ -374,7 +424,39 @@ export function UploadStatementScreen() {
             </ScrollView>
           )}
 
-          {picked.kind === "image" ? (
+          {(picked.kind === "image" || picked.kind === "pdf") && !intent && !review ? (
+            <View style={styles.reviewBox}>
+              <Text style={styles.reviewTitle}>What is this {picked.kind === "pdf" ? "PDF" : "photo"}?</Text>
+              <Pressable style={styles.btn} onPress={() => setIntent("statement")} accessibilityRole="button">
+                <Text style={styles.btnTxt}>Bank or card statement</Text>
+              </Pressable>
+              <Pressable style={styles.btnSecondary} onPress={() => setIntent("receipt")} accessibilityRole="button">
+                <Text style={styles.btnSecondaryTxt}>Receipt or invoice</Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {(picked.kind === "image" || picked.kind === "pdf") && intent === "statement" && !review ? (
+            <>
+              <Pressable
+                style={[styles.btn, (busy || !ready || !canImportRows) && { opacity: 0.55 }]}
+                onPress={() => void readScannedStatement()}
+                disabled={busy || !ready || !canImportRows}
+                accessibilityRole="button"
+              >
+                {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnTxt}>Read statement</Text>}
+              </Pressable>
+              <Text style={styles.scanHint}>
+                {busy ? STATEMENT_WAIT : "The rows are shown only when they add up to the opening and closing balance printed on the statement. You review them before anything is saved."}
+              </Text>
+            </>
+          ) : null}
+
+          {picked.kind === "pdf" && intent === "receipt" ? (
+            <Text style={styles.previewTxt}>Receipt and invoice PDFs are read at receiptcycle.com. On your phone, take a photo of the receipt or invoice instead.</Text>
+          ) : null}
+
+          {picked.kind === "image" && intent === "receipt" ? (
             <>
           <Pressable
             style={[styles.btn, (busy || !ready || !aiScanOk) && { opacity: 0.55 }]}

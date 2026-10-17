@@ -247,6 +247,7 @@ describe("uploads and receipts", () => {
       analyzeResult: {
         pages: [{ pageNumber: 1 }],
         documents: [{ confidence: 0.9, fields: { Accounts: { valueArray: [{ valueObject: {
+          BeginningBalance: { valueNumber: 100 }, EndingBalance: { valueNumber: 80 },
           Transactions: { valueArray: [{ valueObject: { Date: { valueDate: "2026-10-01" }, Description: { valueString: "Scanned" }, WithdrawalAmount: { valueNumber: 20 } } }] },
         } }] } } }],
       },

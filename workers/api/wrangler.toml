@@ -36,6 +36,7 @@ PUBLIC_WEB_APP_URL = "https://receiptcycle.com"
 BETTER_AUTH_URL = "https://api.receiptcycle.com"
 # Email + password sign-in (no email confirmation needed). Uses fast PBKDF2 hashing so it fits the free plan.
 PASSWORD_AUTH_ENABLED = "true"
+# Scanned statements: the Azure reader is built but OFF until it passes accuracy tests (set OCR_PDF_ENABLED = "true" to turn on).
 # Public Google OAuth web client id (safe to commit; it ships in the website anyway).
 # The Android client below is accepted as a second token audience so web and
 # mobile sign-ins resolve to the same Receipt Cycle user and database records.

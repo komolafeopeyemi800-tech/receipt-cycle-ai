@@ -8,7 +8,7 @@ export function apiStatementTools(client: ApiClient) {
     ai: createStatementAi({
       mapColumns: (grid) => client.action(api.uploads.aiMapColumns, { grid }),
       extractChunk: (text) => client.action(api.uploads.aiExtract, { text }),
-      ocrPdf: (pdfBase64) => client.action(api.uploads.aiOcrPdf, { pdfBase64 }),
+      ocrPdf: (fileBase64, opts) => client.action(api.uploads.aiOcrPdf, { fileBase64, ...opts }),
     }),
     cache: createResultCache({
       get: (hash) => client.action(api.uploads.cacheGet, { hash }),

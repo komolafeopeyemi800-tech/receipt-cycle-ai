@@ -44,8 +44,9 @@ export type Env = {
   ADMIN_DASHBOARD_ADMIN_EMAILS?: string;
   OPENAI_API_KEY?: string;
   OPENAI_VISION_MODEL?: string;
-  /** Optional stronger model for scanned-PDF statements only (e.g. gpt-4o). Falls back to OPENAI_VISION_MODEL. */
-  OPENAI_OCR_MODEL?: string;
+  /** Azure AI Document Intelligence (scanned statements): https://<name>.cognitiveservices.azure.com and its key (wrangler secret). */
+  AZURE_DI_ENDPOINT?: string;
+  AZURE_DI_KEY?: string;
   /** "true" turns the scanned-statement route on (off by default: it invented rows in testing). */
   OCR_PDF_ENABLED?: string;
   OPENAI_VISION_MAX_TOKENS?: string;

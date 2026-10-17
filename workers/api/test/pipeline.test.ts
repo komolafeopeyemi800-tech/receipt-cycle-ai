@@ -194,11 +194,23 @@ describe("scanned PDF", () => {
     expect(r.message).toMatch(/scan/);
   });
 
-  it("uses the PDF-capable model when allowed (stubbed here)", async () => {
-    const calls = stubAi({ transactions: [{ date: "2026-10-01", description: "Scanned row", amount: 20, type: "expense" }] });
-    const r = await run(makeImageOnlyPdf(), "scan.pdf", true, withKey);
-    expect(r).toMatchObject({ status: "ok", source: "ai", aiCalls: 1 });
-    expect(JSON.stringify(calls[0])).toContain("application/pdf;base64,");
+  it("reads it with Azure Document Intelligence when allowed (stubbed here) and checks the balances", async () => {
+    const op = "https://qa-di.cognitiveservices.azure.com/documentintelligence/documentModels/m/analyzeResults/1?api-version=2024-11-30";
+    const result = {
+      status: "succeeded",
+      analyzeResult: {
+        pages: [{ pageNumber: 1 }],
+        documents: [{ confidence: 0.9, fields: { Accounts: { valueArray: [{ valueObject: {
+          BeginningBalance: { valueNumber: 100 }, EndingBalance: { valueNumber: 80 },
+          Transactions: { valueArray: [{ valueObject: { Date: { valueDate: "2026-10-01" }, Description: { valueString: "Scanned row" }, WithdrawalAmount: { valueNumber: 20 } } }] },
+        } }] } } }],
+      },
+    };
+    vi.stubGlobal("fetch", vi.fn(async (_u: string, init: RequestInit = {}) => (init.method === "POST" ? new Response(null, { status: 202, headers: { "Operation-Location": op } }) : new Response(JSON.stringify(result), { status: 200 }))));
+    const azure = { ...env, AZURE_DI_ENDPOINT: "https://qa-di.cognitiveservices.azure.com", AZURE_DI_KEY: "k" };
+    const r = await run(makeImageOnlyPdf(), "scan.pdf", true, azure as never);
+    expect(r).toMatchObject({ status: "ok", source: "ai", aiCalls: 1, verification: { opening: 100, closing: 80, ok: true } });
+    expect(r.rows).toHaveLength(1);
   });
 });
 

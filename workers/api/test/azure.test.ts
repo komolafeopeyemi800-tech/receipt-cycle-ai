@@ -1,0 +1,266 @@
+import { env } from "cloudflare:test";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import app from "../src/index";
+import { AZURE_TOO_LONG, AzureError, azureReadStatement } from "../src/docs/azure";
+import { makeUser } from "./helpers";
+
+afterEach(() => vi.unstubAllGlobals());
+
+const azureEnv = { ...env, AZURE_DI_ENDPOINT: "https://qa-di.cognitiveservices.azure.com/", AZURE_DI_KEY: "azure-test-key" };
+const OP = "https://qa-di.cognitiveservices.azure.com/documentintelligence/documentModels/x/analyzeResults/op1?api-version=2024-11-30";
+const noSleep = async () => {};
+const B64 = "QUJD".repeat(40);
+
+/** A bank-statement-model result shaped like Azure's JSON (documents[0].fields.Accounts[].Transactions[]). */
+const num = (n: number, confidence = 0.98) => ({ type: "number", valueNumber: n, content: String(n), confidence });
+const date = (iso: string, confidence = 0.98) => ({ type: "date", valueDate: iso, content: iso, confidence });
+const str = (s: string, confidence = 0.98) => ({ type: "string", valueString: s, content: s, confidence });
+function bankResult(opts: { pages?: number; txns?: any[]; period?: [string, string]; docConfidence?: number } = {}) {
+  const txns = opts.txns ?? [
+    { Date: date("2026-03-02"), Description: str("POS PURCHASE CHEVRON SAN JOSE CA"), WithdrawalAmount: num(174.35) },
+    { Date: date("2026-03-07"), Description: str("STRIPE TRANSFER ST-2612ABC"), DepositAmount: num(2297.22) },
+    { Date: date("2026-03-09", 0.4), Description: str("STARBUCKS"), WithdrawalAmount: num(17.17) },
+  ];
+  return {
+    status: "succeeded",
+    analyzeResult: {
+      apiVersion: "2024-11-30",
+      modelId: "prebuilt-bankStatement.us",
+      pages: Array.from({ length: opts.pages ?? 1 }, (_, i) => ({ pageNumber: i + 1 })),
+      documents: [
+        {
+          docType: "bankStatement.us",
+          confidence: opts.docConfidence ?? 0.9,
+          fields: {
+            StatementStartDate: date((opts.period ?? ["2026-03-01", "2026-03-31"])[0]),
+            StatementEndDate: date((opts.period ?? ["2026-03-01", "2026-03-31"])[1]),
+            Accounts: {
+              type: "array",
+              valueArray: [
+                {
+                  type: "object",
+                  valueObject: {
+                    BeginningBalance: num(5250.75),
+                    EndingBalance: num(7356.45),
+                    Transactions: { type: "array", valueArray: txns.map((o) => ({ type: "object", valueObject: o })) },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      ],
+    },
+  };
+}
+
+/** Minimal prebuilt-layout result: one table over two pages' worth of rows plus the markdown text. */
+function layoutResult(pages = 1) {
+  const head = ["Date", "Description", "Debit", "Credit", "Balance"];
+  const body = [
+    ["03/01", "BEGINNING BALANCE", "", "", "1,000.00"],
+    ["03/02", "COFFEE SHOP", "4.50", "", "995.50"],
+    ["03/03", "PAYROLL", "", "200.00", "1,195.50"],
+  ];
+  const cells = [head, ...body].flatMap((row, r) => row.map((content, c) => ({ rowIndex: r, columnIndex: c, content, kind: r === 0 ? "columnHeader" : "content" })));
+  return {
+    status: "succeeded",
+    analyzeResult: {
+      pages: Array.from({ length: pages }, (_, i) => ({ pageNumber: i + 1 })),
+      content: "Statement period: 03/01/2026 through 03/31/2026\nBeginning balance $1,000.00\nEnding balance $1,195.50",
+      tables: [{ rowCount: 4, columnCount: 5, cells }],
+    },
+  };
+}
+
+type Step = { match: RegExp; method?: string; respond: () => Response };
+/** Routes fetch calls to canned Azure responses and records every call. */
+function stubAzure(steps: Step[]) {
+  const calls: { url: string; method: string; headers: Record<string, string>; body: any }[] = [];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string, init: RequestInit = {}) => {
+      const method = (init.method ?? "GET").toUpperCase();
+      calls.push({ url: String(url), method, headers: (init.headers ?? {}) as Record<string, string>, body: init.body ? JSON.parse(String(init.body)) : null });
+      const step = steps.find((s) => s.match.test(String(url)) && (s.method ?? method) === method);
+      if (!step) throw new Error(`unexpected fetch ${method} ${url}`);
+      return step.respond();
+    }),
+  );
+  return calls;
+}
+const accepted = () => new Response(null, { status: 202, headers: { "Operation-Location": OP } });
+const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status });
+/** Poll answers in order: running first, then the final body. */
+function polls(...bodies: unknown[]) {
+  let i = 0;
+  return () => json(bodies[Math.min(i++, bodies.length - 1)]);
+}
+
+describe("Azure bank statement model", () => {
+  it("submits with the key, polls, and converts transactions to positive amounts and in/out", async () => {
+    const calls = stubAzure([
+      { match: /bankStatement\.us:analyze/, method: "POST", respond: accepted },
+      { match: /analyzeResults\/op1/, respond: polls({ status: "running" }, bankResult()) },
+    ]);
+    const out = await azureReadStatement(azureEnv, B64, { sleep: noSleep, expectedPages: 1 });
+    expect(out.model).toBe("prebuilt-bankStatement.us");
+    expect(out.rows).toEqual([
+      { date: "2026-03-02", amount: 174.35, type: "expense", category: "Other", merchant: "POS PURCHASE CHEVRON SAN JOSE CA" },
+      { date: "2026-03-07", amount: 2297.22, type: "income", category: "Other", merchant: "STRIPE TRANSFER ST-2612ABC" },
+      { date: "2026-03-09", amount: 17.17, type: "expense", category: "Other", merchant: "STARBUCKS" },
+    ]);
+    expect(out.opening).toBe(5250.75);
+    expect(out.closing).toBe(7356.45);
+    expect(out.warnings.join(" ")).toMatch(/unsure about 1 row \(row 3\)/);
+    const submit = calls[0]!;
+    expect(submit.url).toContain("https://qa-di.cognitiveservices.azure.com/documentintelligence/documentModels/prebuilt-bankStatement.us:analyze?api-version=2024-11-30");
+    expect(submit.headers["Ocp-Apim-Subscription-Key"]).toBe("azure-test-key");
+    expect(submit.headers["Content-Type"]).toBe("application/json");
+    expect(submit.body).toEqual({ base64Source: B64 });
+    expect(calls).toHaveLength(3); // submit + 2 polls
+    expect(calls[1]!.headers["Ocp-Apim-Subscription-Key"]).toBe("azure-test-key");
+  });
+
+  it("puts a yearless date in the statement period's year when Azure guessed another year", async () => {
+    stubAzure([
+      { match: /:analyze/, method: "POST", respond: accepted },
+      { match: /analyzeResults/, respond: polls(bankResult({ txns: [{ Date: date("2024-03-02"), Description: str("X"), WithdrawalAmount: num(5) }] })) },
+    ]);
+    const out = await azureReadStatement(azureEnv, B64, { sleep: noSleep });
+    expect(out.rows[0]!.date).toBe("2026-03-02");
+  });
+});
+
+describe("layout fallback", () => {
+  it("reads the tables with the existing text path when the statement model finds no transactions", async () => {
+    const calls = stubAzure([
+      { match: /bankStatement\.us:analyze/, method: "POST", respond: accepted },
+      { match: /prebuilt-layout:analyze/, method: "POST", respond: accepted },
+      { match: /analyzeResults\/op1/, respond: polls(bankResult({ txns: [] }), layoutResult()) },
+    ]);
+    const out = await azureReadStatement(azureEnv, B64, { sleep: noSleep, expectedPages: 1 });
+    expect(out.model).toBe("prebuilt-layout");
+    expect(out.rows.map((r) => [r.date, r.amount, r.type])).toEqual([
+      ["2026-03-02", 4.5, "expense"],
+      ["2026-03-03", 200, "income"],
+    ]);
+    expect(out.opening).toBe(1000);
+    expect(out.closing).toBe(1195.5);
+    expect(calls.find((c) => /prebuilt-layout/.test(c.url))!.url).toContain("outputContentFormat=markdown");
+  });
+});
+
+describe("Azure failures", () => {
+  it("reports a failed analysis without leaking Azure details", async () => {
+    stubAzure([
+      { match: /:analyze/, method: "POST", respond: accepted },
+      { match: /analyzeResults/, respond: polls({ status: "failed", error: { code: "InvalidContent", message: "The file is corrupted." } }) },
+    ]);
+    const err = (await azureReadStatement(azureEnv, B64, { sleep: noSleep }).catch((e) => e)) as AzureError;
+    expect(err).toBeInstanceOf(AzureError);
+    expect(err.userMessage).toMatch(/could not be read/);
+    expect(err.userMessage).not.toMatch(/corrupted|InvalidContent/);
+    expect(err.message).toMatch(/InvalidContent/);
+  });
+
+  it("treats a bad key (401) as unavailable and never shows the key", async () => {
+    stubAzure([{ match: /:analyze/, method: "POST", respond: () => json({ error: { code: "401", message: "Access denied due to invalid subscription key." } }, 401) }]);
+    const err = (await azureReadStatement(azureEnv, B64, { sleep: noSleep }).catch((e) => e)) as AzureError;
+    expect(err.status).toBe(503);
+    expect(err.userMessage).toMatch(/cannot be read right now/);
+    expect(err.userMessage).not.toContain("azure-test-key");
+  });
+
+  it("refuses a partial read when Azure analysed fewer pages than the PDF has (free F0 tier)", async () => {
+    stubAzure([
+      { match: /:analyze/, method: "POST", respond: accepted },
+      { match: /analyzeResults/, respond: polls(bankResult({ pages: 2 })) },
+    ]);
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const err = (await azureReadStatement(azureEnv, B64, { sleep: noSleep, expectedPages: 7 }).catch((e) => e)) as AzureError;
+    expect(err.userMessage).toBe(AZURE_TOO_LONG);
+    expect(log.mock.calls.flat().join(" ")).toMatch(/only the first 2 of 7 pages.*upgrade the Azure tier/);
+    log.mockRestore();
+  });
+
+  it("times out instead of waiting forever", async () => {
+    stubAzure([
+      { match: /:analyze/, method: "POST", respond: accepted },
+      { match: /analyzeResults/, respond: () => json({ status: "running" }) },
+    ]);
+    const err = (await azureReadStatement(azureEnv, B64, { timeoutMs: 25, pollMs: 10, sleep: (ms) => new Promise((r) => setTimeout(r, ms)) }).catch((e) => e)) as AzureError;
+    expect(err.status).toBe(504);
+    expect(err.userMessage).toMatch(/took too long/);
+  });
+
+  it("stops before the Workers subrequest limit", async () => {
+    const calls = stubAzure([
+      { match: /:analyze/, method: "POST", respond: accepted },
+      { match: /analyzeResults/, respond: () => json({ status: "running" }) },
+    ]);
+    const err = (await azureReadStatement(azureEnv, B64, { timeoutMs: 1e9, sleep: noSleep }).catch((e) => e)) as AzureError;
+    expect(err.status).toBe(504);
+    expect(calls.length).toBeLessThanOrEqual(40);
+  });
+
+  it("never sends the key to a different host", async () => {
+    stubAzure([{ match: /:analyze/, method: "POST", respond: () => new Response(null, { status: 202, headers: { "Operation-Location": "https://evil.example.com/op" } }) }]);
+    const err = (await azureReadStatement(azureEnv, B64, { sleep: noSleep }).catch((e) => e)) as AzureError;
+    expect(err).toBeInstanceOf(AzureError);
+  });
+
+  it("is unavailable when the Azure settings are missing", async () => {
+    const err = (await azureReadStatement(env, B64, { sleep: noSleep }).catch((e) => e)) as AzureError;
+    expect(err.status).toBe(503);
+  });
+});
+
+describe("POST /api/uploads/ai/ocr-pdf", () => {
+  async function post(token: string, body: unknown, e: typeof env = azureEnv as never) {
+    const res = await app.request("/api/uploads/ai/ocr-pdf", { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify(body) }, e);
+    return { status: res.status, json: (await res.json()) as any };
+  }
+  const happy = () =>
+    stubAzure([
+      { match: /:analyze/, method: "POST", respond: accepted },
+      { match: /analyzeResults/, respond: polls(bankResult()) },
+    ]);
+
+  it("returns rows, opening and closing for a PDF, with no OpenAI key needed", async () => {
+    const { token } = await makeUser();
+    happy();
+    const r = await post(token, { pdfBase64: B64, pageCount: 1 });
+    expect(r.status).toBe(200);
+    expect(r.json).toMatchObject({ opening: 5250.75, closing: 7356.45, pages: 1 });
+    expect(r.json.rows).toHaveLength(3);
+  });
+
+  it("reads a photo of a statement when kind is statement", async () => {
+    const { token } = await makeUser();
+    const calls = happy();
+    const r = await post(token, { fileBase64: B64, kind: "statement", mimeType: "image/jpeg" });
+    expect(r.status).toBe(200);
+    expect(calls[0]!.body.base64Source).toBe(B64);
+  });
+
+  it("gives the long-PDF message when the page count does not match", async () => {
+    const { token } = await makeUser();
+    stubAzure([
+      { match: /:analyze/, method: "POST", respond: accepted },
+      { match: /analyzeResults/, respond: polls(bankResult({ pages: 2 })) },
+    ]);
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const r = await post(token, { pdfBase64: B64, pageCount: 9 });
+    expect(r.status).toBe(400);
+    expect(r.json.error).toBe(AZURE_TOO_LONG);
+  });
+
+  it("stays off unless OCR_PDF_ENABLED is true, and without Azure settings", async () => {
+    const { token } = await makeUser();
+    const spy = happy();
+    expect((await post(token, { pdfBase64: B64 }, { ...azureEnv, OCR_PDF_ENABLED: "false" } as never)).status).toBe(400);
+    expect((await post(token, { pdfBase64: B64 }, { ...env, OCR_PDF_ENABLED: "true" } as never)).status).toBe(503);
+    expect(spy).toHaveLength(0);
+  });
+});

@@ -3,6 +3,7 @@ import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { uploadParses } from "../db/schema";
 import { aiExtractChunk, aiMapColumns, aiOcrPdf } from "../docs/ai";
+import { AzureError, azureConfigured } from "../docs/azure";
 import { getRuntimeConfig } from "../lib/config";
 import { useDaily } from "../lib/dailyLimit";
 import { ApiError } from "../lib/errors";
@@ -31,7 +32,7 @@ export const uploadRoutes = new Hono<AppEnv>();
 uploadRoutes.use("*", requireUser);
 
 /** Gate shared by every AI route: switches, plan, key, and the daily budget. */
-async function aiGate(c: Context<AppEnv>, countsAsUpload = false) {
+async function aiGate(c: Context<AppEnv>, countsAsUpload = false, needsOpenAi = true) {
   const db = c.get("db");
   const u = c.get("user");
   const cfg = await getRuntimeConfig(db);
@@ -47,7 +48,8 @@ async function aiGate(c: Context<AppEnv>, countsAsUpload = false) {
     Date.now(),
   );
   if (!sub.canUseAiFeatures) throw new ApiError(402, sessionErrorMessage(sub.phase) ?? "The AI helper is not available on your plan.");
-  if (!c.env.OPENAI_API_KEY?.trim()) throw new ApiError(503, "The AI helper is not configured on the server.");
+  if (needsOpenAi && !c.env.OPENAI_API_KEY?.trim()) throw new ApiError(503, "The AI helper is not configured on the server.");
+  if (!needsOpenAi && !azureConfigured(c.env)) throw new ApiError(503, "Scanned statements cannot be read right now. Please try again later, or upload a CSV or Excel version.");
   if (countsAsUpload) {
     // One uploaded document is one use, however many AI calls it needs; the per-call ceiling below still caps total spend.
     const r = await useDaily(db, u.id, "upload", cfg.dailyUploadLimit);
@@ -79,12 +81,35 @@ uploadRoutes.post("/ai/extract", async (c) => {
 });
 
 uploadRoutes.post("/ai/ocr-pdf", async (c) => {
-  const { pdfBase64 } = await parseBody(c, z.object({ pdfBase64: z.string().min(100).max(MAX_PDF_BASE64_CHARS) }));
-  // Off until scanned statements read reliably: in testing the model invented rows for them.
+  const body = await parseBody(
+    c,
+    z.object({
+      pdfBase64: z.string().min(100).max(MAX_PDF_BASE64_CHARS).optional(),
+      fileBase64: z.string().min(100).max(MAX_PDF_BASE64_CHARS).optional(),
+      /** "pdf" (default) or "statement": a photo (png / jpeg) of a multi-row statement. */
+      kind: z.enum(["pdf", "statement"]).default("pdf"),
+      mimeType: z.enum(["image/png", "image/jpeg", "image/jpg", "application/pdf"]).optional(),
+      /** The PDF's real page count from the caller's own parser, to catch a reader tier that only reads part of it. */
+      pageCount: z.number().int().min(1).max(2000).optional(),
+    }),
+  );
+  const file = body.fileBase64 ?? body.pdfBase64;
+  if (!file) throw new ApiError(400, "No file was sent.");
+  if (body.kind === "statement" && body.mimeType === "application/pdf") throw new ApiError(400, "kind statement is for images; send PDFs with the default kind.");
+  // Off until it is switched on in the Worker settings.
   if (c.env.OCR_PDF_ENABLED !== "true") throw new ApiError(400, "Scanned statements cannot be read yet. Upload a CSV, Excel or regular PDF statement instead.");
-  await aiGate(c, true);
-  const out = await viaAi(() => aiOcrPdf(c.env, pdfBase64));
-  return c.json({ rows: out.rows, opening: out.opening, closing: out.closing });
+  await aiGate(c, true, false);
+  try {
+    const out = await aiOcrPdf(c.env, file, { kind: body.kind, expectedPages: body.kind === "statement" ? 1 : body.pageCount });
+    return c.json({ rows: out.rows, opening: out.opening, closing: out.closing, warnings: out.warnings, pages: out.pages });
+  } catch (e) {
+    if (e instanceof AzureError) {
+      console.error("scanned statement read failed", e.message);
+      throw new ApiError(e.status === 503 || e.status === 504 ? 503 : 400, e.userMessage);
+    }
+    console.error("scanned statement read failed", e);
+    throw new ApiError(503, "Scanned statements cannot be read right now. Please try again later, or upload a CSV or Excel version.");
+  }
 });
 
 // ---- cache of AI-assisted results, keyed by the file's SHA-256 --------------------------------

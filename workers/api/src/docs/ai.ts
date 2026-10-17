@@ -8,10 +8,9 @@
 import { parseAmount, parseDate, round2 } from "../../../../apps/mobile/src/lib/statementParse/normalize";
 import type { ColumnMapping, Grid, ParsedRow } from "../../../../apps/mobile/src/lib/statementParse/statement";
 import type { Env } from "../types";
+import { type AzureOptions, azureReadStatement } from "./azure";
 
 const model = (env: Env) => env.OPENAI_VISION_MODEL?.trim() || "gpt-4o-mini";
-/** Scanned PDFs are the hardest read; OPENAI_OCR_MODEL (e.g. gpt-4o) can give them a stronger model than the text jobs. */
-const ocrModel = (env: Env) => env.OPENAI_OCR_MODEL?.trim() || model(env);
 
 async function chatJson(env: Env, messages: unknown[], maxTokens = 4096, modelName?: string): Promise<Record<string, unknown>> {
   const key = env.OPENAI_API_KEY?.trim();
@@ -107,39 +106,15 @@ export async function aiExtractChunk(env: Env, text: string): Promise<ParsedRow[
 }
 
 /**
- * Scanned PDF to rows using the model's PDF file input. Returns the opening and closing balance as well, so the caller
- * can check that the rows add up (a model that cannot read a scan tends to invent plausible rows; the totals expose that).
+ * Scanned PDF (or a photo of a statement) to rows. Read by Azure Document Intelligence (see azure.ts), which reads the
+ * printed text instead of guessing it: the OpenAI file reader that used to be here invented rows on scans.
+ * Returns the opening and closing balance as well, so the caller can check that the rows add up.
  */
-export async function aiOcrPdf(env: Env, pdfBase64: string): Promise<{ rows: ParsedRow[]; opening: number | null; closing: number | null }> {
-  const out = await chatJson(
-    env,
-    [
-      {
-        role: "system",
-        content:
-          "You transcribe a scanned bank or card statement. Reply with JSON: " +
-          '{"opening_balance": number|null, "closing_balance": number|null, "transactions":[{"date":"YYYY-MM-DD","description":string,"amount":positive number,"type":"expense"|"income"}]}. ' +
-          "Copy only transactions you can actually read on the pages, in the order printed, one entry per printed transaction line. " +
-          "Withdrawals, debits, purchases and fees are expense; deposits, credits and refunds are income (use the running balance to confirm). " +
-          "Dates are US month/day/year; if a date has no year use the statement period's year. " +
-          "opening_balance and closing_balance are the beginning and ending balances printed on the statement (null if not shown). " +
-          "If a line is blurred or unreadable, SKIP it; never guess, invent, repeat or fill in rows. Ignore totals, balances and page headers as transactions. " +
-          `Today is ${today()}.`,
-      },
-      {
-        role: "user",
-        content: [
-          { type: "file", file: { filename: "statement.pdf", file_data: `data:application/pdf;base64,${pdfBase64}` } },
-          { type: "text", text: "Transcribe every readable transaction from this scanned statement, plus its opening and closing balance." },
-        ],
-      },
-    ],
-    8192,
-    ocrModel(env),
-  );
-  const bal = (v: unknown) => {
-    const n = parseAmount(v);
-    return n === null ? null : round2(n);
-  };
-  return { rows: validateRows(out.transactions), opening: bal(out.opening_balance), closing: bal(out.closing_balance) };
+export async function aiOcrPdf(
+  env: Env,
+  fileBase64: string,
+  opts: AzureOptions = {},
+): Promise<{ rows: ParsedRow[]; opening: number | null; closing: number | null; warnings: string[]; pages: number }> {
+  const out = await azureReadStatement(env, fileBase64, opts);
+  return { rows: out.rows, opening: out.opening, closing: out.closing, warnings: out.warnings, pages: out.pages };
 }

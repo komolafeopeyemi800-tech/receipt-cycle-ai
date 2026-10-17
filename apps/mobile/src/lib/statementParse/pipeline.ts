@@ -10,7 +10,7 @@
  * The anydoc engine and the AI helper are passed in, so this file has no browser, React Native or
  * Cloudflare dependencies.
  */
-import { type DocEngine, type DocFormat, type DocShape, type StatementAi, type ResultCache } from "./types";
+import { type DocEngine, type DocFormat, type DocShape, type OcrOutcome, type StatementAi, type ResultCache } from "./types";
 import { rowsFromFlowingText } from "./pdfText";
 import { findStatementPeriod, parseAmount, parseDate, parseYearlessMonthDay } from "./normalize";
 import { type Grid, type ParsedRow, type StatementPeriod, annotateRows, mapColumns, reconcile, rowsFromGrid } from "./statement";
@@ -244,7 +244,7 @@ export function mergePageTables(grids: Grid[]): Grid[] {
 /** Opening and closing balance as printed in a statement's summary box. */
 export function findStatementBalances(text: string): { opening: number; closing: number } | null {
   const flat = text.replace(/\s+/g, " ");
-  const num = String.raw`[^0-9-]{0,8}(-?\$?\s?-?[0-9][0-9,]*\.[0-9]{2})`;
+  const num = String.raw`[^0-9-]{0,24}(-?\$?\s?-?[0-9][0-9,]*\.[0-9]{2})`;
   const o = new RegExp(String.raw`(?:beginning|opening|previous|starting)\s+balance` + num, "i").exec(flat);
   const c = new RegExp(String.raw`(?:ending|closing|new)\s+balance` + num, "i").exec(flat);
   if (!o || !c) return null;
@@ -268,14 +268,14 @@ function withVerification(result: ParseResult, text: string): ParseResult {
   return { ...result, warnings, verification: { ...bal, ok } };
 }
 
-async function fromText(text: string, opts: ParseOptions, fileType: string): Promise<ParseResult> {
-  return withVerification(await fromTextRows(text, opts, fileType), text);
+async function fromText(text: string, opts: ParseOptions, fileType: string, grids?: Grid[]): Promise<ParseResult> {
+  return withVerification(await fromTextRows(text, opts, fileType, grids), text);
 }
 
-async function fromTextRows(text: string, opts: ParseOptions, fileType: string): Promise<ParseResult> {
+async function fromTextRows(text: string, opts: ParseOptions, fileType: string, grids?: Grid[]): Promise<ParseResult> {
   const warnings: string[] = [];
   const period = findStatementPeriod(text);
-  const tables = mergePageTables(gridsFromMarkdown(text)).map((grid, i) => ({ name: `Table ${i + 1}`, grid }));
+  const tables = mergePageTables(grids ?? gridsFromMarkdown(text)).map((grid, i) => ({ name: `Table ${i + 1}`, grid }));
   const flowing = rowsFromFlowingText(text);
   let viaTables: Awaited<ReturnType<typeof fromTables>> | null = null;
   if (tables.length) {
@@ -326,6 +326,46 @@ export function looksLikeInvoice(text: string): boolean {
   return /\binvoice\b/i.test(t) && signals.filter((re) => re.test(t)).length >= 3;
 }
 
+/** A scanned statement read by the OCR service, checked against the balances it printed. */
+function scannedResult(out: ParsedRow[] | OcrOutcome, fileType: string, needsOcr?: ParseResult["needsOcr"]): ParseResult {
+  const rows = Array.isArray(out) ? out : out.rows;
+  const warnings = [`This is a ${fileType === "pdf" ? "scanned PDF" : "photo"}, so it was read by text recognition. Check every row against your statement.`];
+  if (!Array.isArray(out) && out.warnings) warnings.push(...out.warnings);
+  let verification: ParseResult["verification"];
+  if (!Array.isArray(out) && typeof out.opening === "number" && typeof out.closing === "number" && rows.length > 0) {
+    const ok = reconcile(rows, out.opening, out.closing);
+    verification = { opening: out.opening, closing: out.closing, ok };
+    warnings.push(
+      ok
+        ? "Checked: these transactions add up exactly to the opening and closing balance on the scan."
+        : `These transactions do NOT add up to the balances on the scan (opening ${out.opening.toFixed(2)}, closing ${out.closing.toFixed(2)}), so rows are missing or misread. Do not import without checking, or upload the CSV/Excel version from your bank.`,
+    );
+  } else if (rows.length > 0) {
+    warnings.push("The scan has no balances to check the rows against, so every row needs a look.");
+  }
+  return finish(base({ fileType, rows, aiCalls: 1, source: "ai", ...(needsOcr ? { needsOcr } : {}), warnings, ...(verification ? { verification } : {}) }));
+}
+
+/** A photo (png / jpeg) of a multi-row statement, read as a statement rather than as one receipt. Used by the phone. */
+export async function readStatementPhoto(bytes: Uint8Array, mimeType: string, ai: StatementAi): Promise<ParseResult> {
+  if (bytes.length > MAX_OCR_BYTES) return base({ status: "too_large", message: "Photos up to 10 MB are supported. Take the photo again at a lower quality." });
+  try {
+    return scannedResult(await ai.ocrPdf(bytes, { kind: "statement", mimeType }), "image");
+  } catch (e) {
+    return base({ status: "unreadable", fileType: "image", message: errText(e) });
+  }
+}
+
+/** A PDF read on the server, for devices that cannot run the text reader (the phone). The page count is unknown here. */
+export async function readPdfOnServer(bytes: Uint8Array, ai: StatementAi): Promise<ParseResult> {
+  if (bytes.length > MAX_OCR_BYTES) return base({ status: "too_large", message: "PDFs up to 10 MB are supported on the phone. Upload a CSV or Excel version." });
+  try {
+    return scannedResult(await ai.ocrPdf(bytes, { kind: "pdf" }), "pdf");
+  } catch (e) {
+    return base({ status: "unreadable", fileType: "pdf", message: errText(e) });
+  }
+}
+
 export async function parseStatement(bytes: Uint8Array, opts: ParseOptions): Promise<ParseResult> {
   if (bytes.length > MAX_FILE_BYTES) {
     return base({ status: "too_large", message: `Files up to ${MAX_FILE_BYTES / 1024 / 1024} MB are supported. Split the file or export a smaller date range.` });
@@ -370,24 +410,10 @@ export async function parseStatement(bytes: Uint8Array, opts: ParseOptions): Pro
       const needsOcr = { pages: err.pages ?? [], pageCount: err.pageCount ?? 0 };
       if (scannedPdfOcr.enabled && opts.ai && needsOcr.pageCount > 0 && needsOcr.pageCount <= MAX_OCR_PAGES && bytes.length <= MAX_OCR_BYTES) {
         try {
-          const out = await opts.ai.ocrPdf(bytes);
-          const rows = Array.isArray(out) ? out : out.rows;
-          const warnings = ["This is a scanned PDF, so it was read with the AI helper. Check every row against your statement."];
-          let verification: ParseResult["verification"];
-          if (!Array.isArray(out) && typeof out.opening === "number" && typeof out.closing === "number" && rows.length > 0) {
-            const ok = reconcile(rows, out.opening, out.closing);
-            verification = { opening: out.opening, closing: out.closing, ok };
-            warnings.push(
-              ok
-                ? "Checked: these transactions add up exactly to the opening and closing balance on the scan."
-                : `These transactions do NOT add up to the balances on the scan (opening ${out.opening.toFixed(2)}, closing ${out.closing.toFixed(2)}), so rows are missing or misread. Do not import without checking, or upload the CSV/Excel version from your bank.`,
-            );
-          } else if (rows.length > 0) {
-            warnings.push("The scan has no balances to check the rows against, so every row needs a look.");
-          }
-          return finish(base({ fileType: "pdf", rows, aiCalls: 1, source: "ai", needsOcr, warnings, ...(verification ? { verification } : {}) }));
+          const out = await opts.ai.ocrPdf(bytes, { kind: "pdf", pageCount: needsOcr.pageCount });
+          return scannedResult(out, "pdf", needsOcr);
         } catch (ocrError) {
-          return base({ status: "needs_ocr", fileType: "pdf", needsOcr, message: `Could not read the scanned PDF: ${errText(ocrError)}` });
+          return base({ status: "needs_ocr", fileType: "pdf", needsOcr, message: errText(ocrError) });
         }
       }
       const tooLong = needsOcr.pageCount > MAX_OCR_PAGES;
@@ -445,4 +471,12 @@ export async function readStatement(
 export async function parseGrid(grid: Grid, fileType: string, ai?: StatementAi): Promise<ParseResult> {
   const opts: ParseOptions = { fileName: `statement.${fileType}`, engine: null as unknown as DocEngine, ai };
   return fromTables([{ name: "Table 1", grid }], opts, fileType);
+}
+
+/**
+ * Text and tables an OCR service already recognised (Azure layout), through the same rules as a text PDF:
+ * signs, US dates, total lines, multi-page tables and the opening/closing balance check. No AI is used.
+ */
+export async function parseExtractedDocument(text: string, grids: Grid[]): Promise<ParseResult> {
+  return fromText(text, { fileName: "scan.pdf", engine: null as unknown as DocEngine }, "pdf", grids);
 }

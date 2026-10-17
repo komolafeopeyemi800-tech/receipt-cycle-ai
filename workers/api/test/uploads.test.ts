@@ -42,13 +42,11 @@ describe("AI helper routes", () => {
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
-  it("extract rows from text and read a scanned PDF", async () => {
+  it("extract rows from text", async () => {
     const { token } = await makeUser();
     stubAi({ transactions: [{ date: "2026-10-01", description: "Scanned", amount: 5, type: "expense" }] });
     const text = await post(token, "/api/uploads/ai/extract", { text: "2026-10-01 Scanned 5.00" });
     expect(text.json.rows).toEqual([aiRow]);
-    const pdf = await post(token, "/api/uploads/ai/ocr-pdf", { pdfBase64: "A".repeat(200) });
-    expect(pdf.json.rows).toEqual([aiRow]);
   });
 
   it("reject bad input without calling the AI", async () => {

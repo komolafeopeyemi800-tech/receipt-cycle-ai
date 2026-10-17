@@ -236,26 +236,37 @@ describe("uploads and receipts", () => {
   });
 
   it("pays for a scanned PDF once: the second read comes from the saved result", async () => {
-    const withKey = { ...env, OPENAI_API_KEY: "sk-test" };
+    const withKey = { ...env, OPENAI_API_KEY: "sk-test", AZURE_DI_ENDPOINT: "https://qa-di.cognitiveservices.azure.com", AZURE_DI_KEY: "k" };
     const client = makeClient(withKey);
     const up = await client.action(api.authNode.signUp, { email: "scan@example.com", password: "secret123" });
     client.setToken(up.token);
     const tools = apiStatementTools(client);
-    const spy = vi.fn(
-      async () =>
-        new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ transactions: [{ date: "2026-10-01", description: "Scanned", amount: 20, type: "expense" }] }) } }] }), { status: 200 }),
-    );
+    const op = "https://qa-di.cognitiveservices.azure.com/documentintelligence/documentModels/m/analyzeResults/1?api-version=2024-11-30";
+    const result = {
+      status: "succeeded",
+      analyzeResult: {
+        pages: [{ pageNumber: 1 }],
+        documents: [{ confidence: 0.9, fields: { Accounts: { valueArray: [{ valueObject: {
+          Transactions: { valueArray: [{ valueObject: { Date: { valueDate: "2026-10-01" }, Description: { valueString: "Scanned" }, WithdrawalAmount: { valueNumber: 20 } } }] },
+        } }] } } }],
+      },
+    };
+    let submits = 0;
+    const spy = vi.fn(async (_u: string, init: RequestInit = {}) => {
+      if (init.method === "POST") { submits++; return new Response(null, { status: 202, headers: { "Operation-Location": op } }); }
+      return new Response(JSON.stringify(result), { status: 200 });
+    });
     vi.stubGlobal("fetch", spy);
     const pdf = makeImageOnlyPdf();
 
     const first = await readStatement(pdf, { fileName: "scan.pdf", engine: testEngine, ai: tools.ai, cache: tools.cache });
     expect(first).toMatchObject({ status: "ok", source: "ai", aiCalls: 1, cached: false });
-    expect(spy).toHaveBeenCalledTimes(1);
+    expect(submits).toBe(1);
 
     const again = await readStatement(pdf, { fileName: "copy.pdf", engine: testEngine, ai: tools.ai, cache: tools.cache });
     expect(again).toMatchObject({ cached: true, fileName: "copy.pdf", status: "ok" });
     expect(again.rows).toEqual(first.rows);
-    expect(spy).toHaveBeenCalledTimes(1); // no second AI call
+    expect(submits).toBe(1); // no second read
     expect(describeParse(again)).toMatch(/earlier upload/);
   });
 

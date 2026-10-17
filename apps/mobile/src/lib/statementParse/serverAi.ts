@@ -1,13 +1,13 @@
 import { MAX_AI_CHUNKS, TEXT_CHUNK_CHARS, chunkText } from "./pipeline";
 import type { ColumnMapping, Grid, ParsedRow } from "./statement";
-import type { OcrOutcome, ResultCache, StatementAi } from "./types";
+import type { OcrOutcome, OcrRequest, ResultCache, StatementAi } from "./types";
 import { findStatementPeriod } from "./normalize";
 
 /** The three AI calls the API exposes. In the apps this is the HTTP client; in tests it can call the Worker directly. */
 export interface AiTransport {
   mapColumns(grid: Grid): Promise<ColumnMapping | null>;
   extractChunk(text: string): Promise<ParsedRow[]>;
-  ocrPdf(pdfBase64: string): Promise<ParsedRow[] | OcrOutcome>;
+  ocrPdf(pdfBase64: string, opts?: OcrRequest): Promise<ParsedRow[] | OcrOutcome>;
 }
 
 export function bytesToBase64(bytes: Uint8Array): string {
@@ -39,7 +39,7 @@ export function createStatementAi(transport: AiTransport): StatementAi {
 ${chunk}`)));
       return { rows, calls: chunks.length, truncated };
     },
-    ocrPdf: (bytes) => transport.ocrPdf(bytesToBase64(bytes)),
+    ocrPdf: (bytes, opts) => transport.ocrPdf(bytesToBase64(bytes), opts),
   };
 }
 

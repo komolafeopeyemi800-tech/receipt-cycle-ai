@@ -27,11 +27,14 @@ export interface DocEngine {
 export interface StatementAi {
   mapColumns(grid: Grid): Promise<ColumnMapping | null>;
   extractRows(text: string): Promise<{ rows: ParsedRow[]; calls: number; truncated: boolean }>;
-  ocrPdf(bytes: Uint8Array): Promise<ParsedRow[] | OcrOutcome>;
+  ocrPdf(bytes: Uint8Array, opts?: OcrRequest): Promise<ParsedRow[] | OcrOutcome>;
 }
 
 /** What a scanned-PDF read returns: the rows, plus the opening and closing balance the model could read (to check the rows against). */
-export type OcrOutcome = { rows: ParsedRow[]; opening?: number | null; closing?: number | null };
+export type OcrOutcome = { rows: ParsedRow[]; opening?: number | null; closing?: number | null; warnings?: string[] };
+
+/** "pdf" (default) or "statement" (a photo of a statement); pageCount is the PDF's real page count from our own parser. */
+export type OcrRequest = { kind?: "pdf" | "statement"; mimeType?: string; pageCount?: number };
 
 /** Remembers AI-assisted results by file hash so the same file is never paid for twice. */
 export interface ResultCache {

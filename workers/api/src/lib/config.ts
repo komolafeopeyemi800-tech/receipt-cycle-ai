@@ -21,5 +21,9 @@ export async function getRuntimeConfig(db: Db) {
     dailyVoiceLimit: limit(row?.dailyVoiceLimit, 25),
     dailyUploadLimit: limit(row?.dailyUploadLimit, 25),
     dailyAssistantLimit: limit(row?.dailyAssistantLimit, 50),
+    aiDailyBudgetCents: limit(row?.aiDailyBudgetCents, 60),
+    aiMonthlyBudgetCents: limit(row?.aiMonthlyBudgetCents, 400),
+    aiBurstCalls: limit(row?.aiBurstCalls, 20),
+    aiGuardEnabled: row?.aiGuardEnabled ?? true,
   };
 }

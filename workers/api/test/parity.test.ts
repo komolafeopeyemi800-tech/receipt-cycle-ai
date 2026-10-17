@@ -4,6 +4,7 @@ import { decodeText, parseCsvText, utf8Strict } from "../../../apps/mobile/src/l
 import { parseXlsxBytes, readXlsx } from "../../../apps/mobile/src/lib/statementParse/xlsx";
 import { markExistingDuplicates, toPreviewRows, updateRow } from "../../../apps/mobile/src/lib/statementParse/preview";
 import { makeXlsx } from "./fixtures";
+import { LEGACY_EXPECTED, ODS_B64, XLS_B64 } from "./legacyFixtures";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
 const col = (i: number) => String.fromCharCode(65 + i);
@@ -79,16 +80,32 @@ describe("Excel on the phone (fflate)", () => {
     ]);
   });
 
-  it("opens a CSV saved with an .xlsx name, refuses .xls and .ods and damaged files with plain messages", async () => {
-    const csv = new TextEncoder().encode("Date,Description,Amount\n03/01/2026,Coffee,-4.50\n03/02/2026,Pay,100\n");
+  it("opens a CSV saved with an .xlsx name, and refuses damaged, empty and header-only files with plain messages", async () => {
+    const csv = new TextEncoder().encode("Date,Description,Amount"+String.fromCharCode(10)+"03/01/2026,Coffee,-4.50"+String.fromCharCode(10)+"03/02/2026,Pay,100"+String.fromCharCode(10));
     expect((await parseXlsxBytes(csv, "really.xlsx")).rows).toHaveLength(2);
-    const xls = await parseXlsxBytes(new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 1, 2]), "old.xls");
-    expect(xls).toMatchObject({ status: "unsupported" });
-    expect(xls.message).toMatch(/\.xls.*save as \.xlsx or CSV/);
-    expect((await parseXlsxBytes(new Uint8Array([1, 2, 3]), "calc.ods")).message).toMatch(/\.ods/);
+    expect((await parseXlsxBytes(csv, "really.xls")).rows).toHaveLength(2);
     expect((await parseXlsxBytes(new Uint8Array([0x50, 0x4b, 3, 4, 9, 9]), "bad.xlsx")).message).toMatch(/Could not read this Excel file/);
     expect((await parseXlsxBytes(new Uint8Array(0), "empty.xlsx")).message).toMatch(/empty/);
     expect((await parseXlsxBytes(excelWorkbook([{ name: "A", rows: [["Header only", ""]] }]), "h.xlsx")).message).toMatch(/no transactions/);
+  });
+});
+
+describe("old Excel (.xls) and OpenDocument (.ods) with SheetJS, on phone and web", () => {
+  const b64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+
+  for (const [name, data] of [["xls", XLS_B64], ["ods", ODS_B64]] as const) {
+    it(`reads a real ${name} workbook: finds the transactions sheet among Summary and Notes, with dates and signs right`, async () => {
+      const r = await parseXlsxBytes(b64(data), `march.${name}`);
+      expect(r.status).toBe("ok");
+      expect(r.sheets?.map((s) => s.name)).toEqual(["March Activity"]);
+      expect(r.rows.map((x) => [x.date, x.amount, x.type])).toEqual(LEGACY_EXPECTED);
+    });
+  }
+
+  it("says plainly when a legacy file is damaged", async () => {
+    const r = await parseXlsxBytes(Uint8Array.from([0xd0, 0xcf, 0x11, 0xe0, 1, 2, 3, 4]), "broken.xls");
+    expect(r.status).toBe("unreadable");
+    expect(r.message).toMatch(/no transactions|Could not read/);
   });
 });
 

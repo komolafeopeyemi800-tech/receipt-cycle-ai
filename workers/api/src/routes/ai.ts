@@ -13,6 +13,7 @@ import {
   openaiVisionExtract,
 } from "../ai/scan";
 import { openaiParseTransaction, whisperTranscribe } from "../ai/voice";
+import { AI_COST_MICROS, guardAi } from "../lib/aiBudget";
 import { getRuntimeConfig } from "../lib/config";
 import { useDaily, type DailyKind } from "../lib/dailyLimit";
 import { parseBody } from "../lib/http";
@@ -57,7 +58,10 @@ async function dailyStop(db: Db, userId: string, kind: DailyKind): Promise<strin
   const cfg = await getRuntimeConfig(db);
   const limit = kind === "scan" ? cfg.dailyScanLimit : kind === "voice" ? cfg.dailyVoiceLimit : kind === "upload" ? cfg.dailyUploadLimit : cfg.dailyAssistantLimit;
   const r = await useDaily(db, userId, kind, limit);
-  return r.ok ? null : r.message;
+  if (!r.ok) return r.message;
+  // Cost guard: paid-AI use that looks like a bot, or runs far above heavy-user levels, pauses the smart features for a while.
+  const g = await guardAi(db, undefined, { id: userId }, kind, AI_COST_MICROS[kind === "scan" ? "scan" : kind === "upload" ? "upload" : kind === "voice" ? "voice" : "assistant"]);
+  return g.ok ? null : g.message;
 }
 
 const blocked = (error: string) => ({ success: false as const, extracted_data: null, error, pipeline: "blocked" });

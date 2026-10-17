@@ -157,6 +157,7 @@ export default function PrivacyPolicy() {
       <ul>
         <li><strong>Cloudflare</strong>: hosting, database and file storage for your account, records and receipt images.</li>
         <li><strong>OpenAI</strong>: reads receipt images and documents, turns voice recordings into text, understands typed or spoken entries, and answers questions in the AI assistant. Content you submit to these features is sent to OpenAI.</li>
+        <li><strong>Microsoft Azure (Document Intelligence)</strong>: reads PDFs, scans and photos of bank statements, receipts and invoices, and returns the text and fields. Documents you upload for these features are sent to Azure for processing.</li>
         <li><strong>Google (Gemini), OpenRouter and Landing AI</strong>: alternative providers that may read a receipt image or document if the first provider cannot.</li>
         <li><strong>Google</strong>: sign-in with your Google account and, only if you turn it on, backup to your own Google Drive.</li>
         <li><strong>Firebase Cloud Messaging</strong>: delivers the push notifications you allow.</li>

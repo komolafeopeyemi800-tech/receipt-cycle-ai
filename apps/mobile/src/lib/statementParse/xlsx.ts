@@ -5,6 +5,7 @@
 import { strFromU8, unzipSync } from "fflate";
 import { excelSerialToIso } from "./normalize";
 import { decodeText, parseCsvText } from "./csv";
+import { readLegacySheets } from "./legacySheets";
 import { type ParseResult, parseTables } from "./pipeline";
 import type { Grid } from "./statement";
 import type { StatementAi } from "./types";
@@ -129,16 +130,30 @@ export function readXlsx(bytes: Uint8Array): SheetGrid[] {
 const refuse = (message: string, status: ParseResult["status"] = "unreadable"): ParseResult => ({ status, fileType: "xlsx", rows: [], totalRows: 0, truncated: false, source: "heuristic", aiCalls: 0, warnings: [], message });
 
 /**
- * An Excel file picked on the phone. A workbook is read sheet by sheet (the sheet with the transactions is found by the
- * same rules as on the web); a file named .xlsx that is really text is read as CSV; .xls and .ods get a friendly message.
+ * A spreadsheet picked on the phone or the web. .xlsx is read with fflate; old .xls and .ods are read with SheetJS (loaded
+ * only when needed); a file named .xlsx that is really text is read as CSV. All of them go through the same column mapping.
  */
 export async function parseXlsxBytes(bytes: Uint8Array, fileName: string, ai?: StatementAi): Promise<ParseResult> {
   if (bytes.length === 0) return refuse("This file is empty. Choose a file that has your transactions in it.");
-  if (/\.(xls|xlsb)$/i.test(fileName) || (bytes[0] === 0xd0 && bytes[1] === 0xcf)) {
-    return refuse("Old Excel files (.xls) cannot be read on the phone. Open it in Excel, save as .xlsx or CSV, and upload again.", "unsupported");
-  }
-  if (/\.ods$/i.test(fileName)) return refuse("OpenDocument spreadsheets (.ods) cannot be read on the phone. Save it as .xlsx or CSV and upload again.", "unsupported");
+  const ole = bytes[0] === 0xd0 && bytes[1] === 0xcf && bytes[2] === 0x11 && bytes[3] === 0xe0;
   const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b;
+  const looksOds = /\.ods$/i.test(fileName);
+  if (/\.xlsb$/i.test(fileName)) return refuse("Binary Excel (.xlsb) files cannot be read. Open it in Excel, save as .xlsx or CSV, and upload again.", "unsupported");
+  if (ole || /\.xls$/i.test(fileName) || looksOds) {
+    if (!ole && !isZip) {
+      // an .xls / .ods name on plain text (a CSV saved with the wrong name)
+      const head = bytes.subarray(0, Math.min(bytes.length, 2048));
+      if (!head.includes(0)) return parseCsvText(decodeText(bytes), ai);
+    }
+    let sheets: SheetGrid[];
+    try {
+      sheets = await readLegacySheets(bytes);
+    } catch {
+      return refuse(`Could not read this ${looksOds ? "OpenDocument" : "Excel"} file. If it is password protected, remove the password; otherwise make sure it is not damaged.`);
+    }
+    if (sheets.every((s) => s.grid.length < 2)) return refuse("This workbook has no transactions in it.");
+    return parseTables(sheets, looksOds ? "ods" : "xls", ai);
+  }
   if (!isZip) {
     // A CSV saved with an .xlsx name still opens.
     const head = bytes.subarray(0, Math.min(bytes.length, 2048));

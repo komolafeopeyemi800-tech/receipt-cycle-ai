@@ -813,9 +813,9 @@ export function AddTransactionScreen() {
         });
       } else {
         // Keep the original picture with the entry. A failed upload must never block saving the transaction.
-        let receiptKey: string | undefined;
+        let receiptKey: string | undefined = route.params?.receiptKey;
         const receiptUri = attachedReceiptUri ?? route.params?.receiptUri;
-        if (receiptUri) {
+        if (receiptUri && !receiptKey) {
           try {
             const lower = receiptUri.toLowerCase();
             const type = lower.endsWith(".png")

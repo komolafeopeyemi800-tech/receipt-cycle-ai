@@ -1,5 +1,4 @@
 import { plural } from "../lib/plural";
-import { todayLocalYmd } from "../lib/dates";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "../lib/api";
 import { api } from "../lib/api";
@@ -12,8 +11,8 @@ import {
   Text,
   View,
 } from "react-native";
-import { Directory, File, Paths } from "expo-file-system";
-import * as Sharing from "expo-sharing";
+import { useCsvExport } from "../hooks/useCsvExport";
+import type { ExportTransaction } from "../lib/export/exportModel";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { TransactionGlyph } from "../components/ui/PremiumIcon";
@@ -35,7 +34,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { FinancialPeriodSummary } from "../components/FinancialPeriodSummary";
-import { useSubscriptionState } from "../hooks/useSubscriptionState";
 import { SectionHeader } from "../components/ui/FinanceUI";
 import { useRecordsFilters } from "../contexts/RecordsFilterContext";
 import type { MainTabParamList, RootStackParamList } from "../navigation/types";
@@ -101,7 +99,7 @@ export function TransactionsListScreen() {
   const { workspace, ready } = useWorkspace();
   const { user, token } = useAuth();
   const removeTx = useMutation(api.transactions.remove);
-  const sub = useSubscriptionState();
+  const { exportRows } = useCsvExport({ loadAll: false });
   const { formatMoney, formatMoneyCompact, formatDate } = usePreferences();
   const { filters, setFilters } = useRecordsFilters();
   const [period, setPeriod] = useState<"month" | "all">("all");
@@ -209,24 +207,11 @@ export function TransactionsListScreen() {
   const leaveSelection = () => { setSelectionMode(false); setSelectedIds(new Set()); };
 
   async function exportSelected() {
-    if (sub && !sub.canExportCsv) {
-      Alert.alert("Pro export", "CSV export is a Pro feature. To review or update your account access, open Receipt Cycle on the web.", [{ text: "OK" }]);
-      return;
-    }
     const rows = list.filter((row) => selectedIds.has(row.id));
     if (!rows.length) return;
-    const csv = [
-      "date,type,category,amount,merchant,description,payment_method,evidence_url",
-      ...rows.map((row) => [row.date, row.type, row.category, row.amount, row.merchant, row.description, row.payment_method, row.evidence_url].map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`).join(",")),
-    ].join("\r\n");
     try {
       setBulkBusy(true);
-      const dir = new Directory(Paths.document, "ReceiptCycle", "Exports");
-      if (!dir.exists) dir.create({ intermediates: true });
-      const file = new File(dir, `receipt-cycle-selected-${todayLocalYmd()}.csv`);
-      if (!file.exists) file.create({ overwrite: true });
-      file.write(`\uFEFF${csv}`, { encoding: "utf8" });
-      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(file.uri, { mimeType: "text/csv", dialogTitle: "Export selected transactions" });
+      await exportRows(rows as ExportTransaction[], "xlsx");
       leaveSelection();
     } catch {
       Alert.alert("Export failed", "The selected transactions could not be exported.");

@@ -7,6 +7,7 @@ import { ApiError } from "./lib/errors";
 import { enforce } from "./lib/rateLimit";
 import { adminRoutes, configRoutes } from "./routes/admin";
 import { aiRoutes, contactRoutes } from "./routes/ai";
+import { aiGuardAdminRoutes, aiStatusRoutes } from "./routes/aiGuardAdmin";
 import { preferenceRoutes, subscriptionRoutes } from "./routes/account";
 import { accountRoutes, budgetRoutes, categoryRoutes } from "./routes/money";
 import { transactionRoutes } from "./routes/transactions";
@@ -15,6 +16,8 @@ import { meRoutes, socialRoutes } from "./routes/session";
 import { billingRoutes } from "./routes/billing";
 import { salesRoutes } from "./routes/sales";
 import { receiptEvidenceRoutes, receiptRoutes } from "./routes/receipts";
+import { documentLinkRoutes } from "./routes/documentLinks";
+import { documentRoutes } from "./routes/documents";
 import { uploadRoutes } from "./routes/uploads";
 import { workspaceRoutes } from "./routes/workspaces";
 import { publicDocumentRoutes } from "./routes/publicDocuments";
@@ -111,11 +114,15 @@ app.get("/api/push/status", (c) => {
   }
 });
 app.route("/api/billing", billingRoutes);
+app.route("/api/admin/ai-guard", aiGuardAdminRoutes);
+app.route("/api/me/ai-status", aiStatusRoutes);
 app.route("/api/admin", adminRoutes);
 app.route("/api/ai", aiRoutes);
 app.route("/api/contact", contactRoutes);
 app.route("/api/uploads", uploadRoutes);
+app.route("/api/documents", documentRoutes);
 app.route("/api/receipt-evidence", receiptEvidenceRoutes);
+app.route("/api/receipts", documentLinkRoutes); // before receiptRoutes: /shared is public, /links does its own auth
 app.route("/api/receipts", receiptRoutes);
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));

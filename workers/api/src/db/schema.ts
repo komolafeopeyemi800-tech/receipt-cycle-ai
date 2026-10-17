@@ -381,6 +381,11 @@ export const appConfig = sqliteTable("app_config", {
   dailyVoiceLimit: integer("daily_voice_limit"),
   dailyUploadLimit: integer("daily_upload_limit"),
   dailyAssistantLimit: integer("daily_assistant_limit"),
+  /** AI cost guard (see lib/aiBudget.ts). Empty means the default: 60 cents a day, 400 cents a month, 20 calls per 10 minutes, on. */
+  aiDailyBudgetCents: integer("ai_daily_budget_cents"),
+  aiMonthlyBudgetCents: integer("ai_monthly_budget_cents"),
+  aiBurstCalls: integer("ai_burst_calls"),
+  aiGuardEnabled: integer("ai_guard_enabled", { mode: "boolean" }),
   updatedAt: integer("updated_at"),
   updatedBy: text("updated_by"),
 });
@@ -480,3 +485,51 @@ export const publicDocumentLinks = sqliteTable(
   },
   (t) => [uniqueIndex("public_document_scope_kind_id_idx").on(t.scope, t.kind, t.documentId)],
 );
+
+/** Original uploaded files (statements, receipts, invoices) with the details read from them (JSON `meta`). The file is in R2. */
+export const documents = sqliteTable(
+  "documents",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: ["bank_statement", "card_statement", "receipt", "invoice", "spreadsheet", "other"] }).notNull(),
+    fileName: text("file_name").notNull(),
+    r2Key: text("r2_key").notNull(),
+    mime: text("mime").notNull(),
+    size: integer("size").notNull(),
+    meta: text("meta").notNull(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [index("documents_user_created_idx").on(t.userId, t.createdAt), uniqueIndex("documents_r2_key_idx").on(t.r2Key)],
+);
+
+/** Paid-AI spend per person per UTC day, in micro-dollars (1 USD = 1,000,000). */
+export const aiSpend = sqliteTable(
+  "ai_spend",
+  {
+    userId: text("user_id").notNull(),
+    day: text("day").notNull(),
+    micros: integer("micros").notNull().default(0),
+    calls: integer("calls").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.day] }), index("ai_spend_day_idx").on(t.day)],
+);
+
+/** Recent paid-AI calls, for the burst rule. Rows older than an hour are removed as people keep using the app. */
+export const aiCallLog = sqliteTable(
+  "ai_call_log",
+  { userId: text("user_id").notNull(), at: integer("at").notNull() },
+  (t) => [index("ai_call_log_user_at_idx").on(t.userId, t.at)],
+);
+
+/** Automatic 24 h / 72 h / 7 day pauses of the paid AI features. One row per person. */
+export const aiLockouts = sqliteTable("ai_lockouts", {
+  userId: text("user_id").primaryKey(),
+  lockedUntil: integer("locked_until").notNull(),
+  reason: text("reason").notNull(),
+  strikes: integer("strikes").notNull().default(1),
+  lastStrikeAt: integer("last_strike_at").notNull(),
+  createdAt: integer("created_at").notNull(),
+});

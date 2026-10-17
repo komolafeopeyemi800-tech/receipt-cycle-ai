@@ -60,7 +60,7 @@ export function ScanReviewScreen() {
     navigation.dispatch(
       CommonActions.reset({
         index: 1,
-        routes: [{ name: "Main" }, { name: "AddTransaction", params: { scannedData: merged, source: route.params.source, receiptUri: route.params.receiptUri } }],
+        routes: [{ name: "Main" }, { name: "AddTransaction", params: { scannedData: merged, source: route.params.source, receiptUri: route.params.receiptUri, receiptKey: route.params.receiptKey } }],
       }),
     );
   };

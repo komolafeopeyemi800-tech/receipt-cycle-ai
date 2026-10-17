@@ -5,6 +5,7 @@ import { uploadParses } from "../db/schema";
 import { aiExtractChunk, aiMapColumns, aiOcrPdf } from "../docs/ai";
 import { AzureError, azureConfigured } from "../docs/azure";
 import { azureReadDocument } from "../docs/azureDoc";
+import { AI_COST_MICROS, type AiKind, azureCostMicros, chargeAi, guardAiOrThrow } from "../lib/aiBudget";
 import { getRuntimeConfig } from "../lib/config";
 import { useDaily } from "../lib/dailyLimit";
 import { ApiError } from "../lib/errors";
@@ -33,7 +34,7 @@ export const uploadRoutes = new Hono<AppEnv>();
 uploadRoutes.use("*", requireUser);
 
 /** Gate shared by every AI route: switches, plan, key, and the daily budget. */
-async function aiGate(c: Context<AppEnv>, countsAsUpload = false, needsOpenAi = true) {
+async function aiGate(c: Context<AppEnv>, countsAsUpload = false, needsOpenAi = true, cost: { kind: AiKind; micros: number } = { kind: "extract", micros: AI_COST_MICROS.extract }) {
   const db = c.get("db");
   const u = c.get("user");
   const cfg = await getRuntimeConfig(db);
@@ -57,6 +58,8 @@ async function aiGate(c: Context<AppEnv>, countsAsUpload = false, needsOpenAi = 
     if (!r.ok) throw new ApiError(429, r.message);
   }
   await enforce(db, `ai:${u.id}`, AI_CALLS_PER_DAY, DAY_MS, `Daily limit reached for the AI helper (${AI_CALLS_PER_DAY} calls).`);
+  // Cost guard: pauses the smart features for people whose paid-AI use looks like a bot or is far above heavy-user levels.
+  await guardAiOrThrow(db, c.env, u, cost.kind, cost.micros);
 }
 
 /** Wrap provider failures so the client sees a friendly 502-style message, not a stack trace. */
@@ -99,10 +102,13 @@ uploadRoutes.post("/ai/ocr-pdf", async (c) => {
   if (body.kind === "statement" && body.mimeType === "application/pdf") throw new ApiError(400, "kind statement is for images; send PDFs with the default kind.");
   // Off until it is switched on in the Worker settings.
   if (c.env.OCR_PDF_ENABLED !== "true") throw new ApiError(400, "Scanned statements cannot be read yet. Upload a CSV, Excel or regular PDF statement instead.");
-  await aiGate(c, true, false);
+  const expectedPages = body.kind === "statement" ? 1 : (body.pageCount ?? 1);
+  await aiGate(c, true, false, { kind: "document", micros: azureCostMicros(expectedPages) });
   try {
     const out = await aiOcrPdf(c.env, file, { kind: body.kind, expectedPages: body.kind === "statement" ? 1 : body.pageCount });
-    return c.json({ rows: out.rows, opening: out.opening, closing: out.closing, warnings: out.warnings, pages: out.pages });
+    // Charge what Azure really billed: every page, twice when the second (layout) model had to run too.
+    await chargeAi(c.get("db"), c.env, c.get("user"), azureCostMicros(out.pages, out.model === "prebuilt-layout" ? 2 : 1) - azureCostMicros(expectedPages));
+    return c.json({ rows: out.rows, opening: out.opening, closing: out.closing, warnings: out.warnings, pages: out.pages, meta: out.meta, metaKind: out.metaKind });
   } catch (e) {
     if (e instanceof AzureError) {
       console.error("scanned statement read failed", e.message);
@@ -128,9 +134,12 @@ uploadRoutes.post("/ai/read-document", async (c) => {
     }),
   );
   if (c.env.OCR_PDF_ENABLED !== "true") throw new ApiError(400, "Reading receipts and invoices from PDFs is not available yet. Take a photo of it instead.");
-  await aiGate(c, true, false);
+  const docPages = body.mimeType && body.mimeType !== "application/pdf" ? 1 : (body.pageCount ?? 1);
+  await aiGate(c, true, false, { kind: "document", micros: azureCostMicros(docPages) });
   try {
     const extracted = await azureReadDocument(c.env, body.fileBase64, body.kind, { expectedPages: body.mimeType && body.mimeType !== "application/pdf" ? 1 : body.pageCount });
+    // "auto" tries the receipt model first and the invoice model second: the second pass bills the pages again.
+    if (body.kind === "auto" && extracted.source === "azure-invoice") await chargeAi(c.get("db"), c.env, c.get("user"), azureCostMicros(docPages));
     return c.json({ extracted_data: extracted });
   } catch (e) {
     if (e instanceof AzureError) {

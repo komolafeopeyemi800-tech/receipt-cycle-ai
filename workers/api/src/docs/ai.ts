@@ -114,7 +114,7 @@ export async function aiOcrPdf(
   env: Env,
   fileBase64: string,
   opts: AzureOptions = {},
-): Promise<{ rows: ParsedRow[]; opening: number | null; closing: number | null; warnings: string[]; pages: number }> {
+): Promise<{ rows: ParsedRow[]; opening: number | null; closing: number | null; warnings: string[]; pages: number; model: string; meta?: Record<string, unknown>; metaKind?: "bank_statement" | "card_statement" }> {
   const out = await azureReadStatement(env, fileBase64, opts);
-  return { rows: out.rows, opening: out.opening, closing: out.closing, warnings: out.warnings, pages: out.pages };
+  return { rows: out.rows, opening: out.opening, closing: out.closing, warnings: out.warnings, pages: out.pages, model: out.model, meta: out.meta, metaKind: out.metaKind };
 }

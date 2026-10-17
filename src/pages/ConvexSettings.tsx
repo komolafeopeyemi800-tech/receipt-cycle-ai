@@ -7,7 +7,8 @@ import { useSubscriptionState } from "@/hooks/use-subscription-state";
 import { useWebPreferences } from "@/contexts/WebPreferencesContext";
 import { AppChrome } from "@/components/layout/AppChrome";
 import { useBilling } from "@/lib/billing";
-import { todayLocalYmd } from "@mobile-lib/dates";
+import { downloadTransactionsExport } from "@/lib/exportDownload";
+import type { ExportTransaction } from "@mobile-lib/export/exportModel";
 import {
   CURRENCY_OPTIONS,
   DATE_FORMAT_OPTIONS,
@@ -19,19 +20,6 @@ import {
 } from "@mobile-lib/preferences";
 
 const primary = "#0f766e";
-
-function csvValue(v: unknown): string {
-  if (v === null || v === undefined) return "";
-  if (typeof v === "number") return Number.isFinite(v) ? String(v) : "";
-  const raw = String(v)
-    .replace(/\r\n/g, " ")
-    .replace(/[\r\n\t]/g, " ")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-  const needsQuotes = raw.includes(",") || raw.includes('"');
-  const escaped = raw.replace(/"/g, '""');
-  return needsQuotes ? `"${escaped}"` : escaped;
-}
 
 function ConvexSettingsInner() {
   const { user, token, signOut } = useWebAuth();
@@ -74,16 +62,16 @@ function ConvexSettingsInner() {
   const [locLabel, setLocLabel] = useState("");
   const [locAddress, setLocAddress] = useState("");
 
-  function exportCsvDownload() {
+  function exportDownload(format: "xlsx" | "csv") {
     if (runtime?.exportEnabled === false) {
       window.alert("Export is currently disabled by admin.");
       return;
     }
     if (sub && !sub.canExportCsv) {
-      window.alert("CSV export is included with Pro. Open Pricing to upgrade and download all your transactions.");
+      window.alert("Spreadsheet export is included with Pro. Open Pricing to upgrade and download all your transactions.");
       return;
     }
-    if (!user?.id) {
+    if (!user?.id || !token) {
       window.alert("Sign in again to export your records.");
       return;
     }
@@ -95,37 +83,9 @@ function ConvexSettingsInner() {
       window.alert("No transactions to export yet.");
       return;
     }
-    const header = ["date", "type", "category", "amount", "merchant", "description", "payment_method", "workspace", "subtotal", "tax", "currency", "line_items", "evidence_url"].join(",");
-    const body = backupRows
-      .map((t) => {
-        const data = t.receipt_data && typeof t.receipt_data === "object" ? t.receipt_data as { subtotal?: number; tax_amount?: number; currency?: string; items?: unknown[] } : null;
-        return [
-          csvValue(t.date),
-          csvValue(t.type),
-          csvValue(t.category),
-          csvValue(t.amount),
-          csvValue(t.merchant),
-          csvValue(t.description),
-          csvValue(t.payment_method),
-          csvValue(t.workspace),
-          csvValue(data?.subtotal),
-          csvValue(data?.tax_amount),
-          csvValue(data?.currency),
-          csvValue(data?.items ? JSON.stringify(data.items) : ""),
-          csvValue(t.evidence_url),
-        ].join(",");
-      })
-      .join("\r\n");
-    const csv = `\uFEFF${header}\r\n${body}`;
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `receipt-cycle-transactions-${todayLocalYmd()}.csv`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    URL.revokeObjectURL(url);
+    downloadTransactionsExport(format, backupRows as ExportTransaction[], { token, currency, dateFormat, numberFormat, businessName: (user as { name?: string }).name || undefined }).catch((e: unknown) =>
+      window.alert(e instanceof Error && e.message ? e.message : "The export could not be created. Please try again."),
+    );
   }
 
   function addMerchant() {
@@ -427,7 +387,7 @@ function ConvexSettingsInner() {
           <button
             type="button"
             disabled={runtime?.exportEnabled === false || Boolean(sub && !sub.canExportCsv)}
-            onClick={exportCsvDownload}
+            onClick={() => exportDownload("xlsx")}
             className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm hover:bg-slate-50 disabled:opacity-50"
           >
             <i className="fas fa-download w-5 text-center text-slate-600" />
@@ -438,9 +398,17 @@ function ConvexSettingsInner() {
                   ? "Disabled by admin"
                   : sub && !sub.canExportCsv
                     ? "Pro only — trial and free plans can view data in the app"
-                    : "Download CSV of all your transactions"}
+                    : "Download an Excel workbook of all your transactions, documents and totals"}
               </p>
             </div>
+          </button>
+          <button
+            type="button"
+            disabled={runtime?.exportEnabled === false || Boolean(sub && !sub.canExportCsv)}
+            onClick={() => exportDownload("csv")}
+            className="mt-2 text-xs font-semibold text-teal-700 underline disabled:opacity-50"
+          >
+            Export as CSV instead
           </button>
         </section>
 

@@ -5,7 +5,9 @@ import { api } from "@mobile-lib/api";
 import { describeParse, importInChunks } from "@mobile-lib/statementUpload";
 import { apiReadDocument, apiStatementTools } from "@mobile-lib/statementParse/apiTools";
 import { parseCsvText } from "@mobile-lib/statementParse/csv";
-import { readStatement, readStatementPhoto, type ParseResult } from "@mobile-lib/statementParse/pipeline";
+import { FILE_TOO_BIG, MAX_FILE_BYTES, SCAN_UNRELIABLE, readStatement, readStatementPhoto, type ParseResult } from "@mobile-lib/statementParse/pipeline";
+import { receiptDocument, statementDocument, storeOriginal } from "@mobile-lib/statementParse/original";
+import type { DocKind, DocMeta } from "@mobile-lib/statementParse/docMeta";
 import {
   type PreviewRow,
   documentToRow,
@@ -20,6 +22,7 @@ import {
   updateRow,
 } from "@mobile-lib/statementParse/preview";
 import { apiClient } from "@/lib/api";
+import { sharpenForRetry, shrinkForUpload } from "@/lib/preprocessImage";
 import { loadStatementEngine } from "@/lib/statementReader";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useWebAuth } from "@/contexts/WebAuthContext";
@@ -28,7 +31,7 @@ import { AppChrome } from "@/components/layout/AppChrome";
 const primary = "#0f766e";
 const PAGE = 200;
 
-type Review = { rows: PreviewRow[]; warnings: string[]; note: string; file: File; shown: number };
+type Review = { rows: PreviewRow[]; warnings: string[]; note: string; file: File; shown: number; doc: { kind: DocKind; meta: DocMeta } };
 
 const cell: React.CSSProperties = { padding: "6px 8px", borderTop: "1px solid #e2e8f0", fontSize: 13, verticalAlign: "middle" };
 const input: React.CSSProperties = { border: "1px solid #cbd5e1", borderRadius: 4, padding: "4px 6px", fontSize: 13, width: "100%", boxSizing: "border-box" };
@@ -45,7 +48,7 @@ function ConvexUploadStatementInner() {
   const userId = user!.id;
   const runtime = useQuery(api.admin.publicConfig, {});
   const bulkImport = useMutation(api.transactions.bulkImport);
-  const uploadReceipt = useMutation(api.receipts.upload);
+  const storeDoc = useAction(api.documents.upload);
   const scanText = useAction(api.scanReceipt.scanFromDocumentText);
   const existing = useQuery(api.transactions.list, ready ? { workspace } : "skip");
 
@@ -57,18 +60,23 @@ function ConvexUploadStatementInner() {
 
   /** Rows to review: transactions the person already has (same date, amount, merchant) start unticked. */
   const buildReview = useCallback(
-    (rows: Parameters<typeof toPreviewRows>[0], warnings: string[], note: string, file: File): Review => {
+    (rows: Parameters<typeof toPreviewRows>[0], warnings: string[], note: string, file: File, doc: { kind: DocKind; meta: DocMeta }): Review => {
       const marked = markExistingDuplicates(toPreviewRows(rows), (existing ?? []) as never);
-      return { rows: marked.rows, warnings: marked.warning ? [...warnings, marked.warning] : warnings, note, file, shown: PAGE };
+      return { rows: marked.rows, warnings: marked.warning ? [...warnings, marked.warning] : warnings, note, file, shown: PAGE, doc };
     },
     [existing],
   );
 
   const runRead = useCallback(
     async (file: File, imageAs?: "statement" | "receipt") => {
+      // 10 MB per file keeps uploads inside the free-plan limits; checked here before anything is sent.
+      if (file.size > MAX_FILE_BYTES) {
+        setMsg(FILE_TOO_BIG);
+        return;
+      }
       if (file.type.startsWith("image/")) {
         if (imageAs === "receipt") {
-          navigate("/transactions#upload-document", { state: { uploadFile: file } });
+          navigate("/transactions#upload-document", { state: { uploadFile: file, imageChoice: "receipt" } });
           return;
         }
         if (imageAs !== "statement") {
@@ -105,12 +113,14 @@ function ConvexUploadStatementInner() {
             return;
           }
           setMsg("Reading your statement. This can take up to 30 seconds.");
-          const photo = await readStatementPhoto(new Uint8Array(await file.arrayBuffer()), file.type, apiStatementTools(apiClient).ai);
+          const photoTools = apiStatementTools(apiClient);
+          const sized = await shrinkForUpload(file);
+          const photo = await readStatementPhoto(new Uint8Array(await sized.arrayBuffer()), sized.type, photoTools.ai, photoTools.cache, () => sharpenForRetry(file));
           if (photo.status !== "ok") {
-            setMsg(photo.message ?? "We could not read this scan reliably. Upload a clearer scan or a CSV or Excel version.");
+            setMsg(photo.message ?? SCAN_UNRELIABLE);
             return;
           }
-          setReview(buildReview(photo.rows, photo.warnings, "", file));
+          setReview(buildReview(photo.rows, photo.warnings, "", file, statementDocument(photo)));
           setMsg(null);
           return;
         }
@@ -122,6 +132,12 @@ function ConvexUploadStatementInner() {
         if (name.endsWith(".csv") || file.type.includes("csv")) {
           const local = await parseCsvText(await file.text());
           if (local.status === "ok") parsed = local;
+        }
+
+        // Old Excel (.xls) and OpenDocument (.ods): the same SheetJS reader the phone uses (loaded only now).
+        if (!parsed && /\.(xls|ods)$/i.test(name)) {
+          const { parseXlsxBytes } = await import("@mobile-lib/statementParse/xlsx");
+          parsed = await parseXlsxBytes(new Uint8Array(await file.arrayBuffer()), file.name);
         }
 
         // Excel, PDF, Word (or a CSV the quick reader could not understand): read in the browser with anydoc.
@@ -157,7 +173,7 @@ function ConvexUploadStatementInner() {
             setMsg(problem ?? "Could not read a total from this invoice. Add it manually, or upload a clear photo of it.");
             return;
           }
-          setReview(buildReview([doc.row], ["Read as one transaction (the document total). Its details and line items are saved in the note. Check the amount and date.", ...doc.warnings], note, file));
+          setReview(buildReview([doc.row], ["Read as one transaction (the document total). Its details and line items are saved in the note. Check the amount and date.", ...doc.warnings], note, file, receiptDocument(extracted as never)));
           setMsg(null);
           return;
         }
@@ -169,7 +185,7 @@ function ConvexUploadStatementInner() {
             const extracted = await apiReadDocument(apiClient)(new Uint8Array(await file.arrayBuffer()), { kind: "auto", mimeType: "application/pdf", pageCount: parsed.needsOcr.pageCount });
             const doc = documentToRow(extracted as never, today());
             if (doc) {
-              setReview(buildReview([doc.row], ["Read as one transaction (the document total). Check the amount and date.", ...doc.warnings], note, file));
+              setReview(buildReview([doc.row], ["Read as one transaction (the document total). Check the amount and date.", ...doc.warnings], note, file, receiptDocument(extracted as never)));
               setMsg(null);
               return;
             }
@@ -182,7 +198,7 @@ function ConvexUploadStatementInner() {
           setMsg(parsed.message ?? "Could not read this file.");
           return;
         }
-        setReview(buildReview(parsed.rows, parsed.warnings, note, file));
+        setReview(buildReview(parsed.rows, parsed.warnings, note, file, statementDocument(parsed)));
         setMsg(null);
       } catch (e) {
         setMsg(e instanceof Error ? e.message : "Could not read this file.");
@@ -203,21 +219,23 @@ function ConvexUploadStatementInner() {
     setBusy(true);
     try {
       const total = rows.length;
-      const evidenceKey = (await uploadReceipt({ file: review.file, fileName: review.file.name })).key;
+      // Keep the original file with the imported rows; failing to store it never blocks the import.
+      const stored = await storeOriginal(storeDoc as never, review.file, review.file.name, review.doc.kind, review.doc.meta);
+      const evidenceKey = stored.key ?? undefined;
       const res = await importInChunks(
         rows,
         (chunk) =>
           bulkImport({ workspace, userId, token, receipt_url: evidenceKey, rows: chunk.map((r) => ({ ...r, payment_method: "Import" })) }),
         (done) => setMsg(`Importing… ${done} of ${total}`),
       );
-      setMsg(`Imported ${res.inserted} transaction(s).`);
+      setMsg(`Imported ${res.inserted} transaction(s).${stored.note ? ` ${stored.note}` : ""}`);
       setReview(null);
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Import failed");
     } finally {
       setBusy(false);
     }
-  }, [review, token, workspace, userId, bulkImport, uploadReceipt]);
+  }, [review, token, workspace, userId, bulkImport, storeDoc]);
 
   // A file chosen on the Transactions page arrives here in the router state: start reading it straight away.
   const started = useRef(false);

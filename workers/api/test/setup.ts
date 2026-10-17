@@ -3,6 +3,9 @@ import { beforeEach } from "vitest";
 
 const TABLES = [
   "rate_limits",
+  "ai_spend",
+  "ai_call_log",
+  "ai_lockouts",
   "upload_parses",
   "admin_audit_logs",
   "billing_entitlements",

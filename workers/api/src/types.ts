@@ -49,6 +49,8 @@ export type Env = {
   AZURE_DI_KEY?: string;
   /** "true" turns the scanned-statement route on (off by default: it invented rows in testing). */
   OCR_PDF_ENABLED?: string;
+  /** "true": try the cheap Azure text read (prebuilt-read, about US$0.0015 a page) before the statement model for PDFs. */
+  AZURE_READ_FIRST?: string;
   OPENAI_VISION_MAX_TOKENS?: string;
   OPENROUTER_API_KEY?: string;
   OPENROUTER_GEMINI_MODEL?: string;

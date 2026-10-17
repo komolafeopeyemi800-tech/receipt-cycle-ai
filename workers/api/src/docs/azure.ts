@@ -12,6 +12,7 @@
  * Env: AZURE_DI_ENDPOINT (https://<name>.cognitiveservices.azure.com), AZURE_DI_KEY.
  */
 import { dateWithPeriodYear, parseAmount, parseDate, parseYearlessMonthDay, round2 } from "../../../../apps/mobile/src/lib/statementParse/normalize";
+import { statementTextMeta } from "../../../../apps/mobile/src/lib/statementParse/docMeta";
 import { parseExtractedDocument } from "../../../../apps/mobile/src/lib/statementParse/pipeline";
 import { type Grid, type ParsedRow, type StatementPeriod, isSummaryText, reconcile } from "../../../../apps/mobile/src/lib/statementParse/statement";
 import type { Env } from "../types";
@@ -53,7 +54,10 @@ export type AzureStatement = {
   closing: number | null;
   warnings: string[];
   pages: number;
-  model: "prebuilt-bankStatement.us" | "prebuilt-layout";
+  model: "prebuilt-bankStatement.us" | "prebuilt-layout" | "prebuilt-read";
+  /** Details printed on the statement (bank, last 4 digits only, period, balances, totals ...). */
+  meta?: Record<string, unknown>;
+  metaKind?: "bank_statement" | "card_statement";
 };
 
 export type Json = Record<string, any>;
@@ -165,7 +169,7 @@ function dateOf(f: Json | undefined, period: StatementPeriod | null): string | n
   return iso;
 }
 
-function fromBankModel(result: Json): { rows: ParsedRow[]; opening: number | null; closing: number | null; warnings: string[] } {
+function fromBankModel(result: Json): { rows: ParsedRow[]; opening: number | null; closing: number | null; warnings: string[]; meta: Record<string, unknown> } {
   const doc = (result.documents as Json[] | undefined)?.[0];
   const fields = doc?.fields as Json | undefined;
   const period = periodOf(fields);
@@ -174,8 +178,12 @@ function fromBankModel(result: Json): { rows: ParsedRow[]; opening: number | nul
   const doubtful: number[] = [];
   let opening: number | null = null;
   let closing: number | null = null;
+  let accountNumber = "";
+  let accountType = "";
   for (const acct of accounts) {
     const a = acct.valueObject as Json | undefined;
+    if (!accountNumber) accountNumber = text(field(a, "AccountNumber"));
+    if (!accountType) accountType = text(field(a, "AccountType"));
     if (opening === null) opening = amount(field(a, "BeginningBalance"));
     if (closing === null) closing = amount(field(a, "EndingBalance"));
     for (const t of ((field(a, "Transactions")?.valueArray as Json[] | undefined) ?? [])) {
@@ -205,7 +213,20 @@ function fromBankModel(result: Json): { rows: ParsedRow[]; opening: number | nul
   if (doubtful.length) {
     warnings.push(`The scanner was unsure about ${doubtful.length} row${doubtful.length === 1 ? "" : "s"} (row ${doubtful.slice(0, 10).join(", ")}${doubtful.length > 10 ? ", ..." : ""}). Check the date and amount on ${doubtful.length === 1 ? "it" : "them"}.`);
   }
-  return { rows, opening, closing, warnings };
+  const digits = accountNumber.replace(/\D/g, "");
+  const meta: Record<string, unknown> = {
+    currency: "USD",
+    bankName: text(field(fields, "BankName")) || undefined,
+    accountHolder: text(field(fields, "AccountHolderName")) || undefined,
+    // only the last four digits of an account number are ever kept
+    accountLast4: digits.length >= 4 ? digits.slice(-4) : undefined,
+    accountType: accountType || undefined,
+    periodStart: (field(fields, "StatementStartDate")?.valueDate as string | undefined) || undefined,
+    periodEnd: (field(fields, "StatementEndDate")?.valueDate as string | undefined) || undefined,
+    openingBalance: opening ?? undefined,
+    closingBalance: closing ?? undefined,
+  };
+  return { rows, opening, closing, warnings, meta: Object.fromEntries(Object.entries(meta).filter(([, v]) => v !== undefined)) };
 }
 
 function gridsOf(result: Json): Grid[] {
@@ -253,7 +274,8 @@ function checkPages(analysed: number, opts: AzureOptions) {
   }
 }
 
-export const SCAN_UNRELIABLE = "We could not read this scan reliably. Upload a clearer scan or a CSV or Excel version.";
+export const SCAN_UNRELIABLE =
+  "We could not read this scan reliably. Try again with the page flat on a table, bright even light, and the page filling the frame. Or upload the CSV or Excel version from your bank.";
 export const SCAN_NO_BALANCES = "We could not find the opening and closing balances on this statement, so the scan cannot be checked. Upload a CSV or Excel version.";
 
 /**
@@ -274,11 +296,27 @@ async function readUngated(env: Env, base64: string, opts: AzureOptions = {}): P
   if (!azureConfigured(env)) throw new AzureError(UNAVAILABLE, 503, "Azure DI is not configured (AZURE_DI_ENDPOINT / AZURE_DI_KEY)");
   const budget = new Budget(opts.timeoutMs ?? TIMEOUT_MS, opts.pollMs ?? POLL_MS, opts.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms))));
 
+  // Cheapest first (opt-in): the plain text read, through the same text-to-rows code as a text PDF, accepted only when its
+  // rows add up to the printed balances. Anything else falls through to the statement model, so accuracy is unchanged.
+  if (env.AZURE_READ_FIRST === "true" && opts.kind !== "statement") {
+    const plain = await analyze(env, "prebuilt-read", base64, budget);
+    checkPages(pageCount(plain), opts);
+    const content = plainText(String(plain.content ?? ""));
+    const read = content.trim() ? await parseExtractedDocument(content, []) : null;
+    const opening = read?.verification?.opening ?? null;
+    const closing = read?.verification?.closing ?? null;
+    if (read && read.rows.length > 0 && opening !== null && closing !== null && reconcile(read.rows, opening, closing)) {
+      const printed = statementTextMeta(content);
+      return { rows: read.rows, opening, closing, warnings: read.warnings.filter((w) => !/^Checked:|do not add up/.test(w)), pages: pageCount(plain), model: "prebuilt-read", meta: printed.meta, metaKind: printed.kind };
+    }
+  }
+
   const bank = await analyze(env, "prebuilt-bankStatement.us", base64, budget);
   checkPages(pageCount(bank), opts);
   const parsed = fromBankModel(bank);
   const docConfidence = typeof (bank.documents as Json[] | undefined)?.[0]?.confidence === "number" ? (bank.documents as Json[])[0]!.confidence : 1;
-  const bankResult: AzureStatement = { ...parsed, pages: pageCount(bank), model: "prebuilt-bankStatement.us" };
+  const { meta: bankMeta, ...bankRest } = parsed;
+  const bankResult: AzureStatement = { ...bankRest, meta: bankMeta, metaKind: "bank_statement", pages: pageCount(bank), model: "prebuilt-bankStatement.us" };
   const bankAddsUp = parsed.opening !== null && parsed.closing !== null ? reconcile(parsed.rows, parsed.opening, parsed.closing) : null;
   if (parsed.rows.length > 0 && docConfidence >= 0.3 && bankAddsUp !== false) return bankResult;
 
@@ -309,7 +347,10 @@ async function readLayout(env: Env, base64: string, budget: Budget, opts: AzureO
   const content = plainText(String(layout.content ?? ""));
   const read = await parseExtractedDocument(content, gridsOf(layout));
   if (read.rows.length === 0) throw new AzureError("No transactions could be found in this document. Upload a CSV or Excel version.", 422, "Azure DI: layout fallback found no transactions");
+  const printed = statementTextMeta(content);
   return {
+    meta: printed.meta,
+    metaKind: printed.kind,
     rows: read.rows,
     opening: read.verification?.opening ?? null,
     closing: read.verification?.closing ?? null,

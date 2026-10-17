@@ -329,3 +329,64 @@ describe("POST /api/uploads/ai/ocr-pdf", () => {
     expect(spy).toHaveLength(0);
   });
 });
+
+describe("details printed on the statement", () => {
+  it("come back with the rows, with only the last 4 digits of the account number", async () => {
+    const r = bankResult();
+    const f = (r.analyzeResult.documents[0] as any).fields;
+    f.BankName = str("Northfield Community Bank");
+    f.AccountHolderName = str("Ada Lovelace");
+    f.Accounts.valueArray[0].valueObject.AccountNumber = str("000012341893");
+    stubAzure([
+      { match: /:analyze/, method: "POST", respond: accepted },
+      { match: /analyzeResults/, respond: polls(r) },
+    ]);
+    const out = await azureReadStatement(azureEnv, B64, { sleep: noSleep });
+    expect(out.meta).toMatchObject({ bankName: "Northfield Community Bank", accountHolder: "Ada Lovelace", accountLast4: "1893", periodStart: "2026-03-01", periodEnd: "2026-03-31", openingBalance: 5250.75, closingBalance: 7356.45 });
+    expect(JSON.stringify(out.meta)).not.toContain("000012341893");
+  });
+});
+
+describe("cheap text read first (AZURE_READ_FIRST)", () => {
+  const readEnv = { ...azureEnv, AZURE_READ_FIRST: "true" };
+  const table = "Date Description Debit Credit Balance 03/02/2026 COFFEE SHOP 4.50 995.50 03/03/2026 PAYROLL 200.00 1,195.50 Beginning balance $1,000.00 Ending balance $1,195.50";
+  const readResult = (content: string) => ({ status: "succeeded", analyzeResult: { pages: [{ pageNumber: 1 }], content } });
+  function byModel(models: Record<string, () => unknown>) {
+    const asked: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init: RequestInit = {}) => {
+        const u = String(url);
+        if ((init.method ?? "GET") === "POST") {
+          const model = /documentModels\/([^:]+):analyze/.exec(u)![1]!;
+          asked.push(model);
+          return new Response(null, { status: 202, headers: { "Operation-Location": OP.replace("/x/", `/${model}/`) } });
+        }
+        return new Response(JSON.stringify(models[/documentModels\/([^/]+)\/analyzeResults/.exec(u)![1]!]!()), { status: 200 });
+      }),
+    );
+    return asked;
+  }
+
+  it("is off unless switched on: the statement model is asked first", async () => {
+    const asked = byModel({ "prebuilt-bankStatement.us": () => bankResult(), "prebuilt-read": () => readResult(table) });
+    const out = await azureReadStatement(azureEnv, B64, { sleep: noSleep, expectedPages: 1 });
+    expect(asked).toEqual(["prebuilt-bankStatement.us"]);
+    expect(out.model).toBe("prebuilt-bankStatement.us");
+  });
+
+  it("accepts the plain read when its rows add up to the printed balances, and never asks the dearer model", async () => {
+    const asked = byModel({ "prebuilt-read": () => readResult(table), "prebuilt-bankStatement.us": () => bankResult() });
+    const out = await azureReadStatement(readEnv, B64, { sleep: noSleep, expectedPages: 1 });
+    expect(asked).toEqual(["prebuilt-read"]);
+    expect(out.model).toBe("prebuilt-read");
+    expect(out.rows.map((r) => [r.amount, r.type])).toEqual([[4.5, "expense"], [200, "income"]]);
+  });
+
+  it("falls through to the statement model when the plain read does not add up", async () => {
+    const asked = byModel({ "prebuilt-read": () => readResult(table.replace("Ending balance $1,195.50", "Ending balance $1,500.00")), "prebuilt-bankStatement.us": () => bankResult() });
+    const out = await azureReadStatement(readEnv, B64, { sleep: noSleep, expectedPages: 1 });
+    expect(asked).toEqual(["prebuilt-read", "prebuilt-bankStatement.us"]);
+    expect(out.model).toBe("prebuilt-bankStatement.us");
+  });
+});

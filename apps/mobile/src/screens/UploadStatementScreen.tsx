@@ -16,6 +16,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as DocumentPicker from "expo-document-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useAction, useApiClient, useMutation, useQuery } from "../lib/api";
@@ -29,7 +30,9 @@ import { apiReadDocument, apiStatementTools } from "../lib/statementParse/apiToo
 import { decodeText, parseCsvText } from "../lib/statementParse/csv";
 import { parseDate } from "../lib/statementParse/normalize";
 import { parseXlsxBytes } from "../lib/statementParse/xlsx";
-import { readPdfOnServer, readStatementPhoto } from "../lib/statementParse/pipeline";
+import { FILE_TOO_BIG, MAX_FILE_BYTES, PHOTO_LONG_EDGE, SCAN_UNRELIABLE, readPdfOnServer, readStatementPhoto } from "../lib/statementParse/pipeline";
+import { receiptDocument, statementDocument, storeOriginal } from "../lib/statementParse/original";
+import type { DocKind, DocMeta } from "../lib/statementParse/docMeta";
 import {
   type PreviewRow,
   importPayload,
@@ -65,13 +68,25 @@ export const DOCUMENT_WAIT = "Reading your document. This can take up to 30 seco
 
 const PREVIEW_PAGE = 100;
 
+/** A big camera photo, brought to about 2000 px on its long edge (faster upload, fits the 10 MB limit). Small photos are left alone. */
+async function shrinkPhoto(uri: string): Promise<string> {
+  try {
+    const info = await ImageManipulator.manipulateAsync(uri, [], {});
+    if (Math.max(info.width, info.height) <= 2400) return uri;
+    const resize = info.width >= info.height ? { width: PHOTO_LONG_EDGE } : { height: PHOTO_LONG_EDGE };
+    return (await ImageManipulator.manipulateAsync(uri, [{ resize }], { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG })).uri;
+  } catch {
+    return uri;
+  }
+}
+
 /** Images are scanned; CSV, Excel, PDF and Word are read as statements. */
 function classify(name: string, mime: string): "image" | "csv" | "xlsx" | "pdf" | "statement" | null {
   const n = name.toLowerCase();
   if (n.match(/\.(jpg|jpeg|png|webp|heic)$/i) || mime.startsWith("image/")) return "image";
   if (n.endsWith(".csv") || mime.includes("csv")) return "csv";
   if (n.endsWith(".pdf") || mime === "application/pdf") return "pdf";
-  if (n.endsWith(".xlsx") || mime === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") return "xlsx";
+  if (n.match(/\.(xlsx|xls|ods)$/i) || mime === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" || mime === "application/vnd.ms-excel" || mime === "application/vnd.oasis.opendocument.spreadsheet") return "xlsx";
   if (n.match(/\.(xlsx|xls|xlsb|ods|pdf|docx|odt)$/i) || mime === "application/pdf" || mime.includes("spreadsheet") || mime.includes("wordprocessing")) {
     return "statement";
   }
@@ -87,7 +102,7 @@ export function UploadStatementScreen() {
   const aiScanOk = Boolean(token && (!sub || sub.canUseAiFeatures));
   const canImportRows = Boolean(user?.id && (!sub || sub.canCreateTransaction));
   const bulkImport = useMutation(api.transactions.bulkImport);
-  const uploadReceipt = useMutation(api.receipts.upload);
+  const storeDoc = useAction(api.documents.upload);
   const ensureCats = useMutation(api.categories.ensureSeed);
   const scanImage = useAction(api.scanReceipt.scanFromBase64);
   const scanText = useAction(api.scanReceipt.scanFromDocumentText);
@@ -105,12 +120,15 @@ export function UploadStatementScreen() {
 
   /** Show rows for review; any that match a transaction the person already has start unticked. */
   const showReview = useCallback(
-    (rows: Parameters<typeof toPreviewRows>[0], warnings: string[]) => {
+    (rows: Parameters<typeof toPreviewRows>[0], warnings: string[], doc?: { kind: DocKind; meta: DocMeta }) => {
       const marked = markExistingDuplicates(toPreviewRows(rows), (existing ?? []) as never);
-      setReview({ rows: marked.rows, warnings: marked.warning ? [...warnings, marked.warning] : warnings, shown: PREVIEW_PAGE });
+      setReview({ rows: marked.rows, warnings: marked.warning ? [...warnings, marked.warning] : warnings, shown: PREVIEW_PAGE, doc });
     },
     [existing],
   );
+
+  /** The picked file in the shape the upload API takes (a Blob on the web, a file reference on the phone). */
+  const originalFile = useCallback(async (p: Picked) => (Platform.OS === "web" ? await (await fetch(p.uri)).blob() : { uri: p.uri, name: p.name, type: p.mime || "application/octet-stream" }), []);
 
   const reset = useCallback(() => {
     setPicked(null);
@@ -140,11 +158,15 @@ export function UploadStatementScreen() {
     });
     if (res.canceled || !res.assets?.[0]) return;
     const asset = res.assets[0]!;
+    if ((asset.size ?? 0) > MAX_FILE_BYTES) {
+      Alert.alert("File too large", FILE_TOO_BIG);
+      return;
+    }
     const name = asset.name ?? "file";
     const mime = asset.mimeType ?? "application/octet-stream";
     const kind = classify(name, mime);
     if (!kind) {
-      Alert.alert("Unsupported file", "Choose an image (JPG, PNG, …), a CSV, an Excel (.xlsx) file or a PDF.");
+      Alert.alert("Unsupported file", "Choose an image (JPG, PNG, …), a CSV, an Excel file (xlsx, xls, ods) or a PDF.");
       return;
     }
     const p: Picked = { uri: asset.uri, name, mime, kind };
@@ -157,14 +179,18 @@ export function UploadStatementScreen() {
     if (typeof document === "undefined") return;
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = "image/*,.csv,.xlsx,.ods,.pdf,.docx,.odt,text/csv,application/pdf";
+    input.accept = "image/*,.csv,.xlsx,.xls,.ods,.pdf,text/csv,application/pdf";
     input.onchange = () => {
       const f = input.files?.[0];
       if (!f) return;
       void (async () => {
+        if (f.size > MAX_FILE_BYTES) {
+          Alert.alert("File too large", FILE_TOO_BIG);
+          return;
+        }
         const kind = classify(f.name, f.type);
         if (!kind) {
-          Alert.alert("Unsupported file", "Choose an image, a CSV, an Excel (.xlsx) file or a PDF.");
+          Alert.alert("Unsupported file", "Choose an image, a CSV, an Excel file (xlsx, xls, ods) or a PDF.");
           return;
         }
         const uri = URL.createObjectURL(f);
@@ -217,7 +243,9 @@ export function UploadStatementScreen() {
           Alert.alert("Scan", r.error ?? "Could not read document.");
           return;
         }
-        navigation.navigate("ScanReview", { scannedData: extracted as ScannedExtracted, source: "upload", receiptUri: picked.uri });
+        const doc = receiptDocument(extracted);
+        const stored = await storeOriginal(storeDoc as never, await originalFile(picked), picked.name, doc.kind, doc.meta);
+        navigation.navigate("ScanReview", { scannedData: extracted as ScannedExtracted, source: "upload", receiptUri: picked.uri, ...(stored.key ? { receiptKey: stored.key } : {}) });
         reset();
         return;
       }
@@ -245,7 +273,7 @@ export function UploadStatementScreen() {
     } finally {
       setBusy(false);
     }
-  }, [picked, ready, scanImage, scanText, navigation, reset, token, sub]);
+  }, [picked, ready, scanImage, scanText, navigation, reset, token, sub, storeDoc, originalFile]);
 
   /** Step 1: read the CSV on the phone and show what was found. Nothing is saved yet. */
   const prepareCsv = useCallback(async () => {
@@ -269,7 +297,7 @@ export function UploadStatementScreen() {
         Alert.alert("Could not read this file", userFacingError(parsed.message ?? "Could not read this CSV. It needs Date, Description and Amount (or Debit/Credit) columns."));
         return;
       }
-      showReview(parsed.rows, parsed.warnings);
+      showReview(parsed.rows, parsed.warnings, statementDocument(parsed));
     } catch (e) {
       Alert.alert("Could not read this file", userFacingErrorFromUnknown(e));
     } finally {
@@ -290,10 +318,10 @@ export function UploadStatementScreen() {
     try {
       await ensureCats({ workspace });
       const total = rows.length;
-      const sourceFile = Platform.OS === "web"
-        ? await (await fetch(picked.uri)).blob()
-        : { uri: picked.uri, name: picked.name, type: picked.mime || "text/csv" };
-      const evidenceKey = (await uploadReceipt({ file: sourceFile, fileName: picked.name })).key;
+      // Keep the original file with the imported rows; failing to store it never blocks the import.
+      const doc = review.doc ?? { kind: "other" as DocKind, meta: {} };
+      const stored = await storeOriginal(storeDoc as never, await originalFile(picked), picked.name, doc.kind, doc.meta);
+      const evidenceKey = stored.key ?? undefined;
       const out = await importInChunks(
         rows,
         (chunk) =>
@@ -307,7 +335,7 @@ export function UploadStatementScreen() {
         (done) => setStatus(`Importing… ${done} of ${total}`),
       );
       setStatus(`Imported ${out.inserted} row(s).`);
-      Alert.alert("Import complete", `Added ${out.inserted} transaction(s).`, [
+      Alert.alert("Import complete", `Added ${out.inserted} transaction(s).${stored.note ? `\n\n${stored.note}` : ""}`, [
         { text: "OK", onPress: () => navigation.navigate("Main", { screen: "Records" }) },
       ]);
       reset();
@@ -316,7 +344,7 @@ export function UploadStatementScreen() {
     } finally {
       setBusy(false);
     }
-  }, [picked, review, workspace, user?.id, token, ensureCats, bulkImport, uploadReceipt, navigation, reset]);
+  }, [picked, review, workspace, user?.id, token, ensureCats, bulkImport, storeDoc, originalFile, navigation, reset]);
 
   /** Statement photo or PDF: read on the server (the phone cannot run the text reader); shown only if it adds up. */
   const readScannedStatement = useCallback(async () => {
@@ -338,15 +366,16 @@ export function UploadStatementScreen() {
     setBusy(true);
     setStatus(STATEMENT_WAIT);
     try {
-      const res = await fetch(picked.uri);
+      const sendUri = picked.kind === "image" ? await shrinkPhoto(picked.uri) : picked.uri;
+      const res = await fetch(sendUri);
       const bytes = new Uint8Array(await res.arrayBuffer());
-      const { ai } = apiStatementTools(client);
-      const parsed = picked.kind === "pdf" ? await readPdfOnServer(bytes, ai) : await readStatementPhoto(bytes, isPng ? "image/png" : "image/jpeg", ai);
+      const { ai, cache } = apiStatementTools(client);
+      const parsed = picked.kind === "pdf" ? await readPdfOnServer(bytes, ai, cache) : await readStatementPhoto(bytes, sendUri !== picked.uri ? "image/jpeg" : isPng ? "image/png" : "image/jpeg", ai, cache);
       if (parsed.status !== "ok") {
-        Alert.alert("Could not read this statement", userFacingError(parsed.message ?? "We could not read this scan reliably. Upload a clearer scan or a CSV or Excel version."));
+        Alert.alert("Could not read this statement", userFacingError(parsed.message ?? SCAN_UNRELIABLE));
         return;
       }
-      showReview(parsed.rows, parsed.warnings);
+      showReview(parsed.rows, parsed.warnings, statementDocument(parsed));
     } catch (e) {
       Alert.alert("Could not read this statement", userFacingErrorFromUnknown(e));
     } finally {
@@ -367,8 +396,8 @@ export function UploadStatementScreen() {
     try {
       const res = await fetch(picked.uri);
       const bytes = new Uint8Array(await res.arrayBuffer());
-      if (bytes.length > 10 * 1024 * 1024) {
-        Alert.alert("File too large", "PDFs up to 10 MB are supported on the phone.");
+      if (bytes.length > MAX_FILE_BYTES) {
+        Alert.alert("File too large", FILE_TOO_BIG);
         return;
       }
       const isPng = /png/i.test(picked.mime) || /\.png$/i.test(picked.name);
@@ -379,7 +408,9 @@ export function UploadStatementScreen() {
       }
       const mimeType = picked.kind === "pdf" ? "application/pdf" : isPng ? "image/png" : "image/jpeg";
       const extracted = await apiReadDocument(client)(bytes, { kind: intent === "invoice" ? "invoice" : "auto", mimeType });
-      navigation.navigate("ScanReview", { scannedData: extracted, source: "upload" });
+      const doc = receiptDocument(extracted as never);
+      const stored = await storeOriginal(storeDoc as never, await originalFile(picked), picked.name, doc.kind, doc.meta);
+      navigation.navigate("ScanReview", { scannedData: extracted, source: "upload", ...(picked.kind === "image" ? { receiptUri: picked.uri } : {}), ...(stored.key ? { receiptKey: stored.key } : {}) });
       reset();
     } catch (e) {
       Alert.alert("Could not read this document", userFacingErrorFromUnknown(e));
@@ -387,7 +418,7 @@ export function UploadStatementScreen() {
       setStatus(null);
       setBusy(false);
     }
-  }, [picked, ready, token, client, navigation, reset, intent]);
+  }, [picked, ready, token, client, navigation, reset, intent, storeDoc, originalFile]);
 
   const canPick = () => {
     if (!ready || busy) return false;
@@ -418,6 +449,10 @@ export function UploadStatementScreen() {
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.78 });
     if (res.canceled || !res.assets[0]) return;
     const asset = res.assets[0];
+    if ((asset.fileSize ?? 0) > MAX_FILE_BYTES) {
+      Alert.alert("File too large", FILE_TOO_BIG);
+      return;
+    }
     const p: Picked = { uri: asset.uri, name: asset.fileName ?? "receipt-image.jpg", mime: asset.mimeType ?? "image/jpeg", kind: "image" };
     setPicked(p);
     setStatus(null);
@@ -468,8 +503,7 @@ export function UploadStatementScreen() {
             review ? null : <Text style={styles.previewTxt}>{picked.kind === "pdf" ? "PDF selected." : "Excel workbook selected."}</Text>
           ) : picked.kind === "statement" ? (
             <Text style={styles.previewTxt}>
-              This file type cannot be read on the phone (old .xls, .ods and Word files). Save it as .xlsx, CSV or PDF and choose it again, or
-              import it at receiptcycle.com.
+              Word files and binary .xlsb workbooks cannot be read. Save it as .xlsx, CSV or PDF and choose it again.
             </Text>
           ) : review ? null : (
             <ScrollView keyboardShouldPersistTaps="handled" style={styles.previewBox} nestedScrollEnabled>
@@ -569,7 +603,7 @@ export function UploadStatementScreen() {
   );
 }
 
-type ReviewState = { rows: PreviewRow[]; warnings: string[]; shown: number };
+type ReviewState = { rows: PreviewRow[]; warnings: string[]; shown: number; doc?: { kind: DocKind; meta: DocMeta } };
 
 /** The check-before-saving step: totals, flags, and per-row tick boxes and in/out switches. */
 function ReviewPanel({ review, setReview, busy, onImport }: { review: ReviewState; setReview: (r: ReviewState | null) => void; busy: boolean; onImport: () => void }) {

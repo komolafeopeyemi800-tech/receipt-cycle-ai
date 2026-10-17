@@ -100,6 +100,9 @@ export function userFacingError(raw: string | undefined | null): string {
   const m0 = (raw ?? "").trim();
   if (!m0) return "Something went wrong. Please try again.";
 
+  // The smart-feature pause message from the server is already friendly and says when it ends: show it exactly as sent.
+  if (/available again in about d+ hours/i.test(m0)) return m0;
+
   const mappedEarly = mapKnownMessage(m0);
   if (mappedEarly) return mappedEarly;
 

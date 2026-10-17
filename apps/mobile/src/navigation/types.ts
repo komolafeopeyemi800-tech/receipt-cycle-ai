@@ -6,6 +6,8 @@ export type ScanReviewParams = {
   scannedData: ScannedExtracted;
   source: Exclude<EntrySource, "manual">;
   receiptUri?: string;
+  /** The original is already stored (documents API); the saved transaction links to this key. */
+  receiptKey?: string;
 };
 
 export type MainTabParamList = {
@@ -48,6 +50,7 @@ export type RootStackParamList = {
     | {
         scannedData?: ScannedExtracted;
         receiptUri?: string;
+        receiptKey?: string;
         transactionId?: string;
         source?: EntrySource;
         initialType?: "expense" | "income";

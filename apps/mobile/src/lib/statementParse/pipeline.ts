@@ -12,6 +12,8 @@
  */
 import { type DocEngine, type DocFormat, type DocShape, type OcrOutcome, type StatementAi, type ResultCache } from "./types";
 import { rowsFromFlowingText } from "./pdfText";
+import { statementTextMeta } from "./docMeta";
+import { sha256HexJs } from "./sha256";
 import { findStatementPeriod, parseAmount, parseDate, parseYearlessMonthDay } from "./normalize";
 import { type Grid, type ParsedRow, type StatementPeriod, annotateRows, mapColumns, reconcile, rowsFromGrid } from "./statement";
 
@@ -19,7 +21,12 @@ export type { DocEngine, DocFormat, StatementAi, ResultCache } from "./types";
 export type { ParsedRow } from "./statement";
 export { defaultSelection } from "./statement";
 
-export const MAX_FILE_BYTES = 20 * 1024 * 1024;
+/**
+ * One file may be at most 10 MB. This keeps an upload (and the copy we store) inside the Cloudflare Workers free-plan
+ * request and R2 limits; the apps check it before uploading and the server checks it again.
+ */
+export const MAX_FILE_BYTES = 10 * 1024 * 1024;
+export const FILE_TOO_BIG = "Files can be up to 10 MB for now. Choose a smaller file or split it.";
 export const MAX_ROWS = 5000;
 export const MAX_OCR_PAGES = 10;
 const MAX_OCR_BYTES = 10 * 1024 * 1024;
@@ -51,6 +58,8 @@ export type ParseResult = {
   needsOcr?: { pages: number[]; pageCount: number };
   /** Do the rows add up to the statement's own opening and closing balance? Set only when the file prints both. */
   verification?: { opening: number; closing: number; ok: boolean };
+  /** Document-level details printed on the statement (from its text), to be stored with the original file. */
+  printed?: { kind: "bank_statement" | "card_statement"; meta: Record<string, unknown> };
   /** status "document": the text of an invoice or receipt PDF, to be read as one transaction instead of a statement. */
   documentText?: string;
   /** With status "document": whether it reads as an invoice or a receipt. */
@@ -259,6 +268,7 @@ export function findStatementBalances(text: string): { opening: number; closing:
 /** Rows that agree with the statement's own balances are very likely complete and right; rows that do not are worth a warning. */
 function withVerification(result: ParseResult, text: string): ParseResult {
   if (result.rows.length === 0) return result;
+  result = { ...result, printed: statementTextMeta(text) };
   const bal = findStatementBalances(text);
   if (!bal) return result;
   const ok = reconcile(result.rows, bal.opening, bal.closing);
@@ -340,30 +350,88 @@ function scannedResult(out: ParsedRow[] | OcrOutcome, fileType: string, needsOcr
   const warnings = [`This is a ${fileType === "pdf" ? "scanned PDF" : "photo"}, so it was read by text recognition. Check every row against your statement.`];
   if (out.warnings) warnings.push(...out.warnings);
   warnings.push("Checked: these transactions add up exactly to the opening and closing balance on the scan.");
-  return finish(base({ fileType, rows, aiCalls: 1, source: "ai", ...(needsOcr ? { needsOcr } : {}), warnings, verification: { opening: out.opening, closing: out.closing, ok: true } }));
+  const printed = out.meta ? { kind: out.metaKind ?? "bank_statement", meta: out.meta } : undefined;
+  return finish(base({ fileType, rows, aiCalls: 1, source: "ai", ...(needsOcr ? { needsOcr } : {}), warnings, verification: { opening: out.opening, closing: out.closing, ok: true }, ...(printed ? { printed } : {}) }));
 }
 
-export const SCAN_UNRELIABLE = "We could not read this scan reliably. Upload a clearer scan or a CSV or Excel version.";
+export const SCAN_UNRELIABLE =
+  "We could not read this scan reliably. Try again with the page flat on a table, bright even light, and the page filling the frame. Or upload the CSV or Excel version from your bank.";
 export const SCAN_NO_BALANCES = "We could not find the opening and closing balances on this statement, so the scan cannot be checked. Upload a CSV or Excel version.";
 
-/** A photo (png / jpeg) of a multi-row statement, read as a statement rather than as one receipt. Used by the phone. */
-export async function readStatementPhoto(bytes: Uint8Array, mimeType: string, ai: StatementAi): Promise<ParseResult> {
-  if (bytes.length > MAX_OCR_BYTES) return base({ status: "too_large", message: "Photos up to 10 MB are supported. Take the photo again at a lower quality." });
-  try {
-    return scannedResult(await ai.ocrPdf(bytes, { kind: "statement", mimeType }), "image");
-  } catch (e) {
-    return base({ status: "unreadable", fileType: "image", message: errText(e) });
+/**
+ * Runs a paid read at most once per file: reading the same file again returns the saved result instead of paying again.
+ * Only results that passed the balance check are saved (a refused scan is never cached), and a cache outage never blocks a read.
+ */
+export async function readScanCached(bytes: Uint8Array, cache: ResultCache | undefined, run: () => Promise<ParseResult>): Promise<ParseResult & { cached?: boolean }> {
+  let hash = "";
+  if (cache) {
+    try {
+      hash = await sha256Hex(bytes);
+      const hit = await cache.get(hash);
+      if (hit) return { ...(hit as ParseResult), cached: true };
+    } catch {
+      /* no cache, read normally */
+    }
   }
+  const result = await run();
+  if (cache && hash && result.status === "ok" && result.source === "ai" && result.verification?.ok === true) {
+    try {
+      await cache.put(hash, "scan", result);
+    } catch {
+      /* best effort */
+    }
+  }
+  return result;
+}
+
+/** Photos are brought to about this long edge (pixels) before they are read; see the apps' image helpers. */
+export const PHOTO_LONG_EDGE = 2000;
+/**
+ * Read a photo a second time, sharpened (grey, contrast, 2000 px), when the first read was refused. Measured on 9 noisy
+ * photos it rescued none that the first read had refused, and a second read costs another Azure page, so it is off.
+ */
+export const RETRY_UNREADABLE_SCANS = false;
+
+/** A photo (png / jpeg) of a multi-row statement, read as a statement rather than as one receipt. Used by the phone and the web. */
+export async function readStatementPhoto(
+  bytes: Uint8Array,
+  mimeType: string,
+  ai: StatementAi,
+  cache?: ResultCache,
+  retry?: () => Promise<{ bytes: Uint8Array; mime: string } | null>,
+): Promise<ParseResult & { cached?: boolean }> {
+  if (bytes.length > MAX_FILE_BYTES) return base({ status: "too_large", message: FILE_TOO_BIG });
+  const first = await readStatementPhotoOnce(bytes, mimeType, ai, cache);
+  if (retry && RETRY_UNREADABLE_SCANS && first.status === "unreadable" && first.message === SCAN_UNRELIABLE) {
+    const alt = await retry();
+    if (alt) {
+      const second = await readStatementPhotoOnce(alt.bytes, alt.mime, ai, cache);
+      if (second.status === "ok") return { ...second, warnings: [...second.warnings, "This photo was read on the second try, after it was sharpened."] };
+    }
+  }
+  return first;
+}
+
+async function readStatementPhotoOnce(bytes: Uint8Array, mimeType: string, ai: StatementAi, cache?: ResultCache): Promise<ParseResult & { cached?: boolean }> {
+  return readScanCached(bytes, cache, async () => {
+    try {
+      return scannedResult(await ai.ocrPdf(bytes, { kind: "statement", mimeType }), "image");
+    } catch (e) {
+      return base({ status: "unreadable", fileType: "image", message: errText(e) });
+    }
+  });
 }
 
 /** A PDF read on the server, for devices that cannot run the text reader (the phone). The page count is unknown here. */
-export async function readPdfOnServer(bytes: Uint8Array, ai: StatementAi): Promise<ParseResult> {
-  if (bytes.length > MAX_OCR_BYTES) return base({ status: "too_large", message: "PDFs up to 10 MB are supported on the phone. Upload a CSV or Excel version." });
-  try {
-    return scannedResult(await ai.ocrPdf(bytes, { kind: "pdf" }), "pdf");
-  } catch (e) {
-    return base({ status: "unreadable", fileType: "pdf", message: errText(e) });
-  }
+export async function readPdfOnServer(bytes: Uint8Array, ai: StatementAi, cache?: ResultCache): Promise<ParseResult & { cached?: boolean }> {
+  if (bytes.length > MAX_FILE_BYTES) return base({ status: "too_large", message: FILE_TOO_BIG });
+  return readScanCached(bytes, cache, async () => {
+    try {
+      return scannedResult(await ai.ocrPdf(bytes, { kind: "pdf" }), "pdf");
+    } catch (e) {
+      return base({ status: "unreadable", fileType: "pdf", message: errText(e) });
+    }
+  });
 }
 
 /** A text receipt (subtotal, tax or tip, total, a payment line, only a date or two), as opposed to a statement. */
@@ -376,7 +444,7 @@ export function looksLikeReceipt(text: string): boolean {
 
 export async function parseStatement(bytes: Uint8Array, opts: ParseOptions): Promise<ParseResult> {
   if (bytes.length > MAX_FILE_BYTES) {
-    return base({ status: "too_large", message: `Files up to ${MAX_FILE_BYTES / 1024 / 1024} MB are supported. Split the file or export a smaller date range.` });
+    return base({ status: "too_large", message: FILE_TOO_BIG });
   }
   if (bytes.length === 0 || (looksLikeText(bytes) && bytes.length < 4096 && !new TextDecoder().decode(bytes).trim())) {
     return base({ status: "unreadable", message: "This file is empty. Choose a file that has your transactions in it." });
@@ -445,7 +513,9 @@ export async function parseStatement(bytes: Uint8Array, opts: ParseOptions): Pro
 }
 
 export async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", bytes as unknown as ArrayBuffer);
+  const subtle = (globalThis as { crypto?: { subtle?: SubtleCrypto } }).crypto?.subtle;
+  if (!subtle) return sha256HexJs(bytes); // the phone's engine has no crypto.subtle
+  const digest = await subtle.digest("SHA-256", bytes as unknown as ArrayBuffer);
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 

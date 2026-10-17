@@ -127,6 +127,15 @@ describe("Azure receipt and invoice reader", () => {
     expect(r.formatted_receipt_text).toMatch(/TOTAL {2}59\.77/);
   });
 
+  it("takes payment method and last 4 from the printed text when Azure leaves its payment field out", async () => {
+    const r = receipt();
+    delete (r.analyzeResult.documents[0]!.fields as any).Payments;
+    (r.analyzeResult as any).content = "THE COPPER KETTLE GRILL TOTAL 59.77 VISA ****4411 APPROVED";
+    stub({ "prebuilt-receipt": () => r });
+    const out = await azureReadDocument(azureEnv, B64, "receipt", { sleep: noSleep });
+    expect(out).toMatchObject({ payment_method: "Visa", card_last4: "4411" });
+  });
+
   it("reads an invoice with number, dates, PO, terms, customer and every line item", async () => {
     stub({ "prebuilt-invoice": invoice });
     const r = await azureReadDocument(azureEnv, B64, "invoice", { sleep: noSleep, expectedPages: 2 });

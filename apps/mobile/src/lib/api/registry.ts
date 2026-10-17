@@ -8,6 +8,7 @@ import { defaultAvatarUrl } from "../avatar";
 import type { ApiClient } from "./client";
 import type { ColumnMapping } from "../statementParse/statement";
 import type { ScannedExtracted } from "../../types/transaction";
+import type { DocKind as DocumentKind } from "../statementParse/docMeta";
 import type {
   Account,
   AdminArgs,
@@ -34,6 +35,7 @@ import type {
   TxDraft,
   VoiceHints,
   WorkspaceSummary,
+  StoredDocument,
   StoredReceipt,
   StatementRow,
   UploadFile,
@@ -425,9 +427,9 @@ export const api = {
     ),
     aiOcrPdf: fn<
       { fileBase64: string; kind?: "pdf" | "statement"; mimeType?: string; pageCount?: number },
-      { rows: StatementRow[]; opening?: number | null; closing?: number | null; warnings?: string[] }
+      { rows: StatementRow[]; opening?: number | null; closing?: number | null; warnings?: string[]; meta?: Record<string, unknown>; metaKind?: "bank_statement" | "card_statement" }
     >("action", "uploads.aiOcrPdf", async (c, a) =>
-      c.request<{ rows: StatementRow[]; opening?: number | null; closing?: number | null; warnings?: string[] }>("POST", "/api/uploads/ai/ocr-pdf", {
+      c.request<{ rows: StatementRow[]; opening?: number | null; closing?: number | null; warnings?: string[]; meta?: Record<string, unknown>; metaKind?: "bank_statement" | "card_statement" }>("POST", "/api/uploads/ai/ocr-pdf", {
         body: { fileBase64: a.fileBase64, kind: a.kind, mimeType: a.mimeType, pageCount: a.pageCount },
       }),
     ),
@@ -463,6 +465,20 @@ export const api = {
     link: fn<{ key: string }, { url: string }>("query", "receipts.link", (c, a) =>
       c.request("GET", "/api/receipts/link", { query: { key: a.key } }),
     ),
+  },
+  documents: {
+    /** Stores the original uploaded file with its details; put the returned `key` in the imported transactions' `receipt_url`. */
+    upload: fn<{ file: UploadFile; fileName?: string; kind: DocumentKind; meta?: Record<string, unknown> }, { id: string; key: string }>("action", "documents.upload", (c, a) => {
+      const form = new FormData();
+      appendFile(form, a.file, a.fileName);
+      form.append("kind", a.kind);
+      form.append("meta", JSON.stringify(a.meta ?? {}));
+      return c.request("POST", "/api/documents", { form });
+    }),
+    list: fn<Record<string, never>, StoredDocument[]>("query", "documents.list", async (c) => (await c.request<StoredDocument[] | null>("GET", "/api/documents")) ?? []),
+    remove: fn<{ id: string }, void>("mutation", "documents.remove", async (c, a) => {
+      await c.request("DELETE", `/api/documents/${encodeURIComponent(a.id)}`);
+    }),
   },
   email: {
     sendContactMessage: fn<
@@ -501,6 +517,9 @@ export const api = {
     /** One door for every notification-admin screen action (templates, campaigns, log, user lookup). */
     notificationAdminCall: fn<AdminArgs & { method: "GET" | "POST" | "PUT"; path: string; body?: unknown; query?: Record<string, string> }, unknown>("mutation", "admin.notificationAdminCall", (c, a) =>
       c.request(a.method, `/api/notifications/admin${a.path}`, { adminSecret: a.secret, body: a.body, query: a.query })),
+    /** One door for the AI cost guard screen (settings, locked people, top spenders, unlock). */
+    aiGuardCall: fn<AdminArgs & { method: "GET" | "POST" | "PUT"; path: string; body?: unknown }, unknown>("mutation", "admin.aiGuardCall", (c, a) =>
+      c.request(a.method, `/api/admin/ai-guard${a.path}`, { adminSecret: a.secret, body: a.body })),
     updateUserManagement: fn<UserPatch, { ok: true }>("mutation", "admin.updateUserManagement", async (c, a) => {
       const { secret, adminEmail: _e, actor: _a, userId, ...body } = a;
       await c.request("PATCH", `/api/admin/users/${enc(userId)}`, { adminSecret: secret, body });

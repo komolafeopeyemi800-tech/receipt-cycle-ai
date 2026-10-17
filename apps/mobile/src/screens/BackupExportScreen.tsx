@@ -18,10 +18,15 @@ export function BackupExportScreen() {
   const reachable = useQuery(api.notifications.preferences, token ? { token } : "skip");
   const [checkedAt, setCheckedAt] = useState<Date | null>(null);
   useEffect(() => { if (reachable && !checkedAt) setCheckedAt(new Date()); }, [reachable, checkedAt]);
-  const { exportCsvDownload, canExport, exportDisabledByAdmin } = useCsvExport();
+  const { exportXlsxDownload, exportCsvDownload, canExport, exportDisabledByAdmin } = useCsvExport();
 
   const online = Boolean(checkedAt);
   function onExport() {
+    if (exportDisabledByAdmin) return Alert.alert("Export disabled", "Export is currently turned off.");
+    if (!canExport) return Alert.alert("Pro feature", "Exporting your data is part of Pro access.");
+    void exportXlsxDownload();
+  }
+  function onExportCsv() {
     if (exportDisabledByAdmin) return Alert.alert("Export disabled", "Export is currently turned off.");
     if (!canExport) return Alert.alert("Pro feature", "Exporting your data is part of Pro access.");
     void exportCsvDownload();
@@ -42,6 +47,9 @@ export function BackupExportScreen() {
         <Pressable accessibilityRole="button" onPress={onExport} style={styles.button}>
           <Ionicons name="download-outline" size={20} color="#fff" />
           <Text style={styles.buttonText}>Export my data</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={onExportCsv} style={{ marginTop: spacing.md, padding: spacing.sm }}>
+          <Text style={{ color: colors.primary, fontSize: uiType.body, fontWeight: "600" }}>Export as CSV</Text>
         </Pressable>
         {!canExport && !exportDisabledByAdmin ? <Text style={styles.note}>Downloading a spreadsheet of your data is a Pro feature. Your backup above is always on for everyone.</Text> : null}
       </ScrollView>

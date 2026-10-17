@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useAction, useMutation, useQuery } from "@mobile-lib/api";
 import { api } from "@mobile-lib/api";
 import NotificationCenter from "@/components/admin/NotificationCenter";
+import AiCostGuard from "@/components/admin/AiCostGuard";
 
 const STORAGE_KEY = "receiptcycle_admin_secret";
 const ADMIN_EMAIL_KEY = "receiptcycle_admin_email";
@@ -404,6 +405,8 @@ export default function Admin() {
                 )}
               </div>
             </div>
+
+            <AiCostGuard secret={secret} adminEmail={adminEmail} />
 
             <NotificationCenter secret={secret} adminEmail={adminEmail} />
 

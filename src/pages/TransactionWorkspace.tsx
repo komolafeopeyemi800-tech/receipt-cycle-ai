@@ -180,7 +180,8 @@ export default function TransactionWorkspace() {
     const incoming = (location.state as { uploadFile?: File } | null)?.uploadFile;
     if (!(incoming instanceof File)) return;
     openAdd("expense", "upload");
-    void prepareUpload(incoming);
+    // A photo that arrives here has already been asked "receipt, invoice or statement?" on the Add documents page.
+    void prepareUpload(incoming, (location.state as { imageChoice?: string } | null)?.imageChoice === "receipt");
     navigate(`${location.pathname}#upload-document`, { replace: true, state: null });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
@@ -341,8 +342,9 @@ export default function TransactionWorkspace() {
       setBusy(false);
     }
   }
-  async function prepareUpload(picked: File) {
-    if (!picked.type.startsWith("image/")) {
+  async function prepareUpload(picked: File, alreadyChosen = false) {
+    // Any photo or document picked here first gets the same choice as Add documents: receipt or invoice / bank or card statement.
+    if (!picked.type.startsWith("image/") || !alreadyChosen) {
       navigate("/upload-statement", { state: { uploadFile: picked } });
       return;
     }

@@ -290,4 +290,15 @@ export type StatementRow = {
   payment_method?: string;
 };
 
+export type StoredDocument = {
+  id: string;
+  kind: "bank_statement" | "card_statement" | "receipt" | "invoice" | "spreadsheet" | "other";
+  fileName: string;
+  r2Key: string;
+  mime: string;
+  size: number;
+  meta: Record<string, unknown>;
+  createdAt: number;
+};
+
 export type StoredReceipt = { key: string; size: number; contentType: string };

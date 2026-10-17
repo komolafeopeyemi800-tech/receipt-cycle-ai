@@ -254,7 +254,7 @@ describe("scanned PDF safety net", () => {
     const r = await read(1000, 1500);
     expect(r.status).toBe("unreadable");
     expect(r.rows).toHaveLength(0);
-    expect(r.message).toBe("We could not read this scan reliably. Upload a clearer scan or a CSV or Excel version.");
+    expect(r.message).toBe("We could not read this scan reliably. Try again with the page flat on a table, bright even light, and the page filling the frame. Or upload the CSV or Excel version from your bank.");
   });
 
   it("refuses a scan that prints no balances to check against", async () => {
@@ -291,7 +291,7 @@ describe("phone: statement photos and PDFs sent to the server", () => {
   it("refuses when the rows do not add up, and when no balances were found", async () => {
     const bad = await readPdfOnServer(new Uint8Array([1]), aiWith({ rows, opening: 1000, closing: 9999 }));
     expect(bad).toMatchObject({ status: "unreadable", rows: [] });
-    expect(bad.message).toBe("We could not read this scan reliably. Upload a clearer scan or a CSV or Excel version.");
+    expect(bad.message).toBe("We could not read this scan reliably. Try again with the page flat on a table, bright even light, and the page filling the frame. Or upload the CSV or Excel version from your bank.");
     const none = await readPdfOnServer(new Uint8Array([1]), aiWith({ rows, opening: null, closing: null }));
     expect(none.message).toMatch(/could not find the opening and closing balances/);
   });

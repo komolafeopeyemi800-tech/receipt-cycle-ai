@@ -6,6 +6,7 @@
  */
 import type { ExtractedShape } from "../ai/scan";
 import { AzureError, type AzureOptions, type Json, amount, azureAnalyze, field, text } from "./azure";
+import { paymentFromText } from "../../../../apps/mobile/src/lib/statementParse/docMeta";
 import type { Env } from "../types";
 
 export type DocumentKind = "receipt" | "invoice" | "auto";
@@ -56,7 +57,10 @@ export function receiptFrom(result: Json): AzureDocument | null {
   const merchant = text(field(f, "MerchantName"));
   const date = dateOf(field(f, "TransactionDate"));
   const time = text(field(f, "TransactionTime"));
-  const method = text(((field(f, "Payments")?.valueArray as Json[] | undefined) ?? [])[0]?.valueObject?.Method);
+  const fieldMethod = text(((field(f, "Payments")?.valueArray as Json[] | undefined) ?? [])[0]?.valueObject?.Method);
+  // Azure often leaves the payment line out of its fields; the printed text has it ("VISA ****4411", "CASH").
+  const printed = paymentFromText(String(result.content ?? ""));
+  const method = fieldMethod || printed.method || "";
   const type = text(field(f, "ReceiptType"));
   const lines = items(f, "Price", "TotalPrice");
   const cur = currencyCode(field(f, "Total"));
@@ -93,6 +97,7 @@ export function receiptFrom(result: Json): AzureDocument | null {
     ...(date ? { date } : {}),
     ...(time ? { time } : {}),
     ...(method ? { payment_method: method } : {}),
+    ...(printed.last4 ? { card_last4: printed.last4 } : {}),
     ...(cur ? { currency: cur } : {}),
     category,
     ...(taxes.length ? { taxes } : {}),

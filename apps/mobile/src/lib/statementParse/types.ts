@@ -31,7 +31,7 @@ export interface StatementAi {
 }
 
 /** What a scanned-PDF read returns: the rows, plus the opening and closing balance the model could read (to check the rows against). */
-export type OcrOutcome = { rows: ParsedRow[]; opening?: number | null; closing?: number | null; warnings?: string[] };
+export type OcrOutcome = { rows: ParsedRow[]; opening?: number | null; closing?: number | null; warnings?: string[]; /** Details printed on the statement (bank, last 4, period, totals ...). */ meta?: Record<string, unknown>; metaKind?: "bank_statement" | "card_statement" };
 
 /** "pdf" (default) or "statement" (a photo of a statement); pageCount is the PDF's real page count from our own parser. */
 export type OcrRequest = { kind?: "pdf" | "statement"; mimeType?: string; pageCount?: number };

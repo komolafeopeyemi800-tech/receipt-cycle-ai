@@ -98,9 +98,9 @@ describe("bookkeeping workbook", () => {
   const files = parts(built.bytes);
 
   it("writes every part, well-formed", () => {
-    for (const p of ["[Content_Types].xml", "_rels/.rels", "xl/workbook.xml", "xl/styles.xml", "xl/sharedStrings.xml", "docProps/core.xml", "docProps/app.xml", "xl/worksheets/sheet1.xml", "xl/worksheets/sheet5.xml"]) expect(files[p], p).toBeTruthy();
+    for (const p of ["[Content_Types].xml", "_rels/.rels", "xl/workbook.xml", "xl/styles.xml", "xl/sharedStrings.xml", "docProps/core.xml", "docProps/app.xml", "xl/worksheets/sheet1.xml", "xl/worksheets/sheet4.xml"]) expect(files[p], p).toBeTruthy();
     expectWellFormed(files);
-    expect(built.sheetNames).toEqual(["Summary", "Transactions", "Evidence links", "Documents", "Line items"]);
+    expect(built.sheetNames).toEqual(["Summary", "Transactions", "Documents", "Line items"]);
   });
 
   it("has styles: teal header fill, number formats, fonts", () => {
@@ -138,13 +138,13 @@ describe("bookkeeping workbook", () => {
     expect(rels).toContain('TargetMode="External"');
     expect(rels).toContain("/api/receipts/shared?key=");
     expect(files["xl/worksheets/sheet2.xml"]).toContain("<hyperlinks>");
-    expect(files["xl/worksheets/_rels/sheet4.xml.rels"]).toContain("stmt1.pdf");
+    expect(files["xl/worksheets/_rels/sheet3.xml.rels"]).toContain("stmt1.pdf");
   });
 
   it("documents sheet carries statement, card and invoice details; line items are listed", () => {
     const s = files["xl/sharedStrings.xml"]!;
     for (const needle of ["Northfield Bank", "Business Checking ••1893", "Chase", "Business Visa ••4242", "INV-0042", "PO number: PO-77", "Minimum payment due: 35", "Credit limit: 10000", "Widgets", "Gadgets", "Printer paper"]) expect(s, needle).toContain(needle);
-    expect(files["xl/worksheets/sheet5.xml"]).toContain("SUBTOTAL(109,G5:");
+    expect(files["xl/worksheets/sheet4.xml"]).toContain("SUBTOTAL(109,G5:");
   });
 
   it("works with no documents and no transactions at all", () => {
@@ -205,13 +205,18 @@ describe("nothing is cut off", () => {
     expect(w[0]).toBeGreaterThanOrEqual("Equipment and machinery for the new factory".length);
   });
 
-  it("lists every transaction on the evidence sheet with a clickable and a copyable link", () => {
-    expect(out.sheetNames).toContain("Evidence links");
-    const x = f["xl/worksheets/sheet3.xml"]!;
-    expect((x.match(/<row r="(\d+)"/g) ?? []).length).toBeGreaterThanOrEqual(6);
+  it("keeps the summary first and puts every transaction with its document link at the bottom of it", () => {
+    expect(out.sheetNames).toEqual(["Summary", "Transactions", "Documents", "Line items"]);
+    const x = f["xl/worksheets/sheet1.xml"]!;
+    const strings = f["xl/sharedStrings.xml"]!;
+    for (const heading of ["Totals", "Expenses by category", "Income by category", "By month", "By week (Monday to Sunday)", "By day", "Every transaction and its document"]) expect(strings, heading).toContain(heading);
     expect(x).toContain("<hyperlinks>");
-    expect(f["xl/sharedStrings.xml"]).toContain("/api/receipts/shared?key=");
-    expect(f["xl/sharedStrings.xml"]).toContain("No document");
-    expect(widthsOf(x).at(-1)).toBeGreaterThanOrEqual(60);
+    expect(strings).toContain("/api/receipts/shared?key=");
+    expect(strings).toContain("No document");
+    expect(strings).toContain("Download");
+    // the totals still come from live formulas on the Transactions sheet
+    expect(x).toMatch(/SUMIFS\('Transactions'!/);
+    // the evidence table comes after the by-day table
+    expect(strings.indexOf("By day")).toBeLessThan(strings.indexOf("Every transaction and its document"));
   });
 });

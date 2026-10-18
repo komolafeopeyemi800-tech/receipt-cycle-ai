@@ -2,7 +2,7 @@
   "expo": {
     "name": "Receipt Cycle Invoice Manager",
     "slug": "receipt-cycle-mobile",
-    "version": "1.0.2",
+    "version": "1.0.4",
     "scheme": [
       "receiptcycle",
       "com.receiptcycle.mobile"

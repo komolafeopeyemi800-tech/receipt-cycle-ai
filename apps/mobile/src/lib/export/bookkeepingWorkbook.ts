@@ -279,14 +279,12 @@ export function buildBookkeepingWorkbook(transactions: ExportTransaction[], opti
   });
   const summary = wb.addSheet("Summary");
   const tx = wb.addSheet("Transactions");
-  const evSheet = wb.addSheet("Evidence links");
   const docSheet = wb.addSheet("Documents");
   const itemSheet = wb.addSheet("Line items");
   const invSheet = opts.invoices?.length ? wb.addSheet("Invoices & Payments") : null;
   summary.tabColor = C.teal;
   tx.tabColor = "2563EB";
   docSheet.tabColor = "F59E0B";
-  evSheet.tabColor = "0EA5E9";
   itemSheet.tabColor = "8B5CF6";
   if (invSheet) invSheet.tabColor = "EC4899";
   for (const s of wb.sheets) s.print = { landscape: true, fitToWidth: true, footer: FOOTER };
@@ -365,44 +363,6 @@ export function buildBookkeepingWorkbook(transactions: ExportTransaction[], opti
   ];
   widths.forEach((w, c) => tx.width(c, w));
   tx.height(totalRow, 22);
-
-  // ================= Evidence links (one row per transaction, with the stored file) =================
-  const docNameByKey = new Map(docs.map((d) => [d.r2Key, d.fileName]));
-  const EV = ["No.", "Date", "Type", "Merchant / payee", "Category", "Amount", "Currency", "Document type", "File name", "Download", "Link (select the cell and copy it, then paste it in your browser)"];
-  const lastEvCol = EV.length - 1;
-  const withFile = rows.filter((t) => t.docLink).length;
-  banner(evSheet, lastEvCol, `${business}: Evidence links`, `${rows.length} transaction${rows.length === 1 ? "" : "s"}  |  ${withFile} with a stored document  |  Click Download, or copy the full link in the last column.`);
-  EV.forEach((h, c) => evSheet.set(3, c, h, headerStyle(c === 5 ? "right" : "left")));
-  evSheet.height(3, 42);
-  rows.forEach((t, i) => {
-    const r = 4 + i;
-    const text: CellStyle = { ...base, border: bottomHair };
-    evSheet.set(r, 0, i + 1, { ...text, numFmt: "0", align: { h: "left", v: "center" } });
-    evSheet.set(r, 1, t.date ? { date: t.date } : "", { ...text, numFmt: dateFmt, align: { h: "left", v: "center" } });
-    evSheet.set(r, 2, t.type, { ...text, bold: true, color: t.isIncome ? C.income : C.expense });
-    evSheet.set(r, 3, t.merchant, text);
-    evSheet.set(r, 4, t.category, text);
-    evSheet.set(r, 5, t.amount, { ...text, numFmt: money, bold: true, align: { h: "right", v: "center" } });
-    evSheet.set(r, 6, t.currency, { ...text, align: { h: "center", v: "center" } });
-    evSheet.set(r, 7, t.docType || "", text);
-    evSheet.set(r, 8, (t.fileKey && docNameByKey.get(t.fileKey)) || (t.docLink ? "Stored file" : ""), text);
-    if (t.docLink) {
-      evSheet.set(r, 9, { v: "Download", link: t.docLink, linkTip: "Opens the stored receipt or file" }, { ...text, color: C.link, underline: true });
-      evSheet.set(r, 10, t.docLink, { ...text, color: C.muted });
-    } else {
-      evSheet.set(r, 9, "No document", { ...text, italic: true, color: C.muted });
-      evSheet.set(r, 10, null, text);
-    }
-  });
-  if (!rows.length) noteRow(evSheet, 4, lastEvCol, "No transactions in this export.");
-  else {
-    const lastEv = 3 + rows.length;
-    evSheet.zebra(4, 0, lastEv, lastEvCol, C.zebra);
-    evSheet.setAutoFilter(3, 0, lastEv, lastEvCol);
-  }
-  [7, 14, 10, fitText(26, rows.map((t) => t.merchant), 40), fitText(20, rows.map((t) => t.category), 32), fitMoney(16, rows.map((t) => t.amount)), 10, 16, fitText(26, rows.map((t) => (t.fileKey && docNameByKey.get(t.fileKey)) || ""), 44), 14, 70].forEach((w, c) => evSheet.width(c, w));
-  evSheet.freeze = { rows: 4, cols: 0 };
-  evSheet.print.repeatRows = [3, 3];
 
   // ================= Documents + Line items =================
   const described = docs.map((d) => describeDocument(d, opts));
@@ -653,26 +613,130 @@ export function buildBookkeepingWorkbook(transactions: ExportTransaction[], opti
   }
   summary.set(mTot, 3, { f: `B${mTot + 1}-C${mTot + 1}`, cached: income - expenses, s: { ...totalStyle, numFmt: money, align: { h: "right", v: "center" } } });
 
-  const noteStart = mTot + 3;
+  // by week (Monday to Sunday), beside the month table
+  const weekOf = (ymd: string) => {
+    const n = ymdToSerial(ymd);
+    return n === null ? null : n - ((((n - 2) % 7) + 7) % 7);
+  };
+  const weeks = new Map<number, { inc: number; exp: number }>();
+  for (const t of rows) {
+    const w = weekOf(t.date);
+    if (w === null) continue;
+    const e = weeks.get(w) ?? { inc: 0, exp: 0 };
+    if (t.isIncome) e.inc += t.amount;
+    else e.exp += t.amount;
+    weeks.set(w, e);
+  }
+  const weekList = [...weeks].sort((x, y) => x[0] - y[0]);
+  sectionTitle(summary, monthStart, 5, 8, "By week (Monday to Sunday)");
+  ["Week starting", "Income", "Expenses", "Net"].forEach((h, i) => summary.set(monthStart + 1, 5 + i, h, headerStyle(i === 0 ? "left" : "right")));
+  weekList.forEach(([w, v], i) => {
+    const r = mFirst + i;
+    const st: CellStyle = { ...base, border: bottomHair };
+    const num: CellStyle = { ...st, numFmt: money, align: { h: "right", v: "center" } };
+    summary.set(r, 5, { v: w, s: { ...st, numFmt: dateFmt, align: { h: "left", v: "center" } } });
+    summary.set(r, 6, { f: `SUMIFS(${amt},${typ},"Income",${dat},">="&$F${r + 1},${dat},"<"&$F${r + 1}+7)`, cached: v.inc, s: num });
+    summary.set(r, 7, { f: `SUMIFS(${amt},${typ},"Expense",${dat},">="&$F${r + 1},${dat},"<"&$F${r + 1}+7)`, cached: v.exp, s: num });
+    summary.set(r, 8, { f: `G${r + 1}-H${r + 1}`, cached: v.inc - v.exp, s: { ...num, bold: true } });
+  });
+  const wEnd = mFirst + Math.max(weekList.length, 1) - 1;
+  if (!weekList.length) summary.set(mFirst, 5, "No dated transactions yet", { ...base, italic: true, color: C.muted });
+  else summary.zebra(mFirst, 5, wEnd, 8, C.zebra);
+  const wTot = wEnd + 1;
+  summary.set(wTot, 5, "Total", totalStyle);
+  for (const [c, k] of [[6, "inc"], [7, "exp"]] as const) {
+    summary.set(wTot, c, { f: `SUM(${colLetter(c)}${mFirst + 1}:${colLetter(c)}${wEnd + 1})`, cached: weekList.reduce((acc, [, v]) => acc + v[k], 0), s: { ...totalStyle, numFmt: money, align: { h: "right", v: "center" } } });
+  }
+  summary.set(wTot, 8, { f: `G${wTot + 1}-H${wTot + 1}`, cached: income - expenses, s: { ...totalStyle, numFmt: money, align: { h: "right", v: "center" } } });
+
+  // by day
+  const dayStart = Math.max(mTot, wTot) + 2;
+  sectionTitle(summary, dayStart, 0, 3, "By day");
+  ["Day", "Income", "Expenses", "Net"].forEach((h, i) => summary.set(dayStart + 1, i, h, headerStyle(i === 0 ? "left" : "right")));
+  const dayMap = new Map<string, { inc: number; exp: number }>();
+  for (const t of rows) {
+    if (ymdToSerial(t.date) === null) continue;
+    const e = dayMap.get(t.date) ?? { inc: 0, exp: 0 };
+    if (t.isIncome) e.inc += t.amount;
+    else e.exp += t.amount;
+    dayMap.set(t.date, e);
+  }
+  const dayList = [...dayMap].sort((x, y) => (x[0] < y[0] ? -1 : 1));
+  const dFirst = dayStart + 2;
+  dayList.forEach(([d, v], i) => {
+    const r = dFirst + i;
+    const st: CellStyle = { ...base, border: bottomHair };
+    const num: CellStyle = { ...st, numFmt: money, align: { h: "right", v: "center" } };
+    summary.set(r, 0, { v: ymdToSerial(d) as number, s: { ...st, numFmt: dateFmt, align: { h: "left", v: "center" } } });
+    summary.set(r, 1, { f: `SUMIFS(${amt},${typ},"Income",${dat},$A${r + 1})`, cached: v.inc, s: num });
+    summary.set(r, 2, { f: `SUMIFS(${amt},${typ},"Expense",${dat},$A${r + 1})`, cached: v.exp, s: num });
+    summary.set(r, 3, { f: `B${r + 1}-C${r + 1}`, cached: v.inc - v.exp, s: { ...num, bold: true } });
+  });
+  const dEnd = dFirst + Math.max(dayList.length, 1) - 1;
+  if (!dayList.length) summary.set(dFirst, 0, "No dated transactions yet", { ...base, italic: true, color: C.muted });
+  else summary.zebra(dFirst, 0, dEnd, 3, C.zebra);
+  const dTot = dEnd + 1;
+  summary.set(dTot, 0, "Total", totalStyle);
+  for (const [c, k] of [[1, "inc"], [2, "exp"]] as const) {
+    summary.set(dTot, c, { f: `SUM(${colLetter(c)}${dFirst + 1}:${colLetter(c)}${dEnd + 1})`, cached: dayList.reduce((acc, [, v]) => acc + v[k], 0), s: { ...totalStyle, numFmt: money, align: { h: "right", v: "center" } } });
+  }
+  summary.set(dTot, 3, { f: `B${dTot + 1}-C${dTot + 1}`, cached: income - expenses, s: { ...totalStyle, numFmt: money, align: { h: "right", v: "center" } } });
+
+  // every transaction with the link to its stored document, at the bottom of the summary
+  const docNameByKey = new Map(docs.map((d) => [d.r2Key, d.fileName]));
+  const evStart = dTot + 3;
+  const withFile = rows.filter((t) => t.docLink).length;
+  sectionTitle(summary, evStart, 0, lastSumCol, "Every transaction and its document");
+  summary.set(evStart + 1, 0, `${rows.length} transaction${rows.length === 1 ? "" : "s"}, ${withFile} with a stored document. Click Download to open the file, or select the link in the last column and copy it.`, { italic: true, color: C.muted, align: { v: "center", indent: 1 } });
+  const EVH = ["Merchant / payee", "Date", "Type", "Amount", "", "Category", "Document", "Document type", "Link to copy"];
+  EVH.forEach((h, i) => summary.set(evStart + 2, i, h, headerStyle(i === 3 ? "right" : "left")));
+  summary.height(evStart + 2, 26);
+  const evFirst = evStart + 3;
+  rows.forEach((t, i) => {
+    const r = evFirst + i;
+    const st: CellStyle = { ...base, border: bottomHair };
+    summary.set(r, 0, t.merchant, st);
+    summary.set(r, 1, t.date ? { date: t.date } : "", { ...st, numFmt: dateFmt, align: { h: "left", v: "center" } });
+    summary.set(r, 2, t.type, { ...st, bold: true, color: t.isIncome ? C.income : C.expense });
+    summary.set(r, 3, t.amount, { ...st, numFmt: money, bold: true, align: { h: "right", v: "center" } });
+    summary.set(r, 4, null, st);
+    summary.set(r, 5, t.category, st);
+    if (t.docLink) {
+      summary.set(r, 6, { v: "Download", link: t.docLink, linkTip: (t.fileKey && docNameByKey.get(t.fileKey)) || "Opens the stored receipt or file" }, { ...st, color: C.link, underline: true });
+      summary.set(r, 7, t.docType || "File", st);
+      summary.set(r, 8, t.docLink, { ...st, color: C.muted });
+    } else {
+      summary.set(r, 6, "No document", { ...st, italic: true, color: C.muted });
+      summary.set(r, 7, null, st);
+      summary.set(r, 8, null, st);
+    }
+  });
+  const evEnd = evFirst + Math.max(rows.length, 1) - 1;
+  if (!rows.length) summary.set(evFirst, 0, "No transactions in this export.", { ...base, italic: true, color: C.muted });
+  else summary.zebra(evFirst, 0, evEnd, lastSumCol, C.zebra);
+
+  const noteStart = evEnd + 3;
   summary.set(noteStart, 0, { v: "Prepared with Receipt Cycle", link: "https://receiptcycle.com", linkTip: "receiptcycle.com" }, { italic: true, color: C.link, underline: true });
   summary.set(noteStart + 1, 0, "Totals on this sheet are live formulas that read the Transactions sheet. Amounts are in " + currency + ".", { italic: true, color: C.muted });
   const expCats = byCat(false);
   const incCats = byCat(true);
   const monthNums = monthList.flatMap(([, v]) => [v.inc, v.exp, v.inc - v.exp]);
-  const leftNums = [income, expenses, income - expenses, ...expCats.map(([, v]) => v.amount), ...monthNums];
-  const rightNums = [...incCats.map(([, v]) => v.amount), income];
+  const weekNums = weekList.flatMap(([, v]) => [v.inc, v.exp, v.inc - v.exp]);
+  const dayNums = dayList.flatMap(([, v]) => [v.inc, v.exp, v.inc - v.exp]);
+  const leftNums = [income, expenses, income - expenses, ...expCats.map(([, v]) => v.amount), ...monthNums, ...dayNums, ...rows.map((t) => t.amount)];
+  const rightNums = [...incCats.map(([, v]) => v.amount), income, ...weekNums];
   [
-    fitText(32, ["Net (income minus expenses)", ...expCats.map(([n]) => n), "Uploaded documents"], 44),
+    fitText(32, ["Net (income minus expenses)", ...expCats.map(([n]) => n), "Uploaded documents", ...rows.map((t) => t.merchant)], 44),
     fitMoney(20, leftNums),
     fitMoney(20, leftNums),
     fitMoney(20, leftNums),
     3,
-    fitText(30, incCats.map(([n]) => n), 44),
+    fitText(30, [...incCats.map(([n]) => n), ...rows.map((t) => t.category)], 40),
     fitMoney(20, rightNums),
-    16,
-    14,
+    fitMoney(20, rightNums),
+    fitMoney(20, rightNums),
   ].forEach((w, c) => summary.width(c, w));
-  summary.print.landscape = false;
+  summary.print.landscape = true;
   summary.zoom = 100;
 
   return { bytes: wb.build(), sheetNames: wb.sheets.map((s) => s.name) };

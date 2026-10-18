@@ -28,7 +28,7 @@ const SHOW_OPTIONS: { key: keyof DocOptions; title: string; note?: string; invoi
   { key: "itemNumbers", title: "Row numbers" },
   { key: "itemDescriptions", title: "Item descriptions" },
   { key: "taxLine", title: "Tax line in the totals" },
-  { key: "amountBox", title: "Amount box at the top", note: "Standard layout only" },
+  { key: "amountBox", title: "Amount box at the top", note: "The total shown near the top of the page" },
   { key: "notes", title: "Notes" },
   { key: "terms", title: "Payment terms" },
   { key: "paymentDetails", title: "Payment details", note: "Bank or mobile-money details you type below" },

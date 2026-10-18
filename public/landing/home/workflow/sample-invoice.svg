@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1220" viewBox="0 0 960 1220" role="img" aria-labelledby="title desc">
+  <title id="title">Sample Receipt Cycle invoice</title>
+  <desc id="desc">A fictional partially paid invoice with two line items and an outstanding balance.</desc>
+  <rect width="960" height="1220" rx="24" fill="#ffffff"/>
+  <rect width="960" height="18" rx="9" fill="#0f766e"/>
+  <g font-family="Inter, Arial, sans-serif" fill="#102a43">
+    <text x="70" y="94" font-size="31" font-weight="800">NORTHFIELD DEMO WORKS</text>
+    <text x="70" y="126" font-size="15" fill="#64748b">Illustrative business profile</text>
+    <text x="890" y="94" text-anchor="end" font-size="42" font-weight="800" fill="#0f766e">INVOICE</text>
+    <text x="890" y="126" text-anchor="end" font-size="17" fill="#475569">INV-2026-014</text>
+    <path d="M70 169H890" stroke="#dbe5ec" stroke-width="2"/>
+    <text x="70" y="221" font-size="14" font-weight="700" letter-spacing="1.4" fill="#64748b">BILL TO</text>
+    <text x="70" y="258" font-size="24" font-weight="800">Sample Client LLC</text>
+    <text x="70" y="290" font-size="16" fill="#64748b">123 Example Avenue</text>
+    <text x="70" y="316" font-size="16" fill="#64748b">Fairview, USA 10018</text>
+    <text x="590" y="221" font-size="14" font-weight="700" letter-spacing="1.4" fill="#64748b">ISSUED</text>
+    <text x="890" y="221" text-anchor="end" font-size="17" font-weight="700">Oct 17, 2026</text>
+    <text x="590" y="258" font-size="14" font-weight="700" letter-spacing="1.4" fill="#64748b">DUE</text>
+    <text x="890" y="258" text-anchor="end" font-size="17" font-weight="700">Nov 16, 2026</text>
+    <rect x="590" y="283" width="300" height="58" rx="12" fill="#ecfdf5"/>
+    <circle cx="618" cy="312" r="7" fill="#10b981"/>
+    <text x="638" y="319" font-size="15" font-weight="800" fill="#047857">PARTIALLY PAID</text>
+    <text x="70" y="394" font-size="26" font-weight="800">Website refresh</text>
+    <rect x="70" y="430" width="820" height="58" rx="9" fill="#e8f5f3"/>
+    <text x="94" y="466" font-size="14" font-weight="800" fill="#0f766e">DESCRIPTION</text>
+    <text x="648" y="466" text-anchor="end" font-size="14" font-weight="800" fill="#0f766e">QTY</text>
+    <text x="758" y="466" text-anchor="end" font-size="14" font-weight="800" fill="#0f766e">RATE</text>
+    <text x="866" y="466" text-anchor="end" font-size="14" font-weight="800" fill="#0f766e">AMOUNT</text>
+    <text x="94" y="538" font-size="18" font-weight="700">Design and development</text>
+    <text x="94" y="566" font-size="14" fill="#64748b">Responsive page design and build</text>
+    <text x="648" y="538" text-anchor="end" font-size="17">1</text>
+    <text x="758" y="538" text-anchor="end" font-size="17">$1,250.00</text>
+    <text x="866" y="538" text-anchor="end" font-size="17" font-weight="700">$1,250.00</text>
+    <path d="M70 602H890" stroke="#e2e8f0"/>
+    <text x="94" y="656" font-size="18" font-weight="700">Content handoff</text>
+    <text x="94" y="684" font-size="14" fill="#64748b">Final copy placement and delivery</text>
+    <text x="648" y="656" text-anchor="end" font-size="17">1</text>
+    <text x="758" y="656" text-anchor="end" font-size="17">$280.00</text>
+    <text x="866" y="656" text-anchor="end" font-size="17" font-weight="700">$280.00</text>
+    <path d="M70 725H890" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="610" y="776" font-size="16" fill="#64748b">Subtotal</text><text x="890" y="776" text-anchor="end" font-size="17">$1,530.00</text>
+    <text x="610" y="816" font-size="16" fill="#64748b">Sales Tax (8%)</text><text x="890" y="816" text-anchor="end" font-size="17">$122.40</text>
+    <rect x="585" y="847" width="305" height="70" rx="12" fill="#0f766e"/>
+    <text x="610" y="890" font-size="18" font-weight="800" fill="#ffffff">Total</text><text x="866" y="890" text-anchor="end" font-size="24" font-weight="800" fill="#ffffff">$1,652.40</text>
+    <text x="610" y="965" font-size="16" fill="#64748b">Payment recorded</text><text x="890" y="965" text-anchor="end" font-size="17">$800.00</text>
+    <text x="610" y="1008" font-size="18" font-weight="800">Balance due</text><text x="890" y="1008" text-anchor="end" font-size="22" font-weight="800">$852.40</text>
+    <text x="70" y="1076" font-size="14" font-weight="700" letter-spacing="1.4" fill="#64748b">NOTES</text>
+    <text x="70" y="1110" font-size="16" fill="#475569">Thank you. Please reference INV-2026-014 with your payment.</text>
+    <path d="M70 1155H890" stroke="#e2e8f0"/>
+    <text x="480" y="1188" text-anchor="middle" font-size="13" fill="#94a3b8">Created with Receipt Cycle · Fictional sample</text>
+  </g>
+</svg>

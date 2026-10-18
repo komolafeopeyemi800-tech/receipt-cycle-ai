@@ -59,7 +59,7 @@ export function createEstimateDraft(settings: InvoiceSettings, saved: SavedEstim
   return {
     estimateNumber: nextEstimateNumber(saved), title: "", estimateDate, validUntil: addDaysYmd(estimateDate, 30), customerId: null, reference: "", items: [],
     discountType: "percentage", discountValue: 0, taxRate: parsePercent(settings.defaultTaxRate), taxLabel: settings.taxLabel || "Sales Tax",
-    notes: "Thank you for your consideration!", terms: "This estimate is valid for 30 days from the issue date. Prices are subject to change after this period.",
+    notes: settings.defaultNotes?.trim() || "Thank you for your consideration!", terms: "This estimate is valid for 30 days from the issue date. Prices are subject to change after this period.",
     validityDays: 30, customerSignatureEnabled: false, signatureText: "", attachments: [], recurringEnabled: false, recurrenceFrequency: "monthly", recurrenceStartDate: estimateDate, automatedReminders: true,
   };
 }

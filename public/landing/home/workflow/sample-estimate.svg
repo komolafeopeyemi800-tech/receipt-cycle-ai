@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1220" viewBox="0 0 960 1220" role="img" aria-labelledby="title desc">
+  <title id="title">Sample Receipt Cycle estimate</title>
+  <desc id="desc">A fictional sent estimate with a validity date, two line items, tax, and a total.</desc>
+  <rect width="960" height="1220" rx="24" fill="#ffffff"/>
+  <rect width="960" height="18" rx="9" fill="#2563eb"/>
+  <g font-family="Inter, Arial, sans-serif" fill="#102a43">
+    <text x="70" y="94" font-size="31" font-weight="800">NORTHFIELD DEMO WORKS</text>
+    <text x="70" y="126" font-size="15" fill="#64748b">Illustrative business profile</text>
+    <text x="890" y="94" text-anchor="end" font-size="42" font-weight="800" fill="#2563eb">ESTIMATE</text>
+    <text x="890" y="126" text-anchor="end" font-size="17" fill="#475569">EST-2026-009</text>
+    <path d="M70 169H890" stroke="#dbe5ec" stroke-width="2"/>
+    <text x="70" y="221" font-size="14" font-weight="700" letter-spacing="1.4" fill="#64748b">PREPARED FOR</text>
+    <text x="70" y="258" font-size="24" font-weight="800">Sample Client LLC</text>
+    <text x="70" y="290" font-size="16" fill="#64748b">123 Example Avenue</text>
+    <text x="70" y="316" font-size="16" fill="#64748b">Fairview, USA 10018</text>
+    <text x="590" y="221" font-size="14" font-weight="700" letter-spacing="1.4" fill="#64748b">ISSUED</text>
+    <text x="890" y="221" text-anchor="end" font-size="17" font-weight="700">Oct 17, 2026</text>
+    <text x="590" y="258" font-size="14" font-weight="700" letter-spacing="1.4" fill="#64748b">VALID UNTIL</text>
+    <text x="890" y="258" text-anchor="end" font-size="17" font-weight="700">Nov 16, 2026</text>
+    <rect x="590" y="283" width="300" height="58" rx="12" fill="#eff6ff"/>
+    <circle cx="618" cy="312" r="7" fill="#2563eb"/>
+    <text x="638" y="319" font-size="15" font-weight="800" fill="#1d4ed8">SENT FOR REVIEW</text>
+    <text x="70" y="394" font-size="26" font-weight="800">Launch support package</text>
+    <rect x="70" y="430" width="820" height="58" rx="9" fill="#eff6ff"/>
+    <text x="94" y="466" font-size="14" font-weight="800" fill="#1d4ed8">DESCRIPTION</text>
+    <text x="648" y="466" text-anchor="end" font-size="14" font-weight="800" fill="#1d4ed8">QTY</text>
+    <text x="758" y="466" text-anchor="end" font-size="14" font-weight="800" fill="#1d4ed8">RATE</text>
+    <text x="866" y="466" text-anchor="end" font-size="14" font-weight="800" fill="#1d4ed8">AMOUNT</text>
+    <text x="94" y="538" font-size="18" font-weight="700">Launch setup</text>
+    <text x="94" y="566" font-size="14" fill="#64748b">Project setup and launch-day support</text>
+    <text x="648" y="538" text-anchor="end" font-size="17">1</text>
+    <text x="758" y="538" text-anchor="end" font-size="17">$980.00</text>
+    <text x="866" y="538" text-anchor="end" font-size="17" font-weight="700">$980.00</text>
+    <path d="M70 602H890" stroke="#e2e8f0"/>
+    <text x="94" y="656" font-size="18" font-weight="700">Revision allowance</text>
+    <text x="94" y="684" font-size="14" fill="#64748b">Three focused review rounds</text>
+    <text x="648" y="656" text-anchor="end" font-size="17">3</text>
+    <text x="758" y="656" text-anchor="end" font-size="17">$80.00</text>
+    <text x="866" y="656" text-anchor="end" font-size="17" font-weight="700">$240.00</text>
+    <path d="M70 725H890" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="610" y="776" font-size="16" fill="#64748b">Subtotal</text><text x="890" y="776" text-anchor="end" font-size="17">$1,220.00</text>
+    <text x="610" y="816" font-size="16" fill="#64748b">Sales Tax (8%)</text><text x="890" y="816" text-anchor="end" font-size="17">$97.60</text>
+    <rect x="585" y="847" width="305" height="70" rx="12" fill="#2563eb"/>
+    <text x="610" y="890" font-size="18" font-weight="800" fill="#ffffff">Estimated total</text><text x="866" y="890" text-anchor="end" font-size="24" font-weight="800" fill="#ffffff">$1,317.60</text>
+    <text x="70" y="985" font-size="14" font-weight="700" letter-spacing="1.4" fill="#64748b">TERMS</text>
+    <text x="70" y="1021" font-size="16" fill="#475569">This estimate is valid for 30 days from the issue date.</text>
+    <text x="70" y="1053" font-size="16" fill="#475569">Scope changes may require a revised estimate.</text>
+    <rect x="70" y="1090" width="230" height="54" rx="12" fill="#ecfdf5"/>
+    <text x="185" y="1124" text-anchor="middle" font-size="15" font-weight="800" fill="#047857">READY FOR APPROVAL</text>
+    <path d="M70 1162H890" stroke="#e2e8f0"/>
+    <text x="480" y="1192" text-anchor="middle" font-size="13" fill="#94a3b8">Created with Receipt Cycle · Fictional sample</text>
+  </g>
+</svg>

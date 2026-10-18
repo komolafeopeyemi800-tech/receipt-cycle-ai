@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { CommercialFooter, CommercialHeader, LandingPrimaryCta } from "@/components/marketing/CommercialLandingLayout";
+import { InteractiveProductDemo } from "@/components/marketing/InteractiveProductDemo";
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
 
@@ -31,7 +32,7 @@ function PhoneMockup() {
       <p className="mt-5 text-[11px] font-black">Good morning, there</p><p className="mt-1 text-[7px] text-slate-400">Here is your snapshot for today</p>
       <div className="mt-3 bg-gradient-to-br from-teal-700 to-teal-500 p-3 text-white shadow"><p className="text-[7px] font-bold text-teal-100">NET THIS MONTH</p><p className="mt-1 text-xl font-black">$5,235</p><p className="mt-2 text-[7px]">28.4% savings rate</p></div>
       <p className="mt-4 text-[9px] font-black">Quick actions</p><div className="mt-2 grid grid-cols-4 gap-1">{[["fa-camera","Scan"],["fa-plus","Add"],["fa-microphone","Voice"],["fa-file-arrow-up","Import"]].map(([i,t])=><div key={t} className="bg-white p-1.5 text-center shadow-sm"><i className={`fas ${i} text-[9px] text-teal-700`} /><p className="mt-1 text-[6px] font-bold">{t}</p></div>)}</div>
-      <div className="mt-4 flex justify-between"><p className="text-[9px] font-black">Recent transactions</p><p className="text-[7px] font-bold text-teal-700">View all</p></div>{[["Office Depot","Supplies","-$86.40"],["Client payment","Income","+$1,400"],["Fuel station","Transport","-$54.20"]].map(([m,c,a])=><div key={m} className="mt-2 flex items-center bg-white p-2 shadow-sm"><span className="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-teal-50 text-[8px] text-teal-700"><i className="fas fa-receipt" /></span><div><p className="text-[7px] font-black">{m}</p><p className="text-[6px] text-slate-400">{c}</p></div><p className={`ml-auto text-[7px] font-black ${a.startsWith("+")?"text-emerald-600":"text-rose-600"}`}>{a}</p></div>)}
+      <div className="mt-4 flex justify-between"><p className="text-[9px] font-black">Recent transactions</p><p className="text-[7px] font-bold text-teal-700">View all</p></div>{[["BrightDesk Supply","Supplies","-$86.40"],["Client payment","Income","+$1,400"],["Fuel station","Transport","-$54.20"]].map(([m,c,a])=><div key={m} className="mt-2 flex items-center bg-white p-2 shadow-sm"><span className="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-teal-50 text-[8px] text-teal-700"><i className="fas fa-receipt" /></span><div><p className="text-[7px] font-black">{m}</p><p className="text-[6px] text-slate-400">{c}</p></div><p className={`ml-auto text-[7px] font-black ${a.startsWith("+")?"text-emerald-600":"text-rose-600"}`}>{a}</p></div>)}
     </div>
   </div>;
 }
@@ -65,9 +66,11 @@ export default function MarketingLanding() {
         </div>
       </section>
 
+      <InteractiveProductDemo />
+
       <section className="py-20 lg:py-28">
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
-          <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-4xl font-black tracking-tight sm:text-5xl">Everything you need for the paperwork behind the work</h2><p className="mt-5 text-lg leading-8 text-slate-600">Create the documents customers expect, capture the receipts your business collects, and keep spending ready for budgets, reports, and tax-time review.</p></div>
+          <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-4xl font-black tracking-tight sm:text-5xl">One place for every financial task</h2><p className="mt-5 text-lg leading-8 text-slate-600">Create the documents customers expect, capture the receipts your business collects, and keep spending ready for budgets, reports, and tax-time review.</p></div>
           <div className="mx-auto mt-14 grid max-w-5xl gap-4 lg:grid-cols-2 grid-cols-1">
             <article className="grid overflow-hidden bg-[#f7f3ec] sm:grid-cols-[.85fr_1.15fr] grid-cols-1"><div className="p-7"><h3 className="text-2xl font-black">Invoicing</h3><p className="mt-3 leading-7 text-slate-600">Create a polished invoice, add taxes or discounts, send it to the customer, and keep its payment status visible.</p><Link to="/invoice-software/" className="mt-5 inline-block font-black text-teal-700">Explore invoicing</Link></div><div className="self-end p-5 pl-0"><MiniDocument type="invoice" /></div></article>
             <article className="overflow-hidden bg-[#087fdb] p-7 text-white"><h3 className="text-2xl font-black">Estimates and quotations</h3><p className="mt-3 leading-7 text-blue-50">Describe the job, price each line, set a validity period, and move accepted work toward an invoice.</p><Link to="/estimate-quotation-software/" className="mt-5 inline-block font-black text-white">Explore estimates</Link><div className="mt-6 border border-white/25 bg-white/10 p-4"><div className="flex justify-between text-sm"><span>Kitchen repair estimate</span><strong>Awaiting reply</strong></div><div className="mt-4 grid grid-cols-2 gap-2 text-xs"><span className="bg-white/10 p-2">Materials $320</span><span className="bg-white/10 p-2">Labour $480</span></div></div></article>

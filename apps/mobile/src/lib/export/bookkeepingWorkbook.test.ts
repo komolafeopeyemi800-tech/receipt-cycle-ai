@@ -98,9 +98,9 @@ describe("bookkeeping workbook", () => {
   const files = parts(built.bytes);
 
   it("writes every part, well-formed", () => {
-    for (const p of ["[Content_Types].xml", "_rels/.rels", "xl/workbook.xml", "xl/styles.xml", "xl/sharedStrings.xml", "docProps/core.xml", "docProps/app.xml", "xl/worksheets/sheet1.xml", "xl/worksheets/sheet4.xml"]) expect(files[p], p).toBeTruthy();
+    for (const p of ["[Content_Types].xml", "_rels/.rels", "xl/workbook.xml", "xl/styles.xml", "xl/sharedStrings.xml", "docProps/core.xml", "docProps/app.xml", "xl/worksheets/sheet1.xml", "xl/worksheets/sheet5.xml"]) expect(files[p], p).toBeTruthy();
     expectWellFormed(files);
-    expect(built.sheetNames).toEqual(["Summary", "Transactions", "Documents", "Line items"]);
+    expect(built.sheetNames).toEqual(["Summary", "Transactions", "Evidence links", "Documents", "Line items"]);
   });
 
   it("has styles: teal header fill, number formats, fonts", () => {
@@ -115,7 +115,7 @@ describe("bookkeeping workbook", () => {
   it("transactions sheet: freeze, autofilter, zebra, print setup, tab colour, SUBTOTAL", () => {
     const x = files["xl/worksheets/sheet2.xml"]!;
     expect(x).toContain('state="frozen"');
-    expect(x).toContain('<autoFilter ref="A4:S154"/>');
+    expect(x).toContain('<autoFilter ref="A4:T154"/>');
     expect(x).toContain("conditionalFormatting");
     expect(x).toContain('orientation="landscape"');
     expect(x).toContain('fitToWidth="1"');
@@ -138,13 +138,13 @@ describe("bookkeeping workbook", () => {
     expect(rels).toContain('TargetMode="External"');
     expect(rels).toContain("/api/receipts/shared?key=");
     expect(files["xl/worksheets/sheet2.xml"]).toContain("<hyperlinks>");
-    expect(files["xl/worksheets/_rels/sheet3.xml.rels"]).toContain("stmt1.pdf");
+    expect(files["xl/worksheets/_rels/sheet4.xml.rels"]).toContain("stmt1.pdf");
   });
 
   it("documents sheet carries statement, card and invoice details; line items are listed", () => {
     const s = files["xl/sharedStrings.xml"]!;
     for (const needle of ["Northfield Bank", "Business Checking ••1893", "Chase", "Business Visa ••4242", "INV-0042", "PO number: PO-77", "Minimum payment due: 35", "Credit limit: 10000", "Widgets", "Gadgets", "Printer paper"]) expect(s, needle).toContain(needle);
-    expect(files["xl/worksheets/sheet4.xml"]).toContain("SUBTOTAL(109,G5:");
+    expect(files["xl/worksheets/sheet5.xml"]).toContain("SUBTOTAL(109,G5:");
   });
 
   it("works with no documents and no transactions at all", () => {
@@ -184,5 +184,34 @@ describe("bookkeeping workbook", () => {
     }
     expect(withInvoices.sheetNames).toContain("Invoices & Payments");
     expectWellFormed(parts(withInvoices.bytes));
+  });
+});
+
+describe("nothing is cut off", () => {
+  const widthsOf = (xml: string) => [...xml.matchAll(/<col min="(\d+)" max="\d+" width="([\d.]+)"/g)].map((m) => Number(m[2]));
+  const big: ExportTransaction[] = [
+    { id: "a", date: "2026-01-05", type: "income", amount: 1234567890.5, merchant: "Big Client", category: "Client payments", description: "", receipt_url: "receipts/u/a.pdf" },
+    { id: "b", date: "2026-02-05", type: "expense", amount: 987654321.25, merchant: "Big Vendor", category: "Equipment and machinery for the new factory", description: "" },
+    { id: "c", date: "2026-02-06", type: "expense", amount: 5.5, merchant: "Shop", category: "Meals", description: "" },
+  ];
+  const keys = ["receipts/u/a.pdf"];
+  const out = buildBookkeepingWorkbook(big, { currency: "USD", generatedOn: "2026-10-17", links: links(keys), documents: [{ id: "d", kind: "invoice", fileName: "a.pdf", r2Key: "receipts/u/a.pdf", mime: "application/pdf", size: 10, createdAt: "2026-01-06", meta: {} }] });
+  const f = parts(out.bytes);
+
+  it("sizes every Summary column for the longest number and name", () => {
+    const w = widthsOf(f["xl/worksheets/sheet1.xml"]!);
+    // "1,234,567,890.50" with a currency symbol needs at least 21 characters
+    for (const i of [1, 2, 3, 6]) expect(w[i], `column ${i}`).toBeGreaterThanOrEqual(21);
+    expect(w[0]).toBeGreaterThanOrEqual("Equipment and machinery for the new factory".length);
+  });
+
+  it("lists every transaction on the evidence sheet with a clickable and a copyable link", () => {
+    expect(out.sheetNames).toContain("Evidence links");
+    const x = f["xl/worksheets/sheet3.xml"]!;
+    expect((x.match(/<row r="(\d+)"/g) ?? []).length).toBeGreaterThanOrEqual(6);
+    expect(x).toContain("<hyperlinks>");
+    expect(f["xl/sharedStrings.xml"]).toContain("/api/receipts/shared?key=");
+    expect(f["xl/sharedStrings.xml"]).toContain("No document");
+    expect(widthsOf(x).at(-1)).toBeGreaterThanOrEqual(60);
   });
 });

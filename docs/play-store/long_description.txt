@@ -1,0 +1,35 @@
+Receipt Cycle Invoice Manager is an expense tracker, receipt scanner, invoice maker and budget tracker in one app. It is built for freelancers, contractors, small business owners and anyone who wants clear records of income and expenses without spending evenings on bookkeeping.
+
+SNAP A RECEIPT, SKIP THE TYPING
+Take a photo of a receipt and the app reads the merchant, date, total, tax and payment method for you. You review the result, fix anything you like, and save it. The original photo stays attached to the transaction as your proof.
+
+UPLOAD BANK STATEMENTS AND DOCUMENTS
+Bring in a CSV, Excel, PDF or photo of a statement, an invoice or a receipt and the app turns it into transactions. For statements it checks the rows against the printed opening and closing balance, and it tells you when a file cannot be read reliably instead of guessing. A digital copy of every uploaded file is kept next to the transactions it produced.
+
+ADD EXPENSES BY VOICE
+Say what you spent, such as "forty dollars of fuel on the business card yesterday", and the app prepares the transaction for your review. No typing needed.
+
+INVOICES AND ESTIMATES THAT LOOK PROFESSIONAL
+Create an invoice or an estimate in a few taps. Pick a template, choose your accent color, choose Letter or A4 paper, add your logo, and draw your signature on screen. Decide exactly what appears on the document, including contact details, item descriptions, tax, notes, terms and payment instructions. What you see in the preview is what the PDF contains.
+
+SEND OR PRINT
+Email a document straight to your customer, share the PDF through any messaging or file app on your phone, or print it.
+
+GET PAID ON TIME
+Track every invoice as sent, paid, overdue or awaiting payment. Record full or partial payments and see what is still outstanding. Optional reminders tell you when a payment is overdue so nothing slips.
+
+BUDGETS AND CLEAR REPORTS
+Set budgets by category and see how much is left. Charts and reports show income against expenses, where your money goes, monthly cash flow, outstanding invoices and open estimates.
+
+ACCOUNTS, CUSTOMERS AND CATALOG
+Keep several accounts, group spending into categories, save customers (import them from your contacts if you wish), and store the products and services you sell so invoices are quick to build.
+
+BACKUP AND PROFESSIONAL EXPORT
+Your records are backed up to your account automatically. Export a polished spreadsheet with your transactions, a summary and links to the stored copies of your documents, ready for your accountant or tax time.
+
+YOUR DATA, YOUR CHOICE
+You can delete your account and data at any time from inside the app. Notifications are optional and you control each type.
+
+Try Receipt Cycle Invoice Manager free for 7 days. Estimates, invoices, receipts and budgets, all in one place.
+
+Receipt Cycle supports record keeping. It does not provide tax, legal or accounting advice.

@@ -40,6 +40,25 @@ const C = {
 const FOOTER = "Prepared with Receipt Cycle";
 const TX_FIRST_ROW = 4; // 0-based row of first transaction row on the Transactions sheet
 
+/** Width in characters a formatted money value needs: digits, separators, decimals, a currency symbol or code and a sign, plus padding. */
+function moneyChars(n: number): number {
+  const whole = String(Math.floor(Math.abs(n)));
+  const commas = Math.floor((whole.length - 1) / 3);
+  return whole.length + commas + 3 + 5;
+}
+/** A column wide enough for its longest number (never narrower than `min`), so nothing ever shows as ####. */
+function fitMoney(min: number, values: Array<number | null | undefined>): number {
+  let w = min;
+  for (const v of values) if (typeof v === "number" && Number.isFinite(v)) w = Math.max(w, moneyChars(v));
+  return w;
+}
+/** A column wide enough for its longest text, within a sensible range. */
+function fitText(min: number, values: Array<string | null | undefined>, max = 60): number {
+  let w = min;
+  for (const v of values) if (v) w = Math.max(w, Math.min(max, v.length + 3));
+  return w;
+}
+
 export type BuiltWorkbook = { bytes: Uint8Array; sheetNames: string[] };
 
 // ---- styles ----
@@ -260,18 +279,20 @@ export function buildBookkeepingWorkbook(transactions: ExportTransaction[], opti
   });
   const summary = wb.addSheet("Summary");
   const tx = wb.addSheet("Transactions");
+  const evSheet = wb.addSheet("Evidence links");
   const docSheet = wb.addSheet("Documents");
   const itemSheet = wb.addSheet("Line items");
   const invSheet = opts.invoices?.length ? wb.addSheet("Invoices & Payments") : null;
   summary.tabColor = C.teal;
   tx.tabColor = "2563EB";
   docSheet.tabColor = "F59E0B";
+  evSheet.tabColor = "0EA5E9";
   itemSheet.tabColor = "8B5CF6";
   if (invSheet) invSheet.tabColor = "EC4899";
   for (const s of wb.sheets) s.print = { landscape: true, fitToWidth: true, footer: FOOTER };
 
   // ================= Transactions =================
-  const TX = ["Date", "Type", "Merchant / payee", "Category", "Description", "Amount", "Currency", "Payment method", "Account", "Card last 4", "Subtotal", "Tax", "Tip", "Tags", "Entry source", "Reimbursable", "Notes", "Document", "Document type"];
+  const TX = ["Date", "Type", "Merchant / payee", "Category", "Description", "Amount", "Currency", "Payment method", "Account", "Card last 4", "Subtotal", "Tax", "Tip", "Tags", "Entry source", "Reimbursable", "Notes", "Document", "Document type", "Document link (copy and paste)"];
   const lastTxCol = TX.length - 1;
   const first = TX_FIRST_ROW;
   const lastRow = Math.max(first, first + rows.length - 1);
@@ -305,6 +326,8 @@ export function buildBookkeepingWorkbook(transactions: ExportTransaction[], opti
     if (t.docLink) tx.set(r, 17, { v: "View document", link: t.docLink, linkTip: "Opens the stored receipt or file" }, { ...text, color: C.link, underline: true });
     else tx.set(r, 17, null, text);
     tx.set(r, 18, t.docType, text);
+    // The full address as plain text so it can be copied, and left as the last column so it never gets cut off.
+    tx.set(r, 19, t.docLink || null, { ...text, color: C.muted });
   });
   if (rows.length) tx.zebra(first, 0, lastRow, lastTxCol, C.zebra);
   tx.setAutoFilter(3, 0, lastRow, lastTxCol);
@@ -333,9 +356,53 @@ export function buildBookkeepingWorkbook(transactions: ExportTransaction[], opti
   tx.set(totalRow + 3, 5, { f: `${cellRef(totalRow + 1, 5)}-${cellRef(totalRow + 2, 5)}`, cached: income - expenses, s: { ...plain, numFmt: money, align: { h: "right", v: "center" } } });
   tx.set(totalRow + 5, 0, "Tip: filter the Type column to total only income or only expenses with the first total row.", { italic: true, color: C.muted });
 
-  const widths = [12, 10, 26, 20, 34, 14, 10, 18, 18, 11, 13, 12, 12, 20, 14, 13, 28, 16, 16];
+  const txTotals = [sum("amount"), sum("subtotal"), sum("tax"), sum("tip"), income, expenses, income - expenses];
+  const widths = [
+    14, 10, fitText(26, rows.map((t) => t.merchant), 40), fitText(20, rows.map((t) => t.category), 32), 34,
+    fitMoney(16, [...rows.map((t) => t.amount), ...txTotals]), 10, fitText(18, rows.map((t) => t.paymentMethod), 28), fitText(18, rows.map((t) => t.account), 28), 11,
+    fitMoney(14, [...rows.map((t) => t.subtotal), ...txTotals]), fitMoney(13, [...rows.map((t) => t.tax), ...txTotals]), fitMoney(13, rows.map((t) => t.tip)),
+    20, 14, 13, 28, 16, 16, 60,
+  ];
   widths.forEach((w, c) => tx.width(c, w));
   tx.height(totalRow, 22);
+
+  // ================= Evidence links (one row per transaction, with the stored file) =================
+  const docNameByKey = new Map(docs.map((d) => [d.r2Key, d.fileName]));
+  const EV = ["No.", "Date", "Type", "Merchant / payee", "Category", "Amount", "Currency", "Document type", "File name", "Download", "Link (select the cell and copy it, then paste it in your browser)"];
+  const lastEvCol = EV.length - 1;
+  const withFile = rows.filter((t) => t.docLink).length;
+  banner(evSheet, lastEvCol, `${business}: Evidence links`, `${rows.length} transaction${rows.length === 1 ? "" : "s"}  |  ${withFile} with a stored document  |  Click Download, or copy the full link in the last column.`);
+  EV.forEach((h, c) => evSheet.set(3, c, h, headerStyle(c === 5 ? "right" : "left")));
+  evSheet.height(3, 42);
+  rows.forEach((t, i) => {
+    const r = 4 + i;
+    const text: CellStyle = { ...base, border: bottomHair };
+    evSheet.set(r, 0, i + 1, { ...text, numFmt: "0", align: { h: "left", v: "center" } });
+    evSheet.set(r, 1, t.date ? { date: t.date } : "", { ...text, numFmt: dateFmt, align: { h: "left", v: "center" } });
+    evSheet.set(r, 2, t.type, { ...text, bold: true, color: t.isIncome ? C.income : C.expense });
+    evSheet.set(r, 3, t.merchant, text);
+    evSheet.set(r, 4, t.category, text);
+    evSheet.set(r, 5, t.amount, { ...text, numFmt: money, bold: true, align: { h: "right", v: "center" } });
+    evSheet.set(r, 6, t.currency, { ...text, align: { h: "center", v: "center" } });
+    evSheet.set(r, 7, t.docType || "", text);
+    evSheet.set(r, 8, (t.fileKey && docNameByKey.get(t.fileKey)) || (t.docLink ? "Stored file" : ""), text);
+    if (t.docLink) {
+      evSheet.set(r, 9, { v: "Download", link: t.docLink, linkTip: "Opens the stored receipt or file" }, { ...text, color: C.link, underline: true });
+      evSheet.set(r, 10, t.docLink, { ...text, color: C.muted });
+    } else {
+      evSheet.set(r, 9, "No document", { ...text, italic: true, color: C.muted });
+      evSheet.set(r, 10, null, text);
+    }
+  });
+  if (!rows.length) noteRow(evSheet, 4, lastEvCol, "No transactions in this export.");
+  else {
+    const lastEv = 3 + rows.length;
+    evSheet.zebra(4, 0, lastEv, lastEvCol, C.zebra);
+    evSheet.setAutoFilter(3, 0, lastEv, lastEvCol);
+  }
+  [7, 14, 10, fitText(26, rows.map((t) => t.merchant), 40), fitText(20, rows.map((t) => t.category), 32), fitMoney(16, rows.map((t) => t.amount)), 10, 16, fitText(26, rows.map((t) => (t.fileKey && docNameByKey.get(t.fileKey)) || ""), 44), 14, 70].forEach((w, c) => evSheet.width(c, w));
+  evSheet.freeze = { rows: 4, cols: 0 };
+  evSheet.print.repeatRows = [3, 3];
 
   // ================= Documents + Line items =================
   const described = docs.map((d) => describeDocument(d, opts));
@@ -398,7 +465,12 @@ export function buildBookkeepingWorkbook(transactions: ExportTransaction[], opti
     docSheet.zebra(4, 0, 3 + docRows.length, lastDocCol, C.zebra);
     docSheet.setAutoFilter(3, 0, 3 + docRows.length, lastDocCol);
   }
-  [30, 15, 22, 24, 13, 13, 13, 16, 16, 16, 12, 11, 10, 17, 10, 12, 52, 12, 10].forEach((w, c) => docSheet.width(c, w));
+  [
+    fitText(30, docRows.map((d) => d.doc.fileName), 46), 15, fitText(22, docRows.map((d) => d.provider), 34), fitText(24, docRows.map((d) => d.account), 34), 15, 15, 15,
+    fitMoney(18, docRows.map((d) => d.opening)), fitMoney(18, docRows.map((d) => d.credits)), fitMoney(18, docRows.map((d) => d.debits)),
+    fitMoney(14, docRows.map((d) => d.subtotal)), fitMoney(13, docRows.map((d) => d.tax)), fitMoney(12, docRows.map((d) => d.tip)), fitMoney(20, docRows.map((d) => d.total)),
+    11, 14, 60, 14, 12,
+  ].forEach((w, c) => docSheet.width(c, w));
   docSheet.freeze = { rows: 4, cols: 1 };
   docSheet.print.repeatRows = [3, 3];
 
@@ -428,7 +500,7 @@ export function buildBookkeepingWorkbook(transactions: ExportTransaction[], opti
     itemSheet.paint(lastItem + 1, 0, lastItem + 1, IT.length - 1, totalStyle);
     itemSheet.set(lastItem + 1, 6, { f: `SUBTOTAL(109,G5:G${lastItem + 1})`, cached: items.reduce((a, it) => a + (it.amount ?? 0), 0), s: ts });
   }
-  [34, 24, 13, 40, 9, 14, 14].forEach((w, c) => itemSheet.width(c, w));
+  [fitText(34, items.map((i) => i.docName), 46), fitText(24, items.map((i) => i.vendor), 34), 15, 40, 10, fitMoney(16, items.map((i) => i.unit)), fitMoney(16, items.map((i) => i.amount))].forEach((w, c) => itemSheet.width(c, w));
   itemSheet.freeze = { rows: 4, cols: 0 };
   itemSheet.print.repeatRows = [3, 3];
 
@@ -461,7 +533,8 @@ export function buildBookkeepingWorkbook(transactions: ExportTransaction[], opti
       const key = c === 4 ? (inv: { total: number; paid: number }) => inv.total : c === 5 ? (inv: { total: number; paid: number }) => inv.paid : (inv: { total: number; paid: number }) => inv.total - inv.paid;
       invSheet.set(lastInv + 1, c, { f: `SUBTOTAL(109,${L}5:${L}${lastInv + 1})`, cached: opts.invoices.reduce((a, inv) => a + key(inv), 0), s: { ...totalStyle, numFmt: money, align: { h: "right", v: "center" } } });
     }
-    [14, 28, 13, 13, 15, 15, 15, 14].forEach((w, c) => invSheet.width(c, w));
+    const invAll = opts.invoices.flatMap((inv) => [inv.total, inv.paid, inv.total - inv.paid]);
+    [14, fitText(28, opts.invoices.map((inv) => inv.customer), 40), 15, 15, fitMoney(16, invAll), fitMoney(16, invAll), fitMoney(16, invAll), 14].forEach((w, c) => invSheet.width(c, w));
     invSheet.freeze = { rows: 4, cols: 0 };
     invSheet.print.repeatRows = [3, 3];
   }
@@ -583,7 +656,22 @@ export function buildBookkeepingWorkbook(transactions: ExportTransaction[], opti
   const noteStart = mTot + 3;
   summary.set(noteStart, 0, { v: "Prepared with Receipt Cycle", link: "https://receiptcycle.com", linkTip: "receiptcycle.com" }, { italic: true, color: C.link, underline: true });
   summary.set(noteStart + 1, 0, "Totals on this sheet are live formulas that read the Transactions sheet. Amounts are in " + currency + ".", { italic: true, color: C.muted });
-  [30, 17, 13, 11, 3, 30, 17, 13, 11].forEach((w, c) => summary.width(c, w));
+  const expCats = byCat(false);
+  const incCats = byCat(true);
+  const monthNums = monthList.flatMap(([, v]) => [v.inc, v.exp, v.inc - v.exp]);
+  const leftNums = [income, expenses, income - expenses, ...expCats.map(([, v]) => v.amount), ...monthNums];
+  const rightNums = [...incCats.map(([, v]) => v.amount), income];
+  [
+    fitText(32, ["Net (income minus expenses)", ...expCats.map(([n]) => n), "Uploaded documents"], 44),
+    fitMoney(20, leftNums),
+    fitMoney(20, leftNums),
+    fitMoney(20, leftNums),
+    3,
+    fitText(30, incCats.map(([n]) => n), 44),
+    fitMoney(20, rightNums),
+    16,
+    14,
+  ].forEach((w, c) => summary.width(c, w));
   summary.print.landscape = false;
   summary.zoom = 100;
 

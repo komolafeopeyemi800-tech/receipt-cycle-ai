@@ -1,7 +1,7 @@
 import { calculateInvoiceTotals, type InvoiceDraft } from "../invoices/model";
 import type { BusinessProfile, SalesCustomer } from "../sales/setupData";
 import { formatNumberGrouped } from "../../lib/preferences";
-import { fitText, textWidth, wrapText } from "./fonts";
+import { textWidth, wrapText } from "./fonts";
 
 export type DocKind = "INVOICE" | "ESTIMATE";
 export type DocTemplate = "standard" | "compact";
@@ -113,13 +113,16 @@ type Ctx = {
   limit: number;
 };
 
-function text(c: Ctx, x: number, y: number, w: number, s: string, size: number, o: { bold?: boolean; color?: string; align?: "left" | "right" | "center" } = {}) {
-  c.cur.push({ t: "text", x, y, w, text: s, size, bold: o.bold, color: o.color ?? INK, align: o.align });
+function text(c: Ctx, x: number, y: number, w: number, s: string, size: number, o: { bold?: boolean; color?: string; align?: "left" | "right" | "center"; fit?: boolean } = {}) {
+  let sz = size;
+  // `fit` shrinks the type a little (never below 5.5pt) so a long number or name stays whole instead of running out of its box.
+  if (o.fit && s) while (sz > 5.5 && textWidth(s, sz, !!o.bold) > w) sz = Math.round((sz - 0.25) * 100) / 100;
+  c.cur.push({ t: "text", x, y, w, text: s, size: sz, bold: o.bold, color: o.color ?? INK, align: o.align });
 }
 
-/** Writes wrapped lines and returns the height used. */
-function paragraph(c: Ctx, x: number, y: number, w: number, s: string, size: number, o: { bold?: boolean; color?: string; max?: number; gap?: number } = {}) {
-  const lines = wrapText(s, size, !!o.bold, w).slice(0, o.max ?? 99);
+/** Writes wrapped lines and returns the height used. Every line is kept: nothing is cut to fit. */
+function paragraph(c: Ctx, x: number, y: number, w: number, s: string, size: number, o: { bold?: boolean; color?: string; max?: number; gap?: number; align?: "left" | "right" | "center" } = {}) {
+  const lines = wrapText(s, size, !!o.bold, w).slice(0, o.max ?? 999);
   const lh = size * 1.28 + (o.gap ?? 0);
   lines.forEach((line, i) => text(c, x, y + i * lh, w, line, size, o));
   return lines.length * lh;
@@ -161,40 +164,46 @@ export function buildDocument(input: DocInput): DocLayout {
   const leftW = (compact ? cw * 0.58 : cw * 0.56) - logoSpace;
   const nameSize = (business.businessName || "").length > 28 ? 11.5 : compact ? 12 : 14;
   let hy = y + 1;
-  hy += paragraph(c, nameX, hy, leftW, business.businessName || "Your business", nameSize, { bold: true, max: 2 });
+  hy += paragraph(c, nameX, hy, leftW, business.businessName || "Your business", nameSize, { bold: true });
   const contact = [o.email ? business.email : "", o.phone ? business.phone : ""].filter(Boolean).join("  ·  ");
-  if (o.address && business.address) hy += paragraph(c, nameX, hy + 2, leftW, business.address, 8.5, { color: MUTED, max: 4 }) + 2;
-  if (contact) hy += paragraph(c, nameX, hy + 1, leftW, contact, 8.5, { color: MUTED, max: 2 }) + 1;
-  if (o.taxId && business.taxId) hy += paragraph(c, nameX, hy + 1, leftW, `Tax ID: ${business.taxId}`, 8.5, { color: MUTED, max: 1 });
+  if (o.address && business.address) hy += paragraph(c, nameX, hy + 2, leftW, business.address, 8.5, { color: MUTED }) + 2;
+  if (contact) hy += paragraph(c, nameX, hy + 1, leftW, contact, 8.5, { color: MUTED }) + 1;
+  if (o.taxId && business.taxId) hy += paragraph(c, nameX, hy + 1, leftW, `Tax ID: ${business.taxId}`, 8.5, { color: MUTED });
   const rightX = m + cw * 0.58, rightW = cw * 0.42;
   const titleSize = compact ? 18 : 26;
   text(c, rightX, y - 2, rightW, input.kind, titleSize, { bold: true, color: accent, align: "right" });
-  text(c, rightX, y + titleSize + 2, rightW, `# ${input.draft.invoiceNumber}`, compact ? 9.5 : 10.5, { bold: true, align: "right" });
+  text(c, rightX, y + titleSize + 2, rightW, `# ${input.draft.invoiceNumber}`, compact ? 9.5 : 10.5, { bold: true, align: "right", fit: true });
+  let ry = y + titleSize + (compact ? 24 : 18);
   if (compact) c.cur.push({ t: "rect", x: rightX + rightW - 70, y: y + titleSize + 18, w: 70, h: 1.6, fill: accent });
-  y = Math.max(hy, y + (o.logo ? logoBox : 0)) + (compact ? 14 : 20);
+  const docTitle = (input.draft.title ?? "").trim();
+  if (docTitle) ry += paragraph(c, rightX, ry, rightW, docTitle, 8.5, { color: MUTED, align: "right" });
+  y = Math.max(hy, ry, y + (o.logo ? logoBox : 0)) + (compact ? 14 : 20);
 
   // ---------- parties and key facts ----------
   const dueLabel = isInvoice ? "Due date" : "Valid until";
+  const detX = m + cw * (compact ? 0.38 : 0.39), detW = cw * (compact ? 0.28 : 0.26);
   const details: [string, string][] = [["Issue date", input.formatDate(input.draft.issueDate)], [dueLabel, input.formatDate(input.draft.dueDate)]];
-  if (o.terms && input.draft.terms) details.push([isInvoice ? "Terms" : "Terms", input.draft.terms]);
+  // Payment terms go in this table when they fit on one line; longer wording is printed in full under the notes instead.
+  const termsText = (input.draft.terms ?? "").trim();
+  const termsInTable = o.terms && !!termsText && textWidth(termsText, 8.5, true) <= detW * 0.55;
+  if (termsInTable) details.push(["Terms", termsText]);
   const billW = compact ? cw * 0.34 : cw * 0.36;
   const billLabel = isInvoice ? "Bill to" : "Prepared for";
   let by = y;
   label(c, m, by, billW, billLabel);
   by += 11;
-  by += paragraph(c, m, by, billW, customer.name || "Customer", 11, { bold: true, max: 2 });
-  if (customer.businessName && customer.businessName !== customer.name) by += paragraph(c, m, by, billW, customer.businessName, 9, { color: MUTED, max: 1 });
-  if (customer.billingAddress) by += paragraph(c, m, by + 1, billW, customer.billingAddress, 8.5, { color: MUTED, max: 4 }) + 1;
+  by += paragraph(c, m, by, billW, customer.name || "Customer", 11, { bold: true });
+  if (customer.businessName && customer.businessName !== customer.name) by += paragraph(c, m, by, billW, customer.businessName, 9, { color: MUTED });
+  if (customer.billingAddress) by += paragraph(c, m, by + 1, billW, customer.billingAddress, 8.5, { color: MUTED }) + 1;
   const reach = o.customerContact ? [customer.email, customer.phone].filter(Boolean).join("  ·  ") : "";
-  if (reach) by += paragraph(c, m, by + 1, billW, reach, 8.5, { color: MUTED, max: 2 });
+  if (reach) by += paragraph(c, m, by + 1, billW, reach, 8.5, { color: MUTED });
 
-  const detX = m + cw * (compact ? 0.38 : 0.39), detW = cw * (compact ? 0.28 : 0.26);
   let dy = y;
   label(c, detX, dy, detW, "Details");
   dy += 12;
   details.forEach(([k, v]) => {
-    text(c, detX, dy, detW * 0.5, k, 8.5, { color: MUTED });
-    text(c, detX + detW * 0.45, dy, detW * 0.55, fitText(v, 8.5, true, detW * 0.55), 8.5, { bold: true, align: "right" });
+    text(c, detX, dy, detW * 0.45, k, 8.5, { color: MUTED });
+    text(c, detX + detW * 0.45, dy, detW * 0.55, v, 8.5, { bold: true, align: "right", fit: true });
     dy += 13;
   });
 
@@ -204,25 +213,26 @@ export function buildDocument(input: DocInput): DocLayout {
     const chipX = m + cw * 0.69, chipW = cw * 0.31, chipH = 62;
     c.cur.push({ t: "rect", x: chipX, y, w: chipW, h: chipH, fill: tint(accent, 0.1), stroke: tint(accent, 0.35), lw: 0.6 });
     label(c, chipX + 12, y + 10, chipW - 24, isInvoice ? "Amount due" : "Estimate total");
-    const big = c.money(totals.total);
-    const bigSize = textWidth(big, 18, true) > chipW - 24 ? 14 : 18;
-    text(c, chipX + 12, y + 23, chipW - 24, big, bigSize, { bold: true, color: INK });
-    text(c, chipX + 12, y + 46, chipW - 24, `${dueLabel}: ${input.formatDate(input.draft.dueDate)}`, 8, { color: MUTED });
+    text(c, chipX + 12, y + 23, chipW - 24, c.money(totals.total), 18, { bold: true, color: INK, fit: true });
+    text(c, chipX + 12, y + 46, chipW - 24, `${dueLabel}: ${input.formatDate(input.draft.dueDate)}`, 8, { color: MUTED, fit: true });
     y = Math.max(by, dy, y + chipH) + 18;
   } else {
     const totX = m + cw * 0.7, totW = cw * 0.3;
-    label(c, totX, y, totW, isInvoice ? "Amount due" : "Estimate total", "right");
-    text(c, totX, y + 11, totW, c.money(totals.total), 14, { bold: true, color: accent, align: "right" });
-    y = Math.max(by, dy, y + 30) + 14;
+    if (o.amountBox) {
+      label(c, totX, y, totW, isInvoice ? "Amount due" : "Estimate total", "right");
+      text(c, totX, y + 11, totW, c.money(totals.total), 14, { bold: true, color: accent, align: "right", fit: true });
+    }
+    y = Math.max(by, dy, y + (o.amountBox ? 30 : 0)) + 14;
   }
   c.cur.push({ t: "line", x1: m, y1: y - 8, x2: m + cw, y2: y - 8, color: HAIR, lw: 0.6 });
 
   // ---------- table ----------
-  const amtW = compact ? 74 : 82, rateW = compact ? 66 : 74, qtyW = compact ? 40 : 46, numW = compact || !o.itemNumbers ? 0 : 22;
+  const amtW = compact ? 74 : 82, rateW = compact ? 66 : 74, qtyW = compact ? 40 : 46, numW = o.itemNumbers ? 22 : 0;
   const descX = m + numW, descW = cw - numW - amtW - rateW - qtyW - 8;
   const qtyX = m + cw - amtW - rateW - qtyW, rateX = m + cw - amtW - rateW, amtX = m + cw - amtW;
   const tableHead = () => {
     if (compact) {
+      if (numW > 0) text(c, m, y, numW, "#", 7.5, { bold: true, color: accent });
       text(c, descX, y, descW, "DESCRIPTION", 7.5, { bold: true, color: accent });
       text(c, qtyX, y, qtyW, "QTY", 7.5, { bold: true, color: accent, align: "right" });
       text(c, rateX, y, rateW, "RATE", 7.5, { bold: true, color: accent, align: "right" });
@@ -242,38 +252,52 @@ export function buildDocument(input: DocInput): DocLayout {
   const footer = () => {
     const fy = h - (compact ? 34 : 40);
     c.cur.push({ t: "line", x1: m, y1: fy, x2: m + cw, y2: fy, color: HAIR, lw: 0.6 });
-    text(c, m, fy + 7, cw * 0.5, fitText([business.businessName, o.website ? business.website : ""].filter(Boolean).join("  ·  ") || "", 7.5, false, cw * 0.5), 7.5, { color: MUTED });
-    if (!o.hideBranding) text(c, m, fy + 18, cw * 0.5, "Created with Receipt Cycle", 6.5, { color: "#8A94A3" });
-    text(c, m + cw * 0.5, fy + 7, cw * 0.5, `${input.draft.invoiceNumber}  ·  Page {{page}} of {{pages}}`, 7.5, { color: MUTED, align: "right" });
+    // Business name and website: one line if it fits, a smaller one if not, two lines at most; never cut with dots.
+    const left = [business.businessName, o.website ? business.website : ""].filter(Boolean).join("  ·  ");
+    const leftW2 = cw * 0.5;
+    let leftLines: string[] = [], leftSize = 7.5;
+    if (left) {
+      leftSize = Math.max(6.5, Math.min(7.5, (7.5 * leftW2) / Math.max(textWidth(left, 7.5, false), 1)));
+      leftLines = wrapText(left, leftSize, false, leftW2);
+      if (leftLines.length > 2 && o.website && business.website) leftLines = wrapText(business.businessName || "", leftSize, false, leftW2);
+      if (leftLines.length > 2) leftLines = [];
+    }
+    leftLines.forEach((line, i) => text(c, m, fy + 6 + i * 8, leftW2, line, leftSize, { color: MUTED }));
+    if (!o.hideBranding) text(c, m, fy + 6 + Math.max(leftLines.length, 1) * 8 + 2, leftW2, "Created with Receipt Cycle", 6.5, { color: "#8A94A3" });
+    text(c, m + cw * 0.5, fy + 7, cw * 0.5, `${input.draft.invoiceNumber}  ·  Page {{page}} of {{pages}}`, 7.5, { color: MUTED, align: "right", fit: true });
   };
-  const newPage = () => {
+  /** Starts a new sheet. The item table's column heads are repeated only when more rows follow. */
+  const newPage = (withTable = true) => {
     footer();
     c.pages.push(c.cur);
     c.cur = [];
     y = m;
-    text(c, m, y, cw * 0.6, fitText(business.businessName || input.kind, 10, true, cw * 0.6), 10, { bold: true });
-    text(c, m + cw * 0.6, y, cw * 0.4, `${input.kind} ${input.draft.invoiceNumber} · continued`, 8.5, { color: MUTED, align: "right" });
-    y += 24;
-    tableHead();
+    const nameLines = wrapText(business.businessName || input.kind, 10, true, cw * 0.6);
+    nameLines.forEach((line, i) => text(c, m, y + i * 12.8, cw * 0.6, line, 10, { bold: true }));
+    text(c, m + cw * 0.6, y, cw * 0.4, `${input.kind} ${input.draft.invoiceNumber} · continued`, 8.5, { color: MUTED, align: "right", fit: true });
+    y += Math.max(24, nameLines.length * 12.8 + 10);
+    if (withTable) tableHead();
   };
+  /** Makes room for a block of the given height, moving to a fresh sheet when it would not fit. */
+  const ensure = (height: number) => { if (y + height > c.limit) newPage(false); };
 
   tableHead();
   const rowPad = compact ? 5 : 7;
+  const nameSz = compact ? 8.5 : 9, nameLh = compact ? 11 : 12;
   input.draft.items.forEach((item, index) => {
-    const nameLines = wrapText(item.name, compact ? 8.5 : 9, true, descW - 4).slice(0, 3);
-    const descLines = o.itemDescriptions && item.description ? wrapText(item.description, 7.8, false, descW - 4).slice(0, 3) : [];
-    const rowH = rowPad * 2 + nameLines.length * (compact ? 11 : 12) + descLines.length * 10;
+    const nameLines = wrapText(item.name, nameSz, true, descW - 4);
+    const descLines = o.itemDescriptions && item.description ? wrapText(item.description, 7.8, false, descW - 4) : [];
+    const rowH = rowPad * 2 + nameLines.length * nameLh + descLines.length * 10;
     if (y + rowH > c.limit) newPage();
     if (!compact && index % 2 === 1) c.cur.push({ t: "rect", x: m, y, w: cw, h: rowH, fill: ZEBRA });
     let ty = y + rowPad;
-    if (numW > 0) text(c, m + 6, ty, numW, String(index + 1), 8.5, { color: MUTED });
-    nameLines.forEach((line, i) => text(c, descX, ty + i * (compact ? 11 : 12), descW, line, compact ? 8.5 : 9, { bold: true }));
-    ty += nameLines.length * (compact ? 11 : 12);
+    if (numW > 0) text(c, m + (compact ? 0 : 6), ty, numW, String(index + 1), 8.5, { color: MUTED });
+    nameLines.forEach((line, i) => text(c, descX, ty + i * nameLh, descW, line, nameSz, { bold: true }));
+    ty += nameLines.length * nameLh;
     descLines.forEach((line, i) => text(c, descX, ty + i * 10, descW, line, 7.8, { color: MUTED }));
-    const sz = compact ? 8.5 : 9;
-    text(c, qtyX, y + rowPad, qtyW, qty(item.quantity), sz, { align: "right" });
-    text(c, rateX, y + rowPad, rateW, c.money(item.rate), sz, { align: "right" });
-    text(c, amtX - (compact ? 0 : 6), y + rowPad, amtW, c.money(item.quantity * item.rate), sz, { bold: true, align: "right" });
+    text(c, qtyX, y + rowPad, qtyW, qty(item.quantity), nameSz, { align: "right", fit: true });
+    text(c, rateX, y + rowPad, rateW, c.money(item.rate), nameSz, { align: "right", fit: true });
+    text(c, amtX - (compact ? 0 : 6), y + rowPad, amtW, c.money(item.quantity * item.rate), nameSz, { bold: true, align: "right", fit: true });
     y += rowH;
     c.cur.push({ t: "line", x1: m, y1: y, x2: m + cw, y2: y, color: HAIR, lw: 0.4 });
   });
@@ -281,54 +305,64 @@ export function buildDocument(input: DocInput): DocLayout {
   c.cur.push({ t: "line", x1: m, y1: y, x2: m + cw, y2: y, color: accent, lw: compact ? 0.8 : 1 });
   y += 16;
 
-  // ---------- totals + notes (kept together) ----------
+  // ---------- totals + notes ----------
   const rows: [string, string][] = [["Subtotal", c.money(totals.subtotal)]];
   if (totals.discountAmount > 0) rows.push([`Discount${input.draft.discountType === "percentage" ? ` (${qty(input.draft.discountValue)}%)` : ""}`, `-${c.money(totals.discountAmount)}`]);
   if (o.taxLine && input.draft.taxRate > 0) rows.push([`${input.draft.taxLabel || "Tax"} (${qty(input.draft.taxRate)}%)`, c.money(totals.taxAmount)]);
   if (input.draft.shipping > 0) rows.push(["Shipping", c.money(input.draft.shipping)]);
   const totBoxW = cw * (compact ? 0.46 : 0.42), totX = m + cw - totBoxW;
   const noteW = cw - totBoxW - 24;
-  const noteLines = o.notes && input.draft.notes ? wrapText(input.draft.notes, 8, false, noteW) : [];
-  const needTotals = rows.length * 17 + (compact ? 34 : 40) + 6;
-  const needNotes = noteLines.length ? 14 + Math.min(noteLines.length, 8) * 10.5 : 0;
-  const needSign = input.draft.signatureEnabled || !isInvoice ? 96 : 0;
-  if (y + Math.max(needTotals, needNotes) > c.limit) newPage(), y -= 4;
+  // Each total line wraps its label instead of cutting it, so long tax names stay readable.
+  const rowLines = rows.map(([k, v]) => wrapText(k, 9, false, Math.max(40, totBoxW - textWidth(v, 9, true) - 10)));
+  const rowsH = rowLines.reduce((sum, lines) => sum + Math.max(17, lines.length * 11.5 + 5.5), 0);
+  const needTotals = rowsH + (compact ? 34 : 40) + 6;
+  ensure(needTotals);
   const topY = y;
-  rows.forEach(([k, v], i) => {
-    text(c, totX, y + i * 17, totBoxW * 0.55, k, 9, { color: MUTED });
-    text(c, totX + totBoxW * 0.4, y + i * 17, totBoxW * 0.6, v, 9, { bold: true, align: "right" });
+  let rowY = y;
+  rows.forEach(([, v], i) => {
+    rowLines[i].forEach((line, j) => text(c, totX, rowY + j * 11.5, totBoxW, line, 9, { color: MUTED }));
+    text(c, totX, rowY, totBoxW, v, 9, { bold: true, align: "right", fit: true });
+    rowY += Math.max(17, rowLines[i].length * 11.5 + 5.5);
   });
-  y += rows.length * 17 + 4;
+  y = rowY + 4;
+  const totalLabel = isInvoice ? (compact ? "Total due" : "BALANCE DUE") : (compact ? "Estimate total" : "ESTIMATE TOTAL");
   if (compact) {
     c.cur.push({ t: "rect", x: totX, y, w: totBoxW, h: 1.2, fill: accent });
-    text(c, totX, y + 8, totBoxW * 0.5, isInvoice ? "Total due" : "Estimate total", 10.5, { bold: true });
-    text(c, totX + totBoxW * 0.4, y + 8, totBoxW * 0.6, c.money(totals.total), 11.5, { bold: true, color: accent, align: "right" });
+    const lw2 = textWidth(totalLabel, 10.5, true) + 10;
+    text(c, totX, y + 8, lw2, totalLabel, 10.5, { bold: true });
+    text(c, totX + lw2, y + 8, totBoxW - lw2, c.money(totals.total), 11.5, { bold: true, color: accent, align: "right", fit: true });
     y += 30;
   } else {
     c.cur.push({ t: "rect", x: totX, y, w: totBoxW, h: 32, fill: accent });
-    text(c, totX + 10, y + 11, totBoxW * 0.45, isInvoice ? "BALANCE DUE" : "ESTIMATE TOTAL", 8.5, { bold: true, color: "#FFFFFF" });
-    text(c, totX + totBoxW * 0.3, y + 9, totBoxW * 0.7 - 10, c.money(totals.total), 13.5, { bold: true, color: "#FFFFFF", align: "right" });
+    const lw2 = textWidth(totalLabel, 8.5, true) + 18;
+    text(c, totX + 10, y + 11, lw2 - 10, totalLabel, 8.5, { bold: true, color: "#FFFFFF" });
+    text(c, totX + lw2, y + 9, totBoxW - lw2 - 10, c.money(totals.total), 13.5, { bold: true, color: "#FFFFFF", align: "right", fit: true });
     y += 40;
   }
+  // Notes and payment details run down the left, onto the next sheet when they are long. Nothing is dropped.
+  const totalsBottom = y;
+  const totalsPage = c.pages.length;
   let ny = topY;
-  if (noteLines.length) {
-    label(c, m, ny, noteW, "Notes");
-    noteLines.slice(0, 8).forEach((line, i) => text(c, m, ny + 12 + i * 10.5, noteW, line, 8, { color: "#374151" }));
-    ny += needNotes;
-  }
-  const payLines = o.paymentDetails && input.paymentInstructions?.trim() ? wrapText(input.paymentInstructions, 8, false, noteW).slice(0, 7) : [];
-  if (payLines.length) {
-    label(c, m, ny, noteW, "Payment details");
-    payLines.forEach((line, i) => text(c, m, ny + 12 + i * 10.5, noteW, line, 8, { color: "#374151" }));
-    ny += 14 + payLines.length * 10.5;
-  }
-  y = Math.max(y, ny) + 8;
+  const flow = (title: string, lines: string[]) => {
+    if (ny + 12 + 10.5 > c.limit) { newPage(false); ny = y; }
+    label(c, m, ny, noteW, title);
+    ny += 12;
+    lines.forEach((line) => {
+      if (ny + 10.5 > c.limit) { newPage(false); ny = y; }
+      text(c, m, ny, noteW, line, 8, { color: "#374151" });
+      ny += 10.5;
+    });
+    ny += 4;
+  };
+  if (o.notes && input.draft.notes) flow("Notes", wrapText(input.draft.notes, 8, false, noteW));
+  if (o.paymentDetails && input.paymentInstructions?.trim()) flow("Payment details", wrapText(input.paymentInstructions, 8, false, noteW));
+  y = c.pages.length === totalsPage ? Math.max(totalsBottom, ny) + 8 : ny + 8;
 
   // ---------- terms / acceptance / signature ----------
   if (!isInvoice) {
-    if (y + 74 > c.limit) newPage();
+    ensure(78);
     c.cur.push({ t: "rect", x: m, y, w: cw, h: 66, stroke: HAIR, lw: 0.8 });
-    text(c, m + 12, y + 9, cw - 24, `To accept this estimate, sign and return it by ${input.formatDate(input.draft.dueDate)}.`, 8.5, { bold: true });
+    text(c, m + 12, y + 9, cw - 24, `To accept this estimate, sign and return it by ${input.formatDate(input.draft.dueDate)}.`, 8.5, { bold: true, fit: true });
     const colW = (cw - 24 - 24) / 3;
     ["Name", "Signature", "Date"].forEach((k, i) => {
       const x = m + 12 + i * (colW + 12);
@@ -338,20 +372,23 @@ export function buildDocument(input: DocInput): DocLayout {
     y += 78;
   }
   if (input.draft.signatureEnabled) {
-    if (y + 70 > c.limit) newPage();
+    ensure(70);
     const sx = m + cw - 190;
     if (input.signature && input.signature.strokes.length) {
       const ih = 40, iw = Math.min(170, ih * input.signature.aspect);
       c.cur.push({ t: "ink", x: sx, y, w: iw, h: ih, ink: input.signature, color: INK });
     }
     c.cur.push({ t: "line", x1: sx, y1: y + 46, x2: sx + 190, y2: y + 46, color: "#9CA3AF", lw: 0.6 });
-    text(c, sx, y + 50, 190, input.draft.signatureText ? fitText(input.draft.signatureText, 8.5, true, 190) : "Authorised signature", 8.5, { bold: !!input.draft.signatureText, color: input.draft.signatureText ? INK : MUTED });
+    text(c, sx, y + 50, 190, input.draft.signatureText || "Authorised signature", 8.5, { bold: !!input.draft.signatureText, color: input.draft.signatureText ? INK : MUTED, fit: true });
     y += 68;
   }
-  void needSign;
-  if (o.terms && input.draft.terms && isInvoice && y + 26 <= c.limit) {
-    label(c, m, y, cw, "Payment terms");
-    text(c, m, y + 11, cw, `${input.draft.terms}. Please quote ${input.draft.invoiceNumber} with your payment.`, 8, { color: "#374151" });
+  if (o.terms && termsText && (isInvoice || !termsInTable)) {
+    const closing = isInvoice ? `${termsText.replace(/[.\s]+$/, "")}. Please quote ${input.draft.invoiceNumber} with your payment.` : termsText;
+    const lines = wrapText(closing, 8, false, cw);
+    ensure(12 + lines.length * 10.5 + 4);
+    label(c, m, y, cw, isInvoice ? "Payment terms" : "Terms");
+    lines.forEach((line, i) => text(c, m, y + 11 + i * 10.5, cw, line, 8, { color: "#374151" }));
+    y += 11 + lines.length * 10.5 + 4;
   }
 
   footer();

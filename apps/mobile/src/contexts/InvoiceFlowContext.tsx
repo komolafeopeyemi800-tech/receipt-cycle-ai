@@ -131,7 +131,8 @@ export function InvoiceFlowProvider({ children }: { children: ReactNode }) {
       const customer = customers.find((item) => item.id === source.customerId);
       if (!customer) return null;
       const base = createInvoiceDraft(invoiceSettings, state.invoices);
-      const draft: InvoiceDraft = { ...base, ...source, items: source.items.map((item) => ({ ...item, id: `invoice-line-${Date.now()}-${Math.random()}` })) };
+      // An estimate's validity wording is not payment terms: the invoice keeps the person's own Payment terms setting.
+      const draft: InvoiceDraft = { ...base, ...source, terms: base.terms, items: source.items.map((item) => ({ ...item, id: `invoice-line-${Date.now()}-${Math.random()}` })) };
       const invoice = createSavedInvoice(draft, customer, "draft");
       update((current) => ({ draft, invoices: [invoice, ...current.invoices.filter((item) => item.invoiceNumber !== invoice.invoiceNumber)] }));
       return invoice;

@@ -159,7 +159,7 @@ export default function PrivacyPolicy() {
         <li><strong>OpenAI</strong>: reads receipt images and documents, turns voice recordings into text, understands typed or spoken entries, and answers questions in the AI assistant. Content you submit to these features is sent to OpenAI.</li>
         <li><strong>Microsoft Azure (Document Intelligence)</strong>: reads PDFs, scans and photos of bank statements, receipts and invoices, and returns the text and fields. Documents you upload for these features are sent to Azure for processing.</li>
         <li><strong>Google (Gemini), OpenRouter and Landing AI</strong>: alternative providers that may read a receipt image or document if the first provider cannot.</li>
-        <li><strong>Google</strong>: sign-in with your Google account and, only if you turn it on, backup to your own Google Drive.</li>
+        <li><strong>Google</strong>: sign-in with your Google account and, only if you turn it on, backup to your own Google Drive. If you choose Save to Google when exporting, the report is created in your own Google Drive using the limited drive.file permission, which only covers files created by Receipt Cycle. Our servers do not receive or store your Google access token.</li>
         <li><strong>Firebase Cloud Messaging</strong>: delivers the push notifications you allow.</li>
         <li><strong>Polar</strong>: processes payments for paid plans on our website.</li>
         <li><strong>Resend</strong>: sends account emails such as sign-in codes.</li>

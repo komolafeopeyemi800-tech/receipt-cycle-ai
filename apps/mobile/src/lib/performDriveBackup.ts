@@ -21,7 +21,7 @@ const GOOGLE_DISCOVERY: DiscoveryDocument = {
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-async function getAccessTokenFromRefresh(refreshToken: string): Promise<string> {
+export async function getAccessTokenFromRefresh(refreshToken: string): Promise<string> {
   const clientId = getGoogleOAuthClientId();
   if (!clientId) throw new Error("Google OAuth is not configured.");
   const token = await refreshAsync({ clientId, refreshToken }, GOOGLE_DISCOVERY);

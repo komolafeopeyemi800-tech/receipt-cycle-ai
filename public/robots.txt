@@ -110,6 +110,7 @@ Disallow: /accounts
 Disallow: /categories
 Disallow: /upload-statement
 Disallow: /settings
+Disallow: /backup-export
 Disallow: /onboarding
 Disallow: /checkout-return
 Disallow: /reset-password

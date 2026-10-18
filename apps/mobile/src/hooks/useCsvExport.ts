@@ -13,6 +13,9 @@ import { buildBookkeepingWorkbook } from "../lib/export/bookkeepingWorkbook";
 import { buildTransactionsCsv } from "../lib/export/exportCsv";
 import { exportFileName, type ExportTransaction } from "../lib/export/exportModel";
 import { loadExportData } from "../lib/export/loadExportData";
+import { saveWorkbookToGoogleSheets, GoogleSheetsError, type SavedGoogleSheet } from "../lib/export/googleSheets";
+import { getStoredRefreshToken } from "../lib/driveBackupStorage";
+import { getAccessTokenFromRefresh } from "../lib/performDriveBackup";
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -44,21 +47,26 @@ export function useCsvExport(options: { loadAll?: boolean } = {}) {
     return true;
   }
 
+  /** Load receipt links and build the report options. Shared by the file export and Save to Google Sheets. */
+  async function buildOptions(rows: ExportTransaction[], authToken: string) {
+    const loaded = await loadExportData(apiClient, authToken, rows);
+    return {
+      businessName: (user as { name?: string } | null)?.name || undefined,
+      currency: prefs.currency,
+      dateFormat: prefs.dateFormat,
+      numberFormat: prefs.numberFormat,
+      generatedOn: todayLocalYmd(),
+      documents: loaded.documents,
+      links: loaded.links,
+    };
+  }
+
   /** Build and share a file for `rows` (default: all transactions). */
   async function run(format: "xlsx" | "csv", rows: ExportTransaction[], prefix: string) {
     if (!token) return;
     const fileName = exportFileName(prefix, todayLocalYmd(), format);
     try {
-      const loaded = await loadExportData(apiClient, token, rows);
-      const opts = {
-        businessName: (user as { name?: string } | null)?.name || undefined,
-        currency: prefs.currency,
-        dateFormat: prefs.dateFormat,
-        numberFormat: prefs.numberFormat,
-        generatedOn: todayLocalYmd(),
-        documents: loaded.documents,
-        links: loaded.links,
-      };
+      const opts = await buildOptions(rows, token);
       const bytes = format === "xlsx" ? buildBookkeepingWorkbook(rows, opts).bytes : null;
       const csv = format === "csv" ? buildTransactionsCsv(rows, opts) : null;
       const mime = format === "xlsx" ? XLSX_MIME : "text/csv";
@@ -117,6 +125,37 @@ export function useCsvExport(options: { loadAll?: boolean } = {}) {
     await run(format, backupRows as ExportTransaction[], "receipt-cycle-transactions");
   }
 
+  /**
+   * Save the Excel report into the person's Google Drive as a Google Sheet, using the Drive link made on the
+   * Google Drive backup screen. Returns "not_linked" (nothing done) when Drive has not been linked yet.
+   */
+  async function saveAllToGoogleSheets(): Promise<{ status: "saved"; sheet: SavedGoogleSheet } | { status: "not_linked" } | { status: "failed" }> {
+    if (!allowed()) return { status: "failed" };
+    if (backupRows === undefined) {
+      Alert.alert("Export", "Still loading your transactions. Try again in a moment.");
+      return { status: "failed" };
+    }
+    if (backupRows.length === 0) {
+      Alert.alert("Export", "No transactions to export yet.");
+      return { status: "failed" };
+    }
+    const refresh = await getStoredRefreshToken();
+    if (!refresh || !token) return { status: "not_linked" };
+    try {
+      const rows = backupRows as ExportTransaction[];
+      const accessToken = await getAccessTokenFromRefresh(refresh);
+      const opts = await buildOptions(rows, token);
+      const bytes = buildBookkeepingWorkbook(rows, opts).bytes;
+      const fileName = exportFileName("receipt-cycle-transactions", todayLocalYmd(), "xlsx");
+      const sheet = await saveWorkbookToGoogleSheets(accessToken, bytes, fileName, { mode: "copy" });
+      return { status: "saved", sheet };
+    } catch (e) {
+      const message = e instanceof GoogleSheetsError ? e.message : userFacingErrorFromUnknown(e);
+      Alert.alert("Could not save to Google", message);
+      return { status: "failed" };
+    }
+  }
+
   /** Export only these rows (used by "Download" on selected transactions). */
   async function exportRows(rows: ExportTransaction[], format: "xlsx" | "csv" = "xlsx") {
     if (!allowed()) return;
@@ -129,6 +168,7 @@ export function useCsvExport(options: { loadAll?: boolean } = {}) {
     /** Secondary option: plain CSV (now with a document link column). */
     exportCsvDownload: () => exportAll("csv"),
     exportRows,
+    saveAllToGoogleSheets,
     canExport: !(sub && !sub.canExportCsv) && runtime?.exportEnabled !== false,
     exportDisabledByAdmin: runtime?.exportEnabled === false,
     rowCount: backupRows?.length,

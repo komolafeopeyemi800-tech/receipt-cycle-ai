@@ -27,7 +27,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import type { Transaction } from "@/types/transaction";
 import { toLocalISODate } from "@/lib/transactionMath";
 import { trustedTransactionDate } from "@mobile-lib/dates";
-import { useSubscriptionState } from "@/hooks/use-subscription-state";
+import { ExportMenu } from "@/components/workspace/ExportMenu";
 
 type EntryMode = "manual" | "ai" | "upload";
 type EntryType = "expense" | "income";
@@ -134,7 +134,6 @@ export default function TransactionWorkspace() {
   const { workspace, ready } = useWorkspace();
   const { user, token } = useWebAuth();
   const { formatMoney, formatDate } = useWebPreferences();
-  const subscription = useSubscriptionState();
   const runtime = useQuery(api.admin.publicConfig, {});
   const location = useLocation();
   const navigate = useNavigate();
@@ -465,28 +464,6 @@ export default function TransactionWorkspace() {
       return next;
     });
   };
-  const downloadSelected = () => {
-    if (!subscription?.canExportCsv) {
-      window.dispatchEvent(new Event("receipt-cycle:open-pricing"));
-      return;
-    }
-    const selectedRows = (rows ?? []).filter((row) => selectedIds.has(String(row.id)));
-    if (!selectedRows.length) return;
-    const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
-    const csv = [
-      ["Date", "Type", "Merchant", "Description", "Category", "Amount", "Payment method", "Account", "Evidence"],
-      ...selectedRows.map((row) => {
-        const account = (accounts ?? []).find((item) => String(item.id) === row.accountId);
-        return [row.date, row.type, row.merchant, row.description, row.category, row.amount, row.payment_method, account?.name, row.evidence_url ?? ""];
-      }),
-    ].map((line) => line.map(escape).join(",")).join("\n");
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `receipt-cycle-transactions-${toLocalISODate(new Date())}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-  };
   const deleteSelected = async () => {
     if (!user || !token || !selectedIds.size || !window.confirm(`Delete ${selectedIds.size} selected transaction(s)? This cannot be undone.`)) return;
     setBusy(true);
@@ -509,6 +486,7 @@ export default function TransactionWorkspace() {
           description="Search, capture, review, edit, and filter every saved business record."
           actions={
             <>
+              <ExportMenu selectedIds={selectedIds} />
               <SecondaryButton
                 icon="fa-wand-magic-sparkles"
                 onClick={() => openAdd("expense", "ai")}
@@ -526,7 +504,7 @@ export default function TransactionWorkspace() {
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-teal-50 px-4 py-3">
               <p className="text-sm font-extrabold text-teal-900">{selectedIds.size} selected</p>
               <div className="flex flex-wrap gap-2">
-                <SecondaryButton icon="fa-download" onClick={downloadSelected}>Download CSV</SecondaryButton>
+                <ExportMenu selectedIds={selectedIds} />
                 <button type="button" disabled={busy} onClick={() => void deleteSelected()} className="inline-flex h-10 items-center gap-2 rounded-md border border-rose-200 bg-white px-4 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50"><i className="fas fa-trash" />Delete</button>
               </div>
             </div>

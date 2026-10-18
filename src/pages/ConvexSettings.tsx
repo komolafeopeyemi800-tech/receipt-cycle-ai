@@ -410,6 +410,10 @@ function ConvexSettingsInner() {
           >
             Export as CSV instead
           </button>
+          <p className="mt-3 text-xs text-slate-500">
+            Want to save the report to Google Sheets or check your backup?{" "}
+            <Link to="/backup-export" className="font-semibold text-teal-700 underline">Open Backup &amp; Export</Link>
+          </p>
         </section>
 
         {user && (

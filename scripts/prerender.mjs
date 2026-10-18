@@ -193,7 +193,7 @@ async function main() {
     "dashboard", "transactions", "insights", "budgets", "accounts", "categories", "sales", "customers",
     "items-services", "business-profile", "invoice-settings", "invoices", "estimates", "payments",
     "reports", "reports/cash-flow", "reports/overdue", "ai-assistant", "notifications", "subscription",
-    "profile", "more", "upload-statement", "settings", "admin", "impressum", "cookie-settings", "do-not-sell",
+    "profile", "more", "upload-statement", "settings", "backup-export", "admin", "impressum", "cookie-settings", "do-not-sell",
   ];
   for (const r of appRoutes) {
     const file = path.join(DIST, r, "index.html");

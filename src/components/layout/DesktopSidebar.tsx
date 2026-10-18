@@ -51,6 +51,7 @@ const DesktopSidebar = ({ drawerMode = false, drawerOpen = true, onNavigate, pro
     { path: inAdmin ? "/admin" : "/categories", icon: "fa-tags", label: "Categories" },
     { path: inAdmin ? "/admin" : "/reports", icon: "fa-chart-simple", label: "Reports" },
     { path: inAdmin ? "/admin" : "/ai-assistant", icon: "fa-wand-magic-sparkles", label: "AI assistant" },
+    { path: inAdmin ? "/admin" : "/backup-export", icon: "fa-cloud-arrow-up", label: "Backup & export" },
     { path: inAdmin ? "/admin" : "/more", icon: "fa-ellipsis", label: "More & settings" },
   ];
 

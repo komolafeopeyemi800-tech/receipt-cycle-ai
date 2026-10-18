@@ -36,6 +36,7 @@ const ConvexAccounts = lazy(() => import("./pages/ConvexAccounts"));
 const ConvexCategories = lazy(() => import("./pages/ConvexCategories"));
 const ConvexUploadStatement = lazy(() => import("./pages/ConvexUploadStatement"));
 const ConvexSettings = lazy(() => import("./pages/ConvexSettings"));
+const BackupExport = lazy(() => import("./pages/BackupExport"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const CheckoutReturn = lazy(() => import("./pages/CheckoutReturn"));
@@ -168,6 +169,7 @@ const App = () => (
           <Route path="/more" element={<MoreSettings />} />
           <Route path="/upload-statement" element={<ConvexUploadStatement />} />
           <Route path="/settings" element={<ConvexSettings />} />
+          <Route path="/backup-export" element={<BackupExport />} />
           <Route path="/pricing" element={<Pricing />} />
         </Route>
       </Route>

@@ -45,7 +45,7 @@ describe("AiReceiptScannerLanding", () => {
     expect(seo?.title).toBe("AI Receipt Scanner & Receipt OCR App | Receipt Cycle");
     expect(seo?.path).toBe("/ai-receipt-scanner");
     expect(seo?.ogImage).toContain("ai-receipt-scanner-og.png");
-    expect(seo?.structuredData).toEqual(expect.arrayContaining([expect.objectContaining({ "@type": "FAQPage" })]));
+    expect(JSON.stringify(seo?.structuredData)).toContain('"@type":"FAQPage"');
     expect(JSON.stringify(seo?.structuredData)).not.toContain("AggregateRating");
   });
 });

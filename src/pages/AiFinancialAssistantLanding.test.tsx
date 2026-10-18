@@ -51,10 +51,8 @@ describe("AiFinancialAssistantLanding", () => {
     expect(seo?.title).toBe("AI Financial Assistant for Small Business | Receipt Cycle");
     expect(seo?.path).toBe("/ai-financial-assistant");
     expect(seo?.ogImage).toContain("ai-financial-assistant-og.png");
-    expect(seo?.structuredData).toEqual(expect.arrayContaining([
-      expect.objectContaining({ "@type": "WebPage" }),
-      expect.objectContaining({ "@type": "FAQPage" }),
-    ]));
+    expect(JSON.stringify(seo?.structuredData)).toContain('"@type":"WebPage"');
+    expect(JSON.stringify(seo?.structuredData)).toContain('"@type":"FAQPage"');
     expect(JSON.stringify(seo?.structuredData)).not.toContain("AggregateRating");
   });
 });

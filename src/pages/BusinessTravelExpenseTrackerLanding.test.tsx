@@ -47,7 +47,7 @@ describe("BusinessTravelExpenseTrackerLanding", () => {
     expect(seo?.title).toBe("Business Travel Expense Tracker & Trip Expenses | Receipt Cycle");
     expect(seo?.path).toBe("/business-travel-expense-tracker");
     expect(seo?.ogImage).toContain("business-travel-expense-tracker-og.png");
-    expect(seo?.structuredData).toEqual(expect.arrayContaining([expect.objectContaining({ "@type": "FAQPage" })]));
+    expect(JSON.stringify(seo?.structuredData)).toContain('"@type":"FAQPage"');
     expect(JSON.stringify(seo?.structuredData)).not.toContain("AggregateRating");
   });
 });

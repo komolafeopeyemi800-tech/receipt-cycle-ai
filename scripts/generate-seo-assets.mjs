@@ -19,6 +19,7 @@
  */
 import sharp from "sharp";
 import { readFile, writeFile, mkdir } from "fs/promises";
+import { loadContent } from "./lib/load-content.mjs";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -746,6 +747,13 @@ async function main() {
   await makeExpenseReportingSoftwareOg(path.join(LANDING_DIR, "expense-reporting-software-og.png"));
   await makeAiFinancialAssistantOg(path.join(LANDING_DIR, "ai-financial-assistant-og.png"));
 
+  // Crawler-facing text files, generated from the same content as the pages (see src/lib/seoFiles.ts).
+  const content = await loadContent();
+  await writeFile(path.join(OUT_DIR, "sitemap.xml"), content.buildSitemapXml(), "utf8");
+  await writeFile(path.join(OUT_DIR, "robots.txt"), content.buildRobotsTxt(), "utf8");
+  await writeFile(path.join(OUT_DIR, "llms.txt"), content.buildLlmsTxt(), "utf8");
+  await writeFile(path.join(OUT_DIR, "llms-full.txt"), content.buildLlmsFullTxt(), "utf8");
+
   const manifest = {
     name: "Receipt Cycle",
     short_name: "Receipt Cycle",
@@ -766,7 +774,7 @@ async function main() {
   await writeFile(path.join(OUT_DIR, "site.webmanifest"), JSON.stringify(manifest, null, 2));
 
   console.log("SEO assets generated in /public:",
-    "favicon.ico, favicon-16.png, favicon-32.png, apple-touch-icon.png, icon-192.png, icon-512.png, og-image.png, landing/invoice-software-og.png, landing/estimate-quotation-software-og.png, landing/payment-tracking-software-og.png, landing/ai-receipt-scanner-og.png, landing/business-travel-expense-tracker-og.png, landing/freelancer-tax-receipt-tracker-og.png, landing/business-budgeting-software-og.png, landing/client-management-software-og.png, landing/expense-reporting-software-og.png, landing/ai-financial-assistant-og.png, site.webmanifest");
+    "favicon.ico, favicon-16.png, favicon-32.png, apple-touch-icon.png, icon-192.png, icon-512.png, og-image.png, landing/invoice-software-og.png, landing/estimate-quotation-software-og.png, landing/payment-tracking-software-og.png, landing/ai-receipt-scanner-og.png, landing/business-travel-expense-tracker-og.png, landing/freelancer-tax-receipt-tracker-og.png, landing/business-budgeting-software-og.png, landing/client-management-software-og.png, landing/expense-reporting-software-og.png, landing/ai-financial-assistant-og.png, site.webmanifest, sitemap.xml, robots.txt, llms.txt, llms-full.txt");
 }
 
 main().catch((err) => {

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { CommercialLandingLayout, LandingPrimaryCta } from "@/components/marketing/CommercialLandingLayout";
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
+import { landingFaqs } from "@/content/landingFaqs";
 
 function AskAiPreview() {
   return (
@@ -74,16 +75,7 @@ const audiences = [
   { id: "advisers", title: "Accountants and advisers", body: "Begin with a plain-language recap of the client's recorded activity, then apply professional accounting or tax judgment outside the assistant. Receipt Cycle helps organize the conversation; it does not determine treatment, certify completeness, or replace the adviser.", image: "/landing/audiences/ai-assistant-accountant-adviser.webp", alt: "Hand-drawn illustration of an accountant and client validating an AI financial recap against source records" },
 ];
 
-const faqItems = [
-  ["What is an AI financial assistant?", "An AI financial assistant helps a person ask plain-language questions about financial data. In Receipt Cycle, Ask AI works from a limited structured view of saved transaction records. It can restate totals, order categories, describe merchant patterns, compare activity represented in the available data, and produce a concise recap. It does not have authority to change the ledger or make financial decisions."],
-  ["What records can Receipt Cycle use for AI expense analysis?", "The request can include saved transaction fields such as date, amount, type, category, merchant, and description where those fields are available. The assistant also receives calculated context such as transaction counts, income, expenses, and leading expense categories. A limited slice is used for each request rather than an unrestricted view of every workspace feature."],
-  ["Can I ask a question by voice?", "Yes, supported browsers can capture a spoken question through the microphone. Receipt Cycle transcribes the audio and sends the resulting question to Ask AI. You can also type instead. Microphone permission, sign-in, plan access, and configured service availability are required for the voice path."],
-  ["Can the AI find duplicate or recurring expenses?", "The optional pattern review can flag entries that appear similar, repeat at the same merchant, use the same amount on nearby dates, or stand out within the supplied expense data. These are possible patterns, not confirmed duplicates or unauthorized charges. Verify a finding against the saved entry and, when needed, the original receipt or statement."],
-  ["Is Receipt Cycle an AI bookkeeping assistant?", "Receipt Cycle can organize and summarize records that you have saved, which may support parts of a bookkeeping review. It does not autonomously maintain books, reconcile bank accounts, post journal entries, prepare statutory statements, choose accounting treatment, or file taxes. A bookkeeper or accountant remains responsible for professional work."],
-  ["Does the assistant provide financial or tax advice?", "No. The assistant is restricted to neutral summaries and organization of the user's own logged data. It does not give accounting, tax, legal, investment, debt, or personal financial advice. It also does not tell a user to cut spending, cancel a service, invest, or change financial behavior."],
-  ["Will Ask AI change my transaction records?", "No. Ask AI returns a response but does not edit amounts, dates, categories, merchants, descriptions, or transaction types. If a question exposes a possible issue, open the source record, inspect the evidence, and make any correction yourself."],
-  ["How is this different from an AI financial dashboard?", "A dashboard presents fixed totals and charts. Ask AI adds a conversational layer for questions about the records made available to it. Receipt Cycle also has dedicated reporting views for category distribution, cash movement, payments, and invoice aging. Use those views for repeatable expense reports and use AI expense reporting questions when you want a plain-language explanation or a new line of inquiry."],
-];
+const faqItems = landingFaqs("/ai-financial-assistant").map(({ q, a }) => [q, a] as const);
 
 export default function AiFinancialAssistantLanding() {
   const [activeAudienceId, setActiveAudienceId] = useState("freelancers");

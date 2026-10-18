@@ -48,7 +48,7 @@ describe("BusinessBudgetingSoftwareLanding", () => {
     expect(seo?.title).toBe("Business Budgeting Software for Small Teams | Receipt Cycle");
     expect(seo?.path).toBe("/business-budgeting-software");
     expect(seo?.ogImage).toContain("business-budgeting-software-og.png");
-    expect(seo?.structuredData).toEqual(expect.arrayContaining([expect.objectContaining({ "@type": "FAQPage" })]));
+    expect(JSON.stringify(seo?.structuredData)).toContain('"@type":"FAQPage"');
     expect(JSON.stringify(seo?.structuredData)).not.toContain("AggregateRating");
   });
 });

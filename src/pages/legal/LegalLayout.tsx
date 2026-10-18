@@ -1,4 +1,6 @@
+import { useLocation } from "react-router-dom";
 import { CommercialFooter, CommercialHeader } from "@/components/marketing/CommercialLandingLayout";
+import { SeoForPath } from "@/components/Seo";
 
 export function LegalLayout({
   title,
@@ -9,8 +11,10 @@ export function LegalLayout({
   children: React.ReactNode;
   updated?: string;
 }) {
+  const { pathname } = useLocation();
   return (
     <div className="min-h-screen bg-white text-slate-900">
+      <SeoForPath path={pathname} />
       <CommercialHeader ctaLabel="Start free" ctaHref="/signup" />
       <main className="bg-slate-50 py-12 sm:py-16">
         <div className="mx-auto max-w-4xl px-5 sm:px-8">

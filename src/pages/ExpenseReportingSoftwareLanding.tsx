@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { CommercialLandingLayout, LandingPrimaryCta } from "@/components/marketing/CommercialLandingLayout";
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
+import { landingFaqs } from "@/content/landingFaqs";
 
 const months = [
   { name: "May", income: 54, expense: 32 },
@@ -71,16 +72,7 @@ const audiences = [
   { id: "advisers", title: "Accountants and advisers", body: "Receive a more organized starting point with transaction history, category totals, cash-flow context, and invoice exposure. Receipt Cycle improves the handoff, but the professional still determines the accounting, tax, and reporting treatment.", image: "/landing/audiences/report-accountant-adviser.webp", alt: "Hand-drawn illustration of an adviser reviewing organized reports and source records with a business owner" },
 ];
 
-const faqItems = [
-  ["What does Receipt Cycle expense report software show?", "The reporting workspace summarizes saved income and expense records for the selected period. It shows income, expenses, net movement, record count, category distribution, cash-flow comparisons, payments received, paid-invoice counts, outstanding invoices, and overdue invoice context where those records are available."],
-  ["Can I review monthly income and expense reports?", "Yes. The main report can focus on the current month or all available records. The cash-flow report can compare the last six months or the current year using monthly income and expense bars, total inflow, total outflow, and net cash movement."],
-  ["Does the expense reporting app show category spending?", "Yes. Receipt Cycle groups saved expense records by category, calculates category totals and transaction counts, and shows the largest categories in a distribution view. Open the transaction workspace when a category needs correction or record-level review."],
-  ["Can it report on invoices and payments?", "The report dashboard includes outstanding invoice value, payments received, and paid-invoice counts. A separate overdue view shows overdue amount, invoice count, average days overdue, customer, balance, and due status. Recording a payment remains part of the dedicated payment workflow."],
-  ["Does Receipt Cycle create automated expense reports?", "The totals and charts recalculate from the saved records available to the selected period, so routine summaries do not need to be rebuilt manually. Receipt Cycle does not claim automatic employee claim submission, approval routing, reimbursement processing, scheduled email delivery, or automatic filing."],
-  ["Can I export a business expense report?", "Supported plans and workspaces can export transaction data as CSV for use in a spreadsheet or professional review. The export is structured transaction data, not a generated tax return, statutory financial statement, PDF claim packet, or guaranteed bundle of receipt images."],
-  ["What can the AI analysis do with my reports?", "AI-assisted analysis can use a limited structured slice of saved transaction fields to answer questions about category totals, merchant patterns, period comparisons, recurring charges, possible duplicate entries, unusual patterns, and plain-language activity summaries. It does not alter records or make regulated financial decisions."],
-  ["Is this financial reporting software for small business accounting?", "Receipt Cycle provides operational reporting for saved transactions and connected sales records. It does not claim a general ledger, balance sheet, statutory profit-and-loss statement, bank reconciliation, payroll, inventory accounting, audit assurance, or automatic tax filing."],
-];
+const faqItems = landingFaqs("/expense-reporting-software").map(({ q, a }) => [q, a] as const);
 
 export default function ExpenseReportingSoftwareLanding() {
   const [activeAudienceId, setActiveAudienceId] = useState("freelancers");

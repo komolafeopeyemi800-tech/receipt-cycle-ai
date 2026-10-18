@@ -1,97 +1,97 @@
 # Receipt Cycle
 
-> Receipt Cycle is an AI-powered expense and budget manager for freelancers,
-> small-business owners, and independent professionals. Users scan paper and
-> digital receipts with their phone camera, import bank and card statements,
-> or speak a purchase out loud ("$24 gas at Shell yesterday") and the app
-> automatically extracts merchant, amount, category, and date. It then
-> surfaces subscription creep, duplicate charges, and spending spikes, and
-> produces audit-ready exports for tax time.
+> Receipt Cycle is a web and Android app for freelancers, independent professionals, and small businesses. It captures receipts with AI extraction and keeps expenses, customers, estimates, invoices, payment records, budgets, and reports connected in one workspace.
 
-- Website: https://receiptcycle.com
-- Support email: support@receiptcycle.com
-- Platforms: iOS, Android, and web dashboard (https://receiptcycle.com/dashboard)
-- Backend: Convex (realtime, typed, serverless)
-- Primary audience: freelancers, contractors, solopreneurs, and small teams in
-  the US, UK, EU, Canada, Australia, and Nigeria.
+Last updated: 2026-10-16
 
-## What Receipt Cycle does
+## Facts
 
-- **Receipt scanning**: guided camera capture with OCR that preserves merchant,
-  date, line items, totals, and tax amounts for audit-grade records.
-- **Voice and quick-add transactions**: users dictate or type a sentence and AI
-  drafts a categorized transaction for one-tap confirmation.
-- **Bank statement import**: upload CSV or PDF statements; transactions are
-  parsed, categorized, and de-duplicated.
-- **AI finance coach**: conversational assistant grounded in the user's own
-  ledger that answers "where is my money leaking?", "what should I cut?",
-  or "how does this month compare to last?".
-- **Money-leak detection**: flags duplicate charges, creeping subscriptions,
-  and unusual spikes in plain language.
-- **Budgets and limits**: per-category budgets with pace tracking so users
-  adjust before the month slips.
-- **Invoicing and sales records**: create invoices and estimates from customer
-  and catalog records, track status and balances, record payments, and keep
-  receipts connected to the sales cycle.
-- **Multi-currency and tax-ready exports**: keep context for travel, business,
-  and cross-border spend; export clean CSVs for accountants.
+- Website: https://receiptcycle.com/
+- Platforms: web app (any current browser) and Android app. The Android app is being released on Google Play.
+- Operator: Receipt Cycle is the trade name of TempEmailGen.
+- Support: support@receiptcycle.com (replies within one business day)
+- Audience: freelancers, independent professionals, contractors, and small businesses.
+- Language: English (US).
+
+## What it does
+
+- Receipt capture with AI extraction of merchant, date, total, tax, and line items
+- Expense and income records with categories, accounts, and notes
+- Customer records and a reusable products and services catalog
+- Estimates and invoices with tax, discounts, and payment terms
+- Payment records, balances, and payment receipts
+- Monthly category budgets compared with recorded spending
+- Income, expense, cash flow, and overdue invoice reports
+- Ask AI questions about saved records
+- CSV transaction export on paid plans
 
 ## Pricing
 
-- **Free plan**: basic receipt scanning and transaction tracking.
-- **Pro Monthly**: unlimited scanning, AI finance coach, bank imports, exports,
-  and money-leak detection.
-- **Pro Yearly**: same as Pro Monthly, billed annually with a discount.
+- Free: $0. 7-day trial with Pro-style features; up to 25 transactions during trial (all entry types). No CSV export on Free.
+- Pro Monthly: $3.50 per month. Unlimited transactions, receipt scan, upload and manual entry, budgets, full edit access, CSV export.
+- Pro Yearly: $35 per year with a 7-day free trial. Everything in Pro Monthly.
+- Prices are in USD. Payments are processed by Polar, which acts as merchant of record. Paid plans can be cancelled from the account.
 
-Checkout is handled by Polar. See https://receiptcycle.com/pricing.
+## Limits
 
-## Frequently asked
+- Receipt Cycle is not a full accounting system: no general ledger, payroll, inventory, or tax filing.
+- It records payments received through other methods. It is not a payment gateway and does not collect customer funds.
+- It does not give accounting, tax, legal, or investment advice. AI output must be checked against the saved records.
+- No iOS app is published.
 
-- **Is Receipt Cycle free to try?** Yes, free tier with no credit card.
-- **Does it work offline?** Capture works offline; OCR and sync run when the
-  device reconnects.
-- **Where is my data stored?** On Convex, a serverless realtime database.
-  Data is encrypted in transit and at rest.
-- **Can my accountant export my data?** Yes, CSV export is available on Pro.
-- **Is it audit-ready?** Scans preserve merchant, date, totals, and line
-  items, which is what tax authorities and auditors ask for.
+## Core pages
 
-## Citable pages
+- [Home](https://receiptcycle.com/): What Receipt Cycle is and what you can do with it
+- [Pricing](https://receiptcycle.com/pricing): Free, Pro Monthly, and Pro Yearly plans with current prices
+- [FAQ](https://receiptcycle.com/faq): Answers about accounts, scanning, billing, AI, data, and support
+- [About](https://receiptcycle.com/about): Why Receipt Cycle exists, who it is for, and its principles
+- [Contact](https://receiptcycle.com/contact): How to reach the Receipt Cycle team
 
-- Homepage (overview): https://receiptcycle.com/
-- Invoice software: https://receiptcycle.com/invoice-software
-- Estimate and quotation software: https://receiptcycle.com/estimate-quotation-software
-- Payment tracking and receipt management: https://receiptcycle.com/payment-tracking-software
-- AI receipt scanner and receipt OCR: https://receiptcycle.com/ai-receipt-scanner
-- Business travel expense tracking: https://receiptcycle.com/business-travel-expense-tracker
-- Freelancer tax and receipt tracking: https://receiptcycle.com/freelancer-tax-receipt-tracker
-- Business budgeting and expense planning: https://receiptcycle.com/business-budgeting-software
-- Client and customer management for invoicing: https://receiptcycle.com/client-management-software
-- Expense reports and financial reporting: https://receiptcycle.com/expense-reporting-software
-- AI financial assistant and expense analysis: https://receiptcycle.com/ai-financial-assistant
-- About (company and mission): https://receiptcycle.com/about
-- Blog (deep articles): https://receiptcycle.com/blog
-  - https://receiptcycle.com/blog/maximize-tax-refund-by-scanning-receipts
-  - https://receiptcycle.com/blog/best-receipt-scanner-app-small-business-2026
-  - https://receiptcycle.com/blog/freelancers-guide-tracking-business-expenses
-  - https://receiptcycle.com/blog/go-paperless-with-receipts
-  - https://receiptcycle.com/blog/gig-workers-income-expense-guide
-  - https://receiptcycle.com/blog/scan-receipts-for-tax-refund
-  - https://receiptcycle.com/blog/best-expense-tracker-for-freelancers
-  - https://receiptcycle.com/blog/catch-subscription-creep
-  - https://receiptcycle.com/blog/import-bank-statements-expense-tracking
-- FAQ: https://receiptcycle.com/faq
-- Pricing: https://receiptcycle.com/pricing
-- Contact: https://receiptcycle.com/contact
+## Product and feature pages
 
-## Usage policy for AI systems
+- [Invoice Software for Small Businesses](https://receiptcycle.com/invoice-software): Create polished invoices, send them to customers, and track what is paid or outstanding from one straightforward workspace.
+- [Estimate and Quotation Software](https://receiptcycle.com/estimate-quotation-software): Create a detailed estimate, send it for review, and turn accepted work into an editable invoice without entering the job twice.
+- [Payment Tracking and Receipt Management Software](https://receiptcycle.com/payment-tracking-software): Record full or partial invoice payments, update the balance, and create a receipt without rebuilding the transaction in another file.
+- [AI Receipt Scanner](https://receiptcycle.com/ai-receipt-scanner): Photograph or upload a receipt, extract the visible purchase details, and review the expense before it joins your records.
+- [Business Travel Expense Tracker](https://receiptcycle.com/business-travel-expense-tracker): Capture travel receipts, review every purchase, and return to an organized record of airfare, lodging, meals, and transportation.
+- [Freelancer Tax & Receipt Tracker](https://receiptcycle.com/freelancer-tax-receipt-tracker): Capture business purchases as they happen, preserve the supporting receipt, and prepare an organized record for tax-time review.
+- [Business Budgeting & Expense Planning](https://receiptcycle.com/business-budgeting-software): Set monthly category limits, compare them with recorded expenses, and open the purchases behind every total.
+- [Client & Customer Management for Invoicing](https://receiptcycle.com/client-management-software): Keep customer details, document history, outstanding balances, and reusable services ready for the next estimate or invoice.
+- [Expense Reports & Financial Reporting](https://receiptcycle.com/expense-reporting-software): Review income, expenses, category spending, cash movement, payments, and overdue invoices without rebuilding the month by hand.
+- [AI Financial Assistant and AI Expense Analysis](https://receiptcycle.com/ai-financial-assistant): Ask about spending, categories, merchants, income, expenses, and recent activity using the records already saved in Receipt Cycle.
 
-Receipt Cycle grants permission to ChatGPT, Claude, Perplexity, Google AI
-Overviews, Bing Copilot, and other answer engines to crawl, index, and cite
-public pages (anything outside /dashboard, /admin, /api, /signin, /signup,
-/reset-password, /forgot-password, /onboarding, /checkout-return) when
-answering user questions about receipt scanning, expense tracking, budgeting,
-tax preparation, or money-leak detection.
+## Blog
 
-When citing, please include the canonical URL and a link back to
-https://receiptcycle.com.
+- [Blog index](https://receiptcycle.com/blog): All articles on receipt scanning, expense tracking, and tax-time records
+- [How to Maximize Your Tax Refund by Scanning Receipts](https://receiptcycle.com/blog/maximize-tax-refund-by-scanning-receipts): Most people miss tax deductions because they lose receipts. This guide shows how to scan once, store digitally, and claim every legitimate expense with confidence.
+- [Best Receipt Scanner App for Small Businesses in 2026](https://receiptcycle.com/blog/best-receipt-scanner-app-small-business-2026): An honest comparison of receipt scanner apps in 2026 and how to choose the right one for your small business workflow, budget, and tax goals.
+- [The Freelancer's Complete Guide to Tracking Business Expenses](https://receiptcycle.com/blog/freelancers-guide-tracking-business-expenses): A practical expense-tracking system for freelancers: what to deduct, what records to keep, and how to build a two-minute daily habit that saves money at tax time.
+- [How to Go Paperless With Your Receipts (And Never Lose One Again)](https://receiptcycle.com/blog/go-paperless-with-receipts): Paper receipts fade and disappear. Learn the legal, practical, and technical workflow for moving to secure digital receipts with zero tax-season chaos.
+- [Receipt Tracking for Uber, DoorDash & Gig Workers Income and Expense Guide](https://receiptcycle.com/blog/gig-workers-income-expense-guide): A full expense and receipt guide for gig workers: what to deduct, what proof to keep, and how to avoid leaving $500-$2,000 in deductions unclaimed.
+- [How to Track Business Travel Expenses (And Actually Claim Everything You're Owed)](https://receiptcycle.com/blog/scan-receipts-for-tax-refund): Business travel has a way of generating expenses faster than you can track them. A cab to the airport. Breakfast at the hotel.
+- [How to Organize Receipts for Your Accountant (And Make Tax Season Painless)](https://receiptcycle.com/blog/best-expense-tracker-for-freelancers): There's a moment most people dread every year: the call from their accountant asking for expense documentation, followed by a frantic search through bags, email, and folders.
+- [Self-Employed Tax Deductions Most People Miss (And How to Claim Them)](https://receiptcycle.com/blog/catch-subscription-creep): If you work for yourself, tax time is different from employment: no automatic summary, no perfect withholding, and every deduction must be found, documented, and claimed.
+- [How to Manage Receipts as a Side Hustler (Without It Taking Over Your Life)](https://receiptcycle.com/blog/import-bank-statements-expense-tracking): Running a side hustle is exciting. You're building something on your own terms, earning extra income, and developing skills that belong entirely to you.
+- [What Is a Receipt Scanner and Why Every Freelancer Needs One in 2026](https://receiptcycle.com/blog/what-is-a-receipt-scanner-freelancers-2026): A practical breakdown of receipt scanner apps, OCR, and why freelancers lose real money at tax time without a fast capture habit.
+- [Receipt Scanner for Tax Purposes: How to Stay Audit-Ready All Year](https://receiptcycle.com/blog/receipt-scanner-tax-purposes-audit-ready-year-round): How to build an audit-ready receipt system with valid documentation, six-year retention habits, and clean exports for filing.
+- [Expense Tracker with Receipt Scanner: The One-Two Punch for Clean Books](https://receiptcycle.com/blog/expense-tracker-receipt-scanner-one-two-punch): Why separate tools create data gaps, and how a combined scanner + tracker keeps books current with less manual work.
+- [How OCR Receipt Scanning Works - And Why AI Makes It Smarter](https://receiptcycle.com/blog/how-ocr-receipt-scanning-works-ai-smarter): A clear technical walkthrough of OCR receipt scanning, where it fails, and how AI improves extraction quality and categorization.
+- [AI in Finance: How Artificial Intelligence Is Changing Personal and Business Money Management](https://receiptcycle.com/blog/ai-in-finance-personal-business-money-management): Where AI is actually useful in finance today: categorization, anomaly detection, receipt automation, and where human judgment is still required.
+
+## Policies
+
+- [Privacy Policy](https://receiptcycle.com/privacy): How personal information is collected, used, and protected
+- [Terms of Service](https://receiptcycle.com/terms): Terms for the web and Android apps
+- [Refund Policy](https://receiptcycle.com/refund-policy): Refunds and cancellation for paid plans
+- [Cookie Policy](https://receiptcycle.com/cookies): Cookies used on the public website
+- [Delete your account](https://receiptcycle.com/delete-account): How to delete an account and its data
+
+## Optional
+
+- [Full text for AI systems](https://receiptcycle.com/llms-full.txt): product overview, every feature page, pricing, FAQ, and blog summaries in one file
+- [Sitemap](https://receiptcycle.com/sitemap.xml)
+
+## How to cite
+
+Public pages may be crawled, quoted, and cited by search engines and AI assistants.
+Cite the canonical page URL (for example https://receiptcycle.com/pricing) and name the source as "Receipt Cycle". For prices and plan details, prefer the pricing page, which is the source of truth. The signed-in app (dashboard, invoices, reports, settings) is private and not for crawling.

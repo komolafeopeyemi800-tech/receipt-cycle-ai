@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { CommercialLandingLayout, LandingPrimaryCta } from "@/components/marketing/CommercialLandingLayout";
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
+import { landingFaqs } from "@/content/landingFaqs";
 
 const primaryCta = "/signup?intent=estimate";
 
@@ -166,15 +167,7 @@ function ConversionPreview() {
   );
 }
 
-const faqItems = [
-  { question: "What is the difference between an estimate and a quotation?", answer: "Businesses often use estimate, quote, and quotation for the same pre-sale document. Local practice and the certainty of the price can affect the label. Receipt Cycle provides a structured estimate document for describing proposed work, pricing, validity, and terms." },
-  { question: "What can I include in a Receipt Cycle estimate?", answer: "Choose a customer, add products or services, descriptions, quantities, and rates, then set tax, a discount, notes, terms, an issue date, and a validity period. Review the calculated total before saving or sending the estimate." },
-  { question: "Can I preview and send an estimate?", answer: "Yes. Receipt Cycle includes an estimate preview and a send or share action. The current workflow hands the document to your device or email tools; it does not claim automatic email-open tracking or an approval portal." },
-  { question: "Which estimate statuses are available?", answer: "Receipt Cycle supports draft, sent, accepted, and expired estimates. A rejected status is not currently implemented, so the page does not claim that feature." },
-  { question: "Can I convert an accepted estimate into an invoice?", answer: "Yes. Convert the estimate into an editable invoice draft. The customer, line items, quantities, rates, tax, discount, and terms remain available so you can review the invoice before sending it." },
-  { question: "Is this contractor estimating software?", answer: "Receipt Cycle can suit contractors who quote defined services and rates. It is not positioned as construction takeoff, materials database, job-costing, tender, or project-scheduling software." },
-  { question: "Does Receipt Cycle work as estimate and invoice software?", answer: "Yes. Estimates and invoices are connected parts of the Receipt Cycle sales workflow. Use the estimate before approval, convert accepted work into a draft invoice, then manage billing from the invoice workspace." },
-];
+const faqItems = landingFaqs("/estimate-quotation-software").map(({ q, a }) => ({ question: q, answer: a }));
 
 export default function EstimateQuotationSoftwareLanding() {
   const [activeAudienceId, setActiveAudienceId] = useState("freelancers");

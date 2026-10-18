@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { CommercialLandingLayout, LandingPrimaryCta } from "@/components/marketing/CommercialLandingLayout";
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
+import { landingFaqs } from "@/content/landingFaqs";
 
 const primaryCta = "/signup?intent=expense";
 
@@ -109,16 +110,7 @@ export default function BusinessTravelExpenseTrackerLanding() {
     { id: "operations", title: "Operations coordinators", body: "Use a consistent transaction record when coworkers return with receipts from different places. Receipt Cycle supports review, search, account activity, and export, but it does not claim policy enforcement, manager approvals, or automatic employee reimbursement.", image: "/landing/audiences/travel-operations.webp", alt: "Hand-drawn operations coordinator reviewing categorized business-trip expenses with coworkers" },
   ];
   const activeAudience = audiences.find((audience) => audience.id === activeAudienceId) ?? audiences[0];
-  const faqItems = [
-    ["What can I record with a business travel expense tracker?", "Record expenses such as airfare, hotels, meals, ground transportation, parking, fuel, event fees, internet access, and trip supplies when they relate to your work. Each Receipt Cycle transaction can include an amount, merchant, category, date, payment method, linked account, notes, and available receipt evidence."],
-    ["Can I scan travel receipts while I am away?", "Yes. Use the mobile receipt camera or choose an image from the gallery, then review the extracted details before saving. You can also upload a supported receipt image on the web or enter the purchase manually when there is no usable image."],
-    ["Can I group expenses under a trip name?", "Receipt Cycle does not currently provide a dedicated trip object or trip-name field. Use the travel dates, categories, linked account, merchant search, and transaction notes to retrieve the relevant records. Do not rely on the product for itinerary or booking management."],
-    ["Does Receipt Cycle create a business trip expense report?", "Receipt Cycle provides transaction history, date and category filters, report totals, and CSV export when available for the plan and workspace. It does not currently claim a formatted PDF expense report dedicated to one trip."],
-    ["Does it handle expense claims and employee reimbursement?", "No. Receipt Cycle can organize the records that may support a claim or reimbursement discussion, but it is not travel expense claims software. It does not submit claims, route manager approvals, enforce travel policy, or repay employees."],
-    ["Can a corporate or small team use it for travel expenses?", "Teams can use consistent categories, accounts, notes, receipt evidence, and exports to improve record quality. Receipt Cycle is not positioned as a corporate booking, card-feed, or enterprise travel and expense management platform."],
-    ["Does Receipt Cycle reconcile travel expenses automatically?", "No. Business travel expense reconciliation remains a review task. Filters, accounts, payment methods, notes, and receipt attachments help you compare records, but Receipt Cycle does not automatically match card feeds, settle cash advances, or approve discrepancies."],
-    ["Can I export my travel transaction records?", "CSV export is available when the account plan and administrator settings permit it. The export includes transaction fields such as date, type, category, amount, merchant, description, payment method, and workspace. PDF travel-report export is not currently claimed."],
-  ];
+  const faqItems = landingFaqs("/business-travel-expense-tracker").map(({ q, a }) => [q, a] as const);
   const resources = [
     { title: "Track business travel expenses", description: "Build a capture habit for flights, hotels, meals, transportation, and the small purchases made between them.", href: "/blog/scan-receipts-for-tax-refund", icon: "fa-plane" },
     { title: "Connect receipt capture and expense records", description: "See why keeping the image and reviewed transaction together reduces post-trip reconstruction.", href: "/blog/expense-tracker-receipt-scanner-one-two-punch", icon: "fa-receipt" },

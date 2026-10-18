@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { CommercialLandingLayout, LandingPrimaryCta } from "@/components/marketing/CommercialLandingLayout";
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
+import { landingFaqs } from "@/content/landingFaqs";
 
 const primaryCta = "/signup?intent=scan";
 
@@ -86,15 +87,7 @@ export default function AiReceiptScannerLanding() {
     { id: "operations", title: "Operations teams", body: "Create a repeatable handoff for receipts collected by more than one person. Receipt management software works better when every submitted image reaches the same review step, fields remain editable, and saved records can be found by the details the team already uses.", image: "/landing/audiences/scanner-operations.webp", alt: "Hand-drawn operations team reviewing scanned receipts and organized expense records" },
   ];
   const activeAudience = audiences.find((audience) => audience.id === activeAudienceId) ?? audiences[0];
-  const faqItems = [
-    ["What does an AI receipt scanner extract?", "Receipt Cycle can propose the merchant, total amount, date, time, payment method, category, currency, subtotal, tax, document type, detected language, confidence, tags, formatted receipt text, and line items when those details are visible. Results depend on the source image and must be reviewed."],
-    ["Can I scan a receipt with my phone camera?", "Yes. The mobile flow includes a receipt camera with flash control. You can also choose an existing image from the gallery. On the web, supported receipt images can be uploaded for processing."],
-    ["Can I edit the OCR result?", "Yes. The review screen is designed for correction. Check the merchant, amount, date, time, category, payment method, extracted text, and any line items before continuing to save the expense."],
-    ["Does the scanner always capture tax and line items?", "No. Tax extraction and line-item extraction depend on what is visible and legible in the receipt image. A short, faded, folded, handwritten, or damaged receipt may return fewer fields or a lower confidence indicator."],
-    ["Can I use the receipt scanner for taxes?", "You can use it to organize receipt images and reviewed expense details for later record preparation. Receipt Cycle does not determine deductions, file returns, provide tax advice, or guarantee that a record satisfies a tax authority or audit requirement."],
-    ["Does Receipt Cycle support multilingual receipts?", "The scanner is designed to recognize multiple scripts and can display detected languages. Accuracy still varies with image quality, typography, handwriting, layout, and the OCR provider available when the scan runs."],
-    ["Can I scan PDF receipts?", "The receipt camera and receipt-image upload flow are intended for supported image formats such as JPG and PNG. PDF statement import belongs to a separate upload workflow and should not be treated as receipt-camera OCR."],
-  ];
+  const faqItems = landingFaqs("/ai-receipt-scanner").map(({ q, a }) => [q, a] as const);
   const resources = [
     { title: "What a receipt scanner actually does", description: "Understand the difference between capturing an image, reading text, proposing fields, and creating a usable expense record.", href: "/blog/what-is-a-receipt-scanner-freelancers-2026", icon: "fa-receipt" },
     { title: "How OCR reads receipt images", description: "See why lighting, sharpness, contrast, receipt layout, and review affect the quality of extracted details.", href: "/blog/how-ocr-receipt-scanning-works-ai-smarter", icon: "fa-eye" },

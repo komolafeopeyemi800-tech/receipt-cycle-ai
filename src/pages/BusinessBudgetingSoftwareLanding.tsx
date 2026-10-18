@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { CommercialLandingLayout, LandingPrimaryCta } from "@/components/marketing/CommercialLandingLayout";
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
+import { landingFaqs } from "@/content/landingFaqs";
 
 const budgetRows = [
   { name: "Software", spent: "$820", budget: "$1,100", remaining: "$280 left", progress: 75, icon: "fa-laptop", tone: "bg-violet-100 text-violet-700" },
@@ -174,16 +175,7 @@ const audiences = [
   },
 ];
 
-const faqItems = [
-  ["What does business budgeting software do in Receipt Cycle?", "Receipt Cycle lets you choose a month, set limits for individual expense categories, compare those limits with recorded spending, and see the amount remaining. You can open a category to review its progress and recent transactions, which gives the monthly total a traceable source."],
-  ["Can I create a different category budget for each month?", "Yes. Budgets are associated with a selected month and category. Move between months to prepare a new plan or review an earlier one. Changing one month does not require every future month to use the same amount."],
-  ["How is budget versus actual spending calculated?", "The budget is the limit you enter for a category. Actual spending comes from saved expense transactions in that category during the selected month. The workspace compares the two and calculates the remaining amount for the categories that have a budget."],
-  ["What happens when a category goes over budget?", "The remaining amount becomes negative and the interface can show the category as over its limit. This is a review signal, not a blocked payment. Receipt Cycle does not decline purchases, enforce card controls, or approve expenses."],
-  ["Does the business budgeting app send budget alerts?", "The current budgeting workspace shows progress, percentage used, remaining amounts, and over-budget states when you review it. This page does not promise automatic budget alerts, email warnings, or push notifications."],
-  ["Can I see which purchases used a category budget?", "Yes. Open the category detail to see recent expense transactions assigned to it for the selected month. Merchant or description, date, and amount help you connect the progress bar to the underlying records."],
-  ["Is this business financial planning software?", "It supports practical monthly expense planning and monitoring. It is not a forecasting suite, cash-flow scenario model, general ledger, payroll system, tax planner, or enterprise financial planning platform."],
-  ["Can I use Receipt Cycle instead of a spreadsheet?", "You can move monthly category limits and their actual expense progress into Receipt Cycle. A spreadsheet may still be useful for forecasts, staffing plans, or scenarios that the product does not support. Use each tool for the job it handles accurately."],
-];
+const faqItems = landingFaqs("/business-budgeting-software").map(({ q, a }) => [q, a] as const);
 
 export default function BusinessBudgetingSoftwareLanding() {
   const seo = getRouteSeo("/business-budgeting-software");

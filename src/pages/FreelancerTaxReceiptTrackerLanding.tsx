@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { CommercialLandingLayout, LandingPrimaryCta } from "@/components/marketing/CommercialLandingLayout";
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
+import { landingFaqs } from "@/content/landingFaqs";
 
 function TaxYearHeroPreview() {
   return (
@@ -81,16 +82,7 @@ export default function FreelancerTaxReceiptTrackerLanding() {
   ];
   const activeAudience = audiences.find((audience) => audience.id === activeAudienceId) ?? audiences[0];
 
-  const faqItems = [
-    ["What does a freelancer tax tracker do?", "Receipt Cycle helps freelancers capture receipts, record business expenses, review transaction details, organize categories, search a date range, and export supported transaction data. It prepares records for review. It does not calculate a return, file taxes, or determine which purchases qualify under tax law."],
-    ["Can I scan tax receipts with my phone?", "Yes. The mobile app supports receipt capture with the camera or an image from the gallery. The web workspace supports compatible image uploads. OCR can propose visible purchase details, and you should review every field before saving the expense."],
-    ["Does Receipt Cycle decide which expenses are tax deductions?", "No. Receipt Cycle is not a tax deduction tracker that decides eligibility. Categories, notes, receipt evidence, and transaction history can help you present the facts, but you or a qualified tax professional must decide how an expense should be treated."],
-    ["Can I use it as a receipt tracker for taxes throughout the year?", "Yes. Capture records as purchases happen, then review them weekly or monthly. A consistent habit gives you a stronger starting point than waiting until a filing deadline to rebuild the year from paper, email, and card statements."],
-    ["Can I organize both expenses and income?", "Receipt Cycle supports expense and income transaction types. Reports and workspace totals can provide broader context, but the product does not claim to calculate taxable income, estimated payments, or tax owed."],
-    ["Can I give my accountant a CSV export?", "CSV export is available when the plan and administrator settings permit it. The file can include transaction fields such as date, type, category, amount, merchant, description, payment method, and workspace. Confirm the export contents and any additional evidence your accountant needs."],
-    ["Does the CSV include every receipt image?", "Do not assume it does. CSV is a structured transaction-data format, not a bundle of image attachments. Receipt evidence may remain with the saved transaction, so review your handoff process before sending records elsewhere."],
-    ["Does Receipt Cycle replace tax software or an accountant?", "No. Receipt Cycle is a record-organization workspace. It does not prepare or submit tax forms, provide legal or accounting advice, guarantee compliance, calculate savings, or replace the professional responsible for tax decisions."],
-  ];
+  const faqItems = landingFaqs("/freelancer-tax-receipt-tracker").map(({ q, a }) => [q, a] as const);
 
   const resources = [
     { title: "A freelancer's guide to tracking business expenses", description: "Build a repeatable record-keeping routine around real purchases instead of a once-a-year cleanup.", href: "/blog/freelancers-guide-tracking-business-expenses", icon: "fa-list-check" },

@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { PrivateRouteSeo } from "@/components/Seo";
 import { ApiProvider } from "@mobile-lib/api";
 import { apiClient } from "@/lib/api";
 import { AppRouteFallback } from "@/components/AppRouteFallback";
@@ -96,6 +97,7 @@ function WebAuthShell() {
             <WorkspaceProvider>
               <DesktopBusinessProvider>
                 <TooltipProvider>
+                  <PrivateRouteSeo />
                   <Toaster />
                   <Sonner />
                   <Suspense fallback={<AppRouteFallback />}>

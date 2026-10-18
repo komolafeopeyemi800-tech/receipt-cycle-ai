@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { CommercialLandingLayout, LandingPrimaryCta } from "@/components/marketing/CommercialLandingLayout";
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
+import { landingFaqs } from "@/content/landingFaqs";
 
 const primaryCta = "/signup?intent=payment";
 
@@ -113,15 +114,7 @@ function PaymentLifecyclePreview() {
   );
 }
 
-const faqItems = [
-  { question: "What does payment tracking software do?", answer: "It records customer payments against invoices so the payment date, amount, method, reference, history, paid amount, and remaining balance can be reviewed together. Receipt Cycle also creates a receipt record after the payment is saved." },
-  { question: "Can I record a partial payment?", answer: "Yes. Enter an amount up to the invoice balance. Receipt Cycle adds the payment to history, updates the paid amount and outstanding balance, and marks the invoice partially paid until the full total has been recorded." },
-  { question: "Does Receipt Cycle process customer payments?", answer: "No. Receipt Cycle records payments received through your existing bank transfer, card, cash, mobile-money, or other method. It does not act as a payment gateway, collect funds, or verify settlement." },
-  { question: "What information appears on a payment receipt?", answer: "The receipt can include the business, customer, receipt number, invoice reference, amount received, payment method, receiving account, payment date, payment reference, and remaining balance." },
-  { question: "Can I preview, download, or share a receipt?", answer: "Yes. The mobile workflow includes receipt preview and sharing as a PDF or image through supported device apps. The web workspace supports receipt sharing plus printing or saving the receipt as a PDF." },
-  { question: "Does Receipt Cycle support payment reconciliation?", answer: "Receipt Cycle supports manual payment reconciliation by keeping each recorded amount attached to its invoice, reference, method, date, and balance. It does not currently claim automatic bank-feed matching or settlement reconciliation." },
-  { question: "Is this accounts receivable tracking software?", answer: "Receipt Cycle covers practical accounts-receivable tasks for small businesses: invoice status, paid amount, partial payments, overdue balances, payment history, and receipts. It is not positioned as an enterprise collections or treasury platform." },
-];
+const faqItems = landingFaqs("/payment-tracking-software").map(({ q, a }) => ({ question: q, answer: a }));
 
 export default function PaymentTrackingSoftwareLanding() {
   const [activeAudienceId, setActiveAudienceId] = useState("freelancers");

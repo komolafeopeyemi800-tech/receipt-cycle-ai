@@ -41,10 +41,6 @@ describe("EstimateQuotationSoftwareLanding", () => {
     expect(seo?.title).toBe("Estimate Software & Quotation Maker | Receipt Cycle");
     expect(seo?.path).toBe("/estimate-quotation-software");
     expect(seo?.ogImage).toContain("estimate-quotation-software-og.png");
-    expect(seo?.structuredData).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ "@type": "FAQPage" }),
-      ]),
-    );
+    expect(JSON.stringify(seo?.structuredData)).toContain('"@type":"FAQPage"');
   });
 });

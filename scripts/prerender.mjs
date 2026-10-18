@@ -1,47 +1,29 @@
 /**
  * Post-build per-route prerender for the Vite SPA.
  *
- * Reads `dist/index.html`, and for each route in `src/content/routesSeo.ts`
- * writes `dist/<route>/index.html` with:
- *   - page-specific <title>, <meta description>, canonical
- *   - per-page Open Graph + Twitter tags
- *   - JSON-LD blocks (Organization, WebSite, SoftwareApplication, FAQPage,
- *     Article, BreadcrumbList, as appropriate)
- *   - a noscript fallback with the real page content so crawlers that do
- *     not execute JS (or execute it partially) still see real text.
+ * Reads `dist/index.html`, and for each route in `src/content/routesSeo.ts` writes
+ * `dist/<route>/index.html` with:
+ *   - page-specific <title>, <meta description>, canonical, robots
+ *   - per-page Open Graph + Twitter tags (and article:* tags on blog posts)
+ *   - one connected JSON-LD @graph per page, built by `src/lib/schema.ts` (the same builder the client uses)
+ *   - a noscript fallback with the real page content so crawlers that do not execute JS still see real text
  *
- * This gets us ~80% of the Google/Bing/ChatGPT-indexing benefit of full SSR
- * without migrating to Next.js. The SPA still hydrates on top of the
- * prerendered HTML at runtime.
+ * Signed-in app screens, auth flows and the 404 fallback are written with `noindex,nofollow`, no canonical
+ * and no JSON-LD, so they can never be mistaken for the home page.
  *
  * Run: npm run seo:prerender (invoked automatically after `vite build`).
  */
 import { readFile, writeFile, mkdir, cp } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { build as esbuild } from "esbuild";
+import { loadContent } from "./lib/load-content.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const DIST = path.join(ROOT, "dist");
-const ROUTES_SRC = path.join(ROOT, "src/content/routesSeo.ts");
 
-/** Bundle routesSeo.ts (+deps) into a single ESM string we can import. */
-async function loadRoutesModule() {
-  const result = await esbuild({
-    entryPoints: [ROUTES_SRC],
-    bundle: true,
-    format: "esm",
-    platform: "neutral",
-    target: "es2020",
-    write: false,
-    logLevel: "silent",
-    external: [],
-  });
-  const code = result.outputFiles[0].text;
-  const dataUrl = `data:text/javascript;base64,${Buffer.from(code, "utf8").toString("base64")}`;
-  return import(dataUrl);
-}
+const ROBOTS_INDEX = "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
+const ROBOTS_NOINDEX = "noindex,nofollow";
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => {
@@ -53,165 +35,146 @@ function escapeHtml(s) {
   });
 }
 
+/** JSON for an inline <script>: no raw "<" so "</script>" or "<!--" can never end the block early. */
+function jsonForScript(obj) {
+  return JSON.stringify(obj).replace(/</g, "\\u003c");
+}
+
 /** Rewrite the <head> of `html` with per-route SEO tags. */
-function rewriteHead(html, { title, description, canonical, ogImage, ogImageAlt, ogType, jsonLd }) {
+function rewriteHead(html, r) {
   let out = html;
 
-  // <title>
-  out = out.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(title)}</title>`);
+  out = out.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(r.title)}</title>`);
 
-  // helpers
   const replaceMeta = (selector, tag) => {
     const re = new RegExp(`<meta[^>]*${selector}[^>]*>`, "i");
     if (re.test(out)) out = out.replace(re, tag);
     else out = out.replace(/<\/head>/i, `    ${tag}\n  </head>`);
   };
+  const removeMeta = (selector) => {
+    out = out.replace(new RegExp(`[ \\t]*<meta[^>]*${selector}[^>]*>\\r?\\n?`, "gi"), "");
+  };
 
-  replaceMeta(
-    `name=["']description["']`,
-    `<meta name="description" content="${escapeHtml(description)}" />`,
-  );
-  replaceMeta(
-    `property=["']og:title["']`,
-    `<meta property="og:title" content="${escapeHtml(title)}" />`,
-  );
-  replaceMeta(
-    `property=["']og:description["']`,
-    `<meta property="og:description" content="${escapeHtml(description)}" />`,
-  );
-  replaceMeta(
-    `property=["']og:url["']`,
-    `<meta property="og:url" content="${escapeHtml(canonical)}" />`,
-  );
-  replaceMeta(
-    `property=["']og:type["']`,
-    `<meta property="og:type" content="${escapeHtml(ogType)}" />`,
-  );
-  replaceMeta(
-    `property=["']og:image["']`,
-    `<meta property="og:image" content="${escapeHtml(ogImage)}" />`,
-  );
-  replaceMeta(
-    `property=["']og:image:alt["']`,
-    `<meta property="og:image:alt" content="${escapeHtml(ogImageAlt)}" />`,
-  );
-  replaceMeta(
-    `property=["']og:image:secure_url["']`,
-    `<meta property="og:image:secure_url" content="${escapeHtml(ogImage)}" />`,
-  );
-  replaceMeta(
-    `name=["']twitter:title["']`,
-    `<meta name="twitter:title" content="${escapeHtml(title)}" />`,
-  );
-  replaceMeta(
-    `name=["']twitter:description["']`,
-    `<meta name="twitter:description" content="${escapeHtml(description)}" />`,
-  );
-  replaceMeta(
-    `name=["']twitter:image["']`,
-    `<meta name="twitter:image" content="${escapeHtml(ogImage)}" />`,
-  );
-  replaceMeta(
-    `name=["']twitter:image:alt["']`,
-    `<meta name="twitter:image:alt" content="${escapeHtml(ogImageAlt)}" />`,
-  );
+  const robots = r.noindex ? ROBOTS_NOINDEX : ROBOTS_INDEX;
+  replaceMeta(`name=["']description["']`, `<meta name="description" content="${escapeHtml(r.description)}" />`);
+  replaceMeta(`name=["']robots["']`, `<meta name="robots" content="${robots}" />`);
+  replaceMeta(`name=["']googlebot["']`, `<meta name="googlebot" content="${robots}" />`);
+  replaceMeta(`property=["']og:title["']`, `<meta property="og:title" content="${escapeHtml(r.title)}" />`);
+  replaceMeta(`property=["']og:description["']`, `<meta property="og:description" content="${escapeHtml(r.description)}" />`);
+  replaceMeta(`property=["']og:type["']`, `<meta property="og:type" content="${escapeHtml(r.ogType)}" />`);
+  replaceMeta(`property=["']og:image["']`, `<meta property="og:image" content="${escapeHtml(r.ogImage)}" />`);
+  replaceMeta(`property=["']og:image:secure_url["']`, `<meta property="og:image:secure_url" content="${escapeHtml(r.ogImage)}" />`);
+  replaceMeta(`property=["']og:image:width["']`, `<meta property="og:image:width" content="${r.ogImageWidth}" />`);
+  replaceMeta(`property=["']og:image:height["']`, `<meta property="og:image:height" content="${r.ogImageHeight}" />`);
+  replaceMeta(`property=["']og:image:alt["']`, `<meta property="og:image:alt" content="${escapeHtml(r.ogImageAlt)}" />`);
+  replaceMeta(`name=["']twitter:title["']`, `<meta name="twitter:title" content="${escapeHtml(r.title)}" />`);
+  replaceMeta(`name=["']twitter:description["']`, `<meta name="twitter:description" content="${escapeHtml(r.description)}" />`);
+  replaceMeta(`name=["']twitter:image["']`, `<meta name="twitter:image" content="${escapeHtml(r.ogImage)}" />`);
+  replaceMeta(`name=["']twitter:image:alt["']`, `<meta name="twitter:image:alt" content="${escapeHtml(r.ogImageAlt)}" />`);
 
-  // canonical
-  const linkRe = /<link\s+rel=["']canonical["'][^>]*>/i;
-  const linkTag = `<link rel="canonical" href="${escapeHtml(canonical)}" />`;
-  if (linkRe.test(out)) out = out.replace(linkRe, linkTag);
-  else out = out.replace(/<\/head>/i, `    ${linkTag}\n  </head>`);
+  // canonical + og:url (omitted for the 404 fallback)
+  removeMeta(`property=["']og:url["']`);
+  out = out.replace(/[ \t]*<link\s+rel=["']canonical["'][^>]*>\r?\n?/i, "");
+  if (r.canonical) {
+    out = out.replace(/<\/head>/i, `    <link rel="canonical" href="${escapeHtml(r.canonical)}" />\n    <meta property="og:url" content="${escapeHtml(r.canonical)}" />\n  </head>`);
+  }
 
-  // Remove the default inline JSON-LD from index.html (we'll re-add page-specific ones).
-  out = out.replace(/<script\s+type=["']application\/ld\+json["'][\s\S]*?<\/script>\s*/gi, "");
+  // article:* tags (blog posts only)
+  removeMeta(`property=["']article:[a-z_:]+["']`);
+  if (r.article) {
+    const a = r.article;
+    const tags = [
+      `<meta property="article:published_time" content="${escapeHtml(a.publishedTime)}" />`,
+      `<meta property="article:modified_time" content="${escapeHtml(a.modifiedTime)}" />`,
+      `<meta property="article:section" content="${escapeHtml(a.section)}" />`,
+      ...a.tags.map((t) => `<meta property="article:tag" content="${escapeHtml(t)}" />`),
+    ];
+    out = out.replace(/<\/head>/i, `    ${tags.join("\n    ")}\n  </head>`);
+  }
 
-  // Inject new JSON-LD blocks right before </head>.
-  const jsonLdHtml = jsonLd
-    .map((obj) => `<script type="application/ld+json">${JSON.stringify(obj)}</script>`)
-    .join("\n    ");
-  out = out.replace(/<\/head>/i, `    ${jsonLdHtml}\n  </head>`);
+  // Remove any inline JSON-LD from index.html, then add this page's graph (none for noindex pages).
+  out = out.replace(/[ \t]*<script\s+type=["']application\/ld\+json["'][\s\S]*?<\/script>\r?\n?/gi, "");
+  if (r.jsonLd.length) {
+    const jsonLdHtml = r.jsonLd.map((obj) => `<script type="application/ld+json">${jsonForScript(obj)}</script>`).join("\n    ");
+    out = out.replace(/<\/head>/i, `    ${jsonLdHtml}\n  </head>`);
+  }
 
   return out;
 }
 
 function injectNoscript(html, innerHtml) {
   if (!innerHtml) return html;
-  // Replace the existing <noscript>…</noscript> block wholesale.
   const noscript = `<noscript>${innerHtml}</noscript>`;
   if (/<noscript>[\s\S]*?<\/noscript>/i.test(html)) {
-    return html.replace(/<noscript>[\s\S]*?<\/noscript>/i, noscript);
+    return html.replace(/<noscript>[\s\S]*?<\/noscript>/i, () => noscript);
   }
   return html.replace(/<div id=["']root["']><\/div>/i, (m) => `${m}\n    ${noscript}`);
 }
 
-async function writeRouteFile(route, baseHtml, siteUrl) {
-  const canonical = `${siteUrl}${route.path === "/" ? "/" : route.path}`;
-  const ogImage = route.ogImage ?? `${siteUrl}/og-image.png?v=3`;
-  const ogImageAlt = route.ogImageAlt ?? route.title;
-  const ogType = route.ogType ?? "website";
-  const jsonLd = route.structuredData ?? [];
-
-  let html = rewriteHead(baseHtml, {
+async function writeRouteFile(route, baseHtml, siteUrl, defaults, content) {
+  const noindex = Boolean(route.noindex);
+  const canonical = content.pageUrl(route.path);
+  const html0 = rewriteHead(baseHtml, {
     title: route.title,
     description: route.description,
     canonical,
-    ogImage,
-    ogImageAlt,
-    ogType,
-    jsonLd,
+    ogImage: route.ogImage ?? defaults.ogImage,
+    ogImageAlt: route.ogImageAlt ?? route.title,
+    ogImageWidth: route.ogImageWidth ?? 1200,
+    ogImageHeight: route.ogImageHeight ?? 630,
+    ogType: route.ogType ?? "website",
+    noindex,
+    article: route.article,
+    jsonLd: noindex ? [] : (route.structuredData ?? []),
   });
-  html = injectNoscript(html, route.noscriptHtml ?? "");
+  const html = injectNoscript(html0, route.noscriptHtml ?? "");
 
-  const outDir =
-    route.path === "/" ? DIST : path.join(DIST, route.path.replace(/^\//, ""));
+  const outDir = route.path === "/" ? DIST : path.join(DIST, route.path.replace(/^\//, ""));
   await mkdir(outDir, { recursive: true });
   await writeFile(path.join(outDir, "index.html"), html, "utf8");
 }
 
 async function main() {
-  const { allPrerenderRoutes, SITE_URL } = await loadRoutesModule();
-  const baseHtmlPath = path.join(DIST, "index.html");
-  const baseHtml = await readFile(baseHtmlPath, "utf8");
+  const content = await loadContent();
+  const { allPrerenderRoutes, privateRoutes, SITE_URL } = content;
+  const baseHtml = await readFile(path.join(DIST, "index.html"), "utf8");
+  const defaults = { ogImage: `${SITE_URL}/og-image.png?v=3` };
 
   const routes = allPrerenderRoutes();
   for (const route of routes) {
-    await writeRouteFile(route, baseHtml, SITE_URL);
+    await writeRouteFile(route, baseHtml, SITE_URL, defaults, content);
   }
 
-  // Ensure the homepage `dist/index.html` also carries the right head tags
-  // (some hosts serve it for every unknown path via SPA fallback).
-  const home = routes.find((r) => r.path === "/");
-  if (home) {
-    await writeRouteFile(home, baseHtml, SITE_URL);
+  // Signed-in app and auth screens get a real file too, so the host never has to answer a missing
+  // /assets/*.js with index.html (that got cached as "JS" and left blank pages). They are noindex.
+  const priv = privateRoutes();
+  for (const route of priv) {
+    await writeRouteFile(route, baseHtml, SITE_URL, defaults, content);
   }
 
-  // App-only pages (sign in, dashboard, ...) get a real file too, so the host never has to
-  // answer a missing /assets/*.js with index.html (that got cached as "JS" and left blank pages).
-  // Unknown paths get 404.html: the app still loads there and sends visitors home.
-  const appRoutes = [
-    "signin", "signup", "forgot-password", "reset-password", "checkout-return", "onboarding",
-    "dashboard", "transactions", "insights", "budgets", "accounts", "categories", "sales", "customers",
-    "items-services", "business-profile", "invoice-settings", "invoices", "estimates", "payments",
-    "reports", "reports/cash-flow", "reports/overdue", "ai-assistant", "notifications", "subscription",
-    "profile", "more", "upload-statement", "settings", "backup-export", "admin", "impressum", "cookie-settings", "do-not-sell",
-  ];
-  for (const r of appRoutes) {
-    const file = path.join(DIST, r, "index.html");
-    try {
-      await readFile(file);
-    } catch {
-      await mkdir(path.dirname(file), { recursive: true });
-      await writeFile(file, baseHtml);
-    }
-  }
-  await writeFile(path.join(DIST, "404.html"), baseHtml);
+  // Unknown paths get 404.html: the app still loads there and sends visitors home. Never indexed, no canonical.
+  const notFound = rewriteHead(baseHtml, {
+    title: "Page not found | Receipt Cycle",
+    description: "This page could not be found. Go to the Receipt Cycle home page.",
+    canonical: null,
+    ogImage: defaults.ogImage,
+    ogImageAlt: "Receipt Cycle",
+    ogImageWidth: 1200,
+    ogImageHeight: 630,
+    ogType: "website",
+    noindex: true,
+    article: null,
+    jsonLd: [],
+  });
+  await writeFile(path.join(DIST, "404.html"), notFound, "utf8");
 
-  // Copy generated SEO assets into dist if Vite didn't pick them up (they're
-  // in /public so Vite should, but belt-and-suspenders for custom builds).
+  // Copy generated SEO assets into dist if Vite didn't pick them up (they're in /public so Vite should,
+  // but belt-and-suspenders for custom builds).
   const publicAssets = [
     "robots.txt",
     "sitemap.xml",
     "llms.txt",
+    "llms-full.txt",
     "og-image.png",
     "favicon.ico",
     "favicon-16.png",
@@ -231,8 +194,7 @@ async function main() {
     }
   }
 
-  // eslint-disable-next-line no-console
-  console.log(`Prerendered ${routes.length} routes to /dist`);
+  console.log(`Prerendered ${routes.length} public routes and ${priv.length} noindex app routes to /dist`);
 }
 
 main().catch((err) => {

@@ -42,6 +42,6 @@ describe("PaymentTrackingSoftwareLanding", () => {
     expect(seo?.title).toBe("Payment Tracking Software & Receipt Manager | Receipt Cycle");
     expect(seo?.path).toBe("/payment-tracking-software");
     expect(seo?.ogImage).toContain("payment-tracking-software-og.png");
-    expect(seo?.structuredData).toEqual(expect.arrayContaining([expect.objectContaining({ "@type": "FAQPage" })]));
+    expect(JSON.stringify(seo?.structuredData)).toContain('"@type":"FAQPage"');
   });
 });

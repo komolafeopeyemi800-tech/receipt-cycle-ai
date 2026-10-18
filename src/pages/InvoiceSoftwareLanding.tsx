@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { CommercialLandingLayout, LandingPrimaryCta } from "@/components/marketing/CommercialLandingLayout";
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
+import { landingFaqs } from "@/content/landingFaqs";
 
 const primaryCta = "/signup?intent=invoice";
 
@@ -183,36 +184,7 @@ function PaymentStatusPreview() {
   );
 }
 
-const faqItems = [
-  {
-    question: "Is Receipt Cycle a full accounting system?",
-    answer: "Receipt Cycle focuses on practical finance workflows such as invoices, estimates, payments, receipts, expenses, budgets, and reports. It does not claim to replace payroll, tax filing, inventory, or a full general-ledger accounting platform.",
-  },
-  {
-    question: "Can I add tax, discounts, notes, and payment terms?",
-    answer: "Yes. The invoice builder supports tax and discount percentages, notes, payment terms, issue dates, due dates, quantities, rates, and line-item descriptions.",
-  },
-  {
-    question: "Can I record a partial payment?",
-    answer: "Yes. Record the amount received and payment method. Receipt Cycle updates the paid amount, remaining balance, invoice status, and payment history.",
-  },
-  {
-    question: "Does Receipt Cycle process online card payments?",
-    answer: "Not currently. Receipt Cycle records payments made through your existing payment method. It does not claim to act as a payment gateway.",
-  },
-  {
-    question: "Can I print or save an invoice as a PDF?",
-    answer: "Yes. Open the invoice preview and use the print option. Your browser can print the document or save it as a PDF.",
-  },
-  {
-    question: "Can I turn an estimate into an invoice?",
-    answer: "Yes. An estimate can be converted into an editable invoice draft, keeping its customer, line items, tax, discount, and terms connected.",
-  },
-  {
-    question: "Does Receipt Cycle include invoice templates?",
-    answer: "Receipt Cycle currently provides a consistent invoice layout that uses your business details and accent color. It does not claim to include a gallery of interchangeable invoice templates.",
-  },
-];
+const faqItems = landingFaqs("/invoice-software").map(({ q, a }) => ({ question: q, answer: a }));
 
 export default function InvoiceSoftwareLanding() {
   const [activeAudienceId, setActiveAudienceId] = useState("freelancers");

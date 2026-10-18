@@ -178,7 +178,11 @@ export default function BlogPost() {
           description={seo.description}
           path={`/blog/${slug}`}
           ogImage={ogImage}
+          ogImageAlt={seo.ogImageAlt}
+          ogImageWidth={seo.ogImageWidth}
+          ogImageHeight={seo.ogImageHeight}
           ogType="article"
+          article={seo.article}
           structuredData={seo.structuredData}
         />
       ) : null}
@@ -214,7 +218,7 @@ export default function BlogPost() {
           />
         </div>
 
-        <p className="mt-6 rounded-xl bg-slate-50 p-5 text-slate-700">
+        <p data-speakable="summary" className="mt-6 rounded-xl bg-slate-50 p-5 text-slate-700">
           <span className="mr-2 font-semibold uppercase tracking-wider text-teal-700">TL;DR</span>
           {post.tldr}
         </p>

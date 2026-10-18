@@ -23,7 +23,12 @@ export interface SeoMeta {
   ogImage?: string;
   ogImageAlt?: string;
   ogType?: "website" | "article";
-  /** Optional extra JSON-LD blocks (Article, FAQPage, Breadcrumb, etc.). */
+  /** Social image size when it is not the default 1200 x 630. */
+  ogImageWidth?: number;
+  ogImageHeight?: number;
+  /** Blog post facts, written as article:* meta tags. */
+  article?: { publishedTime: string; modifiedTime: string; section: string; tags: string[] };
+  /** JSON-LD blocks for the page (built by src/lib/schema.ts). */
   structuredData?: StructuredData[];
   /** Set to true to tell crawlers not to index the page. */
   noindex?: boolean;
@@ -46,6 +51,22 @@ function upsertMeta(selector: string, attrs: Record<string, string>): void {
   for (const [k, v] of Object.entries(attrs)) {
     el.setAttribute(k, v);
   }
+}
+
+function setArticleMeta(article: SeoMeta["article"]): void {
+  if (typeof document === "undefined") return;
+  document.head.querySelectorAll('meta[property^="article:"]').forEach((n) => n.remove());
+  if (!article) return;
+  const add = (property: string, content: string) => {
+    const el = document.createElement("meta");
+    el.setAttribute("property", property);
+    el.setAttribute("content", content);
+    document.head.appendChild(el);
+  };
+  add("article:published_time", article.publishedTime);
+  add("article:modified_time", article.modifiedTime);
+  add("article:section", article.section);
+  for (const tag of article.tags) add("article:tag", tag);
 }
 
 function removeSeoJsonLd(): void {
@@ -78,12 +99,12 @@ export function applySeo(meta: SeoMeta): void {
 
   upsertMeta('meta[name="description"]', { name: "description", content: meta.description });
   upsertMeta('link[rel="canonical"]', { rel: "canonical", href: canonical });
-  upsertMeta('meta[name="robots"]', {
-    name: "robots",
-    content: meta.noindex
-      ? "noindex,nofollow"
-      : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1",
-  });
+  const robots = meta.noindex
+    ? "noindex,nofollow"
+    : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
+  upsertMeta('meta[name="robots"]', { name: "robots", content: robots });
+  upsertMeta('meta[name="googlebot"]', { name: "googlebot", content: robots });
+  upsertMeta('meta[name="author"]', { name: "author", content: SITE_NAME });
 
   upsertMeta('meta[property="og:title"]', { property: "og:title", content: meta.title });
   upsertMeta('meta[property="og:description"]', { property: "og:description", content: meta.description });
@@ -91,8 +112,8 @@ export function applySeo(meta: SeoMeta): void {
   upsertMeta('meta[property="og:type"]', { property: "og:type", content: ogType });
   upsertMeta('meta[property="og:image"]', { property: "og:image", content: ogImage });
   upsertMeta('meta[property="og:image:secure_url"]', { property: "og:image:secure_url", content: ogImage });
-  upsertMeta('meta[property="og:image:width"]', { property: "og:image:width", content: String(OG_IMAGE_WIDTH) });
-  upsertMeta('meta[property="og:image:height"]', { property: "og:image:height", content: String(OG_IMAGE_HEIGHT) });
+  upsertMeta('meta[property="og:image:width"]', { property: "og:image:width", content: String(meta.ogImageWidth ?? OG_IMAGE_WIDTH) });
+  upsertMeta('meta[property="og:image:height"]', { property: "og:image:height", content: String(meta.ogImageHeight ?? OG_IMAGE_HEIGHT) });
   upsertMeta('meta[property="og:image:alt"]', { property: "og:image:alt", content: ogImageAlt });
   upsertMeta('meta[property="og:site_name"]', { property: "og:site_name", content: SITE_NAME });
 
@@ -102,13 +123,15 @@ export function applySeo(meta: SeoMeta): void {
   upsertMeta('meta[name="twitter:image"]', { name: "twitter:image", content: ogImage });
   upsertMeta('meta[name="twitter:image:alt"]', { name: "twitter:image:alt", content: ogImageAlt });
 
+  setArticleMeta(meta.article);
+
   removeSeoJsonLd();
   for (const block of meta.structuredData ?? []) {
     appendJsonLd(block);
   }
 }
 
-/** Breadcrumb helper (use on deep pages like /blog/:slug). */
+/** Breadcrumb helper kept for ad-hoc use. Page schema is built by src/lib/schema.ts. */
 export function breadcrumbSchema(
   trail: Array<{ name: string; path: string }>,
 ): StructuredData {

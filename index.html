@@ -69,64 +69,7 @@
       referrerpolicy="no-referrer"
     />
 
-    <!-- JSON-LD: Organization -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "name": "Receipt Cycle",
-        "url": "https://receiptcycle.com",
-        "logo": "https://receiptcycle.com/icon-512.png?v=3",
-        "email": "support@receiptcycle.com",
-        "sameAs": [
-          "https://x.com/receiptcycle",
-          "https://www.instagram.com/receiptcycle"
-        ]
-      }
-    </script>
-
-    <!-- JSON-LD: WebSite + SearchAction -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "Receipt Cycle",
-        "url": "https://receiptcycle.com",
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://receiptcycle.com/blog?q={search_term_string}",
-          "query-input": "required name=search_term_string"
-        }
-      }
-    </script>
-
-    <!-- JSON-LD: SoftwareApplication -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "Receipt Cycle",
-        "operatingSystem": "iOS, Android, Web",
-        "applicationCategory": "FinanceApplication",
-        "description": "AI-powered receipt scanner and expense tracker. Capture purchases, catch money leaks, and keep audit-ready records for tax time.",
-        "image": "https://receiptcycle.com/og-image.png?v=3",
-        "url": "https://receiptcycle.com",
-        "offers": [
-          { "@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Free" },
-          { "@type": "Offer", "price": "9.99", "priceCurrency": "USD", "name": "Pro Monthly" },
-          { "@type": "Offer", "price": "89.99", "priceCurrency": "USD", "name": "Pro Yearly" }
-        ],
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": "4.8",
-          "ratingCount": "124"
-        },
-        "publisher": {
-          "@type": "Organization",
-          "name": "Receipt Cycle"
-        }
-      }
-    </script>
+    <!-- JSON-LD: written per page by scripts/prerender.mjs and applySeo() from src/lib/schema.ts. -->
   </head>
 
   <body>

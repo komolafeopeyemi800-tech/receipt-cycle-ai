@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { CommercialLandingLayout, LandingPrimaryCta } from "@/components/marketing/CommercialLandingLayout";
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
+import { landingFaqs } from "@/content/landingFaqs";
 
 const clients = [
   { initials: "MC", name: "Marlow Creative", contact: "Ada Mensah", invoices: 5, balance: "$1,240", status: "Active" },
@@ -79,16 +80,7 @@ function ClientWorkflowVisual() {
   );
 }
 
-const faqItems = [
-  ["What is client management software for small business?", "It is software for storing useful client details and keeping the work around each relationship easier to find. In Receipt Cycle, that means customer contact and billing information, status, notes, invoice count, outstanding balance, and linked document history. It is focused on billing context rather than a full sales CRM."],
-  ["Can I keep customer contact information in Receipt Cycle?", "Yes. A customer record can include the contact name, company, email address, phone number, billing address, status, and internal notes. You can edit the record when details change and search the directory by customer, company, or email."],
-  ["Does each customer record show invoice history?", "Yes. The customer workspace connects invoices to the saved customer. You can review invoice numbers, due dates, status, totals, invoice count, and the calculated amount still outstanding. Estimate, invoice, and payment actions remain in their dedicated workspaces."],
-  ["Can I save services and prices for later invoices?", "Yes. The Items & Services catalog stores a product or service name, description, category, unit price, type, and active state. Those entries can be selected when building estimates or invoices so common work does not have to be typed again."],
-  ["Is Receipt Cycle a customer database software product?", "Receipt Cycle provides a practical customer directory for billing work. It is suitable when you need searchable customer records connected to sales documents and balances. It is not a general-purpose database builder, marketing platform, or enterprise customer-data platform."],
-  ["Does Receipt Cycle replace a CRM?", "No. Receipt Cycle does not claim lead scoring, opportunity pipelines, campaign automation, call logging, email-open tracking, or sales forecasting. Use it when the main need is keeping customer information close to estimates, invoices, payments, and reusable billing items."],
-  ["Can freelancers use the client management app?", "Yes. Client management for freelancers often begins with a smaller need: keep the correct billing address, remember a useful note, find prior invoices, and reuse a familiar service price. Receipt Cycle supports that focused workflow without forcing a complex sales process."],
-  ["Can I track outstanding balances by customer?", "Yes. The customer directory calculates the balance from connected invoices and recorded paid amounts. Open the customer to review the invoice entries behind that figure. Payment recording and receipt generation are explained on the dedicated payment tracking page."],
-];
+const faqItems = landingFaqs("/client-management-software").map(({ q, a }) => [q, a] as const);
 
 const audiences = [
   { id: "freelancers", title: "Freelancers", body: "Keep a repeat client's billing address, notes, past invoices, and current balance in one record. When the next project begins, select the familiar service from the catalog instead of rebuilding the commercial details from memory.", image: "/landing/audiences/client-freelancer.webp", alt: "Hand-drawn illustration of a freelancer reviewing an organized client profile and billing timeline" },

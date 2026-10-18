@@ -22,6 +22,10 @@
   ! Cache-Control
   Cache-Control: public, max-age=300
 
+/llms-full.txt
+  ! Cache-Control
+  Cache-Control: public, max-age=300
+
 /og-image.png
   ! Cache-Control
   Cache-Control: public, max-age=86400

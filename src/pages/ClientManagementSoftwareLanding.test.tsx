@@ -48,7 +48,7 @@ describe("ClientManagementSoftwareLanding", () => {
     expect(seo?.title).toBe("Client Management Software for Small Business | Receipt Cycle");
     expect(seo?.path).toBe("/client-management-software");
     expect(seo?.ogImage).toContain("client-management-software-og.png");
-    expect(seo?.structuredData).toEqual(expect.arrayContaining([expect.objectContaining({ "@type": "FAQPage" })]));
+    expect(JSON.stringify(seo?.structuredData)).toContain('"@type":"FAQPage"');
     expect(JSON.stringify(seo?.structuredData)).not.toContain("AggregateRating");
   });
 });

@@ -49,7 +49,7 @@ describe("ExpenseReportingSoftwareLanding", () => {
     expect(seo?.title).toBe("Expense Report Software for Small Business | Receipt Cycle");
     expect(seo?.path).toBe("/expense-reporting-software");
     expect(seo?.ogImage).toContain("expense-reporting-software-og.png");
-    expect(seo?.structuredData).toEqual(expect.arrayContaining([expect.objectContaining({ "@type": "FAQPage" })]));
+    expect(JSON.stringify(seo?.structuredData)).toContain('"@type":"FAQPage"');
     expect(JSON.stringify(seo?.structuredData)).not.toContain("AggregateRating");
   });
 });

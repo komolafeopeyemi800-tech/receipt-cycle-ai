@@ -50,7 +50,7 @@ describe("FreelancerTaxReceiptTrackerLanding", () => {
     expect(seo?.title).toBe("Freelancer Tax Tracker & Receipt Organizer | Receipt Cycle");
     expect(seo?.path).toBe("/freelancer-tax-receipt-tracker");
     expect(seo?.ogImage).toContain("freelancer-tax-receipt-tracker-og.png");
-    expect(seo?.structuredData).toEqual(expect.arrayContaining([expect.objectContaining({ "@type": "FAQPage" })]));
+    expect(JSON.stringify(seo?.structuredData)).toContain('"@type":"FAQPage"');
     expect(JSON.stringify(seo?.structuredData)).not.toContain("AggregateRating");
   });
 });

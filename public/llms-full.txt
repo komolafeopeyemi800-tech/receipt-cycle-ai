@@ -1,0 +1,648 @@
+# Receipt Cycle: full content for AI systems
+
+> Receipt Cycle is a web and Android app for freelancers, independent professionals, and small businesses. It captures receipts with AI extraction and keeps expenses, customers, estimates, invoices, payment records, budgets, and reports connected in one workspace.
+
+Source: https://receiptcycle.com/ | Last updated: 2026-10-16 | Contact: support@receiptcycle.com
+This file is generated from the same content as the public pages. The page URLs below are canonical.
+
+## Product overview
+
+Receipt Cycle (trade name of TempEmailGen) helps freelancers, independent professionals, and small businesses keep the records behind everyday spending and customer billing in one place.
+It is available as a web app and an Android app that share one account. No iOS app is published.
+
+Features:
+- Receipt capture with AI extraction of merchant, date, total, tax, and line items
+- Expense and income records with categories, accounts, and notes
+- Customer records and a reusable products and services catalog
+- Estimates and invoices with tax, discounts, and payment terms
+- Payment records, balances, and payment receipts
+- Monthly category budgets compared with recorded spending
+- Income, expense, cash flow, and overdue invoice reports
+- Ask AI questions about saved records
+- CSV transaction export on paid plans
+
+What it is not:
+- Receipt Cycle is not a full accounting system: no general ledger, payroll, inventory, or tax filing.
+- It records payments received through other methods. It is not a payment gateway and does not collect customer funds.
+- It does not give accounting, tax, legal, or investment advice. AI output must be checked against the saved records.
+- No iOS app is published.
+
+## How it works
+
+1. Capture: photograph or upload a receipt, or enter a transaction by hand. AI proposes the merchant, date, total, tax, and line items, and you review them before saving.
+2. Organize: saved transactions get categories and accounts. Customers and a catalog of products and services are stored for billing.
+3. Bill: prepare estimates, convert accepted work into invoices, and record full or partial payments with receipts.
+4. Review: compare monthly category budgets with recorded spending, open reports, and ask questions about the saved records.
+
+## Pricing
+
+Source: https://receiptcycle.com/pricing
+
+- Free: $0. 7-day trial with Pro-style features; up to 25 transactions during trial (all entry types). No CSV export on Free.
+- Pro Monthly: $3.50 per month. Unlimited transactions, receipt scan, upload and manual entry, budgets, full edit access, CSV export.
+- Pro Yearly: $35 per year with a 7-day free trial. Everything in Pro Monthly.
+- Prices are in USD. Payments are processed by Polar, which acts as merchant of record. Paid plans can be cancelled from the account.
+
+## Feature pages
+
+### Invoice Software for Small Businesses
+
+URL: https://receiptcycle.com/invoice-software | Last updated: 2026-09-28
+
+Create professional invoices, add customers and line items, review totals, track payment status, and record payments with Receipt Cycle invoice software.
+
+Covers:
+- Invoice line items
+- Tax and discount calculations
+- Invoice preview
+- Invoice status and balances
+- Full and partial payment records
+- Payment receipts
+
+Questions and answers:
+
+**Is Receipt Cycle a full accounting system?**
+Receipt Cycle focuses on practical finance workflows such as invoices, estimates, payments, receipts, expenses, budgets, and reports. It does not claim to replace payroll, tax filing, inventory, or a full general-ledger accounting platform.
+
+**Can I add tax, discounts, notes, and payment terms?**
+Yes. The invoice builder supports tax and discount percentages, notes, payment terms, issue dates, due dates, quantities, rates, and line-item descriptions.
+
+**Can I record a partial payment?**
+Yes. Record the amount received and payment method. Receipt Cycle updates the paid amount, remaining balance, invoice status, and payment history.
+
+**Does Receipt Cycle process online card payments?**
+Not currently. Receipt Cycle records payments made through your existing payment method. It does not claim to act as a payment gateway.
+
+**Can I print or save an invoice as a PDF?**
+Yes. Open the invoice preview and use the print option. Your browser can print the document or save it as a PDF.
+
+**Can I turn an estimate into an invoice?**
+Yes. An estimate can be converted into an editable invoice draft, keeping its customer, line items, tax, discount, and terms connected.
+
+**Does Receipt Cycle include invoice templates?**
+Receipt Cycle currently provides a consistent invoice layout that uses your business details and accent color. It does not claim to include a gallery of interchangeable invoice templates.
+
+### Estimate and Quotation Software
+
+URL: https://receiptcycle.com/estimate-quotation-software | Last updated: 2026-09-29
+
+Create detailed estimates and quotations, track approval status, and convert accepted work into an editable invoice with Receipt Cycle estimate software.
+
+Covers:
+- Estimate and quotation creation
+- Products and service line items
+- Quantity and rate calculations
+- Tax and discount calculations
+- Estimate validity dates
+- Draft, sent, accepted, and expired status
+- Estimate preview and sharing
+- Accepted estimate conversion to invoice draft
+
+Questions and answers:
+
+**What is the difference between an estimate and a quotation?**
+Businesses often use estimate, quote, and quotation for the same pre-sale document. Local practice and the certainty of the price can affect the label. Receipt Cycle provides a structured estimate document for describing proposed work, pricing, validity, and terms.
+
+**What can I include in a Receipt Cycle estimate?**
+Choose a customer, add products or services, descriptions, quantities, and rates, then set tax, a discount, notes, terms, an issue date, and a validity period. Review the calculated total before saving or sending the estimate.
+
+**Can I preview and send an estimate?**
+Yes. Receipt Cycle includes an estimate preview and a send or share action. The current workflow hands the document to your device or email tools; it does not claim automatic email-open tracking or an approval portal.
+
+**Which estimate statuses are available?**
+Receipt Cycle supports draft, sent, accepted, and expired estimates. A rejected status is not currently implemented, so the page does not claim that feature.
+
+**Can I convert an accepted estimate into an invoice?**
+Yes. Convert the estimate into an editable invoice draft. The customer, line items, quantities, rates, tax, discount, and terms remain available so you can review the invoice before sending it.
+
+**Is this contractor estimating software?**
+Receipt Cycle can suit contractors who quote defined services and rates. It is not positioned as construction takeoff, materials database, job-costing, tender, or project-scheduling software.
+
+**Does Receipt Cycle work as estimate and invoice software?**
+Yes. Estimates and invoices are connected parts of the Receipt Cycle sales workflow. Use the estimate before approval, convert accepted work into a draft invoice, then manage billing from the invoice workspace.
+
+### Payment Tracking and Receipt Management Software
+
+URL: https://receiptcycle.com/payment-tracking-software | Last updated: 2026-09-29
+
+Record full or partial invoice payments, update balances, preserve payment history, and create shareable receipts with Receipt Cycle payment tracking software.
+
+Covers:
+- Full and partial invoice payment records
+- Paid amount and outstanding balance updates
+- Payment method, date, account, and reference
+- Invoice payment history
+- Numbered payment receipts
+- Receipt preview
+- PDF and image receipt sharing on supported mobile devices
+- Print or save as PDF on the web workspace
+
+Questions and answers:
+
+**What does payment tracking software do?**
+It records customer payments against invoices so the payment date, amount, method, reference, history, paid amount, and remaining balance can be reviewed together. Receipt Cycle also creates a receipt record after the payment is saved.
+
+**Can I record a partial payment?**
+Yes. Enter an amount up to the invoice balance. Receipt Cycle adds the payment to history, updates the paid amount and outstanding balance, and marks the invoice partially paid until the full total has been recorded.
+
+**Does Receipt Cycle process customer payments?**
+No. Receipt Cycle records payments received through your existing bank transfer, card, cash, mobile-money, or other method. It does not act as a payment gateway, collect funds, or verify settlement.
+
+**What information appears on a payment receipt?**
+The receipt can include the business, customer, receipt number, invoice reference, amount received, payment method, receiving account, payment date, payment reference, and remaining balance.
+
+**Can I preview, download, or share a receipt?**
+Yes. The mobile workflow includes receipt preview and sharing as a PDF or image through supported device apps. The web workspace supports receipt sharing plus printing or saving the receipt as a PDF.
+
+**Does Receipt Cycle support payment reconciliation?**
+Receipt Cycle supports manual payment reconciliation by keeping each recorded amount attached to its invoice, reference, method, date, and balance. It does not currently claim automatic bank-feed matching or settlement reconciliation.
+
+**Is this accounts receivable tracking software?**
+Receipt Cycle covers practical accounts-receivable tasks for small businesses: invoice status, paid amount, partial payments, overdue balances, payment history, and receipts. It is not positioned as an enterprise collections or treasury platform.
+
+### AI Receipt Scanner
+
+URL: https://receiptcycle.com/ai-receipt-scanner | Last updated: 2026-09-30
+
+Scan receipt images, extract merchant, amount, date, tax and line items, review the details, and save organized expense records with Receipt Cycle.
+
+Covers:
+- Mobile receipt camera with flash control
+- Receipt image upload from mobile gallery or web
+- Merchant, amount, date, time, and payment method extraction
+- Subtotal, tax, currency, and line-item extraction when visible
+- Suggested expense category
+- OCR confidence, detected language, and review tags
+- Editable review before saving an expense
+- Receipt evidence connected to saved transaction records
+
+Questions and answers:
+
+**What does an AI receipt scanner extract?**
+Receipt Cycle can propose the merchant, total amount, date, time, payment method, category, currency, subtotal, tax, document type, detected language, confidence, tags, formatted receipt text, and line items when those details are visible. Results depend on the source image and must be reviewed.
+
+**Can I scan a receipt with my phone camera?**
+Yes. The mobile flow includes a receipt camera with flash control. You can also choose an existing image from the gallery. On the web, supported receipt images can be uploaded for processing.
+
+**Can I edit the OCR result?**
+Yes. The review screen is designed for correction. Check the merchant, amount, date, time, category, payment method, extracted text, and any line items before continuing to save the expense.
+
+**Does the scanner always capture tax and line items?**
+No. Tax extraction and line-item extraction depend on what is visible and legible in the receipt image. A short, faded, folded, handwritten, or damaged receipt may return fewer fields or a lower confidence indicator.
+
+**Can I use the receipt scanner for taxes?**
+You can use it to organize receipt images and reviewed expense details for later record preparation. Receipt Cycle does not determine deductions, file returns, provide tax advice, or guarantee that a record satisfies a tax authority or audit requirement.
+
+**Does Receipt Cycle support multilingual receipts?**
+The scanner is designed to recognize multiple scripts and can display detected languages. Accuracy still varies with image quality, typography, handwriting, layout, and the OCR provider available when the scan runs.
+
+**Can I scan PDF receipts?**
+The receipt camera and receipt-image upload flow are intended for supported image formats such as JPG and PNG. PDF statement import belongs to a separate upload workflow and should not be treated as receipt-camera OCR.
+
+### Business Travel Expense Tracker
+
+URL: https://receiptcycle.com/business-travel-expense-tracker | Last updated: 2026-09-30
+
+Capture travel receipts, record airfare, hotel, meals and transportation, filter trip expenses, and export organized transaction records with Receipt Cycle.
+
+Covers:
+- Receipt camera, gallery selection, and supported web image upload
+- Manual travel expense entry
+- Editable merchant, amount, date, category, payment method, account, and notes
+- Receipt evidence connected to transaction records when available
+- Search by merchant, description, category, and amount
+- Filters for date range, category, account, and transaction type
+- Cash, card, bank, and savings account activity
+- CSV transaction export when plan and workspace access permit
+
+Questions and answers:
+
+**What can I record with a business travel expense tracker?**
+Record expenses such as airfare, hotels, meals, ground transportation, parking, fuel, event fees, internet access, and trip supplies when they relate to your work. Each Receipt Cycle transaction can include an amount, merchant, category, date, payment method, linked account, notes, and available receipt evidence.
+
+**Can I scan travel receipts while I am away?**
+Yes. Use the mobile receipt camera or choose an image from the gallery, then review the extracted details before saving. You can also upload a supported receipt image on the web or enter the purchase manually when there is no usable image.
+
+**Can I group expenses under a trip name?**
+Receipt Cycle does not currently provide a dedicated trip object or trip-name field. Use the travel dates, categories, linked account, merchant search, and transaction notes to retrieve the relevant records. Do not rely on the product for itinerary or booking management.
+
+**Does Receipt Cycle create a business trip expense report?**
+Receipt Cycle provides transaction history, date and category filters, report totals, and CSV export when available for the plan and workspace. It does not currently claim a formatted PDF expense report dedicated to one trip.
+
+**Does it handle expense claims and employee reimbursement?**
+No. Receipt Cycle can organize the records that may support a claim or reimbursement discussion, but it is not travel expense claims software. It does not submit claims, route manager approvals, enforce travel policy, or repay employees.
+
+**Can a corporate or small team use it for travel expenses?**
+Teams can use consistent categories, accounts, notes, receipt evidence, and exports to improve record quality. Receipt Cycle is not positioned as a corporate booking, card-feed, or enterprise travel and expense management platform.
+
+**Does Receipt Cycle reconcile travel expenses automatically?**
+No. Business travel expense reconciliation remains a review task. Filters, accounts, payment methods, notes, and receipt attachments help you compare records, but Receipt Cycle does not automatically match card feeds, settle cash advances, or approve discrepancies.
+
+**Can I export my travel transaction records?**
+CSV export is available when the account plan and administrator settings permit it. The export includes transaction fields such as date, type, category, amount, merchant, description, payment method, and workspace. PDF travel-report export is not currently claimed.
+
+### Freelancer Tax & Receipt Tracker
+
+URL: https://receiptcycle.com/freelancer-tax-receipt-tracker | Last updated: 2026-10-01
+
+Capture freelancer receipts, organize business expenses, review records by date and category, and export transaction data for tax preparation with Receipt Cycle.
+
+Covers:
+- Receipt camera, gallery selection, and supported web image upload
+- Editable merchant, amount, date, category, payment method, account, tax, and notes
+- Receipt evidence connected to saved transactions when available
+- Manual expense and income entry
+- Search by merchant, description, category, and amount
+- Filters for date range, category, account, transaction type, and sort order
+- Category-aware reports and income-and-expense totals
+- CSV transaction export when plan and administrator access permit
+
+Questions and answers:
+
+**What does a freelancer tax tracker do?**
+Receipt Cycle helps freelancers capture receipts, record business expenses, review transaction details, organize categories, search a date range, and export supported transaction data. It prepares records for review. It does not calculate a return, file taxes, or determine which purchases qualify under tax law.
+
+**Can I scan tax receipts with my phone?**
+Yes. The mobile app supports receipt capture with the camera or an image from the gallery. The web workspace supports compatible image uploads. OCR can propose visible purchase details, and you should review every field before saving the expense.
+
+**Does Receipt Cycle decide which expenses are tax deductions?**
+No. Receipt Cycle is not a tax deduction tracker that decides eligibility. Categories, notes, receipt evidence, and transaction history can help you present the facts, but you or a qualified tax professional must decide how an expense should be treated.
+
+**Can I use it as a receipt tracker for taxes throughout the year?**
+Yes. Capture records as purchases happen, then review them weekly or monthly. A consistent habit gives you a stronger starting point than waiting until a filing deadline to rebuild the year from paper, email, and card statements.
+
+**Can I organize both expenses and income?**
+Receipt Cycle supports expense and income transaction types. Reports and workspace totals can provide broader context, but the product does not claim to calculate taxable income, estimated payments, or tax owed.
+
+**Can I give my accountant a CSV export?**
+CSV export is available when the plan and administrator settings permit it. The file can include transaction fields such as date, type, category, amount, merchant, description, payment method, and workspace. Confirm the export contents and any additional evidence your accountant needs.
+
+**Does the CSV include every receipt image?**
+Do not assume it does. CSV is a structured transaction-data format, not a bundle of image attachments. Receipt evidence may remain with the saved transaction, so review your handoff process before sending records elsewhere.
+
+**Does Receipt Cycle replace tax software or an accountant?**
+No. Receipt Cycle is a record-organization workspace. It does not prepare or submit tax forms, provide legal or accounting advice, guarantee compliance, calculate savings, or replace the professional responsible for tax decisions.
+
+### Business Budgeting & Expense Planning
+
+URL: https://receiptcycle.com/business-budgeting-software | Last updated: 2026-10-01
+
+Set monthly category budgets, compare recorded spending with each limit, and review the transactions behind your progress with Receipt Cycle.
+
+Covers:
+- Monthly category budget limits
+- Total budget, recorded spending, and remaining summaries
+- Category-level budget versus actual comparison
+- Percentage-used and monthly progress views
+- Recent expense transactions within each category
+- Month navigation and editable budget limits
+- Over-budget states when recorded spending exceeds a limit
+
+Questions and answers:
+
+**What does business budgeting software do in Receipt Cycle?**
+Receipt Cycle lets you choose a month, set limits for individual expense categories, compare those limits with recorded spending, and see the amount remaining. You can open a category to review its progress and recent transactions, which gives the monthly total a traceable source.
+
+**Can I create a different category budget for each month?**
+Yes. Budgets are associated with a selected month and category. Move between months to prepare a new plan or review an earlier one. Changing one month does not require every future month to use the same amount.
+
+**How is budget versus actual spending calculated?**
+The budget is the limit you enter for a category. Actual spending comes from saved expense transactions in that category during the selected month. The workspace compares the two and calculates the remaining amount for the categories that have a budget.
+
+**What happens when a category goes over budget?**
+The remaining amount becomes negative and the interface can show the category as over its limit. This is a review signal, not a blocked payment. Receipt Cycle does not decline purchases, enforce card controls, or approve expenses.
+
+**Does the business budgeting app send budget alerts?**
+The current budgeting workspace shows progress, percentage used, remaining amounts, and over-budget states when you review it. This page does not promise automatic budget alerts, email warnings, or push notifications.
+
+**Can I see which purchases used a category budget?**
+Yes. Open the category detail to see recent expense transactions assigned to it for the selected month. Merchant or description, date, and amount help you connect the progress bar to the underlying records.
+
+**Is this business financial planning software?**
+It supports practical monthly expense planning and monitoring. It is not a forecasting suite, cash-flow scenario model, general ledger, payroll system, tax planner, or enterprise financial planning platform.
+
+**Can I use Receipt Cycle instead of a spreadsheet?**
+You can move monthly category limits and their actual expense progress into Receipt Cycle. A spreadsheet may still be useful for forecasts, staffing plans, or scenarios that the product does not support. Use each tool for the job it handles accurately.
+
+### Client & Customer Management for Invoicing
+
+URL: https://receiptcycle.com/client-management-software | Last updated: 2026-10-01
+
+Keep customer details, invoice history, outstanding balances, and reusable products or services connected with Receipt Cycle client management software.
+
+Covers:
+- Searchable customer profiles
+- Contact and billing information
+- Customer status and internal notes
+- Connected invoice history
+- Invoice count and outstanding balance
+- Reusable products and services catalog
+- Catalog descriptions, categories, unit prices, and active state
+
+Questions and answers:
+
+**What is client management software for small business?**
+It is software for storing useful client details and keeping the work around each relationship easier to find. In Receipt Cycle, that means customer contact and billing information, status, notes, invoice count, outstanding balance, and linked document history. It is focused on billing context rather than a full sales CRM.
+
+**Can I keep customer contact information in Receipt Cycle?**
+Yes. A customer record can include the contact name, company, email address, phone number, billing address, status, and internal notes. You can edit the record when details change and search the directory by customer, company, or email.
+
+**Does each customer record show invoice history?**
+Yes. The customer workspace connects invoices to the saved customer. You can review invoice numbers, due dates, status, totals, invoice count, and the calculated amount still outstanding. Estimate, invoice, and payment actions remain in their dedicated workspaces.
+
+**Can I save services and prices for later invoices?**
+Yes. The Items & Services catalog stores a product or service name, description, category, unit price, type, and active state. Those entries can be selected when building estimates or invoices so common work does not have to be typed again.
+
+**Is Receipt Cycle a customer database software product?**
+Receipt Cycle provides a practical customer directory for billing work. It is suitable when you need searchable customer records connected to sales documents and balances. It is not a general-purpose database builder, marketing platform, or enterprise customer-data platform.
+
+**Does Receipt Cycle replace a CRM?**
+No. Receipt Cycle does not claim lead scoring, opportunity pipelines, campaign automation, call logging, email-open tracking, or sales forecasting. Use it when the main need is keeping customer information close to estimates, invoices, payments, and reusable billing items.
+
+**Can freelancers use the client management app?**
+Yes. Client management for freelancers often begins with a smaller need: keep the correct billing address, remember a useful note, find prior invoices, and reuse a familiar service price. Receipt Cycle supports that focused workflow without forcing a complex sales process.
+
+**Can I track outstanding balances by customer?**
+Yes. The customer directory calculates the balance from connected invoices and recorded paid amounts. Open the customer to review the invoice entries behind that figure. Payment recording and receipt generation are explained on the dedicated payment tracking page.
+
+### Expense Reports & Financial Reporting
+
+URL: https://receiptcycle.com/expense-reporting-software | Last updated: 2026-10-01
+
+Review income, expenses, category spending, cash flow, payments, and overdue invoices with Receipt Cycle expense report software for small business.
+
+Covers:
+- Monthly and all-time income and expense summaries
+- Net movement and transaction-count reporting
+- Expense distribution by category
+- Six-month and current-year cash-flow views
+- Payments received and paid-invoice counts
+- Outstanding and overdue invoice reporting
+- Record-grounded AI-assisted analysis
+- Supported CSV transaction export
+
+Questions and answers:
+
+**What does Receipt Cycle expense report software show?**
+The reporting workspace summarizes saved income and expense records for the selected period. It shows income, expenses, net movement, record count, category distribution, cash-flow comparisons, payments received, paid-invoice counts, outstanding invoices, and overdue invoice context where those records are available.
+
+**Can I review monthly income and expense reports?**
+Yes. The main report can focus on the current month or all available records. The cash-flow report can compare the last six months or the current year using monthly income and expense bars, total inflow, total outflow, and net cash movement.
+
+**Does the expense reporting app show category spending?**
+Yes. Receipt Cycle groups saved expense records by category, calculates category totals and transaction counts, and shows the largest categories in a distribution view. Open the transaction workspace when a category needs correction or record-level review.
+
+**Can it report on invoices and payments?**
+The report dashboard includes outstanding invoice value, payments received, and paid-invoice counts. A separate overdue view shows overdue amount, invoice count, average days overdue, customer, balance, and due status. Recording a payment remains part of the dedicated payment workflow.
+
+**Does Receipt Cycle create automated expense reports?**
+The totals and charts recalculate from the saved records available to the selected period, so routine summaries do not need to be rebuilt manually. Receipt Cycle does not claim automatic employee claim submission, approval routing, reimbursement processing, scheduled email delivery, or automatic filing.
+
+**Can I export a business expense report?**
+Supported plans and workspaces can export transaction data as CSV for use in a spreadsheet or professional review. The export is structured transaction data, not a generated tax return, statutory financial statement, PDF claim packet, or guaranteed bundle of receipt images.
+
+**What can the AI analysis do with my reports?**
+AI-assisted analysis can use a limited structured slice of saved transaction fields to answer questions about category totals, merchant patterns, period comparisons, recurring charges, possible duplicate entries, unusual patterns, and plain-language activity summaries. It does not alter records or make regulated financial decisions.
+
+**Is this financial reporting software for small business accounting?**
+Receipt Cycle provides operational reporting for saved transactions and connected sales records. It does not claim a general ledger, balance sheet, statutory profit-and-loss statement, bank reconciliation, payroll, inventory accounting, audit assurance, or automatic tax filing.
+
+### AI Financial Assistant and AI Expense Analysis
+
+URL: https://receiptcycle.com/ai-financial-assistant | Last updated: 2026-10-01
+
+Ask questions about spending, categories, merchants, income, expenses, and financial trends using Receipt Cycle AI analysis grounded in saved business records.
+
+Covers:
+- Typed financial questions grounded in saved records
+- Supported microphone input
+- Income and expense comparison
+- Expense category totals and ordering
+- Merchant pattern summaries
+- Plain-language business activity recaps
+- Possible recurring, similar, and unusual entry review
+- Source-record verification without automatic edits
+
+Questions and answers:
+
+**What is an AI financial assistant?**
+An AI financial assistant helps a person ask plain-language questions about financial data. In Receipt Cycle, Ask AI works from a limited structured view of saved transaction records. It can restate totals, order categories, describe merchant patterns, compare activity represented in the available data, and produce a concise recap. It does not have authority to change the ledger or make financial decisions.
+
+**What records can Receipt Cycle use for AI expense analysis?**
+The request can include saved transaction fields such as date, amount, type, category, merchant, and description where those fields are available. The assistant also receives calculated context such as transaction counts, income, expenses, and leading expense categories. A limited slice is used for each request rather than an unrestricted view of every workspace feature.
+
+**Can I ask a question by voice?**
+Yes, supported browsers can capture a spoken question through the microphone. Receipt Cycle transcribes the audio and sends the resulting question to Ask AI. You can also type instead. Microphone permission, sign-in, plan access, and configured service availability are required for the voice path.
+
+**Can the AI find duplicate or recurring expenses?**
+The optional pattern review can flag entries that appear similar, repeat at the same merchant, use the same amount on nearby dates, or stand out within the supplied expense data. These are possible patterns, not confirmed duplicates or unauthorized charges. Verify a finding against the saved entry and, when needed, the original receipt or statement.
+
+**Is Receipt Cycle an AI bookkeeping assistant?**
+Receipt Cycle can organize and summarize records that you have saved, which may support parts of a bookkeeping review. It does not autonomously maintain books, reconcile bank accounts, post journal entries, prepare statutory statements, choose accounting treatment, or file taxes. A bookkeeper or accountant remains responsible for professional work.
+
+**Does the assistant provide financial or tax advice?**
+No. The assistant is restricted to neutral summaries and organization of the user's own logged data. It does not give accounting, tax, legal, investment, debt, or personal financial advice. It also does not tell a user to cut spending, cancel a service, invest, or change financial behavior.
+
+**Will Ask AI change my transaction records?**
+No. Ask AI returns a response but does not edit amounts, dates, categories, merchants, descriptions, or transaction types. If a question exposes a possible issue, open the source record, inspect the evidence, and make any correction yourself.
+
+**How is this different from an AI financial dashboard?**
+A dashboard presents fixed totals and charts. Ask AI adds a conversational layer for questions about the records made available to it. Receipt Cycle also has dedicated reporting views for category distribution, cash movement, payments, and invoice aging. Use those views for repeatable expense reports and use AI expense reporting questions when you want a plain-language explanation or a new line of inquiry.
+
+## Frequently asked questions
+
+Source: https://receiptcycle.com/faq
+
+**Can I use Receipt Cycle on both the web and Android?**
+Yes. You can use the web workspace from a supported browser and the Android app from your phone. Sign in with the same Receipt Cycle account to work with the records connected to that account across both experiences.
+
+**Do I need a credit card to create an account?**
+No. You can create an account and begin with the available free access without entering a credit card. If you later choose a paid plan, the pricing page shows the current billing options and included features before checkout.
+
+**What types of records can I manage?**
+Receipt Cycle supports receipt images, expense and income transactions, customers, products and services, estimates, invoices, payment records, budgets, and financial reports. The available features may depend on your plan and workspace settings.
+
+**How does AI receipt scanning work?**
+You photograph or upload a receipt and Receipt Cycle attempts to extract useful fields such as the merchant, date, total, tax, and line items. You should review the extracted information against the source image before saving or relying on it.
+
+**Can I create estimates and convert accepted work into an invoice?**
+Receipt Cycle lets you prepare estimates with customer details, line items, quantities, rates, taxes, discounts, notes, and validity dates. Where the conversion workflow is available, accepted estimate details can be carried forward so you do not have to rebuild the invoice from the beginning.
+
+**Can I record partial payments and outstanding balances?**
+Yes. You can record payment amounts, dates, methods, and references against an invoice. The payment history and remaining balance help you understand whether an invoice is unpaid, partially paid, or paid in full.
+
+**Does Receipt Cycle process customer payments?**
+Receipt Cycle records payment information and invoice balances. Unless a payment-processing option is explicitly shown in your account, it should not be treated as a payment gateway or merchant processor. Confirm how money was received before recording the payment.
+
+**Can Receipt Cycle help with business budgets?**
+Yes. You can set spending limits for supported categories and periods, then compare the budget with recorded activity. Budget information is a planning aid and depends on the completeness and accuracy of the transactions in your workspace.
+
+**What can I ask the AI financial assistant?**
+You can ask focused questions about supported activity saved in your workspace, such as spending by category or changes between periods. AI responses can be incomplete or mistaken, so verify important answers against the underlying transactions and reports.
+
+**Is Receipt Cycle a replacement for an accountant or tax professional?**
+No. Receipt Cycle helps organize operational finance records and prepare information for review. It does not provide accounting, tax, investment, or legal advice, and it does not replace a qualified professional who understands your jurisdiction and circumstances.
+
+**Where is my information stored?**
+Account and workspace information is stored using the service providers and backend infrastructure configured for Receipt Cycle. The privacy policy explains the categories of information involved, why they are processed, and the service-provider safeguards that apply.
+
+**Can I correct or delete a record?**
+Supported records can be reviewed and corrected from the relevant workspace screen. Account or data-deletion requests that are not available through self-service controls can be sent to support@receiptcycle.com and may require identity verification.
+
+**Can I export my information?**
+Export options are available for supported records and may vary by plan. Review the relevant report or settings screen for the formats currently available to your account before relying on an export for an accountant, audit, or tax filing.
+
+**What happens if receipt scanning or synchronization is interrupted?**
+Keep the original receipt until you confirm that the image and extracted details are visible in your workspace. Network interruptions, unsupported image formats, poor image quality, or service maintenance can delay upload, extraction, or synchronization.
+
+**How do I get help with my account?**
+Use the contact form or email support@receiptcycle.com with the email address connected to your account. Do not send passwords, full payment-card details, government identification numbers, or other unnecessary sensitive information in a support message.
+
+## Home page questions
+
+Source: https://receiptcycle.com/
+
+**What can I do with Receipt Cycle?**
+You can capture receipts, organize expenses, maintain customer details, prepare estimates and invoices, record payments, set budgets, review reports, and ask questions based on saved business records.
+
+**Is Receipt Cycle a complete accounting system?**
+Receipt Cycle is a practical workspace for spending, customer billing, and business records. It does not replace a complete accounting system, a qualified accountant, or professional tax advice.
+
+**Can I use the same account on mobile and web?**
+Yes. Capture information from your phone and return to the web workspace when a larger screen is better for reviewing documents, budgets, or reports.
+
+**What does the AI do?**
+AI can help extract receipt details and answer questions using the activity you have saved. You remain in control of corrections, classifications, and business decisions.
+
+**Do I need a credit card to get started?**
+No. You can create an account without entering a credit card. If you decide to upgrade later, current plan details are available on the pricing page.
+
+## Blog articles
+
+Index: https://receiptcycle.com/blog
+
+### How to Maximize Your Tax Refund by Scanning Receipts
+
+URL: https://receiptcycle.com/blog/maximize-tax-refund-by-scanning-receipts | Published: 2026-04-17 | Updated: 2026-04-18 | 9 min read
+
+Most people miss tax deductions because they lose receipts. This guide shows how to scan once, store digitally, and claim every legitimate expense with confidence.
+
+Summary: Every year, millions of people leave money on the table at tax time, not because they didn't spend on legitimate deductions, but because they lost the receipts to prove it.
+
+### Best Receipt Scanner App for Small Businesses in 2026
+
+URL: https://receiptcycle.com/blog/best-receipt-scanner-app-small-business-2026 | Published: 2026-04-17 | Updated: 2026-04-18 | 8 min read
+
+An honest comparison of receipt scanner apps in 2026 and how to choose the right one for your small business workflow, budget, and tax goals.
+
+Summary: If you've ever Googled "receipt scanner app" and found yourself staring at a dozen options with no clear idea which one to choose, you're not alone.
+
+### The Freelancer's Complete Guide to Tracking Business Expenses
+
+URL: https://receiptcycle.com/blog/freelancers-guide-tracking-business-expenses | Published: 2026-04-17 | Updated: 2026-04-18 | 10 min read
+
+A practical expense-tracking system for freelancers: what to deduct, what records to keep, and how to build a two-minute daily habit that saves money at tax time.
+
+Summary: Here's something most freelancers figure out the hard way: the money you save on taxes is just as real as the money you earn from clients.
+
+### How to Go Paperless With Your Receipts (And Never Lose One Again)
+
+URL: https://receiptcycle.com/blog/go-paperless-with-receipts | Published: 2026-04-17 | Updated: 2026-04-18 | 9 min read
+
+Paper receipts fade and disappear. Learn the legal, practical, and technical workflow for moving to secure digital receipts with zero tax-season chaos.
+
+Summary: Picture this: it's the week before your tax deadline. You're sitting at the kitchen table surrounded by a pile of receipts, some faded, some torn, one that's been through the wash.
+
+### Receipt Tracking for Uber, DoorDash & Gig Workers Income and Expense Guide
+
+URL: https://receiptcycle.com/blog/gig-workers-income-expense-guide | Published: 2026-04-17 | Updated: 2026-04-18 | 11 min read
+
+A full expense and receipt guide for gig workers: what to deduct, what proof to keep, and how to avoid leaving $500-$2,000 in deductions unclaimed.
+
+Summary: If you drive for Uber, deliver for DoorDash, run errands for Instacart, or pick up gig work on any platform, you're running a small business even if it doesn't feel like one.
+
+### How to Track Business Travel Expenses (And Actually Claim Everything You're Owed)
+
+URL: https://receiptcycle.com/blog/scan-receipts-for-tax-refund | Published: 2026-04-12 | Updated: 2026-04-20 | 11 min read
+
+Business travel has a way of generating expenses faster than you can track them. A cab to the airport. Breakfast at the hotel.
+
+Summary: A client dinner on the last night. Wi-Fi at the conference center. By the time you're back home and unpacked, the receipts are scattered across your wallet, your carry-on, and three different email inboxes.
+
+### How to Organize Receipts for Your Accountant (And Make Tax Season Painless)
+
+URL: https://receiptcycle.com/blog/best-expense-tracker-for-freelancers | Published: 2026-04-14 | Updated: 2026-04-20 | 12 min read
+
+There's a moment most people dread every year: the call from their accountant asking for expense documentation, followed by a frantic search through bags, email, and folders.
+
+Summary: Your accountant charges by the hour. Disorganised records mean more time spent sorting through what you've given them and a larger bill at the end.
+
+### Self-Employed Tax Deductions Most People Miss (And How to Claim Them)
+
+URL: https://receiptcycle.com/blog/catch-subscription-creep | Published: 2026-04-16 | Updated: 2026-04-20 | 12 min read
+
+If you work for yourself, tax time is different from employment: no automatic summary, no perfect withholding, and every deduction must be found, documented, and claimed.
+
+Summary: Most self-employed people get the obvious ones. They deduct their home office. They claim their mileage. They remember the big software subscriptions.
+
+### How to Manage Receipts as a Side Hustler (Without It Taking Over Your Life)
+
+URL: https://receiptcycle.com/blog/import-bank-statements-expense-tracking | Published: 2026-04-18 | Updated: 2026-04-20 | 12 min read
+
+Running a side hustle is exciting. You're building something on your own terms, earning extra income, and developing skills that belong entirely to you.
+
+Summary: What's less exciting is the moment you realize that a side hustle also means side hustle taxes and that you're responsible for tracking every expense that goes into it.
+
+### What Is a Receipt Scanner and Why Every Freelancer Needs One in 2026
+
+URL: https://receiptcycle.com/blog/what-is-a-receipt-scanner-freelancers-2026 | Published: 2026-04-28 | Updated: 2026-04-28 | 9 min read
+
+A practical breakdown of receipt scanner apps, OCR, and why freelancers lose real money at tax time without a fast capture habit.
+
+Summary: Freelancers overpay tax when receipts get lost; a receipt scanner closes that gap by converting every receipt into searchable proof in seconds.
+
+### Receipt Scanner for Tax Purposes: How to Stay Audit-Ready All Year
+
+URL: https://receiptcycle.com/blog/receipt-scanner-tax-purposes-audit-ready-year-round | Published: 2026-04-28 | Updated: 2026-04-28 | 10 min read
+
+How to build an audit-ready receipt system with valid documentation, six-year retention habits, and clean exports for filing.
+
+Summary: Treat tax prep as a continuous process: capture every receipt with required fields, categorize weekly, and retain records long enough for audit windows.
+
+### Expense Tracker with Receipt Scanner: The One-Two Punch for Clean Books
+
+URL: https://receiptcycle.com/blog/expense-tracker-receipt-scanner-one-two-punch | Published: 2026-04-28 | Updated: 2026-04-28 | 9 min read
+
+Why separate tools create data gaps, and how a combined scanner + tracker keeps books current with less manual work.
+
+Summary: When scanning and tracking are disconnected, records drift. A single capture-to-ledger flow keeps your books clean without end-of-month cleanup.
+
+### How OCR Receipt Scanning Works - And Why AI Makes It Smarter
+
+URL: https://receiptcycle.com/blog/how-ocr-receipt-scanning-works-ai-smarter | Published: 2026-04-28 | Updated: 2026-04-28 | 10 min read
+
+A clear technical walkthrough of OCR receipt scanning, where it fails, and how AI improves extraction quality and categorization.
+
+Summary: OCR converts receipt pixels to text; AI adds context so totals, dates, and categories are interpreted correctly with fewer mistakes.
+
+### AI in Finance: How Artificial Intelligence Is Changing Personal and Business Money Management
+
+URL: https://receiptcycle.com/blog/ai-in-finance-personal-business-money-management | Published: 2026-04-28 | Updated: 2026-04-28 | 11 min read
+
+Where AI is actually useful in finance today: categorization, anomaly detection, receipt automation, and where human judgment is still required.
+
+Summary: AI in finance is already practical for categorization, anomaly detection, and document processing, but humans still own intent, policy, and tax decisions.
+
+## Company and policies
+
+- About: https://receiptcycle.com/about. Why Receipt Cycle exists, who it's for, and the principles that guide how we build an AI receipt scanner and expense tracker people actually use.
+- Contact: https://receiptcycle.com/contact. Email support@receiptcycle.com; replies within one business day.
+- Privacy Policy: https://receiptcycle.com/privacy
+- Terms of Service: https://receiptcycle.com/terms
+- Refund Policy: https://receiptcycle.com/refund-policy
+- Cookie Policy: https://receiptcycle.com/cookies
+- Delete your account: https://receiptcycle.com/delete-account
+
+## How to cite
+
+Cite the canonical page URL and name the source as "Receipt Cycle". For prices and plan details use https://receiptcycle.com/pricing.

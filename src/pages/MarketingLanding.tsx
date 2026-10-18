@@ -5,6 +5,7 @@ import { CommercialFooter, CommercialHeader, LandingPrimaryCta } from "@/compone
 import { InteractiveProductDemo } from "@/components/marketing/InteractiveProductDemo";
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
+import { landingFaqs } from "@/content/landingFaqs";
 
 const asset = (name: string) => `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}landing/${name}`;
 const PLAY_STORE_URL = (import.meta.env.VITE_PLAY_STORE_URL as string | undefined)?.trim() || "https://play.google.com/store/apps/details?id=com.anonymous.receiptcyclemobile";
@@ -16,13 +17,7 @@ const audiences = [
   { name: "Operations teams", title: "Make every review easier to explain", copy: "Organize evidence as the work happens, then move from a report total back to the receipt, payment, or customer activity behind it.", href: "/expense-reporting-software/" },
 ];
 
-const faqs = [
-  ["What can I do with Receipt Cycle?", "You can capture receipts, organize expenses, maintain customer details, prepare estimates and invoices, record payments, set budgets, review reports, and ask questions based on saved business records."],
-  ["Is Receipt Cycle a complete accounting system?", "Receipt Cycle is a practical workspace for spending, customer billing, and business records. It does not replace a complete accounting system, a qualified accountant, or professional tax advice."],
-  ["Can I use the same account on mobile and web?", "Yes. Capture information from your phone and return to the web workspace when a larger screen is better for reviewing documents, budgets, or reports."],
-  ["What does the AI do?", "AI can help extract receipt details and answer questions using the activity you have saved. You remain in control of corrections, classifications, and business decisions."],
-  ["Do I need a credit card to get started?", "No. You can create an account without entering a credit card. If you decide to upgrade later, current plan details are available on the pricing page."],
-] as const;
+const faqs = landingFaqs("/").map(({ q, a }) => [q, a] as const);
 
 function PhoneMockup() {
   return <div className="relative mx-auto w-[220px] rounded-[34px] border-[7px] border-slate-950 bg-slate-950 p-1 shadow-2xl sm:w-[250px]">

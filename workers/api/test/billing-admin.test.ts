@@ -102,6 +102,41 @@ describe("polar webhook", () => {
     expect(row?.pro).toBe(1);
   });
 
+  it("grants lifetime Pro from a paid order, keeps it when a subscription ends, and removes it only on refund", async () => {
+    const { token, id } = await makeUser({ email: "forever@example.com" });
+    const order = (over: Record<string, unknown> = {}) => ({
+      id: "ord_life",
+      status: "paid",
+      product_id: "prod_lifetime",
+      customer: { id: "cus_life", email: "forever@example.com", external_id: id },
+      ...over,
+    });
+    const plan = async () => (await env.DB.prepare("SELECT plan FROM profile WHERE user_id = ?").bind(id).first<{ plan: string }>())?.plan;
+
+    expect((await post(event("order.paid", order({ status: "pending" })))).status).toBe(202);
+    expect((await api("GET", "/api/subscription", { token })).json.pro).toBe(false);
+
+    expect((await post(event("order.paid", order()))).status).toBe(202);
+    expect((await api("GET", "/api/subscription", { token })).json).toMatchObject({ pro: true, phase: "pro" });
+    expect(await plan()).toBe("pro_lifetime");
+
+    // an older monthly subscription ending must not take lifetime away
+    await post(event("subscription.revoked", subscription({ status: "canceled" }, { external_id: id, id: "cus_life" })));
+    expect((await api("GET", "/api/subscription", { token })).json.pro).toBe(true);
+    expect(await plan()).toBe("pro_lifetime");
+
+    // a refund does
+    await post(event("order.refunded", order({ status: "refunded" })));
+    expect((await api("GET", "/api/subscription", { token })).json.pro).toBe(false);
+    expect(await plan()).toBe("free");
+  });
+
+  it("ignores orders for other products", async () => {
+    const { token, id } = await makeUser({ email: "other-order@example.com" });
+    await post(event("order.paid", { id: "ord_2", status: "paid", product_id: "prod_monthly", customer: { id: "cus_o", email: "other-order@example.com", external_id: id } }));
+    expect((await api("GET", "/api/subscription", { token })).json.pro).toBe(false);
+  });
+
   it("ignores the free product, unknown products and other events, but still answers 202", async () => {
     const { token, id } = await makeUser({ email: "free@example.com" });
     expect((await post(event("subscription.active", subscription({ product_id: "prod_free" }, { external_id: id })))).status).toBe(202);
@@ -147,6 +182,16 @@ describe("checkout and customer portal", () => {
       metadata: { user_id: id },
     });
     expect(calls[0].body.success_url).toContain("/checkout-return?polar_checkout=1");
+  });
+
+  it("starts a one-time lifetime checkout with no trial", async () => {
+    const { token, id } = await makeUser({ email: "life@example.com" });
+    const calls = stubPolar(() => ({ status: 201, json: { url: "https://polar.sh/checkout/life" } }));
+    const res = await api("POST", "/api/billing/checkout", { token, body: { plan: "lifetime" } });
+    expect(res.json).toEqual({ url: "https://polar.sh/checkout/life" });
+    expect(calls[0].body).toMatchObject({ products: ["prod_lifetime"], external_customer_id: id });
+    expect(calls[0].body.allow_trial).toBeUndefined();
+    expect(calls[0].body.trial_interval).toBeUndefined();
   });
 
   it("only returns to our own site, retries on the email when Polar already knows it, and reports failures", async () => {

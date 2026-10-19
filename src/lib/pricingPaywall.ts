@@ -1,15 +1,18 @@
 /**
  * Prices and paywall copy for the web. This used to be shared from the phone app (@mobile-lib/pricingPaywall);
  * the phone no longer carries it, so the web owns its own copy. Checkout is created by the API (Polar).
+ *
+ * Four plans in three boxes: Free, Pro (a switch picks Monthly or Yearly), and Pro Lifetime (one payment, launch offer).
  */
 export const PAYWALL_PRICING = {
   monthlyUsd: 3.5,
   yearlyUsd: 35,
+  lifetimeUsd: 60,
   trialDays: 7,
   currency: "USD",
 } as const;
 
-export type PaywallPlanId = "free" | "monthly" | "yearly";
+export type PaywallPlanId = "free" | "monthly" | "yearly" | "lifetime";
 
 export function formatUsd(amount: number): string {
   try {
@@ -24,7 +27,7 @@ export function formatUsd(amount: number): string {
   }
 }
 
-/** Approx. percent saved vs paying monthly for 12 months (e.g. 17% for $42 → $35). */
+/** Approx. percent saved vs paying monthly for 12 months (17% for $42 to $35). */
 export function yearlyDiscountPercent(): number {
   const fullYear = PAYWALL_PRICING.monthlyUsd * 12;
   if (fullYear <= 0) return 0;
@@ -33,6 +36,23 @@ export function yearlyDiscountPercent(): number {
 
 export function equivalentMonthlyFromYearly(): string {
   return formatUsd(PAYWALL_PRICING.yearlyUsd / 12);
+}
+
+/** How many months of Pro Monthly one lifetime payment covers (60 / 3.50 is about 17). */
+export function lifetimeMonthsOfMonthly(): number {
+  return Math.floor(PAYWALL_PRICING.lifetimeUsd / PAYWALL_PRICING.monthlyUsd);
+}
+
+/** What two years of Pro Monthly would cost, to show what the lifetime payment saves. */
+export function twoYearsMonthlyUsd(): number {
+  return PAYWALL_PRICING.monthlyUsd * 24;
+}
+
+/** Percent saved by paying once instead of two years of monthly (about 29%). */
+export function lifetimeDiscountPercent(): number {
+  const twoYears = twoYearsMonthlyUsd();
+  if (twoYears <= 0) return 0;
+  return Math.round((1 - PAYWALL_PRICING.lifetimeUsd / twoYears) * 100);
 }
 
 export const PAYWALL_PLANS: {
@@ -51,17 +71,24 @@ export const PAYWALL_PLANS: {
   },
   {
     id: "monthly",
-    label: "Monthly",
+    label: "Pro Monthly",
     hint: "Flexible",
     priceLine: formatUsd(PAYWALL_PRICING.monthlyUsd),
-    periodNote: "per month · full Pro",
+    periodNote: `per month · ${PAYWALL_PRICING.trialDays}-day free trial`,
   },
   {
     id: "yearly",
-    label: "Yearly",
-    hint: "Best value",
+    label: "Pro Yearly",
+    hint: "Save more",
     priceLine: formatUsd(PAYWALL_PRICING.yearlyUsd),
-    periodNote: "per year · 7-day free trial",
+    periodNote: `per year · ${PAYWALL_PRICING.trialDays}-day free trial`,
+  },
+  {
+    id: "lifetime",
+    label: "Pro Lifetime",
+    hint: "Best value",
+    priceLine: formatUsd(PAYWALL_PRICING.lifetimeUsd),
+    periodNote: "one time · no monthly charges",
   },
 ];
 
@@ -71,9 +98,12 @@ export function paywallPlanDetailLine(plan: PaywallPlanId): string {
     return `Free includes ${PAYWALL_PRICING.trialDays}-day access to Pro-style features and up to 25 transactions (all entry types). No export — upgrade for unlimited data & CSV.`;
   }
   if (plan === "monthly") {
-    return `${formatUsd(PAYWALL_PRICING.monthlyUsd)}/month · full Pro on phone & web. Cancel anytime from your account.`;
+    return `${PAYWALL_PRICING.trialDays}-day free trial · then ${formatUsd(PAYWALL_PRICING.monthlyUsd)}/month · full Pro on phone & web. Cancel anytime from your account.`;
   }
-  return `${PAYWALL_PRICING.trialDays}-day free trial · then ${formatUsd(PAYWALL_PRICING.yearlyUsd)}/year (save ${yearlyDiscountPercent()}% vs monthly).`;
+  if (plan === "yearly") {
+    return `${PAYWALL_PRICING.trialDays}-day free trial · then ${formatUsd(PAYWALL_PRICING.yearlyUsd)}/year (save ${yearlyDiscountPercent()}% vs monthly).`;
+  }
+  return `${formatUsd(PAYWALL_PRICING.lifetimeUsd)} one time · Pro for life on phone & web · no monthly charges (about ${lifetimeMonthsOfMonthly()} months of Monthly).`;
 }
 
 /** Bullet list per tier for marketing / SaaS pricing layouts. */
@@ -86,6 +116,7 @@ export const PAYWALL_TIER_FEATURES: Record<PaywallPlanId, readonly string[]> = {
     "No CSV export on Free",
   ],
   monthly: [
+    `${PAYWALL_PRICING.trialDays}-day free trial, then ${formatUsd(PAYWALL_PRICING.monthlyUsd)}/month`,
     "Unlimited transactions",
     "Receipt scan, upload & manual entry",
     "Voice capture, AI coach & money-leak insights",
@@ -98,6 +129,14 @@ export const PAYWALL_TIER_FEATURES: Record<PaywallPlanId, readonly string[]> = {
     `${PAYWALL_PRICING.trialDays}-day free trial, then ${formatUsd(PAYWALL_PRICING.yearlyUsd)}/year`,
     `${equivalentMonthlyFromYearly()}/mo when billed yearly`,
     `Save ${yearlyDiscountPercent()}% vs paying monthly`,
+  ],
+  lifetime: [
+    "Everything in Pro Monthly",
+    `Pay ${formatUsd(PAYWALL_PRICING.lifetimeUsd)} once, keep Pro for life`,
+    "No card on file, no monthly charges",
+    `Same usage as Pro Monthly, about ${lifetimeMonthsOfMonthly()} months of Monthly for one payment`,
+    `Save ${formatUsd(twoYearsMonthlyUsd() - PAYWALL_PRICING.lifetimeUsd)} compared with two years of Monthly`,
+    "Launch offer price",
   ],
 };
 

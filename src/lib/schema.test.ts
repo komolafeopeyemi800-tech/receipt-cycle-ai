@@ -356,12 +356,15 @@ describe("page types and entity details", () => {
     expect(Number(byName["Free"].price)).toBe(0);
     expect(Number(byName["Pro Monthly"].price)).toBe(PAYWALL_PRICING.monthlyUsd);
     expect(Number(byName["Pro Yearly"].price)).toBe(PAYWALL_PRICING.yearlyUsd);
+    expect(Number(byName["Pro Lifetime"].price)).toBe(PAYWALL_PRICING.lifetimeUsd);
     expect(byName["Pro Monthly"].priceSpecification.billingDuration).toBe("P1M");
     expect(byName["Pro Yearly"].priceSpecification.billingDuration).toBe("P1Y");
+    expect(byName["Pro Lifetime"].priceSpecification.billingDuration).toBeUndefined();
     for (const o of offers) expect(o.priceCurrency).toBe("USD");
     // The pricing page shows exactly these numbers.
     expect(PAYWALL_PRICING.monthlyUsd).toBe(3.5);
     expect(PAYWALL_PRICING.yearlyUsd).toBe(35);
+    expect(PAYWALL_PRICING.lifetimeUsd).toBe(60);
   });
 
   it("offers appear only where the prices are shown", () => {
@@ -481,6 +484,7 @@ describe("sitemap, robots, llms files", () => {
       expect(text).toContain("support@receiptcycle.com");
       expect(text).toContain("$3.50");
       expect(text).toContain("$35");
+      expect(text).toContain("$60");
     });
   }
 

@@ -17,6 +17,7 @@ export default defineConfig(async () => {
             POLAR_MONTHLY_PRODUCT_ID: "prod_monthly",
             POLAR_YEARLY_PRODUCT_ID: "prod_yearly",
             POLAR_FREE_PRODUCT_ID: "prod_free",
+            POLAR_LIFETIME_PRODUCT_ID: "prod_lifetime",
             ADMIN_DASHBOARD_SECRET: "admin-secret",
             ADMIN_DASHBOARD_ADMIN_EMAILS: "boss@example.com",
             BETTER_AUTH_SECRET: "test-secret-test-secret-test-secret-123",

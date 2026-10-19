@@ -99,6 +99,14 @@ export default function RefundPolicy() {
         of the period you paid for. Failed payments may be retried for a short period before access ends.
       </p>
 
+      <h3>3.3a Pro Lifetime (one-time payment)</h3>
+      <p>
+        Pro Lifetime is a single payment with no renewals and no free trial. It gives you Pro access, with the same usage
+        allowances as Pro Monthly, for as long as Receipt Cycle offers the Pro service. The 14-day full refund window in
+        3.1 applies from the date of your payment. A refunded Pro Lifetime payment ends the lifetime access on your
+        account.
+      </p>
+
       <h3>3.4 Taxes</h3>
       <p>
         Prices shown at checkout may include or add applicable taxes depending on your location. If you are a business

@@ -437,12 +437,13 @@ function landingRoute(lp: (typeof LANDING_PAGES)[number]): RouteSeo {
 }
 
 function pricingNoscript(): string {
-  const { monthlyUsd, yearlyUsd, trialDays } = PAYWALL_PRICING;
+  const { monthlyUsd, yearlyUsd, lifetimeUsd, trialDays } = PAYWALL_PRICING;
   const list = (items: readonly string[]) => `<ul>${items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul>`;
-  return `<p>Receipt Cycle has a free plan and two paid Pro plans. Payments are processed by Polar and paid plans can be cancelled from your account.</p>
+  return `<p>Receipt Cycle has a free plan, monthly and yearly Pro plans, and a one-time Pro Lifetime plan. Payments are processed by Polar and subscriptions can be cancelled from your account.</p>
        <h2>Free: ${formatUsd(0)}</h2>${list(PAYWALL_TIER_FEATURES.free)}
-       <h2>Pro Monthly: ${formatUsd(monthlyUsd)} per month</h2>${list(PAYWALL_TIER_FEATURES.monthly)}
-       <h2>Pro Yearly: ${formatUsd(yearlyUsd)} per year, with a ${trialDays}-day free trial</h2>${list(PAYWALL_TIER_FEATURES.yearly)}`;
+       <h2>Pro Monthly: ${formatUsd(monthlyUsd)} per month, with a ${trialDays}-day free trial</h2>${list(PAYWALL_TIER_FEATURES.monthly)}
+       <h2>Pro Yearly: ${formatUsd(yearlyUsd)} per year, with a ${trialDays}-day free trial</h2>${list(PAYWALL_TIER_FEATURES.yearly)}
+       <h2>Pro Lifetime: ${formatUsd(lifetimeUsd)} one time</h2>${list(PAYWALL_TIER_FEATURES.lifetime)}`;
 }
 
 function simplePage(opts: {
@@ -579,9 +580,9 @@ const staticRoutes: RouteSeo[] = [
   simplePage({
     path: "/pricing",
     kind: "pricing",
-    title: "Pricing | Receipt Cycle Free, Pro Monthly, and Pro Yearly",
+    title: "Pricing | Receipt Cycle Free, Pro Monthly, Yearly, and Lifetime",
     name: "Receipt Cycle pricing",
-    description: `Receipt Cycle is free to start with a ${PAYWALL_PRICING.trialDays}-day Pro trial and up to 25 transactions. Pro costs ${formatUsd(PAYWALL_PRICING.monthlyUsd)} per month or ${formatUsd(PAYWALL_PRICING.yearlyUsd)} per year with a ${PAYWALL_PRICING.trialDays}-day free trial.`,
+    description: `Receipt Cycle is free to start with a ${PAYWALL_PRICING.trialDays}-day Pro trial and up to 25 transactions. Pro costs ${formatUsd(PAYWALL_PRICING.monthlyUsd)} per month or ${formatUsd(PAYWALL_PRICING.yearlyUsd)} per year, both with a ${PAYWALL_PRICING.trialDays}-day free trial, or ${formatUsd(PAYWALL_PRICING.lifetimeUsd)} once for Pro Lifetime.`,
     dateModified: PAGE_DATES.pricing,
     changefreq: "monthly",
     priority: 0.8,
@@ -657,7 +658,7 @@ const staticRoutes: RouteSeo[] = [
     kind: "legal",
     title: "Refund Policy | Receipt Cycle",
     name: "Refund Policy",
-    description: "Refund and cancellation policy for Receipt Cycle Pro Monthly and Pro Yearly plans.",
+    description: "Refund and cancellation policy for Receipt Cycle Pro Monthly, Pro Yearly and Pro Lifetime plans.",
     dateModified: PAGE_DATES.refundPolicy,
     changefreq: "yearly",
     priority: 0.3,

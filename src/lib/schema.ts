@@ -166,7 +166,7 @@ function money(n: number): string {
 
 /** Plans with the real prices from the pricing page. */
 export function offerNodes(): Jsonld[] {
-  const { monthlyUsd, yearlyUsd, trialDays, currency } = PAYWALL_PRICING;
+  const { monthlyUsd, yearlyUsd, lifetimeUsd, trialDays, currency } = PAYWALL_PRICING;
   const pricingUrl = pageUrl("/pricing");
   return [
     {
@@ -212,6 +212,19 @@ export function offerNodes(): Jsonld[] {
         billingDuration: "P1Y",
         billingIncrement: 1,
         unitText: "year",
+      },
+    },
+    {
+      "@type": "Offer",
+      name: "Pro Lifetime",
+      description: `Everything in Pro Monthly for a single payment of $${money(lifetimeUsd)}. No monthly charges. Launch offer.`,
+      url: pricingUrl,
+      price: money(lifetimeUsd),
+      priceCurrency: currency,
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: money(lifetimeUsd),
+        priceCurrency: currency,
       },
     },
   ];

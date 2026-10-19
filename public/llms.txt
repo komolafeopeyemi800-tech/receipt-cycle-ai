@@ -28,9 +28,10 @@ Last updated: 2026-10-19
 ## Pricing
 
 - Free: $0. 7-day trial with Pro-style features; up to 25 transactions during trial (all entry types). No CSV export on Free.
-- Pro Monthly: $3.50 per month. Unlimited transactions, receipt scan, upload and manual entry, budgets, full edit access, CSV export.
+- Pro Monthly: $3.50 per month with a 7-day free trial. Unlimited transactions, receipt scan, upload and manual entry, budgets, full edit access, CSV export.
 - Pro Yearly: $35 per year with a 7-day free trial. Everything in Pro Monthly.
-- Prices are in USD. Payments are processed by Polar, which acts as merchant of record. Paid plans can be cancelled from the account.
+- Pro Lifetime: $60 one time, launch offer. Everything in Pro Monthly with no monthly charges.
+- Prices are in USD. Payments are processed by Polar, which acts as merchant of record. Monthly and yearly plans can be cancelled from the account.
 
 ## Limits
 
@@ -42,7 +43,7 @@ Last updated: 2026-10-19
 ## Core pages
 
 - [Home](https://receiptcycle.com/): What Receipt Cycle is and what you can do with it
-- [Pricing](https://receiptcycle.com/pricing): Free, Pro Monthly, and Pro Yearly plans with current prices
+- [Pricing](https://receiptcycle.com/pricing): Free, Pro Monthly, Pro Yearly, and Pro Lifetime plans with current prices
 - [FAQ](https://receiptcycle.com/faq): Answers about accounts, scanning, billing, AI, data, and support
 - [About](https://receiptcycle.com/about): Why Receipt Cycle exists, who it is for, and its principles
 - [Contact](https://receiptcycle.com/contact): How to reach the Receipt Cycle team

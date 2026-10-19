@@ -136,12 +136,13 @@ const PRODUCT_SUMMARY =
   "Receipt Cycle is a web and Android app for freelancers, independent professionals, and small businesses. It captures receipts with AI extraction and keeps expenses, customers, estimates, invoices, payment records, budgets, and reports connected in one workspace.";
 
 function pricingLines(): string[] {
-  const { monthlyUsd, yearlyUsd, trialDays } = PAYWALL_PRICING;
+  const { monthlyUsd, yearlyUsd, lifetimeUsd, trialDays } = PAYWALL_PRICING;
   return [
     `- Free: ${formatUsd(0)}. ${PAYWALL_TIER_FEATURES.free[0]}; ${PAYWALL_TIER_FEATURES.free[1].toLowerCase()}. ${PAYWALL_TIER_FEATURES.free[4]}.`,
-    `- Pro Monthly: ${formatUsd(monthlyUsd)} per month. Unlimited transactions, receipt scan, upload and manual entry, budgets, full edit access, CSV export.`,
+    `- Pro Monthly: ${formatUsd(monthlyUsd)} per month with a ${trialDays}-day free trial. Unlimited transactions, receipt scan, upload and manual entry, budgets, full edit access, CSV export.`,
     `- Pro Yearly: ${formatUsd(yearlyUsd)} per year with a ${trialDays}-day free trial. Everything in Pro Monthly.`,
-    "- Prices are in USD. Payments are processed by Polar, which acts as merchant of record. Paid plans can be cancelled from the account.",
+    `- Pro Lifetime: ${formatUsd(lifetimeUsd)} one time, launch offer. Everything in Pro Monthly with no monthly charges.`,
+    "- Prices are in USD. Payments are processed by Polar, which acts as merchant of record. Monthly and yearly plans can be cancelled from the account.",
   ];
 }
 
@@ -188,7 +189,7 @@ export function buildLlmsTxt(): string {
     "## Core pages",
     "",
     link("Home", "/", "What Receipt Cycle is and what you can do with it"),
-    link("Pricing", "/pricing", "Free, Pro Monthly, and Pro Yearly plans with current prices"),
+    link("Pricing", "/pricing", "Free, Pro Monthly, Pro Yearly, and Pro Lifetime plans with current prices"),
     link("FAQ", "/faq", "Answers about accounts, scanning, billing, AI, data, and support"),
     link("About", "/about", "Why Receipt Cycle exists, who it is for, and its principles"),
     link("Contact", "/contact", "How to reach the Receipt Cycle team"),

@@ -54,3 +54,5 @@ POLAR_SERVER = "production"
 # POLAR_MONTHLY_PRODUCT_ID = ""
 # POLAR_YEARLY_PRODUCT_ID = ""
 # POLAR_FREE_PRODUCT_ID = ""
+# One-time "Pro Lifetime" product (a product id is not a secret).
+POLAR_LIFETIME_PRODUCT_ID = "7968c3d7-d67b-4104-834a-43b825f4cceb"

@@ -39,9 +39,10 @@ What it is not:
 Source: https://receiptcycle.com/pricing
 
 - Free: $0. 7-day trial with Pro-style features; up to 25 transactions during trial (all entry types). No CSV export on Free.
-- Pro Monthly: $3.50 per month. Unlimited transactions, receipt scan, upload and manual entry, budgets, full edit access, CSV export.
+- Pro Monthly: $3.50 per month with a 7-day free trial. Unlimited transactions, receipt scan, upload and manual entry, budgets, full edit access, CSV export.
 - Pro Yearly: $35 per year with a 7-day free trial. Everything in Pro Monthly.
-- Prices are in USD. Payments are processed by Polar, which acts as merchant of record. Paid plans can be cancelled from the account.
+- Pro Lifetime: $60 one time, launch offer. Everything in Pro Monthly with no monthly charges.
+- Prices are in USD. Payments are processed by Polar, which acts as merchant of record. Monthly and yearly plans can be cancelled from the account.
 
 ## Feature pages
 

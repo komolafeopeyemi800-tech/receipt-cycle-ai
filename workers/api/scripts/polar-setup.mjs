@@ -5,7 +5,7 @@
  * keeps any benefits already attached.
  *
  *   POLAR_ACCESS_TOKEN=polar_oat_... \
- *   POLAR_MONTHLY_PRODUCT_ID=... POLAR_YEARLY_PRODUCT_ID=... \
+ *   POLAR_MONTHLY_PRODUCT_ID=... POLAR_YEARLY_PRODUCT_ID=... POLAR_LIFETIME_PRODUCT_ID=... \
  *   node scripts/polar-setup.mjs [--sandbox] [--dry-run]
  *
  * The token needs the scopes: benefits:read, benefits:write, products:read, products:write.
@@ -16,10 +16,10 @@ const sandbox = args.has("--sandbox") || process.env.POLAR_SERVER === "sandbox";
 const dryRun = args.has("--dry-run");
 const base = sandbox ? "https://sandbox-api.polar.sh" : "https://api.polar.sh";
 const token = process.env.POLAR_ACCESS_TOKEN;
-const products = [process.env.POLAR_MONTHLY_PRODUCT_ID, process.env.POLAR_YEARLY_PRODUCT_ID].filter(Boolean);
+const products = [process.env.POLAR_MONTHLY_PRODUCT_ID, process.env.POLAR_YEARLY_PRODUCT_ID, process.env.POLAR_LIFETIME_PRODUCT_ID].filter(Boolean);
 
 if (!token || products.length === 0) {
-  console.error("Set POLAR_ACCESS_TOKEN and POLAR_MONTHLY_PRODUCT_ID / POLAR_YEARLY_PRODUCT_ID first.");
+  console.error("Set POLAR_ACCESS_TOKEN and POLAR_MONTHLY_PRODUCT_ID / POLAR_YEARLY_PRODUCT_ID / POLAR_LIFETIME_PRODUCT_ID first.");
   process.exit(1);
 }
 

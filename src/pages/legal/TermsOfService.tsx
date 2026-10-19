@@ -149,6 +149,11 @@ export default function TermsOfService() {
         purchases, the store sets price and tax presentation. You are responsible for providing accurate billing details
         and for any fees your bank or card issuer charges.
       </p>
+      <p>
+        <strong>Pro Lifetime.</strong> A one-time Pro Lifetime payment gives you Pro access for as long as we offer the Pro
+        service, under the same fair usage limits as Pro Monthly. It is not a promise of any specific feature or of
+        service for your own lifetime. If we ever discontinue the Pro service, we will give you reasonable notice.
+      </p>
 
       <h2>11. Intellectual property</h2>
       <p>

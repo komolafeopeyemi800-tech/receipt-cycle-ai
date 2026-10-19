@@ -62,9 +62,11 @@ export async function verifyPolarWebhook(secret: string, headers: Headers, body:
 
 // --- plans -------------------------------------------------------------------------------------------------------
 
-export type PaidPlan = "monthly" | "yearly";
+/** "yearly" is no longer sold but stays here so existing yearly subscribers keep working. "lifetime" is a one-time purchase. */
+export type PaidPlan = "monthly" | "yearly" | "lifetime";
 
 export function productIdFor(env: Env, plan: PaidPlan): string | undefined {
+  if (plan === "lifetime") return asString(env.POLAR_LIFETIME_PRODUCT_ID);
   return asString(plan === "monthly" ? env.POLAR_MONTHLY_PRODUCT_ID : env.POLAR_YEARLY_PRODUCT_ID);
 }
 
@@ -72,6 +74,7 @@ function planForProduct(env: Env, productId: string | undefined): PaidPlan | nul
   if (!productId) return null;
   if (productId === asString(env.POLAR_MONTHLY_PRODUCT_ID)) return "monthly";
   if (productId === asString(env.POLAR_YEARLY_PRODUCT_ID)) return "yearly";
+  if (productId === asString(env.POLAR_LIFETIME_PRODUCT_ID)) return "lifetime";
   return null;
 }
 
@@ -84,7 +87,31 @@ export type PolarEntitlement = {
   email?: string;
   externalId?: string;
   subscriptionId?: string;
+  /** True when a lifetime purchase was refunded, so the lifetime grant itself must be removed. */
+  revokeLifetime?: boolean;
 };
+
+/**
+ * One-time purchases arrive as orders, not subscriptions. A paid order for the lifetime product grants Pro for good; a
+ * refund of that order takes it back. Orders for any other product are ignored here.
+ */
+function lifetimeOrderEntitlement(env: Env, eventType: string, data: unknown): PolarEntitlement | null {
+  if (eventType !== "order.paid" && eventType !== "order.refunded") return null;
+  const d = asRecord(data);
+  if (!d) return null;
+  const productId = asString(d.product_id) ?? asString(asRecord(d.product)?.id);
+  if (planForProduct(env, productId) !== "lifetime") return null;
+  const customer = asRecord(d.customer);
+  const base = {
+    polarCustomerId: asString(d.customer_id) ?? asString(customer?.id),
+    email: asString(customer?.email)?.toLowerCase(),
+    externalId: asString(customer?.external_id),
+    subscriptionId: asString(d.id),
+  };
+  if (eventType === "order.refunded") return { ...base, status: "free", proActive: false, revokeLifetime: true };
+  if (asString(d.status) === "pending") return null; // not paid yet
+  return { ...base, status: "pro_lifetime", proActive: true };
+}
 
 /**
  * Turns a subscription event into what the user is entitled to. The subscription's own `status` decides, so a repeated or
@@ -95,12 +122,13 @@ export type PolarEntitlement = {
  * - canceled / revoked / unpaid / incomplete*                         -> back to free (7-day in-app trial rules)
  */
 export function toPolarEntitlement(env: Env, eventType: string, data: unknown): PolarEntitlement | null {
+  if (eventType.startsWith("order.")) return lifetimeOrderEntitlement(env, eventType, data);
   if (!eventType.startsWith("subscription.")) return null;
   const d = asRecord(data);
   if (!d) return null;
   const productId = asString(d.product_id) ?? asString(asRecord(d.product)?.id);
   const plan = planForProduct(env, productId);
-  if (!plan) return null; // the free product or something unrelated: never grants Pro
+  if (!plan || plan === "lifetime") return null; // the free product or something unrelated: never grants Pro
 
   const customer = asRecord(d.customer);
   const base = {
@@ -148,9 +176,8 @@ export async function createCheckoutUrl(env: Env, args: { plan: PaidPlan; userId
     ...(args.name ? { customer_name: args.name } : {}),
     success_url: args.successUrl,
     metadata: { user_id: args.userId },
-    allow_trial: true,
-    trial_interval: "day",
-    trial_interval_count: 7,
+    // The free trial belongs to subscriptions; a one-time lifetime purchase is charged right away.
+    ...(args.plan === "lifetime" ? {} : { allow_trial: true, trial_interval: "day", trial_interval_count: 7 }),
   };
   let res = await polarFetch(env, "/v1/checkouts/", { ...base, external_customer_id: args.userId });
   // The same email may already exist as a Polar customer under another id: retry on the email alone.

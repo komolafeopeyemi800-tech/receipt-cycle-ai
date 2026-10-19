@@ -37,6 +37,8 @@ export type Env = {
   POLAR_ORG_SLUG?: string;
   POLAR_MONTHLY_PRODUCT_ID?: string;
   POLAR_YEARLY_PRODUCT_ID?: string;
+  /** One-time "Pro Lifetime" product. */
+  POLAR_LIFETIME_PRODUCT_ID?: string;
   POLAR_FREE_PRODUCT_ID?: string;
   /** "sandbox" uses sandbox-api.polar.sh; anything else is production. */
   POLAR_SERVER?: string;

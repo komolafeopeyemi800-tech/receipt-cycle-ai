@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import {
   PAYWALL_BENEFITS,
   PAYWALL_PLANS,
   PAYWALL_TIER_FEATURES,
+  lifetimeDiscountPercent,
+  lifetimeMonthsOfMonthly,
   yearlyDiscountPercent,
   formatUsd,
   PAYWALL_PRICING,
@@ -21,7 +24,10 @@ export default function ReceiptCyclePaywall() {
   const navigate = useNavigate();
   const { user } = useWebAuth();
   const { startCheckout } = useBilling();
-  const discountPct = yearlyDiscountPercent();
+  const discountPct = lifetimeDiscountPercent();
+  // Four plans in three boxes: the switch swaps the middle box between Monthly and Yearly. Free and Lifetime never change.
+  const [yearly, setYearly] = useState(false);
+  const shown = PAYWALL_PLANS.filter((tier) => tier.id !== (yearly ? "monthly" : "yearly"));
 
   async function ctaForPlan(id: PaywallPlanId) {
     if (id === "free") {
@@ -47,15 +53,32 @@ export default function ReceiptCyclePaywall() {
             Simple plans. Same power on web and mobile.
           </h1>
           <p className="mt-3 text-base text-slate-600 sm:text-lg">
-            Start free with a guided trial, or unlock unlimited tracking and exports with Pro. Cancel paid plans anytime
-            from your account.
+            Start free with a guided trial, or unlock unlimited tracking and exports with Pro. Cancel monthly or yearly
+            anytime, or pay once and keep Pro for life.
           </p>
+          <div className="mt-6 flex items-center justify-center gap-3 text-sm font-semibold" role="group" aria-label="Billing">
+            <span className={yearly ? "text-slate-500" : "text-slate-900"}>Monthly</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={yearly}
+              aria-label="Bill yearly instead of monthly"
+              onClick={() => setYearly((v) => !v)}
+              className={`relative h-7 w-12 rounded-full transition ${yearly ? "bg-teal-600" : "bg-slate-300"}`}
+            >
+              <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${yearly ? "left-[22px]" : "left-0.5"}`} />
+            </button>
+            <span className={yearly ? "text-slate-900" : "text-slate-500"}>
+              Yearly
+              <span className="ml-2 rounded-full bg-amber-300 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-950">Save {yearlyDiscountPercent()}%</span>
+            </span>
+          </div>
         </div>
 
         <div className="mt-12 grid gap-6 lg:grid-cols-3 lg:items-stretch grid-cols-1">
-          {PAYWALL_PLANS.map((tier) => {
+          {shown.map((tier) => {
             const features = PAYWALL_TIER_FEATURES[tier.id];
-            const popular = tier.id === "yearly";
+            const popular = tier.id === "lifetime";
             return (
               <div
                 key={tier.id}
@@ -66,8 +89,8 @@ export default function ReceiptCyclePaywall() {
                 }`}
               >
                 {popular ? (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-teal-600 to-teal-500 px-3 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white shadow">
-                    Most popular · −{discountPct}%
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-gradient-to-r from-teal-600 to-teal-500 px-3 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white shadow">
+                    {`Launch offer · save ${discountPct}%`}
                   </span>
                 ) : null}
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{tier.hint}</p>
@@ -76,7 +99,7 @@ export default function ReceiptCyclePaywall() {
                   <span className="text-4xl font-extrabold tabular-nums text-slate-900">{tier.priceLine}</span>
                   {tier.id !== "free" ? (
                     <span className="text-sm font-medium text-slate-500">
-                      {tier.id === "monthly" ? "/ month" : "/ year"}
+                      {tier.id === "monthly" ? "/ month" : tier.id === "yearly" ? "/ year" : "one time"}
                     </span>
                   ) : null}
                 </div>
@@ -104,9 +127,9 @@ export default function ReceiptCyclePaywall() {
                 >
                   {tier.id === "free"
                     ? "Continue with Free"
-                    : tier.id === "yearly"
-                      ? "Start 7-day free trial"
-                      : "Subscribe monthly"}
+                    : tier.id === "lifetime"
+                      ? "Get lifetime access"
+                      : "Start 7-day free trial"}
                 </button>
               </div>
             );
@@ -114,9 +137,13 @@ export default function ReceiptCyclePaywall() {
         </div>
 
         <div className="mx-auto mt-6 max-w-3xl rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-sm text-slate-600 shadow-sm">
-          <strong className="font-semibold text-slate-800">Yearly:</strong>{" "}
-          {PAYWALL_PRICING.trialDays}-day free trial, then {formatUsd(PAYWALL_PRICING.yearlyUsd)} per year.
-          <span className="text-slate-500"> Monthly bills {formatUsd(PAYWALL_PRICING.monthlyUsd)} per month.</span>
+          <strong className="font-semibold text-slate-800">Pro Lifetime:</strong> {formatUsd(PAYWALL_PRICING.lifetimeUsd)} once, about{" "}
+          {lifetimeMonthsOfMonthly()} months of Monthly, with no card charged again.
+          <span className="text-slate-500">
+            {" "}
+            Monthly and Yearly have a {PAYWALL_PRICING.trialDays}-day free trial, then {formatUsd(PAYWALL_PRICING.monthlyUsd)} per month or{" "}
+            {formatUsd(PAYWALL_PRICING.yearlyUsd)} per year.
+          </span>
         </div>
 
         <div className="mt-16 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
@@ -162,8 +189,8 @@ export default function ReceiptCyclePaywall() {
         </div>
 
         <p className="mx-auto mt-6 max-w-lg text-center text-xs leading-relaxed text-slate-500">
-          Payments are processed securely by Polar. Your subscription is tied to your Receipt Cycle account and unlocks Pro on
-          web and mobile.
+          Payments are processed securely by Polar. Your plan is tied to your Receipt Cycle account and unlocks Pro on web and
+          mobile.
         </p>
       </main>
     </div>

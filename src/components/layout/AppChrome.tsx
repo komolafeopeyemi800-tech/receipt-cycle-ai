@@ -5,7 +5,7 @@ import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 import { useSubscriptionState } from "@/hooks/use-subscription-state";
 import { DashboardUpgradeModal } from "@/components/pricing/DashboardUpgradeModal";
-import { yearlyDiscountPercent } from "@/lib/pricingPaywall";
+import { PAYWALL_PRICING, formatUsd } from "@/lib/pricingPaywall";
 import { todayLocalYmd } from "@mobile-lib/dates";
 
 type AppChromeProps = {
@@ -129,7 +129,7 @@ export function AppChrome({ children }: AppChromeProps) {
 
   return <>
     {user && promoVisible && !subscription?.pro ? <div className="fixed inset-x-0 top-0 z-[80] flex h-10 items-center justify-between gap-2 bg-gradient-to-r from-teal-950 via-teal-800 to-emerald-700 px-3 text-white shadow-lg sm:px-5">
-      <button onClick={() => setPricingOpen(true)} className="flex min-w-0 flex-1 items-center justify-center gap-2 overflow-hidden text-left text-[11px] font-bold sm:text-sm"><span className="shrink-0 rounded-full bg-amber-300 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-slate-950 sm:text-[10px]">Special offer</span><span className="min-w-0 truncate">Save {yearlyDiscountPercent()}% with Receipt Cycle yearly Pro</span><span className="hidden rounded-full bg-white px-3 py-1 text-xs font-black text-teal-900 md:inline">View offer</span></button>
+      <button onClick={() => setPricingOpen(true)} className="flex min-w-0 flex-1 items-center justify-center gap-2 overflow-hidden text-left text-[11px] font-bold sm:text-sm"><span className="shrink-0 rounded-full bg-amber-300 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-slate-950 sm:text-[10px]">Special offer</span><span className="min-w-0 truncate">Launch offer: Pro for life, {formatUsd(PAYWALL_PRICING.lifetimeUsd)} one time</span><span className="hidden rounded-full bg-white px-3 py-1 text-xs font-black text-teal-900 md:inline">View offer</span></button>
       <button onClick={() => { sessionStorage.setItem("receipt-cycle:promo-dismissed", "1"); setPromoVisible(false); }} aria-label="Dismiss offer" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-white/10"><i className="fas fa-xmark" /></button>
     </div> : null}
     <div onClickCapture={(event) => { const anchor = (event.target as HTMLElement).closest("a"); if (user && anchor?.getAttribute("href") === "/pricing") { event.preventDefault(); setPricingOpen(true); } }}>

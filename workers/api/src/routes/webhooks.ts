@@ -32,6 +32,7 @@ webhookRoutes.post("/polar", async (c) => {
       status: entitlement.status,
       proActive: entitlement.proActive,
       source: "polar",
+      revokeLifetime: entitlement.revokeLifetime,
       eventType: type,
     });
   }

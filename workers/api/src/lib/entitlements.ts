@@ -3,7 +3,8 @@ import { adminAuditLogs, profile, user, billingEntitlements } from "../db/schema
 import type { Db } from "../types";
 import { newId } from "./scope";
 
-export type EntitlementStatus = "free" | "pro_monthly" | "pro_yearly" | "cancelling";
+/** "pro_lifetime" is a one-time purchase: it never expires and a subscription ending must not remove it. */
+export type EntitlementStatus = "free" | "pro_monthly" | "pro_yearly" | "pro_lifetime" | "cancelling";
 
 export function normalizeEmail(email: string | undefined | null): string | undefined {
   const e = email?.trim().toLowerCase();
@@ -81,6 +82,8 @@ export async function upsertEntitlementFromWebhook(
     paymentStatus?: string;
     source?: string;
     eventType: string;
+    /** A lifetime purchase was refunded: the only event allowed to take a lifetime grant away. */
+    revokeLifetime?: boolean;
   },
 ) {
   const polarCustomerId = args.polarCustomerId?.trim() || undefined;
@@ -89,6 +92,9 @@ export async function upsertEntitlementFromWebhook(
 
   const existing = await latestEntitlement(db, polarCustomerId, email);
   const now = Date.now();
+  // Someone who bought lifetime keeps Pro when an old monthly or yearly subscription ends. Only a refund removes it.
+  const keepLifetime = existing?.subscriptionStatus === "pro_lifetime" && args.status !== "pro_lifetime" && !args.revokeLifetime;
+  if (keepLifetime) args = { ...args, status: "pro_lifetime", proActive: true };
   if (!existing) {
     await db.insert(billingEntitlements).values({
       id: newId(),

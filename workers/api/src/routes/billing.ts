@@ -10,7 +10,7 @@ export const billingRoutes = new Hono<AppEnv>();
 billingRoutes.use("*", requireUser);
 
 billingRoutes.post("/checkout", async (c) => {
-  const { plan, returnUrl } = await parseBody(c, z.object({ plan: z.enum(["monthly", "yearly"]), returnUrl: z.string().max(500).optional() }));
+  const { plan, returnUrl } = await parseBody(c, z.object({ plan: z.enum(["monthly", "yearly", "lifetime"]), returnUrl: z.string().max(500).optional() }));
   const user = c.get("user");
   const web = (c.env.PUBLIC_WEB_APP_URL ?? "https://receiptcycle.com").replace(/\/$/, "");
   // Only our own site or the app's deep link may be used as the place to come back to.

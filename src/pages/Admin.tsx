@@ -582,6 +582,7 @@ export default function Admin() {
                             <option value="free">Free</option>
                             <option value="pro_monthly">Pro Monthly</option>
                             <option value="pro_yearly">Pro Yearly</option>
+                            <option value="pro_lifetime">Pro Lifetime</option>
                             <option value="cancelling">Cancelling</option>
                           </select>
                         ) : (

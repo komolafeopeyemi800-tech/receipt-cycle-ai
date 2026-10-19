@@ -410,7 +410,7 @@ export const billingEntitlements = sqliteTable(
     polarCustomerId: text("polar_customer_id"),
     email: text("email"),
     membershipId: text("membership_id"),
-    /** free | pro_monthly | pro_yearly | cancelling */
+    /** free | pro_monthly | pro_yearly | pro_lifetime | cancelling */
     subscriptionStatus: text("subscription_status").notNull(),
     proActive: integer("pro_active", { mode: "boolean" }).notNull(),
     paymentStatus: text("payment_status"),

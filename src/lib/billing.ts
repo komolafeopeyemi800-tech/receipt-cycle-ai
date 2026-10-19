@@ -1,15 +1,18 @@
 import { apiClient } from "@/lib/api";
 import { useWebAuth } from "@/contexts/WebAuthContext";
 
+/** Plans that can be bought. */
+export type BillingPlan = "monthly" | "yearly" | "lifetime";
+
 /** Starts Polar checkout / opens the Polar customer portal for the signed-in user. Both return an error message instead of throwing. */
 export function useBilling() {
   const { token } = useWebAuth();
   // The phone app no longer ships these two calls, so the web talks to the API routes directly.
-  const checkout = (args: { token: string; plan: "monthly" | "yearly" }) =>
+  const checkout = (args: { token: string; plan: BillingPlan }) =>
     apiClient.request<{ url: string }>("POST", "/api/billing/checkout", { token: args.token, body: { plan: args.plan } });
   const portal = (args: { token: string }) => apiClient.request<{ url: string }>("POST", "/api/billing/portal", { token: args.token, body: {} });
 
-  async function startCheckout(plan: "monthly" | "yearly"): Promise<string | null> {
+  async function startCheckout(plan: BillingPlan): Promise<string | null> {
     if (!token) return "Sign in first, then choose a plan.";
     try {
       const { url } = await checkout({ token, plan });

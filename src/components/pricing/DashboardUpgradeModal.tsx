@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { yearlyDiscountPercent, type PaywallPlanId } from "@/lib/pricingPaywall";
+import { PAYWALL_PRICING, formatUsd, lifetimeDiscountPercent, lifetimeMonthsOfMonthly, type PaywallPlanId } from "@/lib/pricingPaywall";
 import { useBilling } from "@/lib/billing";
 import { useSubscriptionState } from "@/hooks/use-subscription-state";
 
 const comparison = [
-  ["Price", "$0", "$3.50/mo.", "$35/yr."],
+  ["Price", "$0", "$3.50/mo. or $35/yr.", "$60 once"],
+  ["Billing", "None", "Subscription", "One payment"],
   ["Transactions", "25 trial", "Unlimited", "Unlimited"],
   ["Receipt and document OCR", "Trial", "Included", "Included"],
   ["AI voice, text and coach", "Trial", "Included", "Included"],
@@ -65,7 +66,7 @@ export function DashboardUpgradeModal({ open, onClose }: { open: boolean; onClos
           </div>
           <div className="relative text-[10px]">
             <div className="pointer-events-none absolute bottom-0 left-[79.5%] top-0 w-[20.5%] rounded-[11px] border border-teal-300/90 bg-teal-300/[.075]" />
-            <div className="relative grid min-h-[40px] grid-cols-[1.65fr_.62fr_.76fr_.78fr] items-center px-3 font-extrabold"><div>Feature</div><div className="text-center text-slate-300">Free</div><div className="text-center text-slate-200">Monthly</div><div className="text-center text-teal-200">Yearly Pro</div></div>
+            <div className="relative grid min-h-[40px] grid-cols-[1.65fr_.62fr_.76fr_.78fr] items-center px-3 font-extrabold"><div>Feature</div><div className="text-center text-slate-300">Free</div><div className="text-center text-slate-200">Pro</div><div className="text-center text-teal-200">Lifetime</div></div>
             <div className="space-y-1.5">
               {comparison.map((row, index) => <div key={row[0]} className={`relative grid min-h-[48px] grid-cols-[1.65fr_.62fr_.76fr_.78fr] items-center rounded-[7px] px-3 ${index % 2 === 0 ? "bg-white/[.055]" : "bg-transparent"}`}><div className="pr-2 font-semibold leading-4 text-slate-200">{row[0]}</div><div className="text-center text-slate-400">{row[1]}</div><div className="text-center text-slate-300">{row[2]}</div><div className="text-center font-bold text-teal-200">{row[3]}</div></div>)}
             </div>
@@ -74,9 +75,9 @@ export function DashboardUpgradeModal({ open, onClose }: { open: boolean; onClos
 
         <section className="flex min-h-0 flex-col px-5 pb-4 pt-12 sm:px-7 lg:px-7 lg:pb-4 lg:pt-5">
           <div className="pr-5 lg:pr-8">
-            <div className="mb-1.5 flex items-center gap-2"><p className="text-[9px] font-black uppercase tracking-[.18em] text-teal-300">Receipt Cycle Pro</p><span className="rounded-full bg-teal-300 px-2 py-0.5 text-[9px] font-black text-slate-950">Save {yearlyDiscountPercent()}%</span></div>
-            <h2 className="text-[clamp(25px,3.1vw,32px)] font-black uppercase leading-none tracking-[-.04em]"><span className="text-teal-300">$35 for full access</span><br />for the entire year.</h2>
-            <p className="mt-2 text-[10px] leading-4 text-slate-400">Keep every receipt, transaction and source document connected.</p>
+            <div className="mb-1.5 flex items-center gap-2"><p className="text-[9px] font-black uppercase tracking-[.18em] text-teal-300">Receipt Cycle Pro</p><span className="rounded-full bg-teal-300 px-2 py-0.5 text-[9px] font-black text-slate-950">Launch offer · Save {lifetimeDiscountPercent()}%</span></div>
+            <h2 className="text-[clamp(25px,3.1vw,32px)] font-black uppercase leading-none tracking-[-.04em]"><span className="text-teal-300">{formatUsd(PAYWALL_PRICING.lifetimeUsd)} once</span><br />and Pro is yours for life.</h2>
+            <p className="mt-2 text-[10px] leading-4 text-slate-400">No monthly card charges. About {lifetimeMonthsOfMonthly()} months of Monthly for one payment.</p>
           </div>
 
           <div className="mt-3 space-y-2">
@@ -88,8 +89,13 @@ export function DashboardUpgradeModal({ open, onClose }: { open: boolean; onClos
           <div className="mt-3 flex gap-2.5 rounded-[10px] border border-teal-300/10 bg-teal-300/[.10] px-3 py-2.5 text-[9px] leading-[14px] text-slate-400"><i className="fas fa-lightbulb mt-0.5 text-teal-300" /><p><strong className="text-white">Why this beats Free:</strong> remove record limits, unlock complete document capture and keep exports tied to original evidence.</p></div>
 
           <div className="mt-auto pt-3">
-            <div className="relative mx-auto max-w-[390px]"><button disabled={Boolean(busy)} onClick={() => void choose("yearly")} className="min-h-10 w-full rounded-[8px] bg-gradient-to-r from-teal-300 to-emerald-300 px-5 text-[12px] font-black text-slate-950 shadow-[0_4px_0_rgba(13,148,136,.35)] transition hover:brightness-105 disabled:opacity-60">{busy === "yearly" ? "Opening secure checkout…" : "Get full access for $35"}</button><span className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[4px] bg-pink-500 px-3 py-0.5 text-[8px] font-black text-white shadow">◆ Lock this special offer</span></div>
-            <button disabled={Boolean(busy)} onClick={() => void choose("monthly")} className="mx-auto mt-4 block text-[10px] font-semibold text-slate-500 transition hover:text-white">{busy === "monthly" ? "Opening monthly checkout…" : "Skip the special offer and choose monthly"}</button>
+            <div className="relative mx-auto max-w-[390px]"><button disabled={Boolean(busy)} onClick={() => void choose("lifetime")} className="min-h-10 w-full rounded-[8px] bg-gradient-to-r from-teal-300 to-emerald-300 px-5 text-[12px] font-black text-slate-950 shadow-[0_4px_0_rgba(13,148,136,.35)] transition hover:brightness-105 disabled:opacity-60">{busy === "lifetime" ? "Opening secure checkout…" : `Get lifetime access for ${formatUsd(PAYWALL_PRICING.lifetimeUsd)}`}</button><span className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[4px] bg-pink-500 px-3 py-0.5 text-[8px] font-black text-white shadow">◆ Launch offer: pay once</span></div>
+            <p className="mt-4 text-center text-[10px] font-semibold text-slate-500">
+              Prefer a subscription? {PAYWALL_PRICING.trialDays}-day free trial:{" "}
+              <button disabled={Boolean(busy)} onClick={() => void choose("monthly")} className="underline transition hover:text-white">{busy === "monthly" ? "Opening…" : `${formatUsd(PAYWALL_PRICING.monthlyUsd)}/month`}</button>
+              {" or "}
+              <button disabled={Boolean(busy)} onClick={() => void choose("yearly")} className="underline transition hover:text-white">{busy === "yearly" ? "Opening…" : `${formatUsd(PAYWALL_PRICING.yearlyUsd)}/year`}</button>
+            </p>
           </div>
         </section>
       </div>

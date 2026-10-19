@@ -86,6 +86,6 @@ const styles = StyleSheet.create({
   typeTile: { width: "31%", minHeight: 62, backgroundColor: colors.surfaceSoft, borderRadius: radius.medium, alignItems: "center", justifyContent: "center", gap: 4 },
   typeTileSelected: { backgroundColor: colors.primary }, typeText: { color: colors.textPrimary, fontSize: uiType.caption }, typeTextSelected: { color: "#fff", fontWeight: "700" },
   iconRow: { flexDirection: "row", gap: 9, marginBottom: spacing.lg }, iconOption: { width: 42, height: 42, borderRadius: 12, backgroundColor: colors.blueSoft, alignItems: "center", justifyContent: "center" }, iconOptionSelected: { borderWidth: 2, borderColor: colors.primary, backgroundColor: colors.mintSoft },
-  colorRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.lg }, colorRing: { padding: 3, borderRadius: 30, borderWidth: 2, borderColor: "transparent" }, colorRingSelected: { borderColor: colors.primary }, colorDot: { width: 24, height: 24, borderRadius: 12 },
+  colorRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.lg }, colorRing: { padding: 3, borderRadius: 0, borderWidth: 2, borderColor: "transparent" }, colorRingSelected: { borderColor: colors.primary }, colorDot: { width: 24, height: 24, borderRadius: 0 },
   footer: { backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.divider, padding: spacing.lg },
 });

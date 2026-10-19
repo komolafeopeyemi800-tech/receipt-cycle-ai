@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: colors.gray200,
-    borderRadius: 10,
+    borderRadius: 0,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: typeScale.body,
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
     borderColor: colors.gray200,
-    borderRadius: 12,
+    borderRadius: 0,
     backgroundColor: colors.surface,
     overflow: "hidden",
   },

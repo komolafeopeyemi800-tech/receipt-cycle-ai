@@ -11,6 +11,7 @@ import { useSubscriptionState } from "./useSubscriptionState";
 import { userFacingErrorFromUnknown } from "../lib/userFacingErrors";
 import { buildBookkeepingWorkbook } from "../lib/export/bookkeepingWorkbook";
 import { buildTransactionsCsv } from "../lib/export/exportCsv";
+import { buildItemsCsv } from "../lib/export/itemsCsv";
 import { exportFileName, type ExportTransaction } from "../lib/export/exportModel";
 import { loadExportData } from "../lib/export/loadExportData";
 import { saveWorkbookToGoogleSheets, GoogleSheetsError, type SavedGoogleSheet } from "../lib/export/googleSheets";
@@ -61,14 +62,14 @@ export function useCsvExport(options: { loadAll?: boolean } = {}) {
     };
   }
 
-  /** Build and share a file for `rows` (default: all transactions). */
-  async function run(format: "xlsx" | "csv", rows: ExportTransaction[], prefix: string) {
+  /** Build and share a file for `rows` (default: all transactions). "items" is one row per item bought, for tracking prices. */
+  async function run(format: "xlsx" | "csv" | "items", rows: ExportTransaction[], prefix: string) {
     if (!token) return;
-    const fileName = exportFileName(prefix, todayLocalYmd(), format);
+    const fileName = exportFileName(prefix, todayLocalYmd(), format === "xlsx" ? "xlsx" : "csv");
     try {
       const opts = await buildOptions(rows, token);
       const bytes = format === "xlsx" ? buildBookkeepingWorkbook(rows, opts).bytes : null;
-      const csv = format === "csv" ? buildTransactionsCsv(rows, opts) : null;
+      const csv = format === "csv" ? buildTransactionsCsv(rows, opts) : format === "items" ? buildItemsCsv(rows, opts) : null;
       const mime = format === "xlsx" ? XLSX_MIME : "text/csv";
 
       if (Platform.OS === "web") {
@@ -157,10 +158,10 @@ export function useCsvExport(options: { loadAll?: boolean } = {}) {
   }
 
   /** Export only these rows (used by "Download" on selected transactions). */
-  async function exportRows(rows: ExportTransaction[], format: "xlsx" | "csv" = "xlsx") {
+  async function exportRows(rows: ExportTransaction[], format: "xlsx" | "csv" | "items" = "xlsx", prefix = "receipt-cycle-selected") {
     if (!allowed()) return;
     if (!rows.length) return;
-    await run(format, rows, "receipt-cycle-selected");
+    await run(format, rows, prefix);
   }
 
   return {
@@ -168,6 +169,8 @@ export function useCsvExport(options: { loadAll?: boolean } = {}) {
     /** Secondary option: plain CSV (now with a document link column). */
     exportCsvDownload: () => exportAll("csv"),
     exportRows,
+    /** All exportable rows (undefined while loading, or when the account cannot export). */
+    backupRows: backupRows as ExportTransaction[] | undefined,
     saveAllToGoogleSheets,
     canExport: !(sub && !sub.canExportCsv) && runtime?.exportEnabled !== false,
     exportDisabledByAdmin: runtime?.exportEnabled === false,

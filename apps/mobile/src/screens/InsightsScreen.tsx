@@ -36,6 +36,9 @@ import { ScreenHeader } from "../components/ScreenHeader";
 import { FinancialPeriodSummary } from "../components/FinancialPeriodSummary";
 import { IncomeExpenseBars } from "../components/IncomeExpenseBars";
 import type { MainTabParamList, RootStackParamList } from "../navigation/types";
+import { ReceiptFiltersCard } from "../components/ReceiptFiltersCard";
+import { useCsvExport } from "../hooks/useCsvExport";
+import { NO_FILTER, type ReceiptFilterState } from "../lib/receiptFilters";
 
 type Nav = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, "Analysis">,
@@ -53,6 +56,8 @@ export function InsightsScreen() {
   const { formatMoney, formatMoneyCompact } = usePreferences();
   const [period, setPeriod] = useState<"month" | "all">("all");
   const [selectedYm, setSelectedYm] = useState(() => todayYm());
+  const [filter, setFilter] = useState<ReceiptFilterState>(NO_FILTER);
+  const exporter = useCsvExport();
   const range =
     period === "month"
       ? (() => {
@@ -202,6 +207,19 @@ export function InsightsScreen() {
           )}
         </View>
 
+        <View style={{ marginTop: 12 }}>
+          <ReceiptFiltersCard
+            rows={(all ?? []) as DocTx[]}
+            filter={filter}
+            onChange={setFilter}
+            formatMoney={formatMoney}
+            loading={loading}
+            exportRows={exporter.backupRows}
+            onExport={(rows, format, prefix) => void exporter.exportRows(rows, format, prefix)}
+            onOpen={(id) => navigation.navigate("TransactionDetail", { transactionId: id })}
+          />
+        </View>
+
         <View style={[styles.card, { marginTop: 12 }]}>
           <Text style={styles.cardHdr}>Income vs Expense</Text>
           <IncomeExpenseBars transactions={(all ?? []) as DocTx[]} />
@@ -343,7 +361,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   pad: { paddingHorizontal: 16, paddingTop: 8 },
   card: {
-    borderRadius: 16,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
@@ -402,7 +420,7 @@ const styles = StyleSheet.create({
   leakOut: { marginTop: 8, gap: 10 },
   leakSummary: { fontSize: typeScale.md, color: colors.gray800, lineHeight: 20, marginBottom: 4 },
   findingCard: {
-    borderRadius: 12,
+    borderRadius: 0,
     padding: 12,
     borderWidth: 1,
     borderColor: colors.gray200,
@@ -425,7 +443,7 @@ const styles = StyleSheet.create({
   tipLine: { fontSize: typeScale.sm, color: colors.gray800, marginTop: 4, lineHeight: 18 },
   catCard: {
     backgroundColor: colors.surface,
-    borderRadius: 14,
+    borderRadius: 0,
     padding: 12,
     marginBottom: 12,
     borderWidth: 1,
@@ -472,7 +490,7 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     backgroundColor: "#fff",
-    borderRadius: 16,
+    borderRadius: 0,
     padding: 20,
   },
   modalTitle: { fontSize: typeScale.headline, fontWeight: "800", color: colors.gray900, marginBottom: 12 },

@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   merchant: { fontSize: 16, color: colors.textPrimary, fontWeight: "800" },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 14,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: colors.gray200,
     padding: 4,
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
   },
   notesCard: {
     backgroundColor: "#fafafa",
-    borderRadius: 14,
+    borderRadius: 0,
     padding: 14,
     borderWidth: 1,
     borderColor: colors.gray200,
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
   tagTxt: { fontSize: typeScale.sm, fontWeight: "600", color: colors.gray800 },
   receiptCard: {
     backgroundColor: colors.surface,
-    borderRadius: 14,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 12,
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
   receiptTextBox: {
     backgroundColor: colors.gray100,
     padding: 14,
-    borderRadius: 10,
+    borderRadius: 0,
     maxHeight: 240,
   },
   receiptText: {

@@ -48,7 +48,7 @@ export function ExportMenu({ selectedIds }: { selectedIds: Set<string> }) {
   }
 
   const busy = exp.busy !== null;
-  const item = "flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none disabled:opacity-50";
+  const item = "flex min-h-12 w-full items-center gap-3 px-4 py-3 text-left sm:min-h-0 sm:py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none disabled:opacity-50";
   const group = (scope: "selected" | "all") => (
     <div role="group" aria-label={scope === "selected" ? `Selected transactions (${selectedIds.size})` : "All transactions"}>
       <p className="px-4 pb-1 pt-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
@@ -85,7 +85,10 @@ export function ExportMenu({ selectedIds }: { selectedIds: Set<string> }) {
         <i className="fas fa-chevron-down text-[10px]" aria-hidden />
       </button>
       {open ? (
-        <div role="menu" aria-label="Export transactions" className="absolute right-0 z-30 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-md border border-slate-200 bg-white pb-1 shadow-lg">
+        <>
+        {/* On a phone the menu is a sheet at the bottom of the screen, so it can never run off the edge. */}
+        <div className="fixed inset-0 z-20 bg-slate-900/40 sm:hidden" aria-hidden onClick={() => setOpen(false)} />
+        <div role="menu" aria-label="Export transactions" className="fixed inset-x-3 bottom-3 z-30 max-h-[80dvh] overflow-y-auto border border-slate-200 bg-white pb-1 shadow-lg sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:mt-2 sm:max-h-none sm:w-80">
           {hasSelection ? group("selected") : null}
           {group("all")}
           <div className="mt-1 border-t border-slate-100 px-4 py-2.5">
@@ -94,6 +97,7 @@ export function ExportMenu({ selectedIds }: { selectedIds: Set<string> }) {
             </Link>
           </div>
         </div>
+        </>
       ) : null}
 
       {exp.error || exp.done ? (

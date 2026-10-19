@@ -1,24 +1,9 @@
 import { Link } from "react-router-dom";
 import type { DocTx } from "@/lib/transactionMath";
 import { useWebExport } from "@/hooks/useWebExport";
+import { NO_FILTER, applyReceiptFilters, filterChoices, filterFilePrefix, isFiltering, type ReceiptFilterState } from "@mobile-lib/receiptFilters";
 
-export type ReceiptFilterState = { category: string; merchant: string; type: "all" | "expense" | "income" };
-export const NO_FILTER: ReceiptFilterState = { category: "", merchant: "", type: "all" };
-
-export const isFiltering = (f: ReceiptFilterState) => Boolean(f.category || f.merchant.trim() || f.type !== "all");
-
-const sameText = (a: string | null | undefined, b: string) => (a ?? "").trim().toLowerCase() === b.trim().toLowerCase();
-
-/** Receipts that match the category, merchant and type chosen. The merchant box matches part of a name, so "star" finds Starbucks. */
-export function applyReceiptFilters(rows: DocTx[], f: ReceiptFilterState): DocTx[] {
-  const merchant = f.merchant.trim().toLowerCase();
-  return rows.filter((t) => {
-    if (f.category && !sameText(t.category, f.category)) return false;
-    if (f.type !== "all" && t.type !== f.type) return false;
-    if (merchant && !(t.merchant ?? "").toLowerCase().includes(merchant)) return false;
-    return true;
-  });
-}
+export { NO_FILTER, applyReceiptFilters, isFiltering, type ReceiptFilterState };
 
 type Props = {
   rows: DocTx[];
@@ -29,18 +14,16 @@ type Props = {
   loading: boolean;
 };
 
-const field = "w-full border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-teal-600 focus:outline-none";
+const field = "w-full border border-slate-300 bg-white px-3 py-2.5 text-base sm:py-2 sm:text-sm text-slate-900 focus:border-teal-600 focus:outline-none";
 
 /** Filter the receipts on the Analysis page by category and merchant, see only those, and export exactly that list. */
 export function ReceiptFilters({ rows, filtered, filter, onChange, formatMoney, loading }: Props) {
   const exporter = useWebExport();
-  const categories = [...new Set(rows.map((t) => t.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-  const merchants = [...new Set(rows.map((t) => (t.merchant ?? "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const { categories, merchants } = filterChoices(rows);
   const active = isFiltering(filter);
   const ids = new Set(filtered.map((t) => String(t.id)));
   const total = filtered.reduce((sum, t) => sum + (t.type === "income" ? 0 : t.amount), 0);
-  const label = [filter.category, filter.merchant.trim()].filter(Boolean).join("-").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const prefix = `receipt-cycle-${label || "filtered"}`;
+  const prefix = filterFilePrefix(filter);
   const busy = exporter.busy !== null;
   const nothing = filtered.length === 0;
 
@@ -96,12 +79,12 @@ export function ReceiptFilters({ rows, filtered, filter, onChange, formatMoney, 
         ) : null}
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <button
           type="button"
           disabled={busy || nothing || loading}
           onClick={() => void exporter.run("csv", ids, prefix)}
-          className="bg-slate-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+          className="min-h-11 w-full bg-slate-900 px-3 py-2 text-sm font-bold sm:w-auto sm:text-xs text-white disabled:opacity-50"
         >
           <i className="fas fa-file-csv mr-1.5" />Export receipts (CSV)
         </button>
@@ -109,7 +92,7 @@ export function ReceiptFilters({ rows, filtered, filter, onChange, formatMoney, 
           type="button"
           disabled={busy || nothing || loading}
           onClick={() => void exporter.run("items", ids, `${prefix}-items`)}
-          className="bg-teal-700 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+          className="min-h-11 w-full bg-teal-700 px-3 py-2 text-sm font-bold sm:w-auto sm:text-xs text-white disabled:opacity-50"
           title="One row per item bought, with the price change since the last time, for tracking prices across receipts"
         >
           <i className="fas fa-list-check mr-1.5" />Export items and prices (CSV)
@@ -118,7 +101,7 @@ export function ReceiptFilters({ rows, filtered, filter, onChange, formatMoney, 
           type="button"
           disabled={busy || nothing || loading}
           onClick={() => void exporter.run("xlsx", ids, prefix)}
-          className="border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 disabled:opacity-50"
+          className="min-h-11 w-full border border-slate-300 bg-white px-3 py-2 text-sm font-bold sm:w-auto sm:text-xs text-slate-800 disabled:opacity-50"
         >
           <i className="fas fa-file-excel mr-1.5" />Excel
         </button>

@@ -153,7 +153,7 @@ export function AccountsScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: 100 },
-  hero: { borderRadius: 22, padding: spacing.lg, marginBottom: spacing.lg },
+  hero: { borderRadius: 0, padding: spacing.lg, marginBottom: spacing.lg },
   heroTop: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   heroIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center" },
   heroLabel: { color: "rgba(255,255,255,0.78)", fontSize: uiType.secondary, fontWeight: "600" },
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   filterTextActive: { color: "#fff" },
-  card: { backgroundColor: colors.surface, borderRadius: 18, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm, ...shadows.card },
+  card: { backgroundColor: colors.surface, borderRadius: 0, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm, ...shadows.card },
   cardTop: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   cardRight: { flexDirection: "row", alignItems: "center", gap: 4, maxWidth: "42%" },
   typePill: { alignSelf: "flex-start", marginTop: 4, paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999 },

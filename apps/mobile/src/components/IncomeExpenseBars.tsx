@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
   legendText: { fontSize: uiType.caption, color: colors.gray600 },
   empty: { color: colors.gray500, fontSize: uiType.secondary, textAlign: "center", marginBottom: spacing.sm },
   chartHint: { color: colors.gray500, fontSize: uiType.caption, textAlign: "center", marginBottom: 6 },
-  tooltip: { minHeight: 30, borderRadius: 9, backgroundColor: colors.surfaceSoft, paddingHorizontal: spacing.sm, marginBottom: 6, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm },
+  tooltip: { minHeight: 30, borderRadius: 0, backgroundColor: colors.surfaceSoft, paddingHorizontal: spacing.sm, marginBottom: 6, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm },
   tooltipMonth: { color: colors.textPrimary, fontSize: uiType.caption, fontWeight: "800" },
   tooltipIncome: { color: colors.primary, fontSize: uiType.caption, fontWeight: "700" },
   tooltipExpense: { color: colors.danger, fontSize: uiType.caption, fontWeight: "700" },

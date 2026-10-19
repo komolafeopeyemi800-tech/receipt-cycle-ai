@@ -256,6 +256,6 @@ const styles = StyleSheet.create({
   customerAiIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   customerAiRecording: { backgroundColor: colors.roseSoft, borderColor: colors.rose600 },
   customerAiInputRow: { flexDirection: "row", alignItems: "flex-end", gap: 8, marginTop: spacing.md },
-  customerAiInput: { flex: 1, minHeight: 72, maxHeight: 110, borderWidth: 1, borderColor: colors.border, borderRadius: 10, backgroundColor: colors.surface, color: colors.textPrimary, padding: 10, fontSize: uiType.secondary },
+  customerAiInput: { flex: 1, minHeight: 72, maxHeight: 110, borderWidth: 1, borderColor: colors.border, borderRadius: 0, backgroundColor: colors.surface, color: colors.textPrimary, padding: 10, fontSize: uiType.secondary },
   customerAiSend: { width: 42, height: 42, borderRadius: 10, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
 });

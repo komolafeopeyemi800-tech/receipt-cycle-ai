@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: colors.surface,
     padding: 10,
-    borderRadius: 12,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: colors.border,
   },

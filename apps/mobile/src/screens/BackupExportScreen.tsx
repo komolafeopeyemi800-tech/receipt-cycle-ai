@@ -116,10 +116,10 @@ export function BackupExportScreen() {
 
 const styles = StyleSheet.create({
   page: { padding: spacing.lg, paddingBottom: spacing.xxxl, alignItems: "center" },
-  banner: { flexDirection: "row", alignItems: "center", gap: spacing.sm, alignSelf: "stretch", backgroundColor: "#E6F4EE", borderRadius: 14, padding: spacing.md },
+  banner: { flexDirection: "row", alignItems: "center", gap: spacing.sm, alignSelf: "stretch", backgroundColor: "#E6F4EE", borderRadius: 0, padding: spacing.md },
   bannerWait: { backgroundColor: colors.gray100 },
   bannerText: { flex: 1, color: colors.primary, fontSize: uiType.body, lineHeight: 22 },
-  hero: { width: 150, height: 150, borderRadius: 75, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", marginTop: spacing.xxxl },
+  hero: { width: 150, height: 150, borderRadius: 0, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", marginTop: spacing.xxxl },
   title: { color: colors.textPrimary, fontSize: 22, fontWeight: "800", marginTop: spacing.xl },
   body: { color: colors.textSecondary, fontSize: uiType.body, lineHeight: 24, textAlign: "center", marginTop: spacing.sm, paddingHorizontal: spacing.sm },
   last: { color: colors.gray500, fontSize: uiType.body, marginTop: spacing.xl },

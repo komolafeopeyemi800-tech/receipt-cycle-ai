@@ -68,6 +68,6 @@ const styles = StyleSheet.create({
   contactLabel: { color: colors.gray600, fontSize: uiType.caption, fontWeight: "600" },
   infoRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.md, paddingVertical: 5 },
   infoValue: { flex: 1, color: colors.textSecondary, fontSize: uiType.secondary, lineHeight: 18 },
-  previewBanner: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.mintSoft, borderRadius: 999, paddingHorizontal: spacing.sm, paddingVertical: 4 },
+  previewBanner: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.mintSoft, borderRadius: 0, paddingHorizontal: spacing.sm, paddingVertical: 4 },
   previewText: { color: colors.primary, fontSize: uiType.caption, fontWeight: "700" },
 });

@@ -13,6 +13,7 @@ import {
   PRIVATE_ROUTE_PATHS,
   SITE_FAQ_ITEMS,
   allPrerenderRoutes,
+  blogCitations,
   blogPostText,
   getRouteSeo,
   indexableRoutes,
@@ -25,10 +26,12 @@ import {
   APP_ID,
   SITE_URL,
   WEBSITE_ID,
+  buildPageGraph,
   countWords,
   pageUrl,
   type Jsonld,
 } from "@/lib/schema";
+import type { BlogPost } from "@/content/blogPosts";
 import { PAYWALL_PRICING } from "@/lib/pricingPaywall";
 import { buildLlmsFullTxt, buildLlmsTxt, buildRobotsTxt, buildSitemapXml, AI_BOTS } from "@/lib/seoFiles";
 
@@ -246,7 +249,7 @@ describe("FAQPage markup matches the visible FAQ data", () => {
       const questions = faq.mainEntity as Array<Record<string, unknown>>;
       expect(questions).toHaveLength(post.faq!.length);
       expect(questions.map((item) => item.name)).toEqual(post.faq!.map((item) => item.question));
-      expect(JSON.stringify(questions)).toContain(post.faq![0].answer);
+      expect(JSON.stringify(questions)).toContain(post.faq![0].answer.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1"));
     }
   });
 });
@@ -270,8 +273,9 @@ describe("blog posts", () => {
       expect(Date.parse(String(a.dateModified))).toBeGreaterThanOrEqual(Date.parse(String(a.datePublished)));
       const [img] = a.image as Array<Record<string, unknown>>;
       expect(String(img.url)).toMatch(/^https:\/\/receiptcycle\.com\/landing\/blog-.*\.webp/);
-      expect(img.width).toBe(1600);
-      expect(img.height).toBe(900);
+      expect(img.width).toBe(post.featuredImageWidth ?? 1600);
+      expect(img.height).toBe(post.featuredImageHeight ?? 900);
+      expect(img.caption).toBe(post.featuredImageAlt ?? post.title);
       expect(a.author).toMatchObject({ "@type": "Organization", name: post.author });
       expect(a.publisher).toEqual({ "@id": ORG_ID });
       expect(a.mainEntityOfPage).toEqual({ "@id": `${pageUrl(route.path)}#webpage` });
@@ -284,13 +288,15 @@ describe("blog posts", () => {
       // Citations come from visible external resource links and explicitly researched source metadata.
       const externalLinks = [
         ...(post.citations ?? []).map((citation) => citation.href),
+        ...(post.resources ?? []).map((r) => r.href),
         ...post.body.flatMap((b) => (b.kind === "links" ? b.items.filter((i) => i.external).map((i) => i.href) : [])),
-      ];
+        ...(JSON.stringify(post).match(/\]\((https:\/\/[^)\s"\\]+)\)/g) ?? []).map((m) => m.slice(2, -1)),
+      ].filter((href) => !href.startsWith("https://receiptcycle.com"));
       const cited = ((a.citation as Array<{ url: string }>) ?? []).map((c) => c.url);
       expect(cited.sort()).toEqual([...new Set(externalLinks)].sort());
       expect(route.ogType).toBe("article");
       expect(route.article?.publishedTime).toBe(post.datePublished);
-      expect(route.ogImageWidth).toBe(1600);
+      expect(route.ogImageWidth).toBe(post.featuredImageWidth ?? 1600);
     });
   }
 
@@ -491,7 +497,7 @@ describe("image files referenced by schema exist with the stated size", () => {
       ["public/og-image.png", 1200, 630],
       ["public/icon-512.png", 512, 512],
       ...LANDING_PAGES.map((lp): [string, number, number] => [`public${lp.ogImagePath}`, 1200, 630]),
-      ...BLOG_POSTS.map((p): [string, number, number] => [`public${p.featuredImage.replace(/\?.*$/, "")}`, 1600, 900]),
+      ...BLOG_POSTS.map((p): [string, number, number] => [`public${p.featuredImage.replace(/\?.*$/, "")}`, p.featuredImageWidth ?? 1600, p.featuredImageHeight ?? 900]),
     ];
     for (const [file, w, h] of checks) {
       const meta = await sharp(path.join(ROOT, file)).metadata();
@@ -508,5 +514,79 @@ describe("receipt scanner comparison editorial guardrails", () => {
     expect(countWords(text)).toBeGreaterThanOrEqual(2000);
     expect(countWords(text)).toBeLessThanOrEqual(2005);
     expect(text).not.toContain("—");
+  });
+});
+
+describe("rich blog blocks in text, citations and schema", () => {
+  const demo: BlogPost = {
+    slug: "demo",
+    title: "Demo",
+    description: "Demo",
+    featuredImage: "/landing/x.webp",
+    datePublished: "2026-01-01",
+    dateModified: "2026-01-02",
+    author: "Team",
+    readMinutes: 3,
+    tags: [],
+    tldr: "Short [source one](https://example.org/one) answer.",
+    resources: [{ label: "Res", href: "https://example.org/res", note: "n" }],
+    faq: [{ question: "Q?", answer: "Read [the guide](/blog/some-guide) or [IRS](https://www.irs.gov/p463)." }],
+    body: [
+      { kind: "p", text: "See [our pricing](/pricing) and [Example](https://example.org/one) now." },
+      { kind: "cta", title: "Try it", text: "Start [free](/signup).", label: "Create account", href: "/signup", note: "No card" },
+      { kind: "scoreTable", caption: "Scores", columns: ["Speed", "Cost"], rows: [{ app: "Receipt Cycle", scores: [90, 81] }, { app: "Expensify", scores: [70, 60] }], note: "Higher is better" },
+      { kind: "table", caption: "T", columns: ["App", "Note"], rows: [["Wave", "a [link](https://example.org/wave) here"]], tones: true },
+    ],
+  };
+
+  it("counts visible link labels only and includes score table and cta text", () => {
+    const text = blogPostText(demo);
+    expect(text).not.toMatch(/\]\(|https?:\/\//);
+    expect(text).toContain("Short source one answer.");
+    expect(text).toContain("90% 81% 86%");
+    expect(text).toContain("70% 60% 65%");
+    expect(text).toContain("Overall");
+    expect(text).toContain("Create account");
+    expect(text).toContain("Higher is better");
+    expect(text).toContain("Read the guide or IRS.");
+  });
+
+  it("cites real external sources from inline links and resources, deduped, never internal links", () => {
+    const urls = blogCitations(demo).map((c) => c.url).sort();
+    expect(urls).toEqual(
+      ["https://example.org/one", "https://example.org/res", "https://example.org/wave", "https://www.irs.gov/p463"].sort(),
+    );
+  });
+
+  it("lists the hero and in-article images as ImageObject entries", () => {
+    const hero = { url: `${SITE_URL}/landing/x.webp`, width: 1600, height: 900, alt: "Hero alt", name: "Demo" };
+    const inline = { url: `${SITE_URL}/landing/y.webp`, width: 800, height: 450, alt: "Caption", name: "Inline" };
+    const [doc] = buildPageGraph({
+      path: "/blog/demo",
+      kind: "article",
+      name: "Demo",
+      description: "Demo",
+      image: hero,
+      article: {
+        slug: "demo",
+        headline: "Demo",
+        description: "Demo",
+        image: hero,
+        images: [inline],
+        datePublished: "2026-01-01",
+        dateModified: "2026-01-02",
+        authorName: "Team",
+        keywords: [],
+        section: "S",
+        wordCount: 10,
+        minutes: 3,
+        citations: [],
+      },
+    });
+    const post = (doc["@graph"] as Jsonld[]).find((n) => n["@type"] === "BlogPosting") as Jsonld;
+    const images = post.image as Array<Record<string, unknown>>;
+    expect(images).toHaveLength(2);
+    expect(images[0]).toMatchObject({ "@type": "ImageObject", url: hero.url, width: 1600, height: 900, caption: "Hero alt", name: "Demo" });
+    expect(images[1]).toMatchObject({ url: inline.url, width: 800, height: 450, caption: "Caption", name: "Inline" });
   });
 });

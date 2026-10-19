@@ -1,12 +1,17 @@
 import { Link, useParams, Navigate } from "react-router-dom";
 import { CommercialFooter, CommercialHeader } from "@/components/marketing/CommercialLandingLayout";
 import { Seo } from "@/components/Seo";
-import { getBlogPostSeo } from "@/content/routesSeo";
+import { blogSection, getBlogPostSeo } from "@/content/routesSeo";
 import { getPostBySlug, BLOG_POSTS, type BlogBlock, type BlogFaqItem } from "@/content/blogPosts";
 import { SITE_URL } from "@/lib/seo";
 import { aiSummaryLinks } from "@/lib/blogAiSummary";
-import { CalendarDays, Check, Clock3, Copy, Link2, Mail, Share2 } from "lucide-react";
+import { appTone, isOurProduct, overallScore } from "@/lib/appTones";
+import { hostnameOf, isInternalHref, tokenizeInline } from "@/lib/blogMarkdown";
+import { CalendarDays, Check, Clock3, Copy, Link2, Mail, RefreshCw, Share2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
+
+const LINK_CLASS =
+  "rounded-sm font-medium text-teal-700 underline decoration-teal-700/40 underline-offset-2 hover:text-teal-900 hover:decoration-teal-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600";
 
 const INLINE_LINK_RULES: Array<{ phrase: string; href: string; external?: boolean }> = [
   { phrase: "how to organize receipts for your accountant", href: "/blog/best-expense-tracker-for-freelancers" },
@@ -24,7 +29,7 @@ const INLINE_LINK_RULES: Array<{ phrase: string; href: string; external?: boolea
   { phrase: "receiptcycle.com", href: "/" },
 ];
 
-function renderInlineLinkedText(text: string): ReactNode[] {
+function autoLinkText(text: string, prefix: string): ReactNode[] {
   const out: ReactNode[] = [];
   let remaining = text;
   let key = 0;
@@ -44,28 +49,48 @@ function renderInlineLinkedText(text: string): ReactNode[] {
 
     if (best.idx > 0) out.push(remaining.slice(0, best.idx));
     const originalPhrase = remaining.slice(best.idx, best.idx + best.rule.phrase.length);
-    if (best.rule.external) {
-      out.push(
-        <a
-          key={`inline-link-${key++}`}
-          href={best.rule.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-teal-700 hover:underline"
-        >
-          {originalPhrase}
-        </a>,
-      );
-    } else {
-      out.push(
-        <Link key={`inline-link-${key++}`} to={best.rule.href} className="font-medium text-teal-700 hover:underline">
-          {originalPhrase}
-        </Link>,
-      );
-    }
+    out.push(
+      <InlineLink key={`${prefix}-auto-${key++}`} href={best.rule.href}>
+        {originalPhrase}
+      </InlineLink>,
+    );
     remaining = remaining.slice(best.idx + best.rule.phrase.length);
   }
 
+  return out;
+}
+
+/** Anchor for an inline link: internal "/..." hrefs use the router, everything else opens in a new tab. */
+function InlineLink({ href, children }: { href: string; children: ReactNode }) {
+  if (isInternalHref(href)) {
+    return (
+      <Link to={href} className={LINK_CLASS}>
+        {children}
+      </Link>
+    );
+  }
+  if (href.startsWith("#") || href.startsWith("mailto:")) {
+    return (
+      <a href={href} className={LINK_CLASS}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
+      {children}
+    </a>
+  );
+}
+
+/** Renders text with [label](href) links. `autoLink` also applies the legacy phrase-to-link rules to plain text. */
+function renderRich(text: string, autoLink = false): ReactNode[] {
+  const out: ReactNode[] = [];
+  tokenizeInline(text).forEach((tok, i) => {
+    if (tok.type === "link") out.push(<InlineLink key={`md-${i}`} href={tok.href}>{tok.label}</InlineLink>);
+    else if (autoLink) out.push(...autoLinkText(tok.text, `t${i}`));
+    else out.push(tok.text);
+  });
   return out;
 }
 
@@ -76,34 +101,24 @@ function formatDate(iso: string): string {
 
 function AiSummaryBar({ canonicalUrl }: { canonicalUrl: string }) {
   return (
-    <section
-      aria-labelledby="ai-summary-title"
-      className="mt-6 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-violet-50 p-4 sm:p-5"
-    >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 id="ai-summary-title" className="font-display text-base font-bold text-slate-900 sm:text-lg">
-            Summarize article with AI
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-slate-600">Open this article in the assistant you already use.</p>
-        </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex" aria-label="AI summary tools">
-          {aiSummaryLinks(canonicalUrl).map((provider) => (
-            <a
-              key={provider.label}
-              href={provider.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`Summarize this article with ${provider.label}`}
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/80 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:text-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
-            >
-              <span aria-hidden="true" className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-xs font-black text-white">
-                {provider.shortLabel}
-              </span>
-              {provider.label}
-            </a>
-          ))}
-        </div>
+    <section aria-labelledby="ai-summary-title" className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-slate-200 pt-5">
+      <h2 id="ai-summary-title" className="text-sm font-semibold text-slate-700">
+        Summarize article with AI
+      </h2>
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="AI summary tools">
+        {aiSummaryLinks(canonicalUrl).map((provider) => (
+          <a
+            key={provider.label}
+            href={provider.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Summarize this article with ${provider.label}`}
+            title={`Summarize with ${provider.label}`}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
+          >
+            <img src={provider.logo} alt="" width={22} height={22} className="h-[22px] w-[22px]" loading="lazy" decoding="async" />
+          </a>
+        ))}
       </div>
     </section>
   );
@@ -164,7 +179,7 @@ function QuickSummary({ summary, takeaways }: { summary: string; takeaways?: str
   return (
     <section id="short-version" data-speakable="summary" className="scroll-mt-24 rounded-2xl border border-teal-200 bg-teal-50/70 p-5 sm:p-7">
       <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal-800">Here&apos;s the short version</p>
-      <p className="mt-3 text-base leading-7 text-slate-700 sm:text-lg">{summary}</p>
+      <p className="mt-3 text-base leading-7 text-slate-700 sm:text-lg">{renderRich(summary)}</p>
       {takeaways?.length ? (
         <div className="mt-6 border-t border-teal-200 pt-5">
           <h2 className="font-display text-xl font-bold text-slate-900">Key Takeaways</h2>
@@ -172,7 +187,7 @@ function QuickSummary({ summary, takeaways }: { summary: string; takeaways?: str
             {takeaways.map((item) => (
               <li key={item} className="flex gap-3 text-base leading-7 text-slate-700">
                 <Check className="mt-1 h-5 w-5 shrink-0 text-teal-700" aria-hidden="true" />
-                <span>{item}</span>
+                <span>{renderRich(item)}</span>
               </li>
             ))}
           </ul>
@@ -182,8 +197,131 @@ function QuickSummary({ summary, takeaways }: { summary: string; takeaways?: str
   );
 }
 
+function ScoreBar({ pct, barClass }: { pct: number; barClass: string }) {
+  const clamped = Math.max(0, Math.min(100, pct));
+  return (
+    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200" aria-hidden="true">
+      <div className={`h-full rounded-full ${barClass}`} style={{ width: `${clamped}%` }} />
+    </div>
+  );
+}
+
+function OurTag() {
+  return <span className="rounded-full bg-teal-700 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">Our product</span>;
+}
+
+function ScoreTable({ block }: { block: Extract<BlogBlock, { kind: "scoreTable" }> }) {
+  return (
+    <figure className="not-prose mt-8">
+      <p className="mb-3 font-display text-base font-bold text-slate-900">{block.caption}</p>
+
+      <div className="hidden overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm md:block">
+        <table className="w-full table-fixed border-collapse text-left text-sm">
+          <caption className="sr-only">{block.caption}</caption>
+          <thead>
+            <tr className="bg-slate-900 text-white">
+              <th scope="col" className="w-[19%] px-3 py-3 font-semibold !text-white">Feature</th>
+              {block.rows.map((row) => {
+                const tone = appTone(row.app);
+                const ours = isOurProduct(row.app);
+                return (
+                  <th key={row.app} scope="col" data-ours={ours ? "true" : undefined} className={`px-2 py-3 text-center align-bottom text-xs font-semibold leading-tight !text-white ${ours ? "bg-teal-700" : ""}`}>
+                    <span aria-hidden="true" className={`mx-auto mb-1.5 block h-2.5 w-2.5 rounded-full ${tone.dot}`} />
+                    {row.app}
+                    {ours ? <span className="mt-1 block text-[10px] font-bold uppercase tracking-wide text-teal-100">Our product</span> : null}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {block.columns.map((column, i) => (
+              <tr key={column} className="border-t border-slate-100 align-middle">
+                <th scope="row" className="px-3 py-2.5 text-left text-sm font-semibold leading-tight text-slate-900">{column}</th>
+                {block.rows.map((row) => {
+                  const tone = appTone(row.app);
+                  const ours = isOurProduct(row.app);
+                  const pct = row.scores[i] ?? 0;
+                  return (
+                    <td key={row.app} className={`px-2 py-2.5 text-center ${ours ? "bg-teal-50" : i % 2 === 0 ? tone.tint : tone.tintAlt}`}>
+                      <span className={`block text-sm font-bold tabular-nums ${tone.text}`}>{pct}%</span>
+                      <span className="mx-auto mt-1 block max-w-[64px]"><ScoreBar pct={pct} barClass={tone.bar} /></span>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+            <tr className="border-t-2 border-slate-300 bg-slate-50">
+              <th scope="row" className="px-3 py-3 text-left text-sm font-bold text-slate-900">Overall</th>
+              {block.rows.map((row) => {
+                const tone = appTone(row.app);
+                const ours = isOurProduct(row.app);
+                return (
+                  <td key={row.app} className={`px-2 py-3 text-center text-base font-extrabold tabular-nums ${tone.text} ${ours ? "bg-teal-100" : ""}`}>{overallScore(row.scores)}%</td>
+                );
+              })}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ul className="space-y-3 md:hidden" aria-label={block.caption}>
+        {block.rows.map((row) => {
+          const tone = appTone(row.app);
+          const ours = isOurProduct(row.app);
+          const overall = overallScore(row.scores);
+          return (
+            <li key={row.app} data-ours={ours ? "true" : undefined} className={`rounded-2xl border border-l-4 border-slate-200 p-4 ${tone.borderL} ${ours ? "bg-teal-50" : "bg-white"}`}>
+              <div className="flex flex-wrap items-center gap-2">
+                <span aria-hidden="true" className={`h-3 w-3 shrink-0 rounded-full ${tone.dot}`} />
+                <span className="font-display text-base font-bold text-slate-900">{row.app}</span>
+                {ours ? <OurTag /> : null}
+              </div>
+              <dl className="mt-3 space-y-2.5">
+                {block.columns.map((column, i) => (
+                  <div key={column}>
+                    <div className="flex items-baseline justify-between gap-3 text-sm">
+                      <dt className="text-slate-600">{column}</dt>
+                      <dd className="font-semibold tabular-nums text-slate-800">{row.scores[i] ?? 0}%</dd>
+                    </div>
+                    <div className="mt-1"><ScoreBar pct={row.scores[i] ?? 0} barClass={tone.bar} /></div>
+                  </div>
+                ))}
+              </dl>
+              <div className={`mt-3 flex items-baseline justify-between border-t border-slate-200 pt-3 ${tone.text}`}>
+                <span className="text-sm font-semibold">Overall</span>
+                <span className="text-lg font-bold tabular-nums">{overall}%</span>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {block.note ? <p className="mt-3 text-sm leading-6 text-slate-600">{renderRich(block.note)}</p> : null}
+    </figure>
+  );
+}
+
+function CtaCard({ block }: { block: Extract<BlogBlock, { kind: "cta" }> }) {
+  const buttonClass =
+    "inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-6 text-sm font-bold text-teal-900 shadow-sm transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-teal-700";
+  return (
+    <aside className="not-prose mt-10 rounded-2xl bg-gradient-to-br from-teal-700 to-teal-800 p-6 text-white shadow-lg sm:p-8">
+      <h3 className="font-display text-2xl font-bold !text-white">{block.title}</h3>
+      <p className="mt-3 max-w-xl text-base leading-7 text-teal-50">{renderRich(block.text)}</p>
+      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
+        {isInternalHref(block.href) ? (
+          <Link to={block.href} className={buttonClass}>{block.label}</Link>
+        ) : (
+          <a href={block.href} target="_blank" rel="noopener noreferrer" className={buttonClass}>{block.label}</a>
+        )}
+        {block.note ? <span className="text-sm text-teal-50">{block.note}</span> : null}
+      </div>
+    </aside>
+  );
+}
+
 function Block({ block }: { block: BlogBlock }) {
-  if (block.kind === "p") return <p className="mt-5 leading-relaxed text-slate-700">{renderInlineLinkedText(block.text)}</p>;
+  if (block.kind === "p") return <p className="mt-5 leading-relaxed text-slate-700">{renderRich(block.text, true)}</p>;
   if (block.kind === "h2")
     return (
       <h2
@@ -205,13 +343,35 @@ function Block({ block }: { block: BlogBlock }) {
         {block.text}
       </h4>
     );
-  if (block.kind === "image")
+  if (block.kind === "image") {
+    const img = (
+      <img
+        src={block.src}
+        alt={block.alt}
+        {...(block.width ? { width: block.width } : {})}
+        {...(block.height ? { height: block.height } : {})}
+        {...(block.title ? { title: block.title } : {})}
+        className="h-auto w-full object-cover"
+        loading="lazy"
+        decoding="async"
+      />
+    );
+    const wrapClass = "block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-600";
     return (
-      <figure className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <img src={block.src} alt={block.alt} className="h-auto w-full object-cover" loading="lazy" />
-        {block.caption ? <figcaption className="border-t border-slate-100 px-4 py-3 text-sm text-slate-600">{block.caption}</figcaption> : null}
+      <figure className="not-prose mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        {block.href ? (
+          isInternalHref(block.href) ? (
+            <Link to={block.href} className={wrapClass}>{img}</Link>
+          ) : (
+            <a href={block.href} target="_blank" rel="noopener noreferrer" className={wrapClass}>{img}</a>
+          )
+        ) : (
+          img
+        )}
+        {block.caption ? <figcaption className="border-t border-slate-100 px-4 py-3 text-sm text-slate-600">{renderRich(block.caption)}</figcaption> : null}
       </figure>
     );
+  }
   if (block.kind === "links")
     return (
       <section className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-5">
@@ -220,11 +380,11 @@ function Block({ block }: { block: BlogBlock }) {
           {block.items.map((item) => (
             <li key={`${item.href}-${item.label}`} className="text-sm">
               {item.external ? (
-                <a href={item.href} target="_blank" rel="noopener noreferrer" className="font-medium text-teal-700 hover:underline">
+                <a href={item.href} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
                   {item.label} ↗
                 </a>
               ) : (
-                <Link to={item.href} className="font-medium text-teal-700 hover:underline">
+                <Link to={item.href} className={LINK_CLASS}>
                   {item.label}
                 </Link>
               )}
@@ -237,7 +397,7 @@ function Block({ block }: { block: BlogBlock }) {
     return (
       <ul className="mt-5 space-y-2 pl-5 text-slate-700 [&>li]:list-disc [&>li]:leading-relaxed">
         {block.items.map((i, idx) => (
-          <li key={idx}>{i}</li>
+          <li key={idx}>{renderRich(i)}</li>
         ))}
       </ul>
     );
@@ -245,17 +405,19 @@ function Block({ block }: { block: BlogBlock }) {
     return (
       <ol className="mt-5 space-y-2 pl-5 text-slate-700 [&>li]:list-decimal [&>li]:leading-relaxed">
         {block.items.map((i, idx) => (
-          <li key={idx}>{i}</li>
+          <li key={idx}>{renderRich(i)}</li>
         ))}
       </ol>
     );
   if (block.kind === "quote")
     return (
       <blockquote className="mt-6 border-l-4 border-teal-600 bg-slate-50 p-5 italic text-slate-700">
-        <p>{block.text}</p>
+        <p>{renderRich(block.text)}</p>
         {block.cite ? <footer className="mt-2 text-sm not-italic text-slate-500">{block.cite}</footer> : null}
       </blockquote>
     );
+  if (block.kind === "cta") return <CtaCard block={block} />;
+  if (block.kind === "scoreTable") return <ScoreTable block={block} />;
   if (block.kind === "table")
     return (
       <figure className="mt-8">
@@ -272,17 +434,32 @@ function Block({ block }: { block: BlogBlock }) {
               </tr>
             </thead>
             <tbody className="block md:table-row-group">
-              {block.rows.map((row, rowIndex) => (
-                <tr key={`${row[0]}-${rowIndex}`} className="block border-t border-slate-100 px-5 py-4 align-top even:bg-slate-50/70 md:table-row md:p-0">
-                  {row.map((cell, cellIndex) =>
-                    cellIndex === 0 ? (
-                      <th key={cellIndex} scope="row" className="block pb-2 text-left font-display text-base font-bold text-slate-900 md:table-cell md:px-5 md:py-4 md:font-sans md:text-sm md:font-semibold">{cell}</th>
-                    ) : (
-                      <td key={cellIndex} data-label={block.columns[cellIndex]} className="block py-1.5 leading-6 text-slate-600 before:block before:text-xs before:font-semibold before:uppercase before:tracking-wide before:text-slate-500 before:content-[attr(data-label)] md:table-cell md:px-5 md:py-4 md:before:hidden">{cell}</td>
-                    ),
-                  )}
-                </tr>
-              ))}
+              {block.rows.map((row, rowIndex) => {
+                const tone = block.tones ? appTone(row[0]) : null;
+                const rowClass = tone
+                  ? `block border-t border-slate-100 border-l-4 ${tone.borderL} px-5 py-4 align-top ${rowIndex % 2 === 0 ? tone.tint : tone.tintAlt} md:table-row md:border-l-0 md:p-0`
+                  : "block border-t border-slate-100 px-5 py-4 align-top even:bg-slate-50/70 md:table-row md:p-0";
+                return (
+                  <tr key={`${row[0]}-${rowIndex}`} data-tone={tone?.key} className={rowClass}>
+                    {row.map((cell, cellIndex) =>
+                      cellIndex === 0 ? (
+                        <th
+                          key={cellIndex}
+                          scope="row"
+                          className={`block pb-2 text-left font-display text-base font-bold md:table-cell md:px-5 md:py-4 md:font-sans md:text-sm md:font-semibold ${
+                            tone ? `${tone.text} md:border-l-4 ${tone.borderL}` : "text-slate-900"
+                          }`}
+                        >
+                          {tone ? <span aria-hidden="true" className={`mr-2 inline-block h-2.5 w-2.5 rounded-full align-middle ${tone.dot}`} /> : null}
+                          {renderRich(cell)}
+                        </th>
+                      ) : (
+                        <td key={cellIndex} data-label={block.columns[cellIndex]} className="block py-1.5 leading-6 text-slate-700 before:block before:text-xs before:font-semibold before:uppercase before:tracking-wide before:text-slate-500 before:content-[attr(data-label)] md:table-cell md:px-5 md:py-4 md:before:hidden">{renderRich(cell)}</td>
+                      ),
+                    )}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -291,8 +468,29 @@ function Block({ block }: { block: BlogBlock }) {
   return (
     <aside className="mt-6 rounded-xl border border-teal-200 bg-teal-50 p-5">
       <h4 className="font-display font-bold text-teal-900">{block.title}</h4>
-      <p className="mt-2 text-sm text-teal-900/80">{block.text}</p>
+      <p className="mt-2 text-sm text-teal-900/80">{renderRich(block.text)}</p>
     </aside>
+  );
+}
+
+type ResourceItem = { label: string; href: string; note?: string };
+
+function ArticleResources({ items }: { items: ResourceItem[] }) {
+  return (
+    <section className="mt-14 border-t border-slate-200 pt-10" aria-labelledby="resources">
+      <h2 id="resources" className="scroll-mt-24 font-display text-2xl font-bold text-slate-900 sm:text-3xl">Resources and sources</h2>
+      <ul className="mt-6 divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white px-5 sm:px-6">
+        {items.map((item) => (
+          <li key={`${item.href}-${item.label}`} className="py-4">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <InlineLink href={item.href}>{item.label}</InlineLink>
+              <span className="text-xs text-slate-500">{hostnameOf(item.href)}</span>
+            </div>
+            {item.note ? <p className="mt-1 text-sm leading-6 text-slate-600">{item.note}</p> : null}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -307,7 +505,7 @@ function ArticleFaq({ items }: { items: BlogFaqItem[] }) {
               <span>{item.question}</span>
               <span className="text-xl leading-5 text-teal-700 transition group-open:rotate-45" aria-hidden="true">+</span>
             </summary>
-            <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">{item.answer}</p>
+            <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">{renderRich(item.answer)}</p>
           </details>
         ))}
       </div>
@@ -331,12 +529,17 @@ export default function BlogPost() {
   const hasInlineImage = post.body.some((b) => b.kind === "image");
   const hasLinksBlock = post.body.some((b) => b.kind === "links");
   const canonicalUrl = `${SITE_URL}/blog/${slug}`;
+  const category = post.category ?? blogSection(post);
+  const heroWidth = post.featuredImageWidth ?? 1600;
+  const heroHeight = post.featuredImageHeight ?? 900;
+  const resourceItems: ResourceItem[] = post.resources?.length ? post.resources : (post.citations ?? []);
   const tocItems: TocItem[] = [
     { id: "short-version", text: "Here’s the short version" },
     ...post.body
       .filter((block): block is Extract<BlogBlock, { kind: "h2" }> => block.kind === "h2")
       .map((block) => ({ id: block.id, text: block.text })),
     ...(post.faq?.length ? [{ id: "frequently-asked-questions", text: "Frequently asked questions" }] : []),
+    ...(resourceItems.length ? [{ id: "resources", text: "Resources and sources" }] : []),
   ];
 
   return (
@@ -358,43 +561,56 @@ export default function BlogPost() {
 
       <CommercialHeader ctaLabel="Start free" ctaHref="/signup" />
 
-      <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
-        <header className="mx-auto max-w-3xl">
-          <nav className="mb-6 flex min-w-0 items-center text-sm text-slate-500" aria-label="Breadcrumb">
-            <Link to="/" className="hover:underline">Home</Link>
-            <span className="mx-1.5">/</span>
-            <Link to="/blog" className="hover:underline">Blog</Link>
-            <span className="mx-1.5">/</span>
-            <span className="truncate text-slate-700" aria-current="page">{post.title}</span>
-          </nav>
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+        <header className="mx-auto grid max-w-6xl items-center gap-8 lg:grid-cols-2 lg:gap-12">
+          <div className="min-w-0">
+            <nav className="mb-5 flex min-w-0 items-center text-sm text-slate-500" aria-label="Breadcrumb">
+              <Link to="/" className="shrink-0 hover:underline">Home</Link>
+              <span className="mx-1.5 shrink-0">/</span>
+              <Link to="/blog" className="shrink-0 hover:underline">Blog</Link>
+              <span className="mx-1.5 shrink-0">/</span>
+              <span className="truncate text-slate-700" aria-current="page">{category}</span>
+            </nav>
 
-        <h1 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-5xl sm:leading-[1.08]">
-          {post.title}
-        </h1>
-        <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3 text-sm text-slate-600" aria-label="Article details">
-          <div className="flex items-center gap-2.5">
-            <img src="/brand/logo.png" alt="" className="h-10 w-10 rounded-full border border-slate-200 bg-white object-contain p-1" />
-            <span className="font-semibold text-slate-900">{post.author}</span>
+            <h1 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
+              {post.title}
+            </h1>
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3 text-sm text-slate-600" aria-label="Article details">
+              <div className="flex items-center gap-2.5">
+                <img src="/brand/logo.png" alt="" width={40} height={40} className="h-10 w-10 rounded-full border border-slate-200 bg-white object-contain p-1" />
+                <span className="font-semibold text-slate-900">{post.author}</span>
+              </div>
+              <span className="inline-flex items-center gap-2">
+                <CalendarDays className="h-4 w-4" aria-hidden="true" />
+                <span>Published <time dateTime={post.datePublished}>{formatDate(post.datePublished)}</time></span>
+              </span>
+              {post.dateModified !== post.datePublished ? (
+                <span className="inline-flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                  <span>Updated <time dateTime={post.dateModified}>{formatDate(post.dateModified)}</time></span>
+                </span>
+              ) : null}
+              <span className="inline-flex items-center gap-2">
+                <Clock3 className="h-4 w-4" aria-hidden="true" />
+                {post.readMinutes} min read
+              </span>
+            </div>
+
+            <AiSummaryBar canonicalUrl={canonicalUrl} />
           </div>
-          <span className="inline-flex items-center gap-2">
-            <CalendarDays className="h-4 w-4" aria-hidden="true" />
-            <time dateTime={post.datePublished}>{formatDate(post.datePublished)}</time>
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <Clock3 className="h-4 w-4" aria-hidden="true" />
-            {post.readMinutes} min read
-          </span>
-        </div>
 
-        <AiSummaryBar canonicalUrl={canonicalUrl} />
-        <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
-          <img
-            src={post.featuredImage}
-            alt={post.title}
-            className="h-auto w-full object-cover"
-            loading="eager"
-          />
-        </div>
+          <div className="rounded-3xl bg-gradient-to-br from-teal-50 via-sky-50 to-slate-50 p-3 ring-1 ring-slate-200/70 sm:p-5">
+            <img
+              src={post.featuredImage}
+              alt={post.featuredImageAlt ?? post.title}
+              width={heroWidth}
+              height={heroHeight}
+              className="h-auto w-full rounded-2xl object-cover shadow-sm"
+              loading="eager"
+              decoding="async"
+              {...{ fetchpriority: "high" }}
+            />
+          </div>
         </header>
 
         <details className="mx-auto mt-6 max-w-3xl rounded-xl border border-slate-200 bg-slate-50 p-4 lg:hidden">
@@ -435,8 +651,11 @@ export default function BlogPost() {
               <img
                 src="/landing/hero-phone.png"
                 alt="Receipt Cycle app showing receipt and expense tracking workflow"
+                width={1376}
+                height={768}
                 className="h-auto w-full object-cover"
                 loading="lazy"
+                decoding="async"
               />
               <figcaption className="border-t border-slate-100 px-4 py-3 text-sm text-slate-600">
                 A practical receipt-to-ledger workflow helps keep records clean all year.
@@ -471,6 +690,7 @@ export default function BlogPost() {
             </section>
           ) : null}
           {post.faq?.length ? <ArticleFaq items={post.faq} /> : null}
+          {resourceItems.length ? <ArticleResources items={resourceItems} /> : null}
             </article>
 
         <div className="mt-10 flex flex-wrap gap-2">

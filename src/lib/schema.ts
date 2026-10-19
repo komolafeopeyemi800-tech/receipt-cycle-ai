@@ -43,6 +43,8 @@ export interface ImageRef {
   width: number;
   height: number;
   alt?: string;
+  /** Short image name for ImageObject.name (defaults to nothing). */
+  name?: string;
 }
 
 export interface FaqEntry {
@@ -111,6 +113,7 @@ function imageObject(img: ImageRef, id?: string): Jsonld {
     contentUrl: url,
     width: img.width,
     height: img.height,
+    ...(img.name ? { name: img.name } : {}),
     ...(img.alt ? { caption: img.alt } : {}),
   };
 }
@@ -269,6 +272,8 @@ export interface ArticleInput {
   headline: string;
   description: string;
   image: ImageRef;
+  /** Additional in-article images (ImageObject entries after the hero). */
+  images?: ImageRef[];
   datePublished: string;
   dateModified: string;
   authorName: string;
@@ -444,7 +449,7 @@ export function buildPageGraph(input: PageSchemaInput): Jsonld[] {
       headline: a.headline,
       name: a.headline,
       description: a.description,
-      image: [imageObject(a.image)],
+      image: [imageObject(a.image), ...(a.images ?? []).map((img) => imageObject(img))],
       datePublished: a.datePublished,
       dateModified: a.dateModified,
       author: { "@type": "Organization", name: a.authorName, url: `${SITE_URL}/` },

@@ -11,6 +11,8 @@ import { BLOG_POSTS, type BlogPost } from "./blogPosts";
 import { SITE_FAQ_ITEMS } from "./siteFaq";
 import { LANDING_PAGES } from "./landingPages";
 import { landingFaqs } from "./landingFaqs";
+import { overallScore } from "../lib/appTones";
+import { extractInlineLinks, hostnameOf, isInternalHref, stripInlineLinks, tokenizeInline } from "../lib/blogMarkdown";
 import { PAYWALL_PRICING, PAYWALL_TIER_FEATURES, formatUsd } from "../lib/pricingPaywall";
 import {
   DEFAULT_OG_IMAGE,
@@ -144,20 +146,48 @@ function noscriptWrap(title: string, innerHtml: string): string {
 /* Blog                                                                                              */
 /* ------------------------------------------------------------------------------------------------ */
 
-/** Plain-text of everything a reader sees in the article body (used for wordCount). */
+/** Plain-text of everything a reader sees in the article body (used for wordCount). Inline links count as their label only. */
 export function blogPostText(post: BlogPost): string {
-  const parts: string[] = [post.title, post.tldr, ...(post.keyTakeaways ?? [])];
+  const t = stripInlineLinks;
+  const parts: string[] = [post.title, t(post.tldr), ...(post.keyTakeaways ?? []).map(t)];
   for (const b of post.body) {
-    if (b.kind === "p" || b.kind === "h2" || b.kind === "h3" || b.kind === "h4") parts.push(b.text);
-    else if (b.kind === "ul" || b.kind === "ol") parts.push(...b.items);
-    else if (b.kind === "quote") parts.push(b.text);
-    else if (b.kind === "callout") parts.push(b.title, b.text);
-    else if (b.kind === "image" && b.caption) parts.push(b.caption);
+    if (b.kind === "p" || b.kind === "h2" || b.kind === "h3" || b.kind === "h4") parts.push(t(b.text));
+    else if (b.kind === "ul" || b.kind === "ol") parts.push(...b.items.map(t));
+    else if (b.kind === "quote") parts.push(t(b.text));
+    else if (b.kind === "callout") parts.push(b.title, t(b.text));
+    else if (b.kind === "cta") parts.push(b.title, t(b.text), b.label, ...(b.note ? [t(b.note)] : []));
+    else if (b.kind === "image" && b.caption) parts.push(t(b.caption));
     else if (b.kind === "links") parts.push(b.title, ...b.items.map((i) => i.label));
-    else if (b.kind === "table") parts.push(b.caption, ...b.columns, ...b.rows.flat());
+    else if (b.kind === "table") parts.push(b.caption, ...b.columns, ...b.rows.flat().map(t));
+    else if (b.kind === "scoreTable") {
+      parts.push(b.caption, ...b.columns, "Overall");
+      for (const row of b.rows) {
+        parts.push(row.app, ...row.scores.map((n) => `${n}%`), `${overallScore(row.scores)}%`);
+      }
+      if (b.note) parts.push(t(b.note));
+    }
   }
-  for (const item of post.faq ?? []) parts.push(item.question, item.answer);
+  for (const item of post.faq ?? []) parts.push(item.question, t(item.answer));
   return parts.join(" ");
+}
+
+/** Every string in the article that may carry [label](href) links. */
+function inlineTexts(post: BlogPost): string[] {
+  const out: string[] = [post.tldr, ...(post.keyTakeaways ?? [])];
+  for (const b of post.body) {
+    if (b.kind === "p" || b.kind === "quote" || b.kind === "callout") out.push(b.text);
+    else if (b.kind === "ul" || b.kind === "ol") out.push(...b.items);
+    else if (b.kind === "table") out.push(...b.rows.flat());
+    else if (b.kind === "cta") out.push(b.text, ...(b.note ? [b.note] : []));
+    else if (b.kind === "scoreTable" && b.note) out.push(b.note);
+    else if (b.kind === "image" && b.caption) out.push(b.caption);
+  }
+  for (const item of post.faq ?? []) out.push(item.answer);
+  return out;
+}
+
+function isExternalSource(href: string): boolean {
+  return /^https:\/\//.test(href) && hostnameOf(href) !== "receiptcycle.com";
 }
 
 const BLOG_SECTIONS: Record<string, string> = {
@@ -187,12 +217,20 @@ export function blogCitations(post: BlogPost): CitationRef[] {
     name: citation.label,
     url: citation.href,
   }));
+  const add = (name: string, url: string) => {
+    if (!out.some((c) => c.url === url)) out.push({ name, url });
+  };
+  for (const r of post.resources ?? []) if (isExternalSource(r.href)) add(r.label, r.href);
   for (const b of post.body) {
     if (b.kind !== "links") continue;
     for (const item of b.items) {
-      if (item.external && /^https:\/\//.test(item.href) && !out.some((c) => c.url === item.href)) {
-        out.push({ name: item.label, url: item.href });
-      }
+      if (item.external && /^https:\/\//.test(item.href)) add(item.label, item.href);
+    }
+  }
+  // External sources linked inline as [label](https://...). Internal links never count as citations.
+  for (const text of inlineTexts(post)) {
+    for (const link of extractInlineLinks(text)) {
+      if (!isInternalHref(link.href) && isExternalSource(link.href)) add(link.label, link.href);
     }
   }
   return out;
@@ -205,18 +243,32 @@ export function blogImageUrl(post: BlogPost): string {
   return post.featuredImage.startsWith("http") ? post.featuredImage : `${SITE_URL}${post.featuredImage}`;
 }
 
+/** Escaped HTML for text that may contain [label](href) links. */
+function inlineHtml(text: string): string {
+  return tokenizeInline(text)
+    .map((tok) => {
+      if (tok.type === "text") return escapeHtml(tok.text);
+      const attrs = isInternalHref(tok.href) ? "" : ` target="_blank" rel="noopener noreferrer"`;
+      return `<a href="${escapeHtml(tok.href)}"${attrs}>${escapeHtml(tok.label)}</a>`;
+    })
+    .join("");
+}
+
 function blogPostNoscript(post: BlogPost): string {
   const body = post.body
     .map((b) => {
-      if (b.kind === "p") return `<p>${escapeHtml(b.text)}</p>`;
+      if (b.kind === "p") return `<p>${inlineHtml(b.text)}</p>`;
       if (b.kind === "h2") return `<h2 id="${b.id}">${escapeHtml(b.text)}</h2>`;
       if (b.kind === "h3") return `<h3 id="${b.id}">${escapeHtml(b.text)}</h3>`;
       if (b.kind === "h4") return `<h4 id="${b.id}">${escapeHtml(b.text)}</h4>`;
       if (b.kind === "image") {
         const safeSrc = escapeHtml(b.src);
         const safeAlt = escapeHtml(b.alt);
-        const caption = b.caption ? `<figcaption>${escapeHtml(b.caption)}</figcaption>` : "";
-        return `<figure><img src="${safeSrc}" alt="${safeAlt}"/>${caption}</figure>`;
+        const caption = b.caption ? `<figcaption>${inlineHtml(b.caption)}</figcaption>` : "";
+        const size = `${b.width ? ` width="${b.width}"` : ""}${b.height ? ` height="${b.height}"` : ""}${b.title ? ` title="${escapeHtml(b.title)}"` : ""}`;
+        const img = `<img src="${safeSrc}" alt="${safeAlt}"${size}/>`;
+        const linked = b.href ? `<a href="${escapeHtml(b.href)}">${img}</a>` : img;
+        return `<figure>${linked}${caption}</figure>`;
       }
       if (b.kind === "links") {
         return `<section><h3>${escapeHtml(b.title)}</h3><ul>${b.items
@@ -231,24 +283,42 @@ function blogPostNoscript(post: BlogPost): string {
       if (b.kind === "table") {
         const head = b.columns.map((column) => `<th scope="col">${escapeHtml(column)}</th>`).join("");
         const rows = b.rows
-          .map((row) => `<tr>${row.map((cell, index) => index === 0 ? `<th scope="row">${escapeHtml(cell)}</th>` : `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`)
+          .map((row) => `<tr>${row.map((cell, index) => index === 0 ? `<th scope="row">${inlineHtml(cell)}</th>` : `<td>${inlineHtml(cell)}</td>`).join("")}</tr>`)
           .join("");
         return `<table><caption>${escapeHtml(b.caption)}</caption><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
       }
-      if (b.kind === "ul") return `<ul>${b.items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul>`;
-      if (b.kind === "ol") return `<ol>${b.items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ol>`;
+      if (b.kind === "ul") return `<ul>${b.items.map((i) => `<li>${inlineHtml(i)}</li>`).join("")}</ul>`;
+      if (b.kind === "ol") return `<ol>${b.items.map((i) => `<li>${inlineHtml(i)}</li>`).join("")}</ol>`;
       if (b.kind === "quote")
-        return `<blockquote>${escapeHtml(b.text)}${b.cite ? `<footer>${escapeHtml(b.cite)}</footer>` : ""}</blockquote>`;
-      return `<aside><strong>${escapeHtml(b.title)}</strong><p>${escapeHtml(b.text)}</p></aside>`;
+        return `<blockquote>${inlineHtml(b.text)}${b.cite ? `<footer>${escapeHtml(b.cite)}</footer>` : ""}</blockquote>`;
+      if (b.kind === "cta")
+        return `<aside><strong>${escapeHtml(b.title)}</strong><p>${inlineHtml(b.text)}</p><p><a href="${escapeHtml(b.href)}">${escapeHtml(b.label)}</a></p>${b.note ? `<p>${inlineHtml(b.note)}</p>` : ""}</aside>`;
+      if (b.kind === "scoreTable") {
+        const head = ["App", ...b.columns, "Overall"].map((column) => `<th scope="col">${escapeHtml(column)}</th>`).join("");
+        const rows = b.rows
+          .map(
+            (row) =>
+              `<tr><th scope="row">${escapeHtml(row.app)}</th>${row.scores.map((n) => `<td>${n}%</td>`).join("")}<td>${overallScore(row.scores)}%</td></tr>`,
+          )
+          .join("");
+        return `<table><caption>${escapeHtml(b.caption)}</caption><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>${b.note ? `<p>${inlineHtml(b.note)}</p>` : ""}`;
+      }
+      return `<aside><strong>${escapeHtml(b.title)}</strong><p>${inlineHtml(b.text)}</p></aside>`;
     })
     .join("\n");
   const takeaways = post.keyTakeaways?.length
-    ? `<section id="short-version"><h2>Key Takeaways</h2><ul>${post.keyTakeaways.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>`
+    ? `<section id="short-version"><h2>Key Takeaways</h2><ul>${post.keyTakeaways.map((item) => `<li>${inlineHtml(item)}</li>`).join("")}</ul></section>`
     : "";
   const faq = post.faq?.length
-    ? `<section id="frequently-asked-questions"><h2>Frequently asked questions</h2>${post.faq.map((item) => `<h3>${escapeHtml(item.question)}</h3><p>${escapeHtml(item.answer)}</p>`).join("")}</section>`
+    ? `<section id="frequently-asked-questions"><h2>Frequently asked questions</h2>${post.faq.map((item) => `<h3>${escapeHtml(item.question)}</h3><p>${inlineHtml(item.answer)}</p>`).join("")}</section>`
     : "";
-  const inner = `<p data-speakable="summary"><em>${escapeHtml(post.tldr)}</em></p>${takeaways}${body}${faq}`;
+  const resourceItems = post.resources ?? (post.citations ?? []).map((c) => ({ ...c, note: undefined as string | undefined }));
+  const resources = resourceItems.length
+    ? `<section id="resources"><h2>Resources and sources</h2><ul>${resourceItems
+        .map((r) => `<li><a href="${escapeHtml(r.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(r.label)}</a>${r.note ? ` ${escapeHtml(r.note)}` : ""}</li>`)
+        .join("")}</ul></section>`
+    : "";
+  const inner = `<p data-speakable="summary"><em>${inlineHtml(post.tldr)}</em></p>${takeaways}${body}${faq}${resources}`;
   return noscriptWrap(post.title, inner);
 }
 
@@ -258,18 +328,31 @@ function latestBlogModified(): string {
 
 function blogRoute(post: BlogPost): RouteSeo {
   const path = `/blog/${post.slug}`;
-  const image: ImageRef = { url: blogImageUrl(post), ...BLOG_IMAGE_SIZE, alt: post.title };
+  const image: ImageRef = {
+    url: blogImageUrl(post),
+    width: post.featuredImageWidth ?? BLOG_IMAGE_SIZE.width,
+    height: post.featuredImageHeight ?? BLOG_IMAGE_SIZE.height,
+    alt: post.featuredImageAlt ?? post.title,
+    name: post.title,
+  };
+  const bodyImages: ImageRef[] = [];
+  for (const b of post.body) {
+    if (b.kind !== "image" || !b.width || !b.height) continue;
+    const url = b.src.startsWith("http") ? b.src : `${SITE_URL}${b.src}`;
+    if (!url.startsWith(`${SITE_URL}/`) || url === image.url || bodyImages.some((i) => i.url === url)) continue;
+    bodyImages.push({ url, width: b.width, height: b.height, alt: stripInlineLinks(b.caption ?? b.alt), name: b.title ?? b.alt });
+  }
   return {
     path,
     title: `${post.title} | ${SITE_NAME}`,
     description: post.description,
     ogImage: image.url,
-    ogImageAlt: post.title,
+    ogImageAlt: image.alt,
     ogImageWidth: image.width,
     ogImageHeight: image.height,
     ogType: "article",
     kind: "article",
-    summary: post.tldr,
+    summary: stripInlineLinks(post.tldr),
     dateModified: post.dateModified,
     changefreq: "monthly",
     priority: 0.7,
@@ -293,12 +376,13 @@ function blogRoute(post: BlogPost): RouteSeo {
         { name: post.title, path },
       ],
       speakable: ["h1", "[data-speakable='summary']"],
-      faq: post.faq?.map((item) => ({ q: item.question, a: item.answer })),
+      faq: post.faq?.map((item) => ({ q: item.question, a: stripInlineLinks(item.answer) })),
       article: {
         slug: post.slug,
         headline: post.title,
         description: post.description,
         image,
+        images: bodyImages,
         datePublished: post.datePublished,
         dateModified: post.dateModified,
         authorName: post.author,

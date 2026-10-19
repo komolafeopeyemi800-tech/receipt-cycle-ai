@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PAYWALL_PRICING, formatUsd, lifetimeDiscountPercent, lifetimeMonthsOfMonthly, type PaywallPlanId } from "@/lib/pricingPaywall";
+import { PAYWALL_PRICING, formatUsd, type PaywallPlanId } from "@/lib/pricingPaywall";
 import { useBilling } from "@/lib/billing";
 import { useSubscriptionState } from "@/hooks/use-subscription-state";
 
@@ -75,9 +75,9 @@ export function DashboardUpgradeModal({ open, onClose }: { open: boolean; onClos
 
         <section className="flex min-h-0 flex-col px-5 pb-4 pt-12 sm:px-7 lg:px-7 lg:pb-4 lg:pt-5">
           <div className="pr-5 lg:pr-8">
-            <div className="mb-1.5 flex items-center gap-2"><p className="text-[9px] font-black uppercase tracking-[.18em] text-teal-300">Receipt Cycle Pro</p><span className="rounded-full bg-teal-300 px-2 py-0.5 text-[9px] font-black text-slate-950">Launch offer · Save {lifetimeDiscountPercent()}%</span></div>
+            <div className="mb-1.5 flex items-center gap-2"><p className="text-[9px] font-black uppercase tracking-[.18em] text-teal-300">Receipt Cycle Pro</p><span className="rounded-full bg-teal-300 px-2 py-0.5 text-[9px] font-black text-slate-950">Launch offer · Pro for life</span></div>
             <h2 className="text-[clamp(25px,3.1vw,32px)] font-black uppercase leading-none tracking-[-.04em]"><span className="text-teal-300">{formatUsd(PAYWALL_PRICING.lifetimeUsd)} once</span><br />and Pro is yours for life.</h2>
-            <p className="mt-2 text-[10px] leading-4 text-slate-400">No monthly card charges. About {lifetimeMonthsOfMonthly()} months of Monthly for one payment.</p>
+            <p className="mt-2 text-[10px] leading-4 text-slate-400">One payment. No renewals and no monthly card charges, ever.</p>
           </div>
 
           <div className="mt-3 space-y-2">

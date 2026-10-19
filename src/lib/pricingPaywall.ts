@@ -38,23 +38,6 @@ export function equivalentMonthlyFromYearly(): string {
   return formatUsd(PAYWALL_PRICING.yearlyUsd / 12);
 }
 
-/** How many months of Pro Monthly one lifetime payment covers (60 / 3.50 is about 17). */
-export function lifetimeMonthsOfMonthly(): number {
-  return Math.floor(PAYWALL_PRICING.lifetimeUsd / PAYWALL_PRICING.monthlyUsd);
-}
-
-/** What two years of Pro Monthly would cost, to show what the lifetime payment saves. */
-export function twoYearsMonthlyUsd(): number {
-  return PAYWALL_PRICING.monthlyUsd * 24;
-}
-
-/** Percent saved by paying once instead of two years of monthly (about 29%). */
-export function lifetimeDiscountPercent(): number {
-  const twoYears = twoYearsMonthlyUsd();
-  if (twoYears <= 0) return 0;
-  return Math.round((1 - PAYWALL_PRICING.lifetimeUsd / twoYears) * 100);
-}
-
 export const PAYWALL_PLANS: {
   id: PaywallPlanId;
   label: string;
@@ -88,7 +71,7 @@ export const PAYWALL_PLANS: {
     label: "Pro Lifetime",
     hint: "Best value",
     priceLine: formatUsd(PAYWALL_PRICING.lifetimeUsd),
-    periodNote: "one time · no monthly charges",
+    periodNote: "pay once · Pro for life",
   },
 ];
 
@@ -103,7 +86,7 @@ export function paywallPlanDetailLine(plan: PaywallPlanId): string {
   if (plan === "yearly") {
     return `${PAYWALL_PRICING.trialDays}-day free trial · then ${formatUsd(PAYWALL_PRICING.yearlyUsd)}/year (save ${yearlyDiscountPercent()}% vs monthly).`;
   }
-  return `${formatUsd(PAYWALL_PRICING.lifetimeUsd)} one time · Pro for life on phone & web · no monthly charges (about ${lifetimeMonthsOfMonthly()} months of Monthly).`;
+  return `${formatUsd(PAYWALL_PRICING.lifetimeUsd)} one time · Pro for life on phone & web · no renewals and no monthly charges.`;
 }
 
 /** Bullet list per tier for marketing / SaaS pricing layouts. */
@@ -131,11 +114,11 @@ export const PAYWALL_TIER_FEATURES: Record<PaywallPlanId, readonly string[]> = {
     `Save ${yearlyDiscountPercent()}% vs paying monthly`,
   ],
   lifetime: [
-    "Everything in Pro Monthly",
-    `Pay ${formatUsd(PAYWALL_PRICING.lifetimeUsd)} once, keep Pro for life`,
-    "No card on file, no monthly charges",
-    `Same usage as Pro Monthly, about ${lifetimeMonthsOfMonthly()} months of Monthly for one payment`,
-    `Save ${formatUsd(twoYearsMonthlyUsd() - PAYWALL_PRICING.lifetimeUsd)} compared with two years of Monthly`,
+    `Pay ${formatUsd(PAYWALL_PRICING.lifetimeUsd)} once and keep Pro for life`,
+    "Everything in Pro Monthly and Yearly, with no end date",
+    "No renewals, no monthly charges, no card kept on file",
+    "Unlimited transactions, scanning, voice, budgets and exports",
+    "One payment covers web and mobile",
     "Launch offer price",
   ],
 };

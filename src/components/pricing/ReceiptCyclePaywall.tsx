@@ -5,8 +5,6 @@ import {
   PAYWALL_BENEFITS,
   PAYWALL_PLANS,
   PAYWALL_TIER_FEATURES,
-  lifetimeDiscountPercent,
-  lifetimeMonthsOfMonthly,
   yearlyDiscountPercent,
   formatUsd,
   PAYWALL_PRICING,
@@ -24,7 +22,6 @@ export default function ReceiptCyclePaywall() {
   const navigate = useNavigate();
   const { user } = useWebAuth();
   const { startCheckout } = useBilling();
-  const discountPct = lifetimeDiscountPercent();
   // Four plans in three boxes: the switch swaps the middle box between Monthly and Yearly. Free and Lifetime never change.
   const [yearly, setYearly] = useState(false);
   const shown = PAYWALL_PLANS.filter((tier) => tier.id !== (yearly ? "monthly" : "yearly"));
@@ -90,7 +87,7 @@ export default function ReceiptCyclePaywall() {
               >
                 {popular ? (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-gradient-to-r from-teal-600 to-teal-500 px-3 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white shadow">
-                    {`Launch offer · save ${discountPct}%`}
+                    Launch offer · Pro for life
                   </span>
                 ) : null}
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{tier.hint}</p>
@@ -137,8 +134,8 @@ export default function ReceiptCyclePaywall() {
         </div>
 
         <div className="mx-auto mt-6 max-w-3xl rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-sm text-slate-600 shadow-sm">
-          <strong className="font-semibold text-slate-800">Pro Lifetime:</strong> {formatUsd(PAYWALL_PRICING.lifetimeUsd)} once, about{" "}
-          {lifetimeMonthsOfMonthly()} months of Monthly, with no card charged again.
+          <strong className="font-semibold text-slate-800">Pro Lifetime:</strong> {formatUsd(PAYWALL_PRICING.lifetimeUsd)} one time, yours for life,
+          with no renewals and no card charged again.
           <span className="text-slate-500">
             {" "}
             Monthly and Yearly have a {PAYWALL_PRICING.trialDays}-day free trial, then {formatUsd(PAYWALL_PRICING.monthlyUsd)} per month or{" "}

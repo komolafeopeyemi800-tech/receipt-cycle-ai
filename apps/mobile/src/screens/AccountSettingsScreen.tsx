@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: colors.gray200,
-    borderRadius: 0,
+    borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: typeScale.body,
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   },
   btn: {
     backgroundColor: colors.primary,
-    borderRadius: 12,
+    borderRadius: 6,
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 8,
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   btnTxt: { color: "#fff", fontWeight: "700", fontSize: typeScale.bodyStrong },
   dangerBtn: {
     marginTop: 8,
-    borderRadius: 12,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: "#fecaca",
     backgroundColor: "#fff1f2",

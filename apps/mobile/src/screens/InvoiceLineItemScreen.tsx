@@ -92,5 +92,5 @@ const styles = StyleSheet.create({
   recentRow: { minHeight: 54, flexDirection: "row", alignItems: "center", paddingVertical: spacing.sm },
   itemName: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "700" },
   itemMeta: { color: colors.gray500, fontSize: uiType.caption, marginTop: 3 },
-  addSmall: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.mintSoft, alignItems: "center", justifyContent: "center" },
+  addSmall: { width: 30, height: 30, borderRadius: 6, backgroundColor: colors.mintSoft, alignItems: "center", justifyContent: "center" },
 });

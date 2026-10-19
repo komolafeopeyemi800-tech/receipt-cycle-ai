@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: colors.gray200,
-    borderRadius: 0,
+    borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: typeScale.body,
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   codeInput: { textAlign: "center", fontSize: 22, letterSpacing: 8, fontWeight: "700" },
   help: { fontSize: typeScale.body, color: colors.gray600, marginBottom: 12 },
   err: { color: colors.rose600, fontSize: typeScale.body, marginBottom: 10 },
-  btn: { backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 13, alignItems: "center" },
+  btn: { backgroundColor: colors.primary, borderRadius: 6, paddingVertical: 13, alignItems: "center" },
   btnTxt: { color: "#fff", fontSize: typeScale.body, fontWeight: "700" },
   links: { flexDirection: "row", justifyContent: "space-between", marginTop: 14 },
   link: { color: colors.primary, fontSize: typeScale.sm, fontWeight: "700" },

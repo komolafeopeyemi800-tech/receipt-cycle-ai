@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: "800", color: colors.textPrimary },
   subtitle: { fontSize: 12, color: colors.gray500, marginTop: 6 },
   avatarBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  labelBtn: { width: "auto", minWidth: 72, paddingHorizontal: 10, height: 34, borderRadius: 9, borderWidth: 1, borderColor: colors.primary },
+  labelBtn: { width: "auto", minWidth: 72, paddingHorizontal: 10, height: 34, borderRadius: 6, borderWidth: 1, borderColor: colors.primary },
   rightLabel: { color: colors.primary, fontSize: 12, fontWeight: "800" },
   backBtn: { width: 36, height: 36, justifyContent: "center", marginRight: 4 },
 });

@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   merchant: { fontSize: 16, color: colors.textPrimary, fontWeight: "800" },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 0,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.gray200,
     padding: 4,
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
   },
   notesCard: {
     backgroundColor: "#fafafa",
-    borderRadius: 0,
+    borderRadius: 6,
     padding: 14,
     borderWidth: 1,
     borderColor: colors.gray200,
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
   tagTxt: { fontSize: typeScale.sm, fontWeight: "600", color: colors.gray800 },
   receiptCard: {
     backgroundColor: colors.surface,
-    borderRadius: 0,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 12,
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
   receiptTextBox: {
     backgroundColor: colors.gray100,
     padding: 14,
-    borderRadius: 0,
+    borderRadius: 6,
     maxHeight: 240,
   },
   receiptText: {
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   lineItem: { flexDirection: "row", justifyContent: "space-between", gap: 12, paddingVertical: 9, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.gray200 },
   lineName: { flex: 1, fontSize: typeScale.sm, color: colors.gray800, fontWeight: "600" },
   linePrice: { fontSize: typeScale.sm, color: colors.gray900, fontWeight: "800" },
-  evidenceButton: { marginTop: 10, minHeight: 46, borderRadius: 10, backgroundColor: colors.emerald50, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  evidenceButton: { marginTop: 10, minHeight: 46, borderRadius: 6, backgroundColor: colors.emerald50, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   evidenceButtonText: { color: colors.primary, fontSize: typeScale.sm, fontWeight: "800" },
   actions: { flexDirection: "row", gap: 10 },
   danger: {

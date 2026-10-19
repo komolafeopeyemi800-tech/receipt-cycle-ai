@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 0,
+    borderRadius: 6,
     padding: 18,
     borderWidth: 1,
     borderColor: colors.gray200,
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: colors.gray200,
-    borderRadius: 0,
+    borderRadius: 6,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: typeScale.body,
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   err: { color: colors.rose600, fontSize: typeScale.md, marginBottom: 4 },
   btn: {
     backgroundColor: colors.primary,
-    borderRadius: 12,
+    borderRadius: 6,
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 4,
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   orTxt: { fontSize: typeScale.sm, color: colors.gray400, fontWeight: "600" },
   newHere: { alignItems: "center", marginTop: 26, gap: 12 },
   newHereText: { fontSize: 15, color: colors.gray600, fontWeight: "600" },
-  createBtn: { alignSelf: "stretch", minHeight: 56, borderRadius: 14, borderWidth: 2, borderColor: colors.primary, alignItems: "center", justifyContent: "center", backgroundColor: colors.surface },
+  createBtn: { alignSelf: "stretch", minHeight: 56, borderRadius: 6, borderWidth: 2, borderColor: colors.primary, alignItems: "center", justifyContent: "center", backgroundColor: colors.surface },
   createBtnTxt: { fontSize: 19, fontWeight: "800", color: colors.primary },
   linkRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 22 },
   link: { fontSize: typeScale.body, color: colors.primary, fontWeight: "600" },

@@ -42,8 +42,8 @@ export const colors = {
 
 /** Shared mobile scale for this worksheet and subsequent feature screens. */
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32 } as const;
-/** Boxes (cards, panels, sheets) are square: large and extraLarge are 0. Small and medium stay for buttons and small controls; pill is for pills. */
-export const radius = { small: 8, medium: 12, large: 0, extraLarge: 0, pill: 999 } as const;
+/** Android look: boxes and buttons are rectangles with a small 6dp corner. Pills and circles keep their full rounding. */
+export const radius = { small: 4, medium: 6, large: 6, extraLarge: 6, pill: 999 } as const;
 export const controlHeight = { input: 46, button: 48, touch: 44 } as const;
 export const uiType = {
   caption: 11,

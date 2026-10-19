@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: colors.gray200,
-    borderRadius: 0,
+    borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: typeScale.body,
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   err: { color: colors.rose600, fontSize: typeScale.md, marginBottom: 8 },
   btn: {
     backgroundColor: colors.primary,
-    borderRadius: 10,
+    borderRadius: 6,
     paddingVertical: 12,
     alignItems: "center",
     marginTop: 8,

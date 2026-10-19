@@ -253,7 +253,7 @@ export function AccountDetailScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: 42 },
-  hero: { borderRadius: 0, padding: spacing.lg, marginBottom: spacing.md },
+  hero: { borderRadius: 6, padding: spacing.lg, marginBottom: spacing.md },
   heroRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   heroIcon: { width: 50, height: 50, borderRadius: 25, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center" },
   name: { fontSize: uiType.sectionTitle, color: "#fff", fontWeight: "800" },
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   caption: { color: "rgba(255,255,255,0.78)", fontSize: uiType.secondary, marginTop: spacing.lg },
   balance: { color: "#fff", fontSize: 30, fontWeight: "800", marginTop: 2 },
   stats: { flexDirection: "row", gap: spacing.sm, marginBottom: spacing.lg },
-  stat: { flex: 1, minWidth: 0, padding: spacing.md, borderRadius: 0, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  stat: { flex: 1, minWidth: 0, padding: spacing.md, borderRadius: 6, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   statIcon: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", marginBottom: 6 },
   statValue: { color: colors.textPrimary, fontSize: uiType.body, fontWeight: "800", marginTop: 2 },
   statLabel: { fontSize: uiType.caption, color: colors.gray600 },

@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: colors.gray200,
-    borderRadius: 0,
+    borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: typeScale.body,
@@ -130,12 +130,12 @@ const styles = StyleSheet.create({
     color: colors.gray900,
     backgroundColor: colors.gray100,
     padding: 10,
-    borderRadius: 0,
+    borderRadius: 6,
     marginBottom: 12,
   },
   btn: {
     backgroundColor: colors.primary,
-    borderRadius: 10,
+    borderRadius: 6,
     paddingVertical: 12,
     alignItems: "center",
     marginTop: 8,

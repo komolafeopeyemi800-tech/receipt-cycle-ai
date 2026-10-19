@@ -128,7 +128,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 0, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14, marginBottom: 12 },
+  card: { borderRadius: 6, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14, marginBottom: 12 },
   hdr: { fontSize: 15, fontWeight: "800", color: colors.textPrimary },
   hint: { fontSize: typeScale.sm, color: colors.gray500, marginTop: 4, marginBottom: 6, lineHeight: 16 },
   label: { fontSize: typeScale.sm, fontWeight: "700", color: colors.gray600, marginTop: 10, marginBottom: 6 },
@@ -138,12 +138,12 @@ const styles = StyleSheet.create({
   chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipTxt: { fontSize: typeScale.sm, fontWeight: "600", color: colors.gray700, maxWidth: 160 },
   chipTxtOn: { color: "#fff" },
-  input: { minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 0, paddingHorizontal: 12, fontSize: 16, color: colors.gray900, backgroundColor: "#fff" },
+  input: { minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 6, paddingHorizontal: 12, fontSize: 16, color: colors.gray900, backgroundColor: "#fff" },
   countRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12, marginBottom: 8, gap: 8 },
   count: { flex: 1, fontSize: typeScale.sm, color: colors.gray600 },
   countStrong: { fontWeight: "700", color: colors.gray900 },
   clear: { fontSize: typeScale.sm, fontWeight: "700", color: colors.primary },
-  btn: { minHeight: 46, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 10, marginTop: 8, paddingHorizontal: 12 },
+  btn: { minHeight: 46, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 6, marginTop: 8, paddingHorizontal: 12 },
   btnDark: { backgroundColor: colors.gray900 },
   btnTeal: { backgroundColor: colors.primary },
   btnLight: { backgroundColor: "#fff", borderWidth: 1, borderColor: colors.border },

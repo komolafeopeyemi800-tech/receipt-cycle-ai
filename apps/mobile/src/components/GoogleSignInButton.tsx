@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    borderRadius: 10,
+    borderRadius: 6,
     paddingVertical: 12,
     borderWidth: 1,
     borderColor: colors.gray200,

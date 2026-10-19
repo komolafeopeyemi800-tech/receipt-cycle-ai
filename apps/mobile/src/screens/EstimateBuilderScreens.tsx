@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   catalogCard: { paddingVertical: 0 },
   catalogRow: { minHeight: 54, flexDirection: "row", alignItems: "center", gap: spacing.sm },
   divider: { borderBottomWidth: 1, borderBottomColor: colors.divider },
-  addSmall: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.mintSoft, alignItems: "center", justifyContent: "center" },
+  addSmall: { width: 30, height: 30, borderRadius: 6, backgroundColor: colors.mintSoft, alignItems: "center", justifyContent: "center" },
   itemsTotal: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: spacing.lg },
   itemTotal: { color: colors.textPrimary, fontSize: uiType.body, fontWeight: "900" },
   summaryLine: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.xl },

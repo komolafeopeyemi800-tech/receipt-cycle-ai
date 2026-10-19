@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   usageRow: { flexDirection: "row", justifyContent: "space-between", gap: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.divider },
   usageLabel: { color: colors.textSecondary, fontSize: uiType.secondary },
   usageValue: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "700", textAlign: "right", flexShrink: 1 },
-  notice: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm, backgroundColor: colors.emerald50, borderRadius: 0, padding: spacing.md },
+  notice: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm, backgroundColor: colors.emerald50, borderRadius: 6, padding: spacing.md },
   noticeTitle: { color: colors.textPrimary, fontSize: uiType.secondary, fontWeight: "800", marginBottom: 3 },
   noticeText: { flex: 1, color: colors.textSecondary, fontSize: uiType.caption, lineHeight: 18 },
 });

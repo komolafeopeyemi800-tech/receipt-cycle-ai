@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   pad: { paddingHorizontal: 16, paddingBottom: 24 },
   lead: { fontSize: typeScale.sm, color: colors.gray600, lineHeight: 20, marginBottom: 16 },
   warnBox: {
-    borderRadius: 0,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: "#fecaca",
     backgroundColor: "#fef2f2",
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
     borderColor: colors.gray200,
-    borderRadius: 0,
+    borderRadius: 6,
     backgroundColor: colors.surface,
     padding: 14,
     marginBottom: 12,
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   primaryBtn: {
     marginTop: 14,
     backgroundColor: colors.primary,
-    borderRadius: 12,
+    borderRadius: 6,
     paddingVertical: 14,
     alignItems: "center",
   },

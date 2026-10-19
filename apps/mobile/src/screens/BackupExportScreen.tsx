@@ -116,16 +116,16 @@ export function BackupExportScreen() {
 
 const styles = StyleSheet.create({
   page: { padding: spacing.lg, paddingBottom: spacing.xxxl, alignItems: "center" },
-  banner: { flexDirection: "row", alignItems: "center", gap: spacing.sm, alignSelf: "stretch", backgroundColor: "#E6F4EE", borderRadius: 0, padding: spacing.md },
+  banner: { flexDirection: "row", alignItems: "center", gap: spacing.sm, alignSelf: "stretch", backgroundColor: "#E6F4EE", borderRadius: 6, padding: spacing.md },
   bannerWait: { backgroundColor: colors.gray100 },
   bannerText: { flex: 1, color: colors.primary, fontSize: uiType.body, lineHeight: 22 },
-  hero: { width: 150, height: 150, borderRadius: 0, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", marginTop: spacing.xxxl },
+  hero: { width: 150, height: 150, borderRadius: 6, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", marginTop: spacing.xxxl },
   title: { color: colors.textPrimary, fontSize: 22, fontWeight: "800", marginTop: spacing.xl },
   body: { color: colors.textSecondary, fontSize: uiType.body, lineHeight: 24, textAlign: "center", marginTop: spacing.sm, paddingHorizontal: spacing.sm },
   last: { color: colors.gray500, fontSize: uiType.body, marginTop: spacing.xl },
-  button: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm, alignSelf: "stretch", minHeight: 52, borderRadius: 14, backgroundColor: colors.primary, marginTop: spacing.xxl },
+  button: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm, alignSelf: "stretch", minHeight: 52, borderRadius: 6, backgroundColor: colors.primary, marginTop: spacing.xxl },
   buttonText: { color: "#fff", fontWeight: "800", fontSize: uiType.body },
-  outlineButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm, alignSelf: "stretch", minHeight: 52, borderRadius: 14, borderWidth: 1.5, borderColor: colors.primary, marginTop: spacing.md },
+  outlineButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm, alignSelf: "stretch", minHeight: 52, borderRadius: 6, borderWidth: 1.5, borderColor: colors.primary, marginTop: spacing.md },
   outlineText: { color: colors.primary, fontWeight: "800", fontSize: uiType.body },
   note: { color: colors.gray500, fontSize: uiType.caption, textAlign: "center", marginTop: spacing.md, lineHeight: 18 },
 });

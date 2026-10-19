@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
     borderColor: colors.gray200,
-    borderRadius: 0,
+    borderRadius: 6,
     backgroundColor: colors.surface,
     overflow: "hidden",
   },

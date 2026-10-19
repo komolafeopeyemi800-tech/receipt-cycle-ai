@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   },
   sheet: {
     backgroundColor: colors.surface,
-    borderRadius: 0,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.gray200,
     paddingHorizontal: 16,
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 12,
     paddingHorizontal: 12,
-    borderRadius: 0,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.gray200,
     backgroundColor: colors.gray100,
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: colors.primary,
-    borderRadius: 0,
+    borderRadius: 6,
     paddingVertical: 11,
     paddingHorizontal: 12,
     fontSize: typeScale.bodyStrong,
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   btnSecondary: {
     flex: 1,
     paddingVertical: 11,
-    borderRadius: 10,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.gray200,
     backgroundColor: colors.gray100,
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   btnPrimary: {
     flex: 1,
     paddingVertical: 11,
-    borderRadius: 10,
+    borderRadius: 6,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",

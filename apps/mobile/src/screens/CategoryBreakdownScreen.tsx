@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   summary: { paddingHorizontal: 16, gap: 8, marginBottom: 8 },
   sumBox: {
     backgroundColor: colors.surface,
-    borderRadius: 0,
+    borderRadius: 6,
     padding: 12,
     borderWidth: 1,
     borderColor: colors.gray200,
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: colors.surface,
     padding: 12,
-    borderRadius: 0,
+    borderRadius: 6,
     marginBottom: 8,
     borderWidth: 1,
     borderColor: colors.gray200,

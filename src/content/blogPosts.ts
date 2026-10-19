@@ -11,7 +11,13 @@ export type BlogBlock =
   | { kind: "ul"; items: string[] }
   | { kind: "ol"; items: string[] }
   | { kind: "quote"; text: string; cite?: string }
+  | { kind: "table"; caption: string; columns: string[]; rows: string[][] }
   | { kind: "callout"; title: string; text: string };
+
+export interface BlogFaqItem {
+  question: string;
+  answer: string;
+}
 
 export interface BlogPost {
   slug: string;
@@ -24,6 +30,9 @@ export interface BlogPost {
   readMinutes: number;
   tags: string[];
   tldr: string;
+  keyTakeaways?: string[];
+  citations?: Array<{ label: string; href: string }>;
+  faq?: BlogFaqItem[];
   body: BlogBlock[];
 }
 
@@ -113,74 +122,517 @@ export const BLOG_POSTS: BlogPost[] = [
     ],
   },
   {
-    slug: "best-receipt-scanner-app-small-business-2026",
-    title: "Best Receipt Scanner App for Small Businesses in 2026",
-    description: "An honest comparison of receipt scanner apps in 2026 and how to choose the right one for your small business workflow, budget, and tax goals.",
-    featuredImage: "/landing/blog-best-receipt-scanner-app-small-business-2026.webp?v=1",
-    datePublished: "2026-04-17",
-    dateModified: "2026-04-18",
-    author: "Receipt Cycle Team",
-    readMinutes: 8,
-    tags: ["receipt scanner app", "small business", "expense tracking", "OCR", "tax prep"],
-    tldr: "If you've ever Googled \"receipt scanner app\" and found yourself staring at a dozen options with no clear idea which one to choose, you're not alone.",
-    body: [
-      { kind: "p", text: "If you've ever Googled \"receipt scanner app\" and found yourself staring at a dozen options with no clear idea which one to choose, you're not alone." },
-      { kind: "p", text: "The market is crowded. Some tools are built for large enterprise teams. Others are too basic to be useful. A few are just expensive spreadsheets with a camera button." },
-      { kind: "p", text: "This guide cuts through the noise. We looked at the most popular options in 2026, compared them honestly, and broke down exactly who each one is best for so you can stop researching and start scanning." },
-      { kind: "h2", text: "What to Look for in a Receipt Scanner App", id: "what-to-look-for-in-a-receipt-scanner-app" },
-      { kind: "p", text: "Before you compare specific apps, it helps to know what actually matters. Not every feature on a spec sheet is worth paying for." },
-      { kind: "p", text: "Here's what makes a real difference for small businesses:" },
-      {
-        kind: "ul",
-        items: [
-          "Accuracy of the scan — Can the app reliably read a crumpled or faded receipt? Poor OCR (text recognition) means more manual corrections, which defeats the purpose.",
-          "Automatic categorization — Does the app sort your expenses into categories automatically, or do you have to do it yourself every time?",
-          "Cloud storage — Are your receipts backed up securely so you can access them from any device, and never lose them?",
-          "Export options — Can you share reports easily with your accountant or import into your accounting software?",
-          "Price — Is the cost justified for a small operation, or are you paying for enterprise features you'll never use?",
-        ],
-      },
-      { kind: "p", text: "With those criteria in mind, here's how the leading apps stack up." },
-      { kind: "h3", text: "ReceiptCycle — Best for: Tax-focused simplicity", id: "receiptcycle-best-for-tax-focused-simplicity" },
-      { kind: "p", text: "ReceiptCycle was built around one promise: scan once, claim your refund. For small business owners who want to capture every deductible expense without learning a complex piece of software, it's the most focused tool available." },
-      { kind: "p", text: "The app scans receipts with your phone camera, automatically extracts the vendor, amount, date, and category, and stores everything in secure cloud storage. At tax time, you export a clean report and hand it to your accountant — or file it yourself." },
-      { kind: "p", text: "What makes ReceiptCycle stand out is that it doesn't try to do everything. It does receipt capture and expense organization exceptionally well, and it keeps the experience simple enough that you'll actually use it consistently." },
-      { kind: "p", text: "Best for: Freelancers, sole traders, small business owners who want a clean, affordable way to track expenses for tax purposes." },
-      { kind: "h3", text: "Expensify — Best for: Larger teams with travel expense needs", id: "expensify-best-for-larger-teams" },
-      { kind: "p", text: "Expensify is one of the most well-known names in expense management, and for good reason. It handles receipt scanning, mileage tracking, corporate card integration, and multi-level approval workflows — all under one roof." },
-      { kind: "p", text: "The trade-off is complexity and cost. Expensify is designed for companies with teams of employees submitting expenses for approval. If you're a sole trader or a small operation with a handful of people, you'll likely find yourself paying for features you never touch." },
-      { kind: "p", text: "Best for: Businesses with 10+ employees, frequent travelers, and teams that need structured approval workflows." },
-      { kind: "h3", text: "Shoeboxed — Best for: Paper-heavy businesses", id: "shoeboxed-best-for-paper-heavy-businesses" },
-      { kind: "p", text: "Shoeboxed takes a unique approach: you can mail your physical receipts to their processing center, and they'll scan and digitize them for you. It's a genuinely useful service for businesses that deal with large volumes of paper — construction, trades, retail." },
-      { kind: "p", text: "The downside is that it's slower than scanning yourself, and the pricing gets steep as your volume increases." },
-      { kind: "p", text: "Best for: Businesses that generate lots of paper receipts and want a hands-off approach to digitizing them." },
-      { kind: "h3", text: "Wave — Best for: Free accounting with light receipt scanning", id: "wave-best-for-free-accounting" },
-      { kind: "p", text: "Wave is primarily a free accounting platform, and receipt scanning is one of its supporting features. If you're already using Wave for invoicing or bookkeeping, the receipt scanning capability is a decent addition." },
-      { kind: "p", text: "On its own, though, Wave's receipt features are more limited than dedicated apps. It's a good starting point for businesses just beginning to track expenses, but you may outgrow it quickly." },
-      { kind: "p", text: "Best for: Sole traders and very small businesses already using Wave for accounting who want basic receipt capture." },
-      { kind: "h2", text: "Quick Comparison: Which App Is Right for You?", id: "quick-comparison-which-app-is-right-for-you" },
-      { kind: "h2", text: "So, Which One Should You Choose?", id: "so-which-one-should-you-choose" },
-      { kind: "p", text: "Here's an honest way to think about it." },
-      { kind: "p", text: "If you're running a small business, freelancing, or self-employed — and your main goal is to capture every receipt, stay organized, and make tax time less painful — ReceiptCycle is the right fit. It's built for exactly that job, it won't overwhelm you with features you don't need, and it's priced for businesses at your scale." },
-      { kind: "p", text: "If you're managing a team of employees with complex expense workflows and corporate cards, Expensify may be worth the investment." },
-      { kind: "p", text: "If you're buried in paper and the idea of scanning every receipt yourself sounds exhausting, Shoeboxed's mail-in service solves a real problem." },
-      { kind: "p", text: "And if you're just getting started and want free tools to dip your toes in, Wave is a reasonable place to begin — just know you'll likely want something more focused as your business grows." },
-      { kind: "p", text: "The best receipt scanner app isn't the one with the most features. It's the one you'll actually use every day. For most small business owners, that means something simple, fast, and purpose-built for staying tax-ready all year." },
-      { kind: "h2", text: "Making the Switch Is Easier Than You Think", id: "making-the-switch-is-easier-than-you-think" },
-      { kind: "p", text: "Switching from a shoebox — or no system at all — to a dedicated receipt scanner takes about five minutes. You download the app, scan your first receipt, and the system does the rest." },
-      { kind: "p", text: "The real cost isn't the subscription. It's every deductible expense you've been missing because you had no consistent way to capture it." },
-      { kind: "p", text: "Try ReceiptCycle free for 30 days and see what a difference an organized expense habit makes. No credit card required to get started." },
-      { kind: "p", text: "The right tool, used consistently, makes tax time something you actually look forward to. Or at least something you stop dreading." },
-      {
-        kind: "links",
-        title: "Related reading",
-        items: [
-          { label: "Maximize tax refund by scanning receipts", href: "/blog/maximize-tax-refund-by-scanning-receipts" },
-          { label: "Freelancer expense tracking guide", href: "/blog/freelancers-guide-tracking-business-expenses" },
-          { label: "HMRC expenses and allowances", href: "https://www.gov.uk/expenses-if-youre-self-employed", external: true },
-        ],
-      },
+    "slug": "best-receipt-scanner-app-small-business-2026",
+    "title": "7 Best Receipt Scanner Apps for Small Business in 2026",
+    "description": "Compare seven receipt scanner apps for small businesses, including current pricing, scan workflows, strengths, limitations, and the best fit for each team.",
+    "featuredImage": "/landing/blog-best-receipt-scanner-app-small-business-2026.webp?v=1",
+    "datePublished": "2026-04-17",
+    "dateModified": "2026-10-19",
+    "author": "Receipt Cycle Team",
+    "readMinutes": 12,
+    "tags": [
+      "receipt scanner app",
+      "small business",
+      "expense tracking",
+      "OCR",
+      "tax prep"
     ],
+    "tldr": "Choose Receipt Cycle if you want receipts and related business records in one workspace. Choose Expensify for employee expense approvals. Shoeboxed makes sense when you want someone else to digitize paper. Wave, FreshBooks, and QuickBooks work well when receipts must stay inside your accounting product. Zoho Expense suits teams that need travel and expense controls. Before paying, scan five real receipts, including one faded or long example. Correct a result, find it again, and export a sample. That short test reveals more than a feature page.",
+    "keyTakeaways": [
+      "Receipt Cycle combines receipt scanning with expenses, customers, estimates, invoices, payments, budgets, and reports.",
+      "Scan accuracy matters, but the review step matters just as much. You need to see and correct merchant, date, total, tax, category, and line items before saving.",
+      "Expensify and Zoho Expense are stronger fits for employee expense workflows and approvals.",
+      "Shoeboxed is the clearest choice for businesses that want mail-in paper scanning.",
+      "Wave, FreshBooks, and QuickBooks are easiest to justify when you already use their accounting tools.",
+      "Prices change, so confirm plans, limits, and trial terms before subscribing."
+    ],
+    "citations": [
+      {
+        "label": "Expensify pricing",
+        "href": "https://www.expensify.com/pricing"
+      },
+      {
+        "label": "Shoeboxed pricing",
+        "href": "https://www.shoeboxed.com/pricing/"
+      },
+      {
+        "label": "Wave pricing",
+        "href": "https://www.waveapps.com/pricing"
+      },
+      {
+        "label": "Zoho Expense pricing",
+        "href": "https://www.zoho.com/us/expense/pricing/"
+      },
+      {
+        "label": "FreshBooks pricing",
+        "href": "https://www.freshbooks.com/pricing?for=freelancers"
+      },
+      {
+        "label": "QuickBooks pricing",
+        "href": "https://quickbooks.intuit.com/pricing/"
+      }
+    ],
+    "faq": [
+      {
+        "question": "What is the best receipt scanner app for a small business?",
+        "answer": "Receipt Cycle is our top choice for a small business that wants scanning plus connected estimates, invoices, payments, budgets, and reports. Expensify is better for employee approvals, and Shoeboxed is better for mail-in paper processing."
+      },
+      {
+        "question": "Can a receipt scanner replace paper receipts?",
+        "answer": "A complete, legible digital copy can support recordkeeping, but rules depend on your country and situation. Ask a qualified tax professional before discarding originals that may have special requirements."
+      },
+      {
+        "question": "How should I test receipt scanning accuracy?",
+        "answer": "Use five real receipts with different layouts. Compare the merchant, date, subtotal, tax, tip, total, currency, category, and line items with the source. Correct errors and check whether the app remembers the record clearly."
+      },
+      {
+        "question": "Do I need accounting software as well?",
+        "answer": "That depends on your needs. A receipt app can organize source documents and transaction records. It may not provide double-entry bookkeeping, payroll, statutory reports, tax filing, or professional advice."
+      }
+    ],
+    "body": [
+      {
+        "kind": "p",
+        "text": "Paper receipts are easy to lose and tedious to enter by hand. A good receipt scanner app turns a photo into a record you can review and find later, without any manual retyping. The right choice depends on what happens next: expense approval, bookkeeping, or simple digitization."
+      },
+      {
+        "kind": "p",
+        "text": "Receipt Cycle is our top pick for a small business that wants receipt capture, expense records, estimates, invoices, payment records, budgets, reports, and supported exports in one workspace. It is also our product, so this guide explains where it fits and where another app may suit you better."
+      },
+      {
+        "kind": "h2",
+        "text": "Receipt scanner app comparison",
+        "id": "receipt-scanner-app-comparison"
+      },
+      {
+        "kind": "table",
+        "caption": "Receipt scanner app comparison for small businesses",
+        "columns": [
+          "App",
+          "Best fit",
+          "Receipt approach",
+          "Price position",
+          "Main limitation"
+        ],
+        "rows": [
+          [
+            "Receipt Cycle",
+            "Freelancers and small businesses that want connected records",
+            "Photo or upload with extracted fields and review",
+            "Free plan; Pro is $3.50 monthly or $35 yearly, with a seven-day Pro trial",
+            "It is not a full accounting or employee reimbursement system"
+          ],
+          [
+            "Expensify",
+            "Teams with approvals, travel, and reimbursements",
+            "SmartScan plus card and expense workflows",
+            "Free Submit plan; Collect starts at $5 per member monthly",
+            "Team features may be more than a solo owner needs"
+          ],
+          [
+            "Shoeboxed",
+            "Paper-heavy businesses",
+            "Digital uploads and mail-in Magic Envelope scanning",
+            "Starter is $9 monthly or $97 yearly",
+            "Scan allowances and mail processing depend on the plan"
+          ],
+          [
+            "Wave",
+            "Owners already using Wave",
+            "Mobile, desktop, and email receipt capture",
+            "Receipt capture is an add-on on the free Starter plan, listed at $11 monthly or $96 yearly; Pro is $19 monthly or $190 yearly",
+            "Best value comes from staying in Wave's bookkeeping system"
+          ],
+          [
+            "Zoho Expense",
+            "Small teams managing travel and employee expenses",
+            "AI receipt Autoscan with expense reports",
+            "Free for up to three users; Standard starts at $4 per user monthly",
+            "Monthly Autoscan limits vary by plan"
+          ],
+          [
+            "FreshBooks",
+            "Service businesses using FreshBooks for billing and books",
+            "OCR receipt capture within paid accounting plans",
+            "Paid plans with a 30-day trial; receipt scanning starts on Plus",
+            "Receipt scanning is available only in supported countries"
+          ],
+          [
+            "QuickBooks Online",
+            "Businesses that already keep their books in QuickBooks",
+            "Web, mobile, Google Drive, or email upload with matching",
+            "Free and paid tiers; Simple Start lists at $38 monthly before promotions",
+            "Receipt capability is limited on Free and Lite tiers"
+          ]
+        ]
+      },
+      {
+        "kind": "p",
+        "text": "Prices above come from each company's official pricing pages, checked on October 19, 2026. Taxes, promotions, annual discounts, regions, and add-ons can change what you pay. We compared published plans, not scan accuracy, so test your own receipts."
+      },
+      {
+        "kind": "h2",
+        "text": "What to look for before you choose",
+        "id": "what-to-look-for-before-you-choose"
+      },
+      {
+        "kind": "h3",
+        "text": "Test the receipts you actually receive",
+        "id": "test-the-receipts-you-actually-receive"
+      },
+      {
+        "kind": "p",
+        "text": "A perfect coffee-shop receipt proves little. Check your own vendors, currencies, tips, taxes, discounts, and long item lists. Include handwritten or damaged receipts if your business receives them."
+      },
+      {
+        "kind": "h3",
+        "text": "Keep a human review step",
+        "id": "keep-a-human-review-step"
+      },
+      {
+        "kind": "p",
+        "text": "OCR saves typing, but it can misread a decimal or category. Keep the source beside the extracted record and correct it before it reaches a report, tax file, or client bill."
+      },
+      {
+        "kind": "h3",
+        "text": "Check what happens after capture",
+        "id": "check-what-happens-after-capture"
+      },
+      {
+        "kind": "p",
+        "text": "Ask whether you can attach the receipt to an expense, match it to a bank transaction, include it in a report, or share it with your accountant. Isolated images can create another filing problem."
+      },
+      {
+        "kind": "h3",
+        "text": "Compare limits, exports, and access",
+        "id": "compare-limits-exports-and-access"
+      },
+      {
+        "kind": "p",
+        "text": "Check scan limits, user charges, storage, exports, supported countries, and trial restrictions. Open a sample export. Your accountant should be able to use it without rebuilding the data."
+      },
+      {
+        "kind": "h2",
+        "text": "1. Receipt Cycle",
+        "id": "1-receipt-cycle"
+      },
+      {
+        "kind": "p",
+        "text": "Receipt Cycle is our first choice for owners who want more than a receipt folder but do not need a corporate expense platform. Photograph or upload a receipt, then review the merchant, date, total, tax, and line items. Save it beside transactions, customers, products and services, estimates, invoices, payments, budgets, and reports."
+      },
+      {
+        "kind": "p",
+        "text": "The web workspace and Android app use the same account. Capture on your phone and review later on a larger screen. Pro adds Excel and CSV exports with links to your stored receipts. Receipt Cycle does not decide tax treatment, file returns, or replace an accountant."
+      },
+      {
+        "kind": "p",
+        "text": "The free plan includes a seven-day period with Pro-style features and up to 25 transactions. Pro costs $3.50 monthly or $35 yearly. The yearly plan includes a seven-day free trial."
+      },
+      {
+        "kind": "h4",
+        "text": "Pros",
+        "id": "pros-23"
+      },
+      {
+        "kind": "ul",
+        "items": [
+          "Receipt capture and related business records stay together.",
+          "Extracted fields remain editable before you rely on them.",
+          "The price is low compared with many full accounting and team expense products."
+        ]
+      },
+      {
+        "kind": "h4",
+        "text": "Cons",
+        "id": "cons-25"
+      },
+      {
+        "kind": "ul",
+        "items": [
+          "Exports are part of Pro, so free users lose them after the trial.",
+          "It does not provide payroll, tax filing, or corporate reimbursement approvals."
+        ]
+      },
+      {
+        "kind": "callout",
+        "title": "Try Receipt Cycle",
+        "text": "Scan a real receipt during the trial, review every field, and export a sample before choosing a paid plan."
+      },
+      {
+        "kind": "h2",
+        "text": "2. Expensify",
+        "id": "2-expensify"
+      },
+      {
+        "kind": "p",
+        "text": "Expensify suits businesses where employees submit receipts and managers approve spending. SmartScan extracts the merchant, date, total, currency, and available details. Collect adds reimbursements, corporate cards, travel approvals, booking rules, and QuickBooks or Xero integrations."
+      },
+      {
+        "kind": "p",
+        "text": "Individuals can use the free Submit plan for receipt scanning and expense reports. Collect starts at $5 per member each month. Control adds deeper approval rules and ERP connections at higher per-member prices."
+      },
+      {
+        "kind": "image",
+        "src": "/landing/blog/competitor-product-pages-2026-10-19/expensify-receipt-scanning-official.webp",
+        "alt": "Expensify official receipt scanning product page",
+        "caption": "Expensify official product page, captured October 19, 2026."
+      },
+      {
+        "kind": "h4",
+        "text": "Pros",
+        "id": "pros-31"
+      },
+      {
+        "kind": "ul",
+        "items": [
+          "Strong approval, reimbursement, travel, and card workflows.",
+          "Free receipt scanning is available for individual use."
+        ]
+      },
+      {
+        "kind": "h4",
+        "text": "Cons",
+        "id": "cons-33"
+      },
+      {
+        "kind": "ul",
+        "items": [
+          "Per-member pricing grows with a team.",
+          "A solo owner may not use the administrative features."
+        ]
+      },
+      {
+        "kind": "h2",
+        "text": "3. Shoeboxed",
+        "id": "3-shoeboxed"
+      },
+      {
+        "kind": "p",
+        "text": "Shoeboxed handles paper that camera-only apps leave with you. Its Magic Envelope service accepts mailed receipts, while the app accepts digital uploads. Plans include mileage tracking and CSV reports. Higher plans add scans, users, Gmail sync, and accounting integrations."
+      },
+      {
+        "kind": "p",
+        "text": "Starter costs $9 monthly or $97 yearly. It includes 50 digital scans per month and 20 paper scans per year. The 30-day risk-free period is a money-back arrangement, and the refund condition changes if Shoeboxed has already shipped a Magic Envelope."
+      },
+      {
+        "kind": "image",
+        "src": "/landing/blog/competitor-product-pages-2026-10-19/shoeboxed-features-official.webp",
+        "alt": "Shoeboxed official receipt scanning features page",
+        "caption": "Shoeboxed official product page, captured October 19, 2026."
+      },
+      {
+        "kind": "h4",
+        "text": "Pros",
+        "id": "pros-38"
+      },
+      {
+        "kind": "ul",
+        "items": [
+          "Mail-in processing removes a large manual scanning job.",
+          "Useful for trades, retail, or offices with old paper files."
+        ]
+      },
+      {
+        "kind": "h4",
+        "text": "Cons",
+        "id": "cons-40"
+      },
+      {
+        "kind": "ul",
+        "items": [
+          "Scan allowances and extra-scan charges require attention.",
+          "Mailing paper takes longer than photographing it yourself."
+        ]
+      },
+      {
+        "kind": "h2",
+        "text": "4. Wave",
+        "id": "4-wave"
+      },
+      {
+        "kind": "p",
+        "text": "Wave is strongest for existing Wave users. Upload receipts from mobile or desktop, forward them by email, and let OCR create bookkeeping records. On the free Starter plan, unlimited receipt capture is an add-on, listed at $11 monthly or $96 yearly when we checked. Wave Pro, at $19 monthly or $190 yearly, lists it among its features. Wave shows different add-on prices beside different plans, so confirm yours."
+      },
+      {
+        "kind": "image",
+        "src": "/landing/blog/competitor-product-pages-2026-10-19/wave-receipts-official.webp",
+        "alt": "Wave official receipts product page",
+        "caption": "Wave official product page, captured October 19, 2026."
+      },
+      {
+        "kind": "h4",
+        "text": "Pros",
+        "id": "pros-44"
+      },
+      {
+        "kind": "ul",
+        "items": [
+          "Receipt records stay close to Wave bookkeeping and invoices.",
+          "Mobile, desktop, and email capture cover common workflows."
+        ]
+      },
+      {
+        "kind": "h4",
+        "text": "Cons",
+        "id": "cons-46"
+      },
+      {
+        "kind": "ul",
+        "items": [
+          "Receipt scanning is a paid add-on or part of Pro.",
+          "It is less compelling if your books live elsewhere."
+        ]
+      },
+      {
+        "kind": "h2",
+        "text": "5. Zoho Expense",
+        "id": "5-zoho-expense"
+      },
+      {
+        "kind": "p",
+        "text": "Zoho Expense is built for travel and employee expense management. Its free plan supports up to three users, AI-powered receipt capture, expense reports, mileage, accounting integrations, multiple currencies, and 5 GB of receipt storage. The free and trial plans include 20 Autoscans per user each month."
+      },
+      {
+        "kind": "p",
+        "text": "Standard costs $4 per user monthly or $3 per user monthly when billed annually. Zoho offers a 14-day free trial without requiring a credit card."
+      },
+      {
+        "kind": "image",
+        "src": "/landing/blog/competitor-product-pages-2026-10-19/zoho-expense-official.webp",
+        "alt": "Zoho Expense official product page",
+        "caption": "Zoho Expense official product page, captured October 19, 2026."
+      },
+      {
+        "kind": "h4",
+        "text": "Pros",
+        "id": "pros-51"
+      },
+      {
+        "kind": "ul",
+        "items": [
+          "A useful free plan for a very small team.",
+          "Strong travel, expense report, and integration options."
+        ]
+      },
+      {
+        "kind": "h4",
+        "text": "Cons",
+        "id": "cons-53"
+      },
+      {
+        "kind": "ul",
+        "items": [
+          "Autoscan limits apply and vary by plan.",
+          "The broader expense system can feel heavy if you only need a receipt archive."
+        ]
+      },
+      {
+        "kind": "h2",
+        "text": "6. FreshBooks",
+        "id": "6-freshbooks"
+      },
+      {
+        "kind": "p",
+        "text": "FreshBooks combines client billing, accounting, expense tracking, and receipt capture. On supported plans, OCR extracts receipt details for review. FreshBooks says Plus captures merchant, date, totals, and taxes, while Select can extract line items into bill entries. Receipt scanning is available on Plus, Premium, and Select plans in Canada, the United States, and the United Kingdom."
+      },
+      {
+        "kind": "p",
+        "text": "FreshBooks offers a 30-day trial. Its pricing page shows short-term promotions, so compare the normal renewal price."
+      },
+      {
+        "kind": "image",
+        "src": "/landing/blog/competitor-product-pages-2026-10-19/freshbooks-receipt-scanner-official.webp",
+        "alt": "FreshBooks official receipt scanner page",
+        "caption": "FreshBooks official product page, captured October 19, 2026."
+      },
+      {
+        "kind": "h4",
+        "text": "Pros",
+        "id": "pros-58"
+      },
+      {
+        "kind": "ul",
+        "items": [
+          "Good fit for service businesses already sending FreshBooks invoices.",
+          "Receipt data connects to expenses and accounting reports."
+        ]
+      },
+      {
+        "kind": "h4",
+        "text": "Cons",
+        "id": "cons-60"
+      },
+      {
+        "kind": "ul",
+        "items": [
+          "Receipt scanning is not included on the Lite plan.",
+          "Country availability limits who can use the feature."
+        ]
+      },
+      {
+        "kind": "h2",
+        "text": "7. QuickBooks Online",
+        "id": "7-quickbooks-online"
+      },
+      {
+        "kind": "p",
+        "text": "QuickBooks Online works best when it is already your bookkeeping system. You can upload a receipt from a computer, Google Drive, or the mobile app. You can also forward receipts to a custom QuickBooks email address. QuickBooks extracts details, creates a record for review, and can match it to an existing transaction."
+      },
+      {
+        "kind": "p",
+        "text": "QuickBooks offers Free, Lite, Simple Start, Essentials, Plus, and Advanced options in the United States. The official support page says receipt features are limited on Free and Lite. Simple Start lists at $38 monthly before temporary discounts."
+      },
+      {
+        "kind": "h4",
+        "text": "Pros",
+        "id": "pros-65"
+      },
+      {
+        "kind": "ul",
+        "items": [
+          "Receipts connect directly to existing books and bank transactions.",
+          "Multiple upload routes make capture flexible."
+        ]
+      },
+      {
+        "kind": "h4",
+        "text": "Cons",
+        "id": "cons-67"
+      },
+      {
+        "kind": "ul",
+        "items": [
+          "Paid plans cost more than a focused receipt tool.",
+          "Plan details are broad, so confirm the receipt limits you need."
+        ]
+      },
+      {
+        "kind": "h2",
+        "text": "Which receipt scanner app should you choose",
+        "id": "which-receipt-scanner-app-should-you-choose"
+      },
+      {
+        "kind": "p",
+        "text": "Start with your workflow. Choose Receipt Cycle when you want receipts, expense records, estimates, invoices, payments, budgets, and reports in one clear workspace. Expensify fits teams with approvals and reimbursements. Shoeboxed earns its place when paper is the real bottleneck. Zoho Expense works well for small travel and expense teams. Wave, FreshBooks, and QuickBooks make sense when you want receipt capture inside accounting software you already use."
+      },
+      {
+        "kind": "p",
+        "text": "Do not migrate on day one. Test a week of receipts, compare the extracted data with the originals, and produce the month-end export you will actually use."
+      },
+      {
+        "kind": "h2",
+        "text": "Put one week of receipts through a real test",
+        "id": "put-one-week-of-receipts-through-a-real-test"
+      },
+      {
+        "kind": "p",
+        "text": "Start a seven-day Receipt Cycle trial and scan the receipts already on your desk. Review the extracted details, create a sample estimate or invoice, and check the resulting records. If the workflow saves time, keep it. If it does not, you will know before paying for a longer plan."
+      },
+      {
+        "kind": "p",
+        "text": "Then compare corrections and export quality with your current system."
+      }
+    ]
   },
   {
     slug: "freelancers-guide-tracking-business-expenses",

@@ -146,7 +146,7 @@ function noscriptWrap(title: string, innerHtml: string): string {
 
 /** Plain-text of everything a reader sees in the article body (used for wordCount). */
 export function blogPostText(post: BlogPost): string {
-  const parts: string[] = [post.title, post.tldr];
+  const parts: string[] = [post.title, post.tldr, ...(post.keyTakeaways ?? [])];
   for (const b of post.body) {
     if (b.kind === "p" || b.kind === "h2" || b.kind === "h3" || b.kind === "h4") parts.push(b.text);
     else if (b.kind === "ul" || b.kind === "ol") parts.push(...b.items);
@@ -154,7 +154,9 @@ export function blogPostText(post: BlogPost): string {
     else if (b.kind === "callout") parts.push(b.title, b.text);
     else if (b.kind === "image" && b.caption) parts.push(b.caption);
     else if (b.kind === "links") parts.push(b.title, ...b.items.map((i) => i.label));
+    else if (b.kind === "table") parts.push(b.caption, ...b.columns, ...b.rows.flat());
   }
+  for (const item of post.faq ?? []) parts.push(item.question, item.answer);
   return parts.join(" ");
 }
 
@@ -181,7 +183,10 @@ export function blogSection(post: BlogPost): string {
 
 /** External sources that the article really links to. */
 export function blogCitations(post: BlogPost): CitationRef[] {
-  const out: CitationRef[] = [];
+  const out: CitationRef[] = (post.citations ?? []).map((citation) => ({
+    name: citation.label,
+    url: citation.href,
+  }));
   for (const b of post.body) {
     if (b.kind !== "links") continue;
     for (const item of b.items) {
@@ -223,6 +228,13 @@ function blogPostNoscript(post: BlogPost): string {
           })
           .join("")}</ul></section>`;
       }
+      if (b.kind === "table") {
+        const head = b.columns.map((column) => `<th scope="col">${escapeHtml(column)}</th>`).join("");
+        const rows = b.rows
+          .map((row) => `<tr>${row.map((cell, index) => index === 0 ? `<th scope="row">${escapeHtml(cell)}</th>` : `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`)
+          .join("");
+        return `<table><caption>${escapeHtml(b.caption)}</caption><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+      }
       if (b.kind === "ul") return `<ul>${b.items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul>`;
       if (b.kind === "ol") return `<ol>${b.items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ol>`;
       if (b.kind === "quote")
@@ -230,7 +242,13 @@ function blogPostNoscript(post: BlogPost): string {
       return `<aside><strong>${escapeHtml(b.title)}</strong><p>${escapeHtml(b.text)}</p></aside>`;
     })
     .join("\n");
-  const inner = `<p data-speakable="summary"><em>${escapeHtml(post.tldr)}</em></p>${body}`;
+  const takeaways = post.keyTakeaways?.length
+    ? `<section id="short-version"><h2>Key Takeaways</h2><ul>${post.keyTakeaways.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>`
+    : "";
+  const faq = post.faq?.length
+    ? `<section id="frequently-asked-questions"><h2>Frequently asked questions</h2>${post.faq.map((item) => `<h3>${escapeHtml(item.question)}</h3><p>${escapeHtml(item.answer)}</p>`).join("")}</section>`
+    : "";
+  const inner = `<p data-speakable="summary"><em>${escapeHtml(post.tldr)}</em></p>${takeaways}${body}${faq}`;
   return noscriptWrap(post.title, inner);
 }
 
@@ -275,6 +293,7 @@ function blogRoute(post: BlogPost): RouteSeo {
         { name: post.title, path },
       ],
       speakable: ["h1", "[data-speakable='summary']"],
+      faq: post.faq?.map((item) => ({ q: item.question, a: item.answer })),
       article: {
         slug: post.slug,
         headline: post.title,

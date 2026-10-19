@@ -234,8 +234,19 @@ describe("FAQPage markup matches the visible FAQ data", () => {
     for (const p of ["/pricing", "/about", "/contact", "/blog", "/privacy", "/terms"]) {
       expect(faqNodes(graphOf(getRouteSeo(p) as RouteSeo))).toHaveLength(0);
     }
-    for (const r of publicRoutes.filter((x) => x.path.startsWith("/blog/"))) {
+    for (const r of publicRoutes.filter((x) => x.path.startsWith("/blog/") && !BLOG_POSTS.find((post) => `/blog/${post.slug}` === x.path)?.faq?.length)) {
       expect(faqNodes(graphOf(r))).toHaveLength(0);
+    }
+  });
+
+  it("blog FAQ schema matches the FAQ shown in the article", () => {
+    for (const post of BLOG_POSTS.filter((item) => item.faq?.length)) {
+      const route = publicRoutes.find((item) => item.path === `/blog/${post.slug}`) as RouteSeo;
+      const [faq] = faqNodes(graphOf(route));
+      const questions = faq.mainEntity as Array<Record<string, unknown>>;
+      expect(questions).toHaveLength(post.faq!.length);
+      expect(questions.map((item) => item.name)).toEqual(post.faq!.map((item) => item.question));
+      expect(JSON.stringify(questions)).toContain(post.faq![0].answer);
     }
   });
 });
@@ -270,8 +281,11 @@ describe("blog posts", () => {
       expect(a.inLanguage).toBe("en-US");
       expect(typeof a.articleSection).toBe("string");
       expect(a.keywords).toBe(post.tags.join(", "));
-      // citation only for external links that really appear in the article body
-      const externalLinks = post.body.flatMap((b) => (b.kind === "links" ? b.items.filter((i) => i.external).map((i) => i.href) : []));
+      // Citations come from visible external resource links and explicitly researched source metadata.
+      const externalLinks = [
+        ...(post.citations ?? []).map((citation) => citation.href),
+        ...post.body.flatMap((b) => (b.kind === "links" ? b.items.filter((i) => i.external).map((i) => i.href) : [])),
+      ];
       const cited = ((a.citation as Array<{ url: string }>) ?? []).map((c) => c.url);
       expect(cited.sort()).toEqual([...new Set(externalLinks)].sort());
       expect(route.ogType).toBe("article");
@@ -483,5 +497,16 @@ describe("image files referenced by schema exist with the stated size", () => {
       const meta = await sharp(path.join(ROOT, file)).metadata();
       expect([file, meta.width, meta.height]).toEqual([file, w, h]);
     }
+  });
+});
+
+describe("receipt scanner comparison editorial guardrails", () => {
+  it("stays within the requested length and avoids em dashes", () => {
+    const post = BLOG_POSTS.find((item) => item.slug === "best-receipt-scanner-app-small-business-2026");
+    expect(post).toBeDefined();
+    const text = blogPostText(post!);
+    expect(countWords(text)).toBeGreaterThanOrEqual(2000);
+    expect(countWords(text)).toBeLessThanOrEqual(2005);
+    expect(text).not.toContain("—");
   });
 });

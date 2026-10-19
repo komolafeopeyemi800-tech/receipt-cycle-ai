@@ -92,9 +92,9 @@ export function DashboardUpgradeModal({ open, onClose }: { open: boolean; onClos
             <div className="relative mx-auto max-w-[390px]"><button disabled={Boolean(busy)} onClick={() => void choose("lifetime")} className="min-h-10 w-full rounded-[8px] bg-gradient-to-r from-teal-300 to-emerald-300 px-5 text-[12px] font-black text-slate-950 shadow-[0_4px_0_rgba(13,148,136,.35)] transition hover:brightness-105 disabled:opacity-60">{busy === "lifetime" ? "Opening secure checkout…" : `Get lifetime access for ${formatUsd(PAYWALL_PRICING.lifetimeUsd)}`}</button><span className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[4px] bg-pink-500 px-3 py-0.5 text-[8px] font-black text-white shadow">◆ Launch offer: pay once</span></div>
             <p className="mt-4 text-center text-[10px] font-semibold text-slate-500">
               Prefer a subscription? {PAYWALL_PRICING.trialDays}-day free trial:{" "}
-              <button disabled={Boolean(busy)} onClick={() => void choose("monthly")} className="underline transition hover:text-white">{busy === "monthly" ? "Opening…" : `${formatUsd(PAYWALL_PRICING.monthlyUsd)}/month`}</button>
+              <button disabled={Boolean(busy)} onClick={() => void choose("monthly")} className="font-bold text-sky-400 underline underline-offset-2 transition hover:text-sky-300">{busy === "monthly" ? "Opening…" : `${formatUsd(PAYWALL_PRICING.monthlyUsd)}/month`}</button>
               {" or "}
-              <button disabled={Boolean(busy)} onClick={() => void choose("yearly")} className="underline transition hover:text-white">{busy === "yearly" ? "Opening…" : `${formatUsd(PAYWALL_PRICING.yearlyUsd)}/year`}</button>
+              <button disabled={Boolean(busy)} onClick={() => void choose("yearly")} className="font-bold text-sky-400 underline underline-offset-2 transition hover:text-sky-300">{busy === "yearly" ? "Opening…" : `${formatUsd(PAYWALL_PRICING.yearlyUsd)}/year`}</button>
             </p>
           </div>
         </section>

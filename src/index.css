@@ -307,3 +307,13 @@ textarea {
 .grid > * {
   min-width: 0;
 }
+
+/*
+ * Square boxes everywhere (home page, landing pages, app and dashboard): cards, panels, inputs and popups have no rounded
+ * corners. Kept round on purpose: pills and avatars (rounded-full), call-to-action buttons and button-like links (a button
+ * or link that holds only text and icons), images, and anything marked .keep-round (phone and device mockups).
+ */
+[class*="rounded"]:not([class*="rounded-full"]):not(.keep-round):not(img):not(svg):not(canvas):not(:is(button, a, [role="button"]):not(:has(div, p, h1, h2, h3, h4, ul, ol, table, img))),
+[style*="border-radius"]:not([style*="9999"]):not([style*="50%"]):not(.keep-round):not(img):not(:is(button, a, [role="button"]):not(:has(div, p, h1, h2, h3, h4, ul, ol, table, img))) {
+  border-radius: 0 !important;
+}

@@ -39,7 +39,7 @@ export function useWebExport() {
     user?.id && token && sub?.canExportCsv ? { userId: user.id, token } : "skip",
   ) as ExportTransaction[] | undefined;
 
-  const [busy, setBusy] = useState<ExportAction | null>(null);
+  const [busy, setBusy] = useState<ExportAction | "items" | null>(null);
   const [error, setError] = useState<ExportError | null>(null);
   const [done, setDone] = useState<ExportDone | null>(null);
 
@@ -54,7 +54,7 @@ export function useWebExport() {
 
   /** `selectedIds` limits the export to those transactions; leave it out to export everything. */
   const run = useCallback(
-    async (action: ExportAction, selectedIds?: Set<string>) => {
+    async (action: ExportAction | "items", selectedIds?: Set<string>, filePrefix?: string) => {
       setError(null);
       setDone(null);
       const fail = (code: ExportErrorCode, message: string) => {
@@ -69,7 +69,7 @@ export function useWebExport() {
       if (rows.length === 0) return fail("empty", "No transactions to export yet.");
 
       const prefs = { token, currency, dateFormat, numberFormat, businessName: (user as { name?: string }).name || undefined };
-      const prefix = selectedIds ? "receipt-cycle-selected" : "receipt-cycle-transactions";
+      const prefix = filePrefix ?? (selectedIds ? "receipt-cycle-selected" : "receipt-cycle-transactions");
       setBusy(action);
       try {
         if (action === "google") {
@@ -85,7 +85,7 @@ export function useWebExport() {
           setDone({ action, count: rows.length, sheet });
         } else {
           await downloadTransactionsExport(action, rows, prefs, prefix);
-          setDone({ action, count: rows.length });
+          setDone({ action: action === "items" ? "csv" : action, count: rows.length });
         }
       } catch (e) {
         if (e instanceof GoogleSheetsError) fail("google_save", e.message);

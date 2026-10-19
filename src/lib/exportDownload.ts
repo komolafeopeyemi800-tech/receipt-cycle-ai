@@ -1,6 +1,7 @@
 import { apiClient } from "@/lib/api";
 import { buildBookkeepingWorkbook } from "@mobile-lib/export/bookkeepingWorkbook";
 import { buildTransactionsCsv } from "@mobile-lib/export/exportCsv";
+import { buildItemsCsv } from "@mobile-lib/export/itemsCsv";
 import { exportFileName, type DateFormatId, type ExportTransaction } from "@mobile-lib/export/exportModel";
 import { loadExportData } from "@mobile-lib/export/loadExportData";
 import { saveWorkbookToGoogleSheets, type SavedGoogleSheet } from "@mobile-lib/export/googleSheets";
@@ -10,7 +11,7 @@ const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.s
 
 export type ExportPrefs = { token: string; currency: string; dateFormat: DateFormatId; numberFormat: string; businessName?: string };
 
-async function buildExport(format: "xlsx" | "csv", rows: ExportTransaction[], prefs: ExportPrefs, prefix: string) {
+async function buildExport(format: "xlsx" | "csv" | "items", rows: ExportTransaction[], prefs: ExportPrefs, prefix: string) {
   const loaded = await loadExportData(apiClient, prefs.token, rows);
   const opts = {
     businessName: prefs.businessName,
@@ -21,13 +22,14 @@ async function buildExport(format: "xlsx" | "csv", rows: ExportTransaction[], pr
     documents: loaded.documents,
     links: loaded.links,
   };
-  const part = format === "xlsx" ? buildBookkeepingWorkbook(rows, opts).bytes : buildTransactionsCsv(rows, opts);
-  return { part, fileName: exportFileName(prefix, todayLocalYmd(), format) };
+  const part = format === "xlsx" ? buildBookkeepingWorkbook(rows, opts).bytes : format === "items" ? buildItemsCsv(rows, opts) : buildTransactionsCsv(rows, opts);
+  return { part, fileName: exportFileName(prefix, todayLocalYmd(), format === "xlsx" ? "xlsx" : "csv") };
 }
 
 /** Build the styled workbook (or CSV) for these transactions and save it through the browser. */
 export async function downloadTransactionsExport(
-  format: "xlsx" | "csv",
+  /** "items" is one row per item bought, for tracking prices across receipts. */
+  format: "xlsx" | "csv" | "items",
   rows: ExportTransaction[],
   prefs: ExportPrefs,
   prefix = "receipt-cycle-transactions",

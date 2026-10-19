@@ -18,6 +18,7 @@ import {
   ymToDateRange,
 } from "@/lib/transactionMath";
 import { userFacingError } from "@/lib/userFacingErrors";
+import { ReceiptFilters, NO_FILTER, applyReceiptFilters, type ReceiptFilterState } from "@/components/analysis/ReceiptFilters";
 
 const primary = "#0f766e";
 const CAT_PALETTE = ["#0f766e", "#2563eb", "#7c3aed", "#ea580c", "#db2777", "#0ea5e9", "#64748b", "#059669"];
@@ -30,6 +31,7 @@ function ConvexInsightsInner() {
   const userId = user!.id;
   const [period, setPeriod] = useState<"month" | "all">("all");
   const [selectedYm, setSelectedYm] = useState(() => todayYm());
+  const [filter, setFilter] = useState<ReceiptFilterState>(NO_FILTER);
 
   const range =
     period === "month"
@@ -61,7 +63,7 @@ function ConvexInsightsInner() {
     error?: string;
   } | null>(null);
 
-  const { expense, income, byCategory, totalExp, pieSlices } = useMemo(() => {
+  const { byCategory, totalExp, pieSlices } = useMemo(() => {
     const raw = (all ?? []) as DocTx[];
     let exp = 0;
     let inc = 0;
@@ -83,9 +85,19 @@ function ConvexInsightsInner() {
     };
   }, [all]);
 
+  const filtered = useMemo(() => applyReceiptFilters((all ?? []) as DocTx[], filter), [all, filter]);
+  const shown = useMemo(() => {
+    let exp = 0;
+    let inc = 0;
+    for (const t of filtered) {
+      if (t.type === "expense") exp += t.amount;
+      else if (t.type === "income") inc += t.amount;
+    }
+    return { expense: roundMoney(exp), income: roundMoney(inc), net: roundMoney(inc - exp) };
+  }, [filtered]);
+
   const loading = !ready || all === undefined;
   const periodLabel = period === "month" ? formatMonthYearLabel(selectedYm) : "All time (loaded data)";
-  const net = roundMoney(income - expense);
 
   const runLeakScan = useCallback(async () => {
     const raw = (all ?? []) as DocTx[];
@@ -187,17 +199,19 @@ function ConvexInsightsInner() {
         <div className="grid grid-cols-3 gap-2">
           <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
             <p className="text-[10px] font-bold text-slate-500">EXPENSE</p>
-            <p className="mt-1 text-sm font-bold text-rose-600">{formatMoneyCompact(expense)}</p>
+            <p className="mt-1 text-sm font-bold text-rose-600">{formatMoneyCompact(shown.expense)}</p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
             <p className="text-[10px] font-bold text-slate-500">INCOME</p>
-            <p className="mt-1 text-sm font-bold text-emerald-700">{formatMoneyCompact(income)}</p>
+            <p className="mt-1 text-sm font-bold text-emerald-700">{formatMoneyCompact(shown.income)}</p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
             <p className="text-[10px] font-bold text-slate-500">NET</p>
-            <p className="mt-1 text-sm font-bold text-slate-900">{formatMoneyCompact(net)}</p>
+            <p className="mt-1 text-sm font-bold text-slate-900">{formatMoneyCompact(shown.net)}</p>
           </div>
         </div>
+
+        <ReceiptFilters rows={(all ?? []) as DocTx[]} filtered={filtered} filter={filter} onChange={setFilter} formatMoney={formatMoney} loading={loading} />
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-bold text-slate-900">Expense distribution</h2>
@@ -281,7 +295,7 @@ function ConvexInsightsInner() {
 
         <div>
           <h2 className="text-sm font-bold text-slate-900">By category</h2>
-          <p className="text-xs text-slate-500">Open the transactions list to add or edit entries.</p>
+          <p className="text-xs text-slate-500">Tap a category to see only its receipts.</p>
           {loading ? (
             <div className="flex justify-center py-8">
               <div className="h-24 w-full animate-pulse rounded-xl bg-slate-100" aria-hidden />
@@ -295,10 +309,15 @@ function ConvexInsightsInner() {
                 const border = CAT_PALETTE[idx % CAT_PALETTE.length];
                 return (
                   <li key={cat}>
-                    <Link
-                      to="/transactions"
-                      className="block rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:bg-slate-50"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFilter({ ...filter, category: cat });
+                        document.getElementById("receipt-filters-title")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }}
+                      className="block w-full rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50"
                       style={{ borderLeftWidth: 4, borderLeftColor: border }}
+                      aria-label={`Show ${cat} receipts`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="min-w-0 truncate font-semibold text-slate-900">{cat}</span>
@@ -308,7 +327,7 @@ function ConvexInsightsInner() {
                         <div className="h-full rounded-full" style={{ width: `${Math.min(100, pct)}%`, backgroundColor: border }} />
                       </div>
                       <p className="mt-1 text-right text-[11px] text-slate-500">{pct.toFixed(1)}%</p>
-                    </Link>
+                    </button>
                   </li>
                 );
               })}

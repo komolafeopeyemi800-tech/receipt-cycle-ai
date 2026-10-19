@@ -193,32 +193,32 @@ export default function InvoiceSoftwareLanding() {
   const benefitCards = [
     {
       icon: "fa-file-circle-plus",
-      title: "Create polished invoices",
-      body: "Start with a saved customer, add products or services, set quantities and rates, then review the document before it goes out. The invoice creation software keeps the work visible instead of hiding it behind a blank form.",
+      title: "Create clean, professional invoices",
+      body: "Pick a saved customer, add what you sold, set quantities and rates, and check it before it goes out. The invoice creation software shows you each step, so you never face a blank form.",
       tone: "bg-teal-800",
     },
     {
       icon: "fa-address-book",
       title: "Keep customer details ready",
-      body: "Store the information you use for customer invoices once, then select the right customer when you create the next document. Their estimates, invoices, balances, and payments stay easier to follow.",
+      body: "Enter customer details for your invoices once. Next time, just pick the customer. Their estimates, invoices, balances, and payments are easy to find.",
       tone: "bg-teal-700",
     },
     {
       icon: "fa-list-check",
       title: "Build accurate line items",
-      body: "Describe the work, enter a quantity and rate, and add services from your catalog. Every invoice line item remains readable in the builder and in the customer-facing preview.",
+      body: "Describe the work, enter a quantity and rate, or add a service from your catalog. Each invoice line item is easy to read while you build and in the preview your customer sees.",
       tone: "bg-teal-600",
     },
     {
       icon: "fa-calculator",
       title: "Check every total",
-      body: "Add taxes and discounts where they apply. Receipt Cycle shows the subtotal, adjustment, tax amount, and final total before you save a draft invoice or mark it as sent.",
+      body: "Add tax and discounts where they apply. Receipt Cycle shows the subtotal, discount, tax, and final total before you save a draft invoice or mark it as sent.",
       tone: "bg-emerald-700",
     },
     {
       icon: "fa-chart-line",
       title: "Track what is still owed",
-      body: "See sent, paid, overdue, and partially paid records in the same invoice management software. Open any invoice to review its total, payment history, and remaining balance.",
+      body: "See which invoices are sent, paid, overdue, or partly paid, all in one invoice management software. Open any invoice to see its total, payments, and what is left to pay.",
       tone: "bg-teal-900",
     },
   ];
@@ -227,28 +227,28 @@ export default function InvoiceSoftwareLanding() {
     {
       id: "freelancers",
       title: "Freelancers",
-      body: "Create professional invoices for projects, retainers, and one-off services without maintaining a separate customer sheet. Add detailed work descriptions, choose sensible due dates, and keep a visible record of what each client has paid. Receipt Cycle works well as invoice software for freelancers who want more structure than a document template without moving into a heavyweight accounting platform.",
+      body: "Make professional invoices for projects, retainers, and one-off jobs, with no separate customer spreadsheet. Describe the work, pick a due date, and see what each client has paid. Receipt Cycle is invoice software for freelancers who want more than a template but less than a big accounting program.",
       image: "/landing/audiences/invoice-freelancer.webp",
       alt: "Hand-drawn illustration of a freelancer preparing a client invoice on a laptop",
     },
     {
       id: "consultants",
       title: "Consultants",
-      body: "Turn advisory work into clear line items with quantities, rates, notes, and payment terms. Save repeat services in the catalog, create the next invoice from an existing customer record, and review the balance before following up. The result is a cleaner handoff between completed work, billing, and payment records.",
+      body: "Turn your advice and hours into clear line items with quantities, rates, notes, and payment terms. Save repeat services in the catalog, start the next invoice from an existing customer, and check the balance before you follow up. Finished work, billing, and payments stay in step.",
       image: "/landing/audiences/invoice-consultant.webp",
       alt: "Hand-drawn illustration of a consultant reviewing an approved client invoice",
     },
     {
       id: "small-business-owners",
       title: "Small business owners",
-      body: "Use saved products and services for repeat jobs, then add custom line items when the scope changes. Business invoicing software should make recurring admin easier without pretending every job is identical. Receipt Cycle gives you that reusable structure while keeping each invoice editable.",
+      body: "Use saved products and services for repeat jobs. Add a custom line item when a job changes. Good business invoicing software saves time on repeat work, but lets you edit every invoice. Receipt Cycle does both.",
       image: "/landing/audiences/invoice-small-business.webp",
       alt: "Hand-drawn illustration of a small business owner billing from a workshop",
     },
     {
       id: "small-teams",
       title: "Small teams",
-      body: "Keep customers, sales documents, payment records, and reports in the same business workspace. A shared invoice history makes it easier to check what was sent, what became overdue, and which payments were recorded, even when the person reviewing the balance did not create the original invoice.",
+      body: "Keep customers, sales documents, payments, and reports in one business workspace. With a shared invoice history, anyone can check what was sent, what is overdue, and what has been paid, even if they did not make the invoice.",
       image: "/landing/audiences/invoice-small-team.webp",
       alt: "Hand-drawn illustration of a small team reviewing invoices together",
     },
@@ -259,19 +259,19 @@ export default function InvoiceSoftwareLanding() {
   const resources = [
     {
       title: "A practical guide to tracking business expenses",
-      description: "Build a simple record-keeping habit that keeps business purchases organized alongside the money your business earns.",
+      description: "Build a simple habit that keeps what you spend organized next to what you earn.",
       href: "/blog/freelancers-guide-tracking-business-expenses",
       image: "/landing/feature-blog-freelancers-guide-tracking-business-expenses.png?v=10",
     },
     {
       title: "How to organize records for your accountant",
-      description: "Learn how cleaner receipts and transaction records reduce the back-and-forth that slows down financial review.",
+      description: "Learn how tidy receipts and records cut the back-and-forth with your accountant.",
       href: "/blog/best-expense-tracker-for-freelancers",
       image: "/landing/feature-blog-best-expense-tracker-for-freelancers.png?v=10",
     },
     {
       title: "Why receipts and expense tracking work better together",
-      description: "See how connected evidence and transaction records create a more dependable view of business spending.",
+      description: "See how receipts linked to your expenses give you a clearer view of your spending.",
       href: "/blog/expense-tracker-receipt-scanner-one-two-punch",
       image: "/landing/feature-blog-expense-tracker-receipt-scanner-one-two-punch.png?v=1",
     },
@@ -304,7 +304,7 @@ export default function InvoiceSoftwareLanding() {
               <span className="mt-1 block text-teal-700">small businesses and freelancers</span>
             </h1>
             <p className="mt-6 max-w-lg text-lg leading-8 text-slate-600">
-              Create polished invoices, send them to customers, and track what is paid or outstanding from one straightforward workspace.
+              Create clean invoices, send them to your customers, and see what is paid and what is still owed, all in one place.
             </p>
             <div className="mt-8">
               <Link
@@ -325,7 +325,7 @@ export default function InvoiceSoftwareLanding() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Spend less time rebuilding invoices</h2>
-            <p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg">Good invoicing software should make the next billing task easier while keeping the document accurate. Receipt Cycle brings the customer, work, totals, status, and payment history into the same view.</p>
+            <p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg">Good invoicing software makes your next bill quicker and keeps it right. Receipt Cycle puts the customer, the work, the totals, the status, and the payments on one screen.</p>
           </div>
           <div className="mt-12 grid gap-4 md:grid-cols-6 grid-cols-1">
           {benefitCards.map((card, index) => (
@@ -342,28 +342,28 @@ export default function InvoiceSoftwareLanding() {
       <section id="workflow" className="scroll-mt-28 py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">All the invoicing features you need to bill with confidence</h2>
-            <p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg">Create the document, check the details, and follow the balance after it is sent. Each part of the page below shows a current Receipt Cycle product workflow.</p>
+            <h2 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">All the invoicing features you need to get paid</h2>
+            <p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg">Make the invoice, check the details, and watch the balance after you send it. Every example below shows how Receipt Cycle works today.</p>
           </div>
           <div className="mt-14 grid gap-5 lg:grid-cols-2 grid-cols-1">
             <article className="rounded-3xl bg-[#f5f2eb] p-6 sm:p-8">
               <h3 className="font-display text-2xl font-bold text-slate-950">Build invoices from customers and saved services</h3>
-              <p className="mt-3 text-sm leading-7 text-slate-600">Choose a customer, confirm the issue and due dates, then add products or services from your catalog. You can also create a custom line item for work that does not fit a saved service. This makes Receipt Cycle useful as simple invoicing software for repeat work and one-off projects.</p>
+              <p className="mt-3 text-sm leading-7 text-slate-600">Pick a customer, set the issue and due dates, then add products or services from your catalog. For work that is not in your catalog, add a custom line item. That makes Receipt Cycle simple invoicing software for repeat work and one-off jobs.</p>
               <div className="mt-7"><BuilderPreview /></div>
             </article>
             <article className="rounded-3xl bg-teal-800 p-6 text-white sm:p-8">
               <h3 className="font-display text-2xl font-bold">Preview professional and branded invoices</h3>
-              <p className="mt-3 text-sm leading-7 text-teal-50/85">Review the business identity, customer, dates, invoice line items, subtotal, discount, tax, and final amount in one document. Your business details and accent color carry into the invoice preview so the customer receives a consistent record.</p>
+              <p className="mt-3 text-sm leading-7 text-teal-50/85">See your business name, the customer, dates, invoice line items, subtotal, discount, tax, and final amount on one page. Your business details and accent color show up in the preview, so your customer gets a neat, matching invoice.</p>
               <div className="mt-7"><InvoicePaper /></div>
             </article>
             <article className="rounded-3xl bg-[#eef8f5] p-6 sm:p-8">
               <h3 className="font-display text-2xl font-bold text-slate-950">Track invoice status and remaining balances</h3>
-              <p className="mt-3 text-sm leading-7 text-slate-600">Use the invoice list to separate draft, sent, paid, and overdue invoices. Open a record to see the original total, the amount already paid, and the balance that remains. It is the part of invoice tracking software that prevents a sent document from disappearing into an email thread.</p>
+              <p className="mt-3 text-sm leading-7 text-slate-600">The invoice list sorts your invoices into draft, sent, paid, and overdue. Open one to see the total, what has been paid, and what is left. That is what invoice tracking software is for: a sent invoice never gets lost in an email thread.</p>
               <div className="mt-7"><PaymentStatusPreview /></div>
             </article>
             <article className="rounded-3xl bg-[#fff7ed] p-6 sm:p-8">
               <h3 className="font-display text-2xl font-bold text-slate-950">Record payments and produce a clear receipt</h3>
-              <p className="mt-3 text-sm leading-7 text-slate-600">Enter the amount received and the payment method. Receipt Cycle updates the paid amount and remaining balance, changes the invoice status when appropriate, and creates a payment receipt connected to the invoice history. Full and partial payments are supported.</p>
+              <p className="mt-3 text-sm leading-7 text-slate-600">Enter the amount you received and how you were paid. Receipt Cycle updates the paid amount and the balance, changes the invoice status if needed, and makes a payment receipt linked to the invoice. Full and partial payments both work.</p>
               <div className="mt-7 rounded-3xl border border-amber-200 bg-white p-6 shadow-sm">
                 <div className="flex items-center gap-4"><span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><i className="fas fa-check" aria-hidden /></span><div><p className="font-display text-lg font-bold">Payment recorded</p><p className="mt-1 text-xs text-slate-500">Receipt RCPT-0020 is ready to print or share.</p></div></div>
                 <dl className="mt-6 space-y-3 border-y border-dashed border-slate-300 py-5 text-sm"><div className="flex justify-between"><dt className="text-slate-500">Invoice</dt><dd className="font-bold">INV-0042</dd></div><div className="flex justify-between"><dt className="text-slate-500">Method</dt><dd className="font-bold">Bank transfer</dd></div><div className="flex justify-between"><dt className="text-slate-500">Amount received</dt><dd className="font-black text-teal-700">$1,600.00</dd></div></dl>
@@ -377,7 +377,7 @@ export default function InvoiceSoftwareLanding() {
 
       <section className="bg-teal-950 py-14 text-white sm:py-16">
         <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_440px] grid-cols-1">
-          <div><h2 className="font-display text-3xl font-bold sm:text-4xl">Create an invoice that stays useful after you send it</h2><p className="mt-4 max-w-2xl text-base leading-7 text-teal-100/80">Move from customer details to a reviewed invoice, then keep its status, payments, receipt, and balance in the same workspace.</p><div className="mt-7"><LandingPrimaryCta to={primaryCta} inverse>Create your first invoice</LandingPrimaryCta></div><Link to="/estimate-quotation-software/" className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-teal-100 hover:text-white">Need to quote the work first? Explore estimate software<i className="fas fa-arrow-right text-xs" aria-hidden /></Link></div>
+          <div><h2 className="font-display text-3xl font-bold sm:text-4xl">Create an invoice that still helps after you send it</h2><p className="mt-4 max-w-2xl text-base leading-7 text-teal-100/80">Go from customer details to a checked invoice. Then keep its status, payments, receipt, and balance in the same place.</p><div className="mt-7"><LandingPrimaryCta to={primaryCta} inverse>Create your first invoice</LandingPrimaryCta></div><Link to="/estimate-quotation-software/" className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-teal-100 hover:text-white">Need to quote the work first? Explore estimate software<i className="fas fa-arrow-right text-xs" aria-hidden /></Link></div>
           <div className="grid grid-cols-3 gap-3">
             {[['fa-file-signature','Estimate'],['fa-file-invoice','Invoice'],['fa-receipt','Receipt']].map(([icon,label]) => <div key={label} className="rounded-2xl border border-white/10 bg-white/10 p-4 text-center"><span className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-white text-teal-800"><i className={`fas ${icon}`} aria-hidden /></span><p className="mt-3 text-xs font-bold">{label}</p></div>)}
           </div>
@@ -387,10 +387,10 @@ export default function InvoiceSoftwareLanding() {
       <section className="bg-[#f8faf9] py-20 sm:py-28">
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] grid-cols-1">
           <div>
-            <h2 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">A clearer way to manage invoices than documents and spreadsheets</h2>
-            <p className="mt-5 text-base leading-8 text-slate-600">A document template can produce a single invoice, but it does not remember the customer, connect the payment, or tell you which balance is overdue. A spreadsheet can track status, but it still leaves the customer-facing document and payment receipt somewhere else.</p>
-            <p className="mt-4 text-base leading-8 text-slate-600">Receipt Cycle brings those jobs together. Use it as invoice management software for the full record, not only as an invoice generator. The invoice remains connected to its customer, dates, line items, paid amount, balance, and payment history.</p>
-            <p className="mt-4 text-base leading-8 text-slate-600">If you are comparing small business invoice software, focus on what happens after the document is created. You should be able to find a sent invoice, understand its status, record a partial payment, produce a receipt, and see the remaining balance without building another tracking system.</p>
+            <h2 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">An easier way to manage invoices than documents and spreadsheets</h2>
+            <p className="mt-5 text-base leading-8 text-slate-600">A document template makes one invoice. It does not remember your customer, link the payment, or tell you what is overdue. A spreadsheet can track status, but the invoice and the payment receipt live somewhere else.</p>
+            <p className="mt-4 text-base leading-8 text-slate-600">Receipt Cycle does all of that in one place. Use it as invoice management software for the whole story, and as an invoice generator too. Each invoice stays linked to its customer, dates, line items, paid amount, balance, and payments.</p>
+            <p className="mt-4 text-base leading-8 text-slate-600">Comparing small business invoice software? Look at what happens after you create the invoice. You should be able to find a sent invoice, see its status, record a partial payment, make a receipt, and see what is left, without building your own tracking sheet.</p>
             <Link to={primaryCta} className="mt-7 inline-flex items-center gap-2 text-sm font-extrabold text-teal-700 hover:text-teal-900">Create an invoice in Receipt Cycle<i className="fas fa-arrow-right text-xs" aria-hidden /></Link>
           </div>
           <InvoiceWorkspacePreview />
@@ -399,13 +399,13 @@ export default function InvoiceSoftwareLanding() {
 
       <section className="bg-teal-900 py-20 text-white sm:py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-3xl font-bold sm:text-4xl">Why businesses choose a connected invoice record</h2><p className="mt-4 text-base leading-7 text-teal-100/80">The value is not a flashy template. It is knowing that the document, customer, payment, and remaining balance still agree when you return later.</p></div>
+          <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-3xl font-bold sm:text-4xl">Why businesses choose one connected invoice record</h2><p className="mt-4 text-base leading-7 text-teal-100/80">It is not about a fancy template. It is knowing the invoice, customer, payment, and balance all still match when you come back later.</p></div>
           <div className="mt-12 grid gap-4 md:grid-cols-2 grid-cols-1">
             {[
-              ["The customer stays attached", "Open an invoice and see who it belongs to without searching another file. Customer records also support estimates and payment history."],
-              ["The calculation stays visible", "Line items, quantities, rates, tax, discounts, and totals remain readable in the builder and preview."],
-              ["The status tells the next story", "Draft, sent, paid, partially paid, and overdue states help you separate documents that need work from balances that need attention."],
-              ["The payment creates a record", "Record the amount and method, update the balance, and generate a receipt that points back to the original invoice."],
+              ["The customer stays attached", "Open an invoice and see who it is for, with no digging through other files. Customer records also cover estimates and payment history."],
+              ["The math stays in sight", "Line items, quantities, rates, tax, discounts, and totals are easy to read in the builder and the preview."],
+              ["The status tells you what to do next", "Draft, sent, paid, partly paid, and overdue show you which invoices need work and which balances need a nudge."],
+              ["Every payment leaves a record", "Enter the amount and method, update the balance, and get a receipt that points back to the invoice."],
             ].map(([title, body]) => <article key={title} className="rounded-2xl border border-white/10 bg-white/10 p-6"><h3 className="font-display text-xl font-bold">{title}</h3><p className="mt-3 text-sm leading-7 text-teal-50/80">{body}</p></article>)}
           </div>
         </div>
@@ -413,7 +413,7 @@ export default function InvoiceSoftwareLanding() {
 
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Invoice software for freelancers, consultants, and small businesses</h2><p className="mt-4 text-base leading-7 text-slate-600">Choose how you work to see how Receipt Cycle fits the billing job.</p></div>
+          <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Invoice software for freelancers, consultants, and small businesses</h2><p className="mt-4 text-base leading-7 text-slate-600">Pick how you work and see how Receipt Cycle fits your billing.</p></div>
           <div className="mt-12 grid items-stretch gap-5 lg:grid-cols-[1.35fr_0.65fr] grid-cols-1">
             <div
               id="audience-panel"
@@ -481,9 +481,9 @@ export default function InvoiceSoftwareLanding() {
       <section className="bg-[#eef8f5] py-20 sm:py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="grid overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 lg:grid-cols-2 grid-cols-1">
-            <div className="p-8 sm:p-10"><h2 className="font-display text-3xl font-bold text-slate-950">Help when you need a clear answer</h2><p className="mt-4 text-base leading-7 text-slate-600">Questions about the invoice workflow, billing, or your account should have a direct path to an answer. Use the product guidance, browse common questions, or contact the Receipt Cycle team.</p><div className="mt-7 flex flex-wrap gap-3"><Link to="/contact" className="inline-flex min-h-11 items-center rounded-xl bg-teal-700 px-5 text-sm font-bold text-white">Contact us</Link><Link to="/faq" className="inline-flex min-h-11 items-center rounded-xl border border-slate-300 px-5 text-sm font-bold text-slate-700">Visit the FAQ</Link></div></div>
+            <div className="p-8 sm:p-10"><h2 className="font-display text-3xl font-bold text-slate-950">Help when you need a clear answer</h2><p className="mt-4 text-base leading-7 text-slate-600">Got a question about invoices, billing, or your account? Browse the common questions or contact the Receipt Cycle team.</p><div className="mt-7 flex flex-wrap gap-3"><Link to="/contact" className="inline-flex min-h-11 items-center rounded-xl bg-teal-700 px-5 text-sm font-bold text-white">Contact us</Link><Link to="/faq" className="inline-flex min-h-11 items-center rounded-xl border border-slate-300 px-5 text-sm font-bold text-slate-700">Visit the FAQ</Link></div></div>
             <div className="grid gap-px bg-slate-200 sm:grid-cols-3 lg:grid-cols-1 grid-cols-1">
-              {[['fa-list-ol','Guided setup','The invoice builder separates customer details, line items, totals, and review into clear steps.'],['fa-circle-question','Common questions','Find product answers without turning the sales page into a technical manual.'],['fa-envelope','Email support','Reach support@receiptcycle.com when your question needs a person.']].map(([icon,title,body]) => <div key={title} className="bg-[#f8faf9] p-6"><i className={`fas ${icon} text-teal-700`} aria-hidden /><h3 className="mt-3 text-sm font-extrabold">{title}</h3><p className="mt-2 text-xs leading-5 text-slate-500">{body}</p></div>)}
+              {[['fa-list-ol','Guided setup','The invoice builder has four steps: customer, items, totals, and review.'],['fa-circle-question','Common questions','Find quick answers about how the product works.'],['fa-envelope','Email support','Reach support@receiptcycle.com when your question needs a person.']].map(([icon,title,body]) => <div key={title} className="bg-[#f8faf9] p-6"><i className={`fas ${icon} text-teal-700`} aria-hidden /><h3 className="mt-3 text-sm font-extrabold">{title}</h3><p className="mt-2 text-xs leading-5 text-slate-500">{body}</p></div>)}
             </div>
           </div>
         </div>
@@ -491,7 +491,7 @@ export default function InvoiceSoftwareLanding() {
 
       <section className="py-20 sm:py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-3xl font-bold text-slate-950 sm:text-4xl">Resources for clearer business records</h2><p className="mt-4 text-base leading-7 text-slate-600">Invoicing is one part of the financial record. These guides cover the expense and receipt side of running a small business.</p></div>
+          <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-3xl font-bold text-slate-950 sm:text-4xl">Resources for tidier business records</h2><p className="mt-4 text-base leading-7 text-slate-600">Invoicing is only half the picture. These guides cover the expense and receipt side of running a small business.</p></div>
           <div className="mt-12 grid gap-5 md:grid-cols-3 grid-cols-1">
             {resources.map((resource) => <article key={resource.href} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><img src={resource.image} alt="" className="aspect-[16/9] w-full object-cover" loading="lazy" decoding="async" /><div className="p-6"><h3 className="font-display text-lg font-bold leading-6 text-slate-950">{resource.title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{resource.description}</p><Link to={resource.href} className="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-teal-700">Read the guide<i className="fas fa-arrow-right text-xs" aria-hidden /></Link></div></article>)}
           </div>
@@ -509,7 +509,7 @@ export default function InvoiceSoftwareLanding() {
 
       <section className="bg-teal-950 py-16 text-white sm:py-20">
         <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 text-center sm:px-6 lg:grid-cols-[1fr_auto] lg:text-left grid-cols-1">
-          <div><h2 className="font-display text-3xl font-bold sm:text-4xl">Create a professional invoice and keep the balance in view</h2><p className="mt-4 max-w-2xl text-base leading-7 text-teal-100/80">Add the customer, describe the work, review the total, and keep every payment connected to the document that started it.</p></div>
+          <div><h2 className="font-display text-3xl font-bold sm:text-4xl">Create a professional invoice and keep the balance in view</h2><p className="mt-4 max-w-2xl text-base leading-7 text-teal-100/80">Add the customer, describe the work, check the total, and keep every payment linked to its invoice.</p></div>
           <div className="flex flex-col justify-center gap-3 sm:flex-row"><LandingPrimaryCta to={primaryCta} inverse>Create your first invoice</LandingPrimaryCta><Link to="/pricing" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/30 px-6 py-3 text-sm font-extrabold text-white hover:bg-white/10">View pricing</Link></div>
         </div>
       </section>

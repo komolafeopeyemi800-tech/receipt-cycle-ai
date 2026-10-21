@@ -14,7 +14,7 @@ import {
   type RouteSeo,
 } from "../content/routesSeo";
 import { PAYWALL_PRICING, PAYWALL_TIER_FEATURES, formatUsd } from "./pricingPaywall";
-import { APP_FEATURES, LEGAL_NAME, SITE_URL, SUPPORT_EMAIL, pageUrl } from "./schema";
+import { APP_FEATURES, LEGAL_NAME, PLAY_STORE_URL, SITE_URL, SUPPORT_EMAIL, pageUrl } from "./schema";
 
 function xmlEscape(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -168,7 +168,7 @@ export function buildLlmsTxt(): string {
     "## Facts",
     "",
     `- Website: ${SITE_URL}/`,
-    "- Platforms: web app (any current browser) and Android app. The Android app is being released on Google Play.",
+    `- Platforms: web app (any current browser) and Android app. [Get Receipt Cycle on Google Play](${PLAY_STORE_URL}).`,
     `- Operator: Receipt Cycle is the trade name of ${LEGAL_NAME}.`,
     `- Support: ${SUPPORT_EMAIL} (replies within one business day)`,
     "- Audience: freelancers, independent professionals, contractors, and small businesses.",

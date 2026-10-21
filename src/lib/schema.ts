@@ -16,6 +16,7 @@ import { PAYWALL_PRICING, PAYWALL_TIER_FEATURES } from "./pricingPaywall";
 export const SITE_URL = "https://receiptcycle.com";
 export const SITE_NAME = "Receipt Cycle";
 export const SUPPORT_EMAIL = "support@receiptcycle.com";
+export const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.receiptcycle.mobile&udm=14";
 export const LEGAL_NAME = "TempEmailGen";
 export const IN_LANGUAGE = "en-US";
 
@@ -246,6 +247,8 @@ export function appNode(opts: AppOptions = {}): Jsonld {
       "Receipt Cycle is a web and Android app that captures receipts with AI extraction and keeps expenses, customers, estimates, invoices, payments, budgets, and reports connected in one workspace.",
     applicationCategory: "BusinessApplication",
     operatingSystem: "Android, Web",
+    downloadUrl: PLAY_STORE_URL,
+    installUrl: PLAY_STORE_URL,
     browserRequirements: "Requires JavaScript. Works in current versions of Chrome, Edge, Firefox, and Safari.",
     inLanguage: IN_LANGUAGE,
     image: absoluteUrl(DEFAULT_OG_IMAGE.url),

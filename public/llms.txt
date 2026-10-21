@@ -7,7 +7,7 @@ Last updated: 2026-10-19
 ## Facts
 
 - Website: https://receiptcycle.com/
-- Platforms: web app (any current browser) and Android app. The Android app is being released on Google Play.
+- Platforms: web app (any current browser) and Android app. [Get Receipt Cycle on Google Play](https://play.google.com/store/apps/details?id=com.receiptcycle.mobile&udm=14).
 - Operator: Receipt Cycle is the trade name of TempEmailGen.
 - Support: support@receiptcycle.com (replies within one business day)
 - Audience: freelancers, independent professionals, contractors, and small businesses.

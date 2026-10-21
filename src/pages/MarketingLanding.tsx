@@ -6,9 +6,9 @@ import { InteractiveProductDemo } from "@/components/marketing/InteractiveProduc
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
 import { landingFaqs } from "@/content/landingFaqs";
+import { PLAY_STORE_URL } from "@/content/site";
 
 const asset = (name: string) => `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}landing/${name}`;
-const PLAY_STORE_URL = (import.meta.env.VITE_PLAY_STORE_URL as string | undefined)?.trim() || "https://play.google.com/store/apps/details?id=com.anonymous.receiptcyclemobile";
 
 const audiences = [
   { name: "Freelancers", title: "Spend less time on paperwork, more on the work", copy: "Save what a job cost, make the invoice or estimate, and find it all again when you need it.", href: "/freelancer-tax-receipt-tracker/" },

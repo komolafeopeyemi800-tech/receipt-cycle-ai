@@ -24,6 +24,7 @@ import {
 import {
   ORG_ID,
   APP_ID,
+  PLAY_STORE_URL,
   SITE_URL,
   WEBSITE_ID,
   buildPageGraph,
@@ -339,12 +340,12 @@ describe("page types and entity details", () => {
     for (const r of indexable) expect(JSON.stringify(r.structuredData)).not.toContain("SearchAction");
   });
 
-  it("the app claims only the platforms that ship and has no download link until Google Play is live", () => {
+  it("the app claims only the platforms that ship and links to the live Google Play listing", () => {
     for (const r of indexable) {
       const [app] = nodesOfType(graphOf(r), "SoftwareApplication");
       expect(app.operatingSystem).toBe("Android, Web");
-      expect(app).not.toHaveProperty("downloadUrl");
-      expect(app).not.toHaveProperty("installUrl");
+      expect(app.downloadUrl).toBe(PLAY_STORE_URL);
+      expect(app.installUrl).toBe(PLAY_STORE_URL);
       expect(app).not.toHaveProperty("aggregateRating");
     }
   });

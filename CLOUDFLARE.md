@@ -61,7 +61,7 @@ Set at least:
 |----------|--------|
 | `VITE_CONVEX_URL` | Same Convex deployment URL as mobile (`EXPO_PUBLIC_CONVEX_URL`). Convex Dashboard → your deployment → URL. |
 
-Copy optional keys from [`.env.example`](.env.example) (OAuth client id, store links, social URLs, etc.). Any `VITE_*` variable must be set in Cloudflare for production builds (or use `WHOP_CHECKOUT_*` / `WHOP_MANAGE_URL`; [`vite.config.ts`](vite.config.ts) maps them into the bundle like local `.env`).
+Copy optional keys from [`.env.example`](.env.example) (OAuth client id, social URLs, etc.). The live Google Play URL is versioned in the application source so every page and its structured data use the same listing. Any `VITE_*` variable must be set in Cloudflare for production builds (or use `WHOP_CHECKOUT_*` / `WHOP_MANAGE_URL`; [`vite.config.ts`](vite.config.ts) maps them into the bundle like local `.env`).
 
 **Migrating from Netlify:** export or copy every `VITE_*` from Netlify **Site configuration → Environment variables** into Cloudflare Pages.
 

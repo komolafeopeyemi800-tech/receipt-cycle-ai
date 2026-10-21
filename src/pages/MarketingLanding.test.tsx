@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import MarketingLanding from "./MarketingLanding";
 import { getRouteSeo } from "@/content/routesSeo";
+import { PLAY_STORE_URL } from "@/content/site";
 
 function renderPage() {
   return render(<MemoryRouter><MarketingLanding /></MemoryRouter>);
@@ -29,6 +30,18 @@ describe("MarketingLanding", () => {
     expect(seo?.title).toContain("Connected Business Records");
     expect(JSON.stringify(seo?.structuredData)).not.toContain("AggregateRating");
     expect(JSON.stringify(seo?.structuredData)).not.toContain("ratingCount");
+  });
+
+  it("sends every Google Play call to action to the live app listing", () => {
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: /open navigation/i }));
+    const storeLinks = screen.getAllByRole("link").filter((link) => link.getAttribute("href")?.includes("play.google.com"));
+    expect(storeLinks.length).toBeGreaterThanOrEqual(4);
+    for (const link of storeLinks) {
+      expect(link).toHaveAttribute("href", PLAY_STORE_URL);
+      expect(link).toHaveAttribute("target", "_blank");
+      expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    }
   });
 
   it("places an accessible product walkthrough after the hero", () => {

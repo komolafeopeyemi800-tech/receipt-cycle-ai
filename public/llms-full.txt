@@ -2,7 +2,7 @@
 
 > Receipt Cycle is a web and Android app for freelancers, independent professionals, and small businesses. It captures receipts with AI extraction and keeps expenses, customers, estimates, invoices, payment records, budgets, and reports connected in one workspace.
 
-Source: https://receiptcycle.com/ | Last updated: 2026-10-19 | Contact: support@receiptcycle.com
+Source: https://receiptcycle.com/ | Last updated: 2026-10-28 | Contact: support@receiptcycle.com
 This file is generated from the same content as the public pages. The page URLs below are canonical.
 
 ## Product overview
@@ -548,11 +548,11 @@ Summary: Here's something most freelancers figure out the hard way: the money yo
 
 ### How to Go Paperless With Your Receipts (And Never Lose One Again)
 
-URL: https://receiptcycle.com/blog/go-paperless-with-receipts | Published: 2026-04-17 | Updated: 2026-04-18 | 9 min read
+URL: https://receiptcycle.com/blog/go-paperless-with-receipts | Published: 2026-04-17 | Updated: 2026-10-28 | 11 min read
 
-Paper receipts fade and disappear. Learn the legal, practical, and technical workflow for moving to secure digital receipts with zero tax-season chaos.
+Go paperless with receipts in one afternoon. See what the IRS accepts, how long to keep digital receipts, and the setup that stops lost deductions.
 
-Summary: Picture this: it's the week before your tax deadline. You're sitting at the kitchen table surrounded by a pile of receipts, some faded, some torn, one that's been through the wash.
+Summary: To go paperless with receipts, capture each one the day you get it, store the image with its date, amount and category, and back it up in a second place. The IRS accepts scanned records when they are legible, indexed and retrievable. Keep them 3 years in most cases, and longer in a few.
 
 ### Receipt Tracking for Uber, DoorDash & Gig Workers Income and Expense Guide
 

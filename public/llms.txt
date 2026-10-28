@@ -2,7 +2,7 @@
 
 > Receipt Cycle is a web and Android app for freelancers, independent professionals, and small businesses. It captures receipts with AI extraction and keeps expenses, customers, estimates, invoices, payment records, budgets, and reports connected in one workspace.
 
-Last updated: 2026-10-19
+Last updated: 2026-10-28
 
 ## Facts
 
@@ -67,7 +67,7 @@ Last updated: 2026-10-19
 - [How to Maximize Your Tax Refund by Scanning Receipts](https://receiptcycle.com/blog/maximize-tax-refund-by-scanning-receipts): Most people miss tax deductions because they lose receipts. This guide shows how to scan once, store digitally, and claim every legitimate expense with confidence.
 - [7 Best Receipt Scanner Apps for Small Business in 2026](https://receiptcycle.com/blog/best-receipt-scanner-app-small-business-2026): We compared seven receipt scanner apps on features, price and fit. See feature scores, honest pros and cons, and which app suits a small business.
 - [The Freelancer's Complete Guide to Tracking Business Expenses](https://receiptcycle.com/blog/freelancers-guide-tracking-business-expenses): A practical expense-tracking system for freelancers: what to deduct, what records to keep, and how to build a two-minute daily habit that saves money at tax time.
-- [How to Go Paperless With Your Receipts (And Never Lose One Again)](https://receiptcycle.com/blog/go-paperless-with-receipts): Paper receipts fade and disappear. Learn the legal, practical, and technical workflow for moving to secure digital receipts with zero tax-season chaos.
+- [How to Go Paperless With Your Receipts (And Never Lose One Again)](https://receiptcycle.com/blog/go-paperless-with-receipts): Go paperless with receipts in one afternoon. See what the IRS accepts, how long to keep digital receipts, and the setup that stops lost deductions.
 - [Receipt Tracking for Uber, DoorDash & Gig Workers Income and Expense Guide](https://receiptcycle.com/blog/gig-workers-income-expense-guide): A full expense and receipt guide for gig workers: what to deduct, what proof to keep, and how to avoid leaving $500-$2,000 in deductions unclaimed.
 - [How to Track Business Travel Expenses (And Actually Claim Everything You're Owed)](https://receiptcycle.com/blog/scan-receipts-for-tax-refund): Business travel has a way of generating expenses faster than you can track them. A cab to the airport. Breakfast at the hotel.
 - [How to Organize Receipts for Your Accountant (And Make Tax Season Painless)](https://receiptcycle.com/blog/best-expense-tracker-for-freelancers): There's a moment most people dread every year: the call from their accountant asking for expense documentation, followed by a frantic search through bags, email, and folders.

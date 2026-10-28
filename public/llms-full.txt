@@ -538,13 +538,13 @@ We compared seven receipt scanner apps on features, price and fit. See feature s
 
 Summary: Receipt Cycle is the one app here that scans receipts, takes voice entries, builds estimates and invoices, tracks budgets and exports an accountant-ready workbook, and you can try it free for seven days. It does not do payroll, double-entry bookkeeping or team approvals. For those, pick Expensify or Zoho Expense for approvals, QuickBooks or Wave for bookkeeping, or Shoeboxed if you want someone else to scan your paper.
 
-### The Freelancer's Complete Guide to Tracking Business Expenses
+### How One Freelancer Tracks Business Expenses for Tax Time (A Case Study)
 
-URL: https://receiptcycle.com/blog/freelancers-guide-tracking-business-expenses | Published: 2026-04-17 | Updated: 2026-04-18 | 10 min read
+URL: https://receiptcycle.com/blog/freelancers-guide-tracking-business-expenses | Published: 2026-04-17 | Updated: 2026-10-28 | 11 min read
 
-A practical expense-tracking system for freelancers: what to deduct, what records to keep, and how to build a two-minute daily habit that saves money at tax time.
+A freelancer case study: how Maya tracks income, expenses and tax savings in one place, with the IRS rules, a step-by-step system and exports for tax time.
 
-Summary: Here's something most freelancers figure out the hard way: the money you save on taxes is just as real as the money you earn from clients.
+Summary: Maya is a 24-year-old freelancer with no employer taking out taxes. She tracks every payment and expense in one place, sets money aside on each payment for taxes, and exports one report for tax time. This case study shows her system, the IRS rules behind it, and how to copy it.
 
 ### How to Go Paperless With Your Receipts (And Never Lose One Again)
 

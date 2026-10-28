@@ -7,7 +7,7 @@ import { SITE_URL } from "@/lib/seo";
 import { aiSummaryLinks } from "@/lib/blogAiSummary";
 import { appTone, isOurProduct, overallScore } from "@/lib/appTones";
 import { hostnameOf, isInternalHref, tokenizeInline } from "@/lib/blogMarkdown";
-import { CalendarDays, Check, Clock3, Copy, Link2, Mail, RefreshCw, Share2 } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, Clock3, Copy, Link2, Mail, RefreshCw, Share2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 const LINK_CLASS =
@@ -177,15 +177,15 @@ function TocLinks({ items }: { items: TocItem[] }) {
 
 function QuickSummary({ summary, takeaways }: { summary: string; takeaways?: string[] }) {
   return (
-    <section id="short-version" data-speakable="summary" className="scroll-mt-24 rounded-2xl border border-teal-200 bg-teal-50/70 p-5 sm:p-7">
+    <section id="short-version" data-speakable="summary" className="scroll-mt-24 rounded-2xl border border-teal-200 bg-teal-50/70 p-5 font-article sm:p-7">
       <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal-800">Here&apos;s the short version</p>
-      <p className="mt-3 text-base leading-7 text-slate-700 sm:text-lg">{renderRich(summary)}</p>
+      <p className="mt-3 text-[18px] leading-[1.7] text-slate-800 sm:text-[19px] lg:text-[20px]">{renderRich(summary)}</p>
       {takeaways?.length ? (
         <div className="mt-6 border-t border-teal-200 pt-5">
-          <h2 className="font-display text-xl font-bold text-slate-900">Key Takeaways</h2>
+          <h2 className="font-article text-[22px] font-bold text-slate-950">Key Takeaways</h2>
           <ul className="mt-3 space-y-3">
             {takeaways.map((item) => (
-              <li key={item} className="flex gap-3 text-base leading-7 text-slate-700">
+              <li key={item} className="flex gap-3 text-[17px] leading-[1.65] text-slate-800 sm:text-[18px] lg:text-[19px]">
                 <Check className="mt-1 h-5 w-5 shrink-0 text-teal-700" aria-hidden="true" />
                 <span>{renderRich(item)}</span>
               </li>
@@ -327,25 +327,25 @@ function CtaCard({ block }: { block: Extract<BlogBlock, { kind: "cta" }> }) {
 }
 
 function Block({ block }: { block: BlogBlock }) {
-  if (block.kind === "p") return <p className="mt-5 leading-relaxed text-slate-700">{renderRich(block.text, true)}</p>;
+  if (block.kind === "p") return <p className="mt-6 text-slate-800">{renderRich(block.text, true)}</p>;
   if (block.kind === "h2")
     return (
       <h2
         id={block.id}
-        className="mt-12 scroll-mt-20 font-display text-2xl font-bold text-slate-900 sm:text-3xl"
+        className="mt-14 scroll-mt-20 font-article text-[28px] font-extrabold leading-[1.25] tracking-tight text-slate-950 sm:text-[32px] lg:text-[36px]"
       >
         {block.text}
       </h2>
     );
   if (block.kind === "h3")
     return (
-      <h3 id={block.id} className="mt-10 scroll-mt-20 font-display text-xl font-bold text-slate-900">
+      <h3 id={block.id} className="mt-10 scroll-mt-20 font-article text-[22px] font-bold leading-snug text-slate-950 sm:text-[24px]">
         {block.text}
       </h3>
     );
   if (block.kind === "h4")
     return (
-      <h4 id={block.id} className="mt-8 scroll-mt-20 font-display text-lg font-semibold text-slate-900">
+      <h4 id={block.id} className="mt-8 scroll-mt-20 font-article text-[19px] font-semibold leading-snug text-slate-950 sm:text-[20px]">
         {block.text}
       </h4>
     );
@@ -374,7 +374,7 @@ function Block({ block }: { block: BlogBlock }) {
         ) : (
           img
         )}
-        {block.caption ? <figcaption className="border-t border-slate-100 px-4 py-3 text-sm text-slate-600">{renderRich(block.caption)}</figcaption> : null}
+        {block.caption ? <figcaption className="border-t border-slate-100 px-4 py-3 text-[15px] leading-6 text-slate-600">{renderRich(block.caption)}</figcaption> : null}
       </figure>
     );
   }
@@ -417,7 +417,7 @@ function Block({ block }: { block: BlogBlock }) {
     );
   if (block.kind === "ul")
     return (
-      <ul className="mt-5 space-y-2 pl-5 text-slate-700 [&>li]:list-disc [&>li]:leading-relaxed">
+      <ul className="mt-6 space-y-3 pl-6 text-slate-800 [&>li]:list-disc [&>li]:pl-1">
         {block.items.map((i, idx) => (
           <li key={idx}>{renderRich(i)}</li>
         ))}
@@ -425,7 +425,7 @@ function Block({ block }: { block: BlogBlock }) {
     );
   if (block.kind === "ol")
     return (
-      <ol className="mt-5 space-y-2 pl-5 text-slate-700 [&>li]:list-decimal [&>li]:leading-relaxed">
+      <ol className="mt-6 space-y-3 pl-6 text-slate-800 [&>li]:list-decimal [&>li]:pl-1">
         {block.items.map((i, idx) => (
           <li key={idx}>{renderRich(i)}</li>
         ))}
@@ -435,7 +435,7 @@ function Block({ block }: { block: BlogBlock }) {
     return (
       <blockquote className="mt-6 border-l-4 border-teal-600 bg-slate-50 p-5 italic text-slate-700">
         <p>{renderRich(block.text)}</p>
-        {block.cite ? <footer className="mt-2 text-sm not-italic text-slate-500">{block.cite}</footer> : null}
+        {block.cite ? <footer className="mt-2 text-[15px] not-italic text-slate-500">{block.cite}</footer> : null}
       </blockquote>
     );
   if (block.kind === "cta") return <CtaCard block={block} />;
@@ -444,7 +444,7 @@ function Block({ block }: { block: BlogBlock }) {
     return (
       <figure className="mt-8">
         <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <table className="block w-full border-collapse text-left text-sm md:table md:min-w-[640px]">
+          <table className="block w-full border-collapse text-left text-[16px] md:table md:min-w-[640px] md:text-[16px]">
             <caption className="block w-full border-b border-slate-200 bg-slate-50 px-5 py-4 text-left font-display text-base font-bold text-slate-900 md:table-caption">
               {block.caption}
             </caption>
@@ -468,7 +468,7 @@ function Block({ block }: { block: BlogBlock }) {
                         <th
                           key={cellIndex}
                           scope="row"
-                          className={`block pb-2 text-left font-display text-base font-bold md:table-cell md:px-5 md:py-4 md:font-sans md:text-sm md:font-semibold ${
+                          className={`block pb-2 text-left font-display text-base font-bold md:table-cell md:px-5 md:py-4 md:font-sans md:text-[16px] md:font-semibold ${
                             tone ? `${tone.text} md:border-l-4 ${tone.borderL}` : "text-slate-900"
                           }`}
                         >
@@ -476,7 +476,7 @@ function Block({ block }: { block: BlogBlock }) {
                           {renderRich(cell)}
                         </th>
                       ) : (
-                        <td key={cellIndex} data-label={block.columns[cellIndex]} className="block py-1.5 leading-6 text-slate-700 before:block before:text-xs before:font-semibold before:uppercase before:tracking-wide before:text-slate-500 before:content-[attr(data-label)] md:table-cell md:px-5 md:py-4 md:before:hidden">{renderRich(cell)}</td>
+                        <td key={cellIndex} data-label={block.columns[cellIndex]} className="block py-1.5 leading-7 text-slate-700 before:block before:text-[13px] before:font-semibold before:uppercase before:tracking-wide before:text-slate-500 before:content-[attr(data-label)] md:table-cell md:px-5 md:py-4 md:before:hidden">{renderRich(cell)}</td>
                       ),
                     )}
                   </tr>
@@ -489,8 +489,8 @@ function Block({ block }: { block: BlogBlock }) {
     );
   return (
     <aside className="mt-6 rounded-xl border border-teal-200 bg-teal-50 p-5">
-      <h4 className="font-display font-bold text-teal-900">{block.title}</h4>
-      <p className="mt-2 text-sm text-teal-900/80">{renderRich(block.text)}</p>
+      <h4 className="font-article text-[18px] font-bold text-teal-900">{block.title}</h4>
+      <p className="mt-2 text-[17px] leading-7 text-teal-950/90">{renderRich(block.text)}</p>
     </aside>
   );
 }
@@ -500,7 +500,7 @@ type ResourceItem = { label: string; href: string; note?: string };
 function ArticleResources({ items }: { items: ResourceItem[] }) {
   return (
     <section className="mt-14 border-t border-slate-200 pt-10" aria-labelledby="resources">
-      <h2 id="resources" className="scroll-mt-24 font-display text-2xl font-bold text-slate-900 sm:text-3xl">Resources and sources</h2>
+      <h2 id="resources" className="scroll-mt-24 font-article text-[28px] font-extrabold text-slate-950 sm:text-[32px]">Resources and sources</h2>
       <ul className="mt-6 divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white px-5 sm:px-6">
         {items.map((item) => (
           <li key={`${item.href}-${item.label}`} className="py-4">
@@ -508,7 +508,7 @@ function ArticleResources({ items }: { items: ResourceItem[] }) {
               <InlineLink href={item.href}>{item.label}</InlineLink>
               <span className="text-xs text-slate-500">{hostnameOf(item.href)}</span>
             </div>
-            {item.note ? <p className="mt-1 text-sm leading-6 text-slate-600">{item.note}</p> : null}
+            {item.note ? <p className="mt-1 text-[15px] leading-6 text-slate-600">{item.note}</p> : null}
           </li>
         ))}
       </ul>
@@ -519,15 +519,15 @@ function ArticleResources({ items }: { items: ResourceItem[] }) {
 function ArticleFaq({ items }: { items: BlogFaqItem[] }) {
   return (
     <section id="frequently-asked-questions" className="mt-14 scroll-mt-24 border-t border-slate-200 pt-10" aria-labelledby="faq-heading">
-      <h2 id="faq-heading" className="font-display text-2xl font-bold text-slate-900 sm:text-3xl">Frequently asked questions</h2>
-      <div className="mt-6 divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white px-5 sm:px-6">
+      <h2 id="faq-heading" className="font-article text-[28px] font-extrabold leading-[1.25] text-slate-950 sm:text-[32px] lg:text-[36px]">Frequently asked questions</h2>
+      <div className="mt-8 space-y-5 font-article">
         {items.map((item, index) => (
-          <details key={item.question} className="group py-5" open={index === 0}>
-            <summary className="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 [&::-webkit-details-marker]:hidden">
+          <details key={item.question} className="group border border-slate-200 bg-white px-5 py-5 shadow-[0_2px_10px_rgba(15,23,42,0.08)] sm:px-7 sm:py-6" open={index === 0}>
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 text-[18px] font-bold leading-snug text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 sm:text-[20px] [&::-webkit-details-marker]:hidden">
               <span>{item.question}</span>
-              <span className="text-xl leading-5 text-teal-700 transition group-open:rotate-45" aria-hidden="true">+</span>
+              <ChevronDown className="h-6 w-6 shrink-0 text-slate-700 transition-transform duration-200 group-open:rotate-180" aria-hidden="true" />
             </summary>
-            <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">{renderRich(item.answer)}</p>
+            <p className="mt-4 text-[17px] leading-[1.75] text-slate-700 sm:text-[19px]">{renderRich(item.answer)}</p>
           </details>
         ))}
       </div>
@@ -594,7 +594,7 @@ export default function BlogPost() {
               <span className="truncate text-slate-700" aria-current="page">{category}</span>
             </nav>
 
-            <h1 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
+            <h1 className="font-article text-[30px] font-extrabold leading-[1.2] tracking-tight text-slate-950 sm:text-4xl lg:text-[2.6rem] lg:leading-[1.15]">
               {post.title}
             </h1>
             <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3 text-sm text-slate-600" aria-label="Article details">
@@ -664,7 +664,7 @@ export default function BlogPost() {
 
             <QuickSummary summary={post.tldr} takeaways={post.keyTakeaways} />
 
-            <article className="prose prose-slate mt-4 max-w-none text-base sm:text-[17px]">
+            <article className="prose prose-slate mt-6 max-w-none font-article text-[18px] leading-[1.7] text-slate-800 sm:text-[19px] lg:text-[21px] lg:leading-[1.6]">
           {post.body.map((block, i) => (
             <Block key={i} block={block} />
           ))}
@@ -746,7 +746,7 @@ export default function BlogPost() {
 
         {related.length > 0 ? (
           <section className="mt-16 border-t border-slate-200 pt-10">
-            <h2 className="font-display text-2xl font-bold text-slate-900">Keep reading</h2>
+            <h2 className="font-article text-[28px] font-extrabold text-slate-950 sm:text-[32px]">Keep reading</h2>
             <div className="mt-6 grid gap-6 sm:grid-cols-3 grid-cols-1">
               {related.map((r) => (
                 <Link
@@ -767,7 +767,7 @@ export default function BlogPost() {
                   <h3 className="font-display text-lg font-bold text-slate-900 group-hover:text-teal-700">
                     {r.title}
                   </h3>
-                  <p className="mt-2 text-sm text-slate-600">{r.description}</p>
+                  <p className="mt-2 text-[15px] leading-6 text-slate-600">{r.description}</p>
                   </div>
                 </Link>
               ))}

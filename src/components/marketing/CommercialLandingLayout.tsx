@@ -247,7 +247,7 @@ export function CommercialFooter() {
   return (
     <footer className="border-t border-slate-200 bg-white py-14 text-slate-900">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)] grid-cols-1">
+        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,minmax(0,1fr))] grid-cols-1 [&>*]:min-w-0">
           <div>
             <ReceiptCycleLogo />
             <p className="mt-4 max-w-sm text-sm leading-6 text-slate-500">
@@ -322,7 +322,7 @@ export function CommercialFooter() {
               <li><Link to="/privacy" className="hover:text-teal-700">Privacy policy</Link></li>
               <li><Link to="/terms" className="hover:text-teal-700">Terms of service</Link></li>
               <li><Link to="/refund-policy" className="hover:text-teal-700">Refund policy</Link></li>
-              <li><a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-teal-700">{SUPPORT_EMAIL}</a></li>
+              <li><a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-teal-700 [overflow-wrap:anywhere]">{SUPPORT_EMAIL}</a></li>
             </ul>
           </div>
         </div>

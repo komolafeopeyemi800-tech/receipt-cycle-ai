@@ -301,6 +301,12 @@ function ScoreTable({ block }: { block: Extract<BlogBlock, { kind: "scoreTable" 
   );
 }
 
+/** The post a "/blog/slug" link points to, so a link list can show its picture. */
+function postForHref(href: string) {
+  if (!isInternalHref(href) || !href.startsWith("/blog/")) return undefined;
+  return getPostBySlug(href.replace(/^\/blog\//, "").replace(/[/?#].*$/, ""));
+}
+
 function CtaCard({ block }: { block: Extract<BlogBlock, { kind: "cta" }> }) {
   const buttonClass =
     "inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-6 text-sm font-bold text-teal-900 shadow-sm transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-teal-700";
@@ -374,22 +380,38 @@ function Block({ block }: { block: BlogBlock }) {
   }
   if (block.kind === "links")
     return (
-      <section className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-5">
+      <section className="not-prose mt-8 rounded-xl border border-slate-200 bg-slate-50 p-5">
         <h3 className="font-display text-lg font-bold text-slate-900">{block.title}</h3>
-        <ul className="mt-3 space-y-2">
-          {block.items.map((item) => (
-            <li key={`${item.href}-${item.label}`} className="text-sm">
-              {item.external ? (
-                <a href={item.href} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
-                  {item.label} ↗
-                </a>
-              ) : (
-                <Link to={item.href} className={LINK_CLASS}>
-                  {item.label}
-                </Link>
-              )}
-            </li>
-          ))}
+        <ul className="mt-3 list-none space-y-2 p-0 [&>li]:m-0 [&>li]:p-0">
+          {block.items.map((item) => {
+            const target = item.external ? undefined : postForHref(item.href);
+            return (
+              <li key={`${item.href}-${item.label}`} className="text-sm">
+                {item.external ? (
+                  <a href={item.href} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
+                    {item.label} ↗
+                  </a>
+                ) : target ? (
+                  <Link to={item.href} className="group flex items-center gap-3 p-1 no-underline hover:bg-white">
+                    <img
+                      src={target.featuredImage}
+                      alt=""
+                      width={96}
+                      height={54}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-[54px] w-24 shrink-0 rounded-md border border-slate-200 object-cover"
+                    />
+                    <span className={`${LINK_CLASS} min-w-0`}>{item.label}</span>
+                  </Link>
+                ) : (
+                  <Link to={item.href} className={LINK_CLASS}>
+                    {item.label}
+                  </Link>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </section>
     );
@@ -663,7 +685,7 @@ export default function BlogPost() {
             </figure>
           ) : null}
           {!hasLinksBlock ? (
-            <section className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <section className="not-prose mt-8 rounded-xl border border-slate-200 bg-slate-50 p-5">
               <h3 className="font-display text-lg font-bold text-slate-900">Related resources</h3>
               <ul className="mt-3 space-y-2">
                 <li className="text-sm">
@@ -730,12 +752,23 @@ export default function BlogPost() {
                 <Link
                   key={r.slug}
                   to={`/blog/${r.slug}`}
-                  className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+                  className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
                 >
+                  <img
+                    src={r.featuredImage}
+                    alt={r.featuredImageAlt ?? r.title}
+                    width={r.featuredImageWidth ?? 1600}
+                    height={r.featuredImageHeight ?? 900}
+                    loading="lazy"
+                    decoding="async"
+                    className="aspect-video w-full object-cover"
+                  />
+                  <div className="p-5">
                   <h3 className="font-display text-lg font-bold text-slate-900 group-hover:text-teal-700">
                     {r.title}
                   </h3>
                   <p className="mt-2 text-sm text-slate-600">{r.description}</p>
+                  </div>
                 </Link>
               ))}
             </div>

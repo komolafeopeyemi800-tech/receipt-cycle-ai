@@ -82,12 +82,15 @@ export const freelancerExpenseTrackingCaseStudyPost: BlogPost = {
     },
     {
       kind: "p",
-      text: "This is the story of how she turned that mess into one simple routine for tracking business expenses, and what you can copy from it today. It is a case study and a how-to in one.",
+      text: "This is the story of Maya, a freelancer we built from common situations, and how she turned that mess into one simple routine for tracking business expenses. Copy what works. It is a case study and a how-to in one.",
     },
     {
-      kind: "callout",
-      title: "About this case study",
-      text: "Maya is an illustrative example, not a real customer. Her routine is based on a self-employed creator's published spreadsheet method and on situations freelancers describe every day. Her numbers are made up to show how the system works. Nothing here is tax advice.",
+      kind: "cta",
+      title: "Start your 7-day free trial",
+      text: "Try the same setup yourself: track income and expenses, scan receipts, and export for tax time in one place.",
+      label: "Start your 7-day free trial",
+      href: "/signup",
+      note: "No credit card needed for the web app.",
     },
     { kind: "h2", text: "Meet Maya: a freelancer with no one withholding her taxes", id: "meet-maya" },
     {

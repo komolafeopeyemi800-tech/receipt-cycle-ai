@@ -127,7 +127,7 @@ describe("BlogPost hero", () => {
     expect(hero).toHaveAttribute("height", "900");
     expect(hero).toHaveAttribute("loading", "eager");
     expect(hero).toHaveAttribute("fetchpriority", "high");
-    expect(container.querySelectorAll('img[src*="blog-maximize-tax-refund"]')).toHaveLength(1);
+    expect(container.querySelectorAll('img[src*="blog-maximize-tax-refund"][loading="eager"]')).toHaveLength(1);
 
     const details = screen.getByLabelText("Article details");
     expect(details).toHaveTextContent("Published April 1, 2026");

@@ -3,6 +3,7 @@ import { CommercialFooter, CommercialHeader } from "@/components/marketing/Comme
 import { Seo } from "@/components/Seo";
 import { blogSection, getBlogPostSeo } from "@/content/routesSeo";
 import { getPostBySlug, BLOG_POSTS, type BlogBlock, type BlogFaqItem } from "@/content/blogPosts";
+import { PLAY_STORE_URL } from "@/content/site";
 import { SITE_URL } from "@/lib/seo";
 import { aiSummaryLinks } from "@/lib/blogAiSummary";
 import { appTone, isOurProduct, overallScore } from "@/lib/appTones";
@@ -194,6 +195,27 @@ function QuickSummary({ summary, takeaways }: { summary: string; takeaways?: str
         </div>
       ) : null}
     </section>
+  );
+}
+
+/** A call to action straight after the short version and key takeaways, the moment a reader is most interested. */
+function QuickSummaryCta() {
+  const primary =
+    "inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-700 px-6 text-[15px] font-bold text-white shadow-sm transition hover:bg-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2";
+  const secondary =
+    "inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-6 text-[15px] font-bold text-slate-900 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2";
+  return (
+    <aside aria-label="Try Receipt Cycle" className="not-prose mt-5 border border-slate-200 bg-white p-5 font-article shadow-[0_2px_10px_rgba(15,23,42,0.06)] sm:p-6">
+      <p className="text-[18px] font-bold leading-snug text-slate-950 sm:text-[20px]">Try it on your own receipts</p>
+      <p className="mt-1 text-[16px] leading-relaxed text-slate-600 sm:text-[17px]">Scan, track and export in one place. Use the web app free for 7 days, or get the Android app.</p>
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+        <Link to="/signup" className={primary}>Start your 7-day free trial</Link>
+        <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className={secondary}>
+          <i className="fab fa-google-play" aria-hidden="true" />
+          Download the Android app
+        </a>
+      </div>
+    </aside>
   );
 }
 
@@ -663,6 +685,8 @@ export default function BlogPost() {
           <div className="min-w-0">
 
             <QuickSummary summary={post.tldr} takeaways={post.keyTakeaways} />
+
+            <QuickSummaryCta />
 
             <article className="prose prose-slate mt-6 max-w-none font-article text-[18px] leading-[1.7] text-slate-800 sm:text-[19px] lg:text-[21px] lg:leading-[1.6]">
           {post.body.map((block, i) => (

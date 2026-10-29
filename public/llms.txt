@@ -2,7 +2,7 @@
 
 > Receipt Cycle is a web and Android app for freelancers, independent professionals, and small businesses. It captures receipts with AI extraction and keeps expenses, customers, estimates, invoices, payment records, budgets, and reports connected in one workspace.
 
-Last updated: 2026-10-28
+Last updated: 2026-10-29
 
 ## Facts
 
@@ -64,7 +64,7 @@ Last updated: 2026-10-28
 ## Blog
 
 - [Blog index](https://receiptcycle.com/blog): All articles on receipt scanning, expense tracking, and tax-time records
-- [How to Maximize Your Tax Refund by Scanning Receipts](https://receiptcycle.com/blog/maximize-tax-refund-by-scanning-receipts): Most people miss tax deductions because they lose receipts. This guide shows how to scan once, store digitally, and claim every legitimate expense with confidence.
+- [Scan Receipts for Taxes: How to Claim More Write-Offs (2026 Guide)](https://receiptcycle.com/blog/maximize-tax-refund-by-scanning-receipts): Use a receipt scanner app to scan receipts for taxes, check the numbers, and give your accountant one clean file. See what the IRS wants as proof and how to claim every write-off you can document.
 - [7 Best Receipt Scanner Apps for Small Business in 2026](https://receiptcycle.com/blog/best-receipt-scanner-app-small-business-2026): We compared seven receipt scanner apps on features, price and fit. See feature scores, honest pros and cons, and which app suits a small business.
 - [How One Freelancer Tracks Business Expenses for Tax Time (A Case Study)](https://receiptcycle.com/blog/freelancers-guide-tracking-business-expenses): A freelancer case study: how Maya tracks income, expenses and tax savings in one place, with the IRS rules, a step-by-step system and exports for tax time.
 - [How to Go Paperless With Your Receipts (And Never Lose One Again)](https://receiptcycle.com/blog/go-paperless-with-receipts): Go paperless with receipts in one afternoon. See what the IRS accepts, how long to keep digital receipts, and the setup that stops lost deductions.

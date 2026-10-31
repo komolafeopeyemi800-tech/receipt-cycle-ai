@@ -24,7 +24,7 @@ export const goPaperlessWithReceiptsPost: BlogPost = {
   category: "Receipt scanning",
   datePublished: "2026-04-17",
   dateModified: "2026-10-28",
-  author: "Receipt Cycle Team",
+  author: "Philip",
   readMinutes: 11,
   tags: ["go paperless with receipts", "digital receipt storage", "receipt scanner app", "receipt organizer", "tax records"],
   tldr:

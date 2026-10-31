@@ -157,6 +157,7 @@ export function blogPostText(post: BlogPost): string {
     else if (b.kind === "callout") parts.push(b.title, t(b.text));
     else if (b.kind === "cta") parts.push(b.title, t(b.text), b.label, ...(b.note ? [t(b.note)] : []));
     else if (b.kind === "image" && b.caption) parts.push(t(b.caption));
+    else if (b.kind === "video") parts.push(b.title, t(b.description), ...(b.caption ? [t(b.caption)] : []));
     else if (b.kind === "links") parts.push(b.title, ...b.items.map((i) => i.label));
     else if (b.kind === "table") parts.push(b.caption, ...b.columns, ...b.rows.flat().map(t));
     else if (b.kind === "scoreTable") {
@@ -303,6 +304,7 @@ function blogPostNoscript(post: BlogPost): string {
           .join("");
         return `<table><caption>${escapeHtml(b.caption)}</caption><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>${b.note ? `<p>${inlineHtml(b.note)}</p>` : ""}`;
       }
+      if (b.kind === "video") return `<p>Video: ${escapeHtml(b.title)}. ${escapeHtml(b.description)}</p>`;
       return `<aside><strong>${escapeHtml(b.title)}</strong><p>${inlineHtml(b.text)}</p></aside>`;
     })
     .join("\n");
@@ -391,6 +393,9 @@ function blogRoute(post: BlogPost): RouteSeo {
         wordCount: countWords(blogPostText(post)),
         minutes: post.readMinutes,
         citations: blogCitations(post),
+        videos: post.body
+          .filter((b): b is Extract<typeof b, { kind: "video" }> => b.kind === "video")
+          .map((b) => ({ id: b.videoId, title: b.title, description: b.description, uploadDate: b.uploadDate, durationIso: b.durationIso })),
       },
     }),
     noscriptHtml: blogPostNoscript(post),

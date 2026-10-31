@@ -32,7 +32,7 @@ export const gigWorkerTaxDeductionsPost: BlogPost = {
   category: "Expense tracking",
   datePublished: "2026-04-17",
   dateModified: "2026-10-29",
-  author: "Receipt Cycle Team",
+  author: "Philip",
   readMinutes: 12,
   tags: ["gig worker tax deductions", "DoorDash mileage deduction", "delivery driver expenses", "track gig income and expenses", "1099 expense tracker"],
   tldr:

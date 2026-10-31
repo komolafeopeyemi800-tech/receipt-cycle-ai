@@ -14,7 +14,9 @@ export type BlogBlock =
   | { kind: "table"; caption: string; columns: string[]; rows: string[][]; tones?: boolean }
   | { kind: "cta"; title: string; text: string; label: string; href: string; note?: string }
   | { kind: "scoreTable"; caption: string; columns: string[]; rows: Array<{ app: string; scores: number[] }>; note?: string }
-  | { kind: "callout"; title: string; text: string };
+  | { kind: "callout"; title: string; text: string }
+  /** A YouTube video from our own channel. `uploadDate` is YYYY-MM-DD and must be the real upload date. */
+  | { kind: "video"; videoId: string; title: string; description: string; uploadDate: string; caption?: string; durationIso?: string };
 
 export interface BlogFaqItem {
   question: string;
@@ -65,7 +67,7 @@ export const BLOG_POSTS: BlogPost[] = [
   featuredImage: "/landing/blog-scan-receipts-for-tax-refund.webp?v=1",
   datePublished: "2026-04-12",
   dateModified: "2026-04-20",
-  author: "Receipt Cycle Team",
+  author: "Philip",
   readMinutes: 11,
   tags: ["business travel", "expense tracking", "tax deductions", "receipts"],
   tldr: "A client dinner on the last night. Wi-Fi at the conference center. By the time you're back home and unpacked, the receipts are scattered across your wallet, your carry-on, and three different email inboxes.",
@@ -129,7 +131,7 @@ export const BLOG_POSTS: BlogPost[] = [
   featuredImage: "/landing/blog-best-expense-tracker-for-freelancers.webp?v=1",
   datePublished: "2026-04-14",
   dateModified: "2026-04-20",
-  author: "Receipt Cycle Team",
+  author: "Philip",
   readMinutes: 12,
   tags: ["accountant handoff", "tax prep", "receipt organization", "audit prep"],
   tldr: "Your accountant charges by the hour. Disorganised records mean more time spent sorting through what you've given them and a larger bill at the end.",
@@ -204,7 +206,7 @@ export const BLOG_POSTS: BlogPost[] = [
   featuredImage: "/landing/blog-catch-subscription-creep.webp?v=1",
   datePublished: "2026-04-16",
   dateModified: "2026-04-20",
-  author: "Receipt Cycle Team",
+  author: "Philip",
   readMinutes: 12,
   tags: ["self-employed", "tax deductions", "schedule c", "expenses"],
   tldr: "Most self-employed people get the obvious ones. They deduct their home office. They claim their mileage. They remember the big software subscriptions.",
@@ -280,7 +282,7 @@ export const BLOG_POSTS: BlogPost[] = [
   featuredImage: "/landing/blog-import-bank-statements-expense-tracking.webp?v=1",
   datePublished: "2026-04-18",
   dateModified: "2026-04-20",
-  author: "Receipt Cycle Team",
+  author: "Philip",
   readMinutes: 12,
   tags: ["side hustle", "expense tracking", "self-employment tax", "receipts"],
   tldr: "What's less exciting is the moment you realize that a side hustle also means side hustle taxes and that you're responsible for tracking every expense that goes into it.",
@@ -345,7 +347,7 @@ export const BLOG_POSTS: BlogPost[] = [
   featuredImage: "/landing/blog-what-is-a-receipt-scanner-freelancers-2026.webp?v=1",
   datePublished: "2026-04-28",
   dateModified: "2026-04-28",
-  author: "Receipt Cycle Team",
+  author: "Philip",
   readMinutes: 9,
   tags: ["receipt scanner", "freelancer", "OCR", "tax deductions", "expense tracking"],
   tldr: "Freelancers overpay tax when receipts get lost; a receipt scanner closes that gap by converting every receipt into searchable proof in seconds.",
@@ -412,7 +414,7 @@ export const BLOG_POSTS: BlogPost[] = [
   featuredImage: "/landing/blog-receipt-scanner-tax-purposes-audit-ready-year-round.webp?v=1",
   datePublished: "2026-04-28",
   dateModified: "2026-04-28",
-  author: "Receipt Cycle Team",
+  author: "Philip",
   readMinutes: 10,
   tags: ["tax receipts", "audit-ready", "IRS", "receipt scanner", "compliance"],
   tldr: "Treat tax prep as a continuous process: capture every receipt with required fields, categorize weekly, and retain records long enough for audit windows.",
@@ -472,7 +474,7 @@ export const BLOG_POSTS: BlogPost[] = [
   featuredImage: "/landing/blog-expense-tracker-receipt-scanner-one-two-punch.webp?v=1",
   datePublished: "2026-04-28",
   dateModified: "2026-04-28",
-  author: "Receipt Cycle Team",
+  author: "Philip",
   readMinutes: 9,
   tags: ["expense tracker", "receipt scanner", "bookkeeping", "automation", "freelancer"],
   tldr: "When scanning and tracking are disconnected, records drift. A single capture-to-ledger flow keeps your books clean without end-of-month cleanup.",
@@ -527,7 +529,7 @@ export const BLOG_POSTS: BlogPost[] = [
   featuredImage: "/landing/blog-how-ocr-receipt-scanning-works-ai-smarter.webp?v=1",
   datePublished: "2026-04-28",
   dateModified: "2026-04-28",
-  author: "Receipt Cycle Team",
+  author: "Philip",
   readMinutes: 10,
   tags: ["OCR", "AI OCR", "receipt scanning", "data extraction", "expense tech"],
   tldr: "OCR converts receipt pixels to text; AI adds context so totals, dates, and categories are interpreted correctly with fewer mistakes.",
@@ -581,7 +583,7 @@ export const BLOG_POSTS: BlogPost[] = [
   featuredImage: "/landing/blog-ai-in-finance-personal-business-money-management.webp?v=1",
   datePublished: "2026-04-28",
   dateModified: "2026-04-28",
-  author: "Receipt Cycle Team",
+  author: "Philip",
   readMinutes: 11,
   tags: ["AI finance", "automation", "cash flow", "subscription leaks", "small business"],
   tldr: "AI in finance is already practical for categorization, anomaly detection, and document processing, but humans still own intent, policy, and tax decisions.",

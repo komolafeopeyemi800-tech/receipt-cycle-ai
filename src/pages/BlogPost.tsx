@@ -4,12 +4,13 @@ import { Seo } from "@/components/Seo";
 import { blogSection, getBlogPostSeo } from "@/content/routesSeo";
 import { getPostBySlug, BLOG_POSTS, type BlogBlock, type BlogFaqItem } from "@/content/blogPosts";
 import { PLAY_STORE_URL } from "@/content/site";
+import { AUTHOR } from "@/content/author";
 import { SITE_URL } from "@/lib/seo";
 import { aiSummaryLinks } from "@/lib/blogAiSummary";
 import { appTone, isOurProduct, overallScore } from "@/lib/appTones";
 import { hostnameOf, isInternalHref, tokenizeInline } from "@/lib/blogMarkdown";
 import { CalendarDays, Check, ChevronDown, Clock3, Copy, Link2, Mail, RefreshCw, Share2 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 const LINK_CLASS =
   "rounded-sm font-medium text-teal-700 underline decoration-teal-700/40 underline-offset-2 hover:text-teal-900 hover:decoration-teal-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600";
@@ -216,6 +217,102 @@ function QuickSummaryCta() {
         </a>
       </div>
     </aside>
+  );
+}
+
+/** A compact card in the desktop sidebar that stays in view while the reader scrolls. */
+function SidebarCta() {
+  return (
+    <div className="border border-slate-200 bg-white p-4 shadow-[0_2px_10px_rgba(15,23,42,0.06)]">
+      <p className="text-[15px] font-bold leading-snug text-slate-950">Try Receipt Cycle free for 7 days</p>
+      <p className="mt-1 text-[13px] leading-5 text-slate-600">Scan, track and export in one place.</p>
+      <Link to="/signup" className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-bold text-white transition hover:bg-teal-800">
+        Start your free trial
+      </Link>
+      <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-900 transition hover:bg-slate-50">
+        <i className="fab fa-google-play" aria-hidden="true" />
+        Android app
+      </a>
+    </div>
+  );
+}
+
+/** A slim bar fixed to the bottom of the screen on phones and tablets, shown after the reader has scrolled a little. */
+function MobileStickyCta() {
+  const [show, setShow] = useState(false);
+  const [closed, setClosed] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShow(window.scrollY > 700);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  if (!show || closed) return null;
+  return (
+    <div role="region" aria-label="Try Receipt Cycle" className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-3 py-2.5 shadow-[0_-4px_16px_rgba(15,23,42,0.12)] backdrop-blur lg:hidden" style={{ paddingBottom: "max(0.625rem, env(safe-area-inset-bottom))" }}>
+      <div className="mx-auto flex max-w-xl items-center gap-2">
+        <Link to="/signup" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-teal-700 px-3 text-sm font-bold text-white">
+          Start free trial
+        </Link>
+        <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 text-sm font-bold text-slate-900">
+          <i className="fab fa-google-play" aria-hidden="true" />
+          Android app
+        </a>
+        <button type="button" onClick={() => setClosed(true)} aria-label="Close" className="inline-flex h-11 w-11 shrink-0 items-center justify-center text-slate-500">
+          <i className="fas fa-xmark" aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Who wrote the article: photo, name, one confirmed line, and real profile links. */
+function AuthorBox() {
+  return (
+    <section aria-label="About the author" className="not-prose mt-14 flex gap-4 border border-slate-200 bg-slate-50 p-5 font-article sm:gap-5 sm:p-6">
+      <img src={AUTHOR.image} alt={`${AUTHOR.name}, author at Receipt Cycle`} width={96} height={96} loading="lazy" decoding="async" className="h-20 w-20 shrink-0 rounded-full border border-slate-200 bg-white object-cover sm:h-24 sm:w-24" />
+      <div className="min-w-0">
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Written by</p>
+        <p className="mt-1 text-[20px] font-bold leading-snug text-slate-950">{AUTHOR.byline}</p>
+        <p className="mt-2 text-[16px] leading-relaxed text-slate-700">{AUTHOR.bio}</p>
+        <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[15px]">
+          {AUTHOR.links.map((l) => (
+            <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer" className="font-semibold text-teal-700 underline underline-offset-2 hover:text-teal-800">{l.label}</a>
+          ))}
+          <Link to={AUTHOR.path} className="font-semibold text-teal-700 underline underline-offset-2 hover:text-teal-800">About Receipt Cycle</Link>
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/** A YouTube video that loads only when played (a thumbnail and a button until then), using the no-cookie domain. */
+function VideoEmbed({ block }: { block: Extract<BlogBlock, { kind: "video" }> }) {
+  const [play, setPlay] = useState(false);
+  return (
+    <figure className="not-prose mt-8 overflow-hidden border border-slate-200 bg-white">
+      <div className="relative aspect-video w-full bg-slate-900">
+        {play ? (
+          <iframe
+            className="absolute inset-0 h-full w-full"
+            src={`https://www.youtube-nocookie.com/embed/${block.videoId}?autoplay=1&rel=0`}
+            title={block.title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        ) : (
+          <button type="button" onClick={() => setPlay(true)} className="group absolute inset-0 flex h-full w-full items-center justify-center" aria-label={`Play video: ${block.title}`}>
+            <img src={`https://i.ytimg.com/vi/${block.videoId}/hqdefault.jpg`} alt="" width={480} height={360} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
+            <span className="relative inline-flex h-16 w-16 items-center justify-center rounded-full bg-white/95 text-teal-800 shadow-lg transition group-hover:scale-105">
+              <i className="fas fa-play ml-1 text-xl" aria-hidden="true" />
+            </span>
+          </button>
+        )}
+      </div>
+      <figcaption className="border-t border-slate-100 px-4 py-3 text-[15px] leading-6 text-slate-600">
+        <span className="font-semibold text-slate-900">{block.title}.</span> {renderRich(block.caption ?? block.description)}
+      </figcaption>
+    </figure>
   );
 }
 
@@ -461,6 +558,7 @@ function Block({ block }: { block: BlogBlock }) {
       </blockquote>
     );
   if (block.kind === "cta") return <CtaCard block={block} />;
+  if (block.kind === "video") return <VideoEmbed block={block} />;
   if (block.kind === "scoreTable") return <ScoreTable block={block} />;
   if (block.kind === "table")
     return (
@@ -621,8 +719,20 @@ export default function BlogPost() {
             </h1>
             <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3 text-sm text-slate-600" aria-label="Article details">
               <div className="flex items-center gap-2.5">
-                <img src="/brand/logo.png" alt="" width={40} height={40} className="h-10 w-10 rounded-full border border-slate-200 bg-white object-contain p-1" />
-                <span className="font-semibold text-slate-900">{post.author}</span>
+                {post.author === AUTHOR.name ? (
+                  <>
+                    <img src={AUTHOR.thumb} alt={`${AUTHOR.name}, author at Receipt Cycle`} width={40} height={40} className="h-10 w-10 rounded-full border border-slate-200 bg-white object-cover" />
+                    <span className="leading-tight">
+                      <span className="block font-semibold text-slate-900">{AUTHOR.name}</span>
+                      <span className="block text-xs text-slate-500">at Receipt Cycle</span>
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <img src="/brand/logo.png" alt="" width={40} height={40} className="h-10 w-10 rounded-full border border-slate-200 bg-white object-contain p-1" />
+                    <span className="font-semibold text-slate-900">{post.author}</span>
+                  </>
+                )}
               </div>
               <span className="inline-flex items-center gap-2">
                 <CalendarDays className="h-4 w-4" aria-hidden="true" />
@@ -671,12 +781,15 @@ export default function BlogPost() {
         <div className="mt-10 grid min-w-0 gap-10 lg:grid-cols-[220px_minmax(0,768px)] lg:justify-center lg:gap-14">
           <aside className="hidden lg:block">
             <div className="sticky top-24">
-              <nav aria-label="Table of contents">
-                <p className="mb-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">On this page</p>
-                <TocLinks items={tocItems} />
+              <SidebarCta />
+              <nav aria-label="Table of contents" className="mt-6">
+                <p className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">On this page</p>
+                <div className="max-h-[calc(100vh-27rem)] overflow-y-auto pr-1">
+                  <TocLinks items={tocItems} />
+                </div>
               </nav>
-              <div className="mt-8 border-t border-slate-200 pt-6">
-                <p className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Share</p>
+              <div className="mt-5 border-t border-slate-200 pt-4">
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Share</p>
                 <ShareLinks canonicalUrl={canonicalUrl} title={post.title} />
               </div>
             </div>
@@ -737,6 +850,7 @@ export default function BlogPost() {
           ) : null}
           {post.faq?.length ? <ArticleFaq items={post.faq} /> : null}
           {resourceItems.length ? <ArticleResources items={resourceItems} /> : null}
+          <AuthorBox />
             </article>
 
         <div className="mt-10 flex flex-wrap gap-2">
@@ -802,6 +916,7 @@ export default function BlogPost() {
         </div>
       </main>
 
+      <MobileStickyCta />
       <CommercialFooter />
     </div>
   );

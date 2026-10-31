@@ -22,6 +22,7 @@ import {
   type RouteSeo,
 } from "@/content/routesSeo";
 import {
+  authorNode,
   ORG_ID,
   APP_ID,
   PLAY_STORE_URL,
@@ -277,7 +278,7 @@ describe("blog posts", () => {
       expect(img.width).toBe(post.featuredImageWidth ?? 1600);
       expect(img.height).toBe(post.featuredImageHeight ?? 900);
       expect(img.caption).toBe(post.featuredImageAlt ?? post.title);
-      expect(a.author).toMatchObject({ "@type": "Organization", name: post.author });
+      expect(a.author).toMatchObject({ "@type": post.author === "Philip" ? "Person" : "Organization", name: post.author });
       expect(a.publisher).toEqual({ "@id": ORG_ID });
       expect(a.mainEntityOfPage).toEqual({ "@id": `${pageUrl(route.path)}#webpage` });
       expect(a.wordCount).toBe(countWords(blogPostText(post)));
@@ -512,12 +513,12 @@ describe("image files referenced by schema exist with the stated size", () => {
 });
 
 describe("receipt scanner comparison editorial guardrails", () => {
-  it("stays within the requested length and avoids em dashes", () => {
+  it("stays within the agreed length (2,000 to 2,800 words) and avoids em dashes", () => {
     const post = BLOG_POSTS.find((item) => item.slug === "best-receipt-scanner-app-small-business-2026");
     expect(post).toBeDefined();
     const text = blogPostText(post!);
     expect(countWords(text)).toBeGreaterThanOrEqual(2000);
-    expect(countWords(text)).toBeLessThanOrEqual(2005);
+    expect(countWords(text)).toBeLessThanOrEqual(2800);
     expect(text).not.toContain("—");
   });
 });
@@ -593,5 +594,52 @@ describe("rich blog blocks in text, citations and schema", () => {
     expect(images).toHaveLength(2);
     expect(images[0]).toMatchObject({ "@type": "ImageObject", url: hero.url, width: 1600, height: 900, caption: "Hero alt", name: "Demo" });
     expect(images[1]).toMatchObject({ url: inline.url, width: 800, height: 450, caption: "Caption", name: "Inline" });
+  });
+
+  it("describes the author Philip as a Person and any other author as an Organization", () => {
+    expect(authorNode("Philip")).toMatchObject({
+      "@type": "Person",
+      name: "Philip",
+      image: "https://receiptcycle.com/authors/philip-512.webp",
+      worksFor: { "@id": ORG_ID },
+    });
+    expect(authorNode("Someone Else")).toMatchObject({ "@type": "Organization", name: "Someone Else" });
+  });
+
+  it("adds a VideoObject for each embedded YouTube video and none otherwise", () => {
+    const base = {
+      path: "/blog/demo-video",
+      kind: "article" as const,
+      name: "Demo",
+      description: "Demo",
+      image: { url: "https://receiptcycle.com/landing/blog-demo.webp", width: 1600, height: 900, alt: "Alt", name: "Demo" },
+    };
+    const article = {
+      slug: "demo-video",
+      headline: "Demo",
+      description: "Demo",
+      image: base.image,
+      datePublished: "2026-01-01",
+      dateModified: "2026-01-02",
+      authorName: "Philip",
+      keywords: [],
+      section: "S",
+      wordCount: 10,
+      minutes: 3,
+      citations: [],
+    };
+    const [none] = buildPageGraph({ ...base, article });
+    expect((none["@graph"] as Jsonld[]).some((n) => n["@type"] === "VideoObject")).toBe(false);
+    const [withVideo] = buildPageGraph({
+      ...base,
+      article: { ...article, videos: [{ id: "abc123XYZ_-", title: "How it works", description: "A short demo.", uploadDate: "2026-10-01" }] },
+    });
+    const video = (withVideo["@graph"] as Jsonld[]).find((n) => n["@type"] === "VideoObject") as Jsonld;
+    expect(video).toMatchObject({
+      name: "How it works",
+      uploadDate: "2026-10-01",
+      embedUrl: "https://www.youtube.com/embed/abc123XYZ_-",
+      thumbnailUrl: ["https://i.ytimg.com/vi/abc123XYZ_-/hqdefault.jpg"],
+    });
   });
 });

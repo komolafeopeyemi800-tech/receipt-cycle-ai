@@ -22,7 +22,7 @@ The supplied transcript mentions seven third-party products. This six-product se
 
 - Receipts page: https://www.waveapps.com/receipts
 - Pricing: https://www.waveapps.com/pricing
-- Verified facts: Starter is $0. Unlimited receipt capture is an $8 per month or $72 per year add-on for Starter in the United States and is included in Pro. Pro is $19 per month or $190 per year in the United States. Wave does not advertise a general free trial on these pages. Subscriptions auto-renew and can be canceled.
+- Verified facts: Starter is $0. Unlimited receipt capture is an $8 per month or $72 per year add-on for Starter in the United States and is included in Pro. Pro is $19 per month or $190 per year in the United States. Re-read on 2026-10-31: the pricing page lists the receipts add-on at both $11 a month or $96 a year and $8 a month or $72 a year without saying which plan each applies to, so the post does not quote one add-on price. Pro includes unlimited receipt capture. Wave does not advertise a general free trial on these pages. Subscriptions auto-renew and can be canceled.
 - Screenshot: `wave-receipts-official.png`
 
 ## QuickBooks Online
@@ -45,7 +45,7 @@ The supplied transcript mentions seven third-party products. This six-product se
 
 - Features: https://www.shoeboxed.com/features
 - Pricing: https://www.shoeboxed.com/pricing/
-- Verified facts: Starter is $9 per month or $97 per year. Pro is $29 per month or $297 per year. Plus is $79 per month or $797 per year. Shoeboxed describes its offer as a 30-day risk-free period backed by a money-back guarantee, not a no-charge free trial. A card is charged at signup. The refund condition changes after a Magic Envelope has been shipped.
+- Verified facts: Starter is $9 per month or $97 per year. Pro is $29 per month or $297 per year. Plus is $79 per month or $797 per year. Re-read on 2026-10-31: Starter includes 50 digital scans a month and 20 paper scans a year with unlimited mileage tracking; Pro 250 digital scans a month and 50 paper scans a month; Plus 1,000 digital and 150 paper scans a month. Overage on Starter is $0.19 per digital scan and $2.00 per paper scan. Shoeboxed describes its offer as a 30-day risk-free period backed by a money-back guarantee, not a no-charge free trial. A card is charged at signup. The refund condition changes after a Magic Envelope has been shipped.
 - Screenshot: `shoeboxed-features-official.png`
 
 ## Editorial and legal use

@@ -2,7 +2,7 @@
 
 > Receipt Cycle is a web and Android app for freelancers, independent professionals, and small businesses. It captures receipts with AI extraction and keeps expenses, customers, estimates, invoices, payment records, budgets, and reports connected in one workspace.
 
-Last updated: 2026-10-29
+Last updated: 2026-10-31
 
 ## Facts
 

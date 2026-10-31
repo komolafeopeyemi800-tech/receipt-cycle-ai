@@ -25,7 +25,7 @@ export const maximizeTaxRefundPost: BlogPost = {
   category: "Tax records",
   datePublished: "2026-04-17",
   dateModified: "2026-10-29",
-  author: "Receipt Cycle Team",
+  author: "Philip",
   readMinutes: 11,
   tags: ["scan receipts for taxes", "tax refund", "tax write-offs", "receipt scanner app", "tax receipt organizer", "digital receipt storage"],
   tldr:

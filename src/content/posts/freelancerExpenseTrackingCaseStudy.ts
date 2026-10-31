@@ -26,7 +26,7 @@ export const freelancerExpenseTrackingCaseStudyPost: BlogPost = {
   category: "Expense tracking",
   datePublished: "2026-04-17",
   dateModified: "2026-10-28",
-  author: "Receipt Cycle Team",
+  author: "Philip",
   readMinutes: 11,
   tags: ["freelancer expense tracker", "track business expenses", "self-employed taxes", "freelancer tax tracker", "case study"],
   tldr:

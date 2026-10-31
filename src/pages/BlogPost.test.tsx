@@ -83,7 +83,7 @@ describe("BlogPost article layout", () => {
     renderArticle();
 
     expect(screen.getByRole("heading", { level: 1, name: /best receipt scanner app/i })).toBeInTheDocument();
-    expect(screen.getByLabelText("Article details")).toHaveTextContent("Receipt Cycle Team");
+    expect(screen.getByLabelText("Article details")).toHaveTextContent("Philip");
     expect(screen.getAllByText("Here’s the short version").length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "Key Takeaways" })).toBeInTheDocument();
     expect(screen.getAllByRole("table", { name: /compared by fit, price and catch/i })[0]).toBeInTheDocument();

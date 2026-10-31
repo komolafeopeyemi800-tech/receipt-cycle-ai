@@ -11,6 +11,7 @@
  *  - FAQPage is only produced from FAQ items the caller says are visible on the page
  *  - prices come from src/lib/pricingPaywall.ts, the same numbers the pricing page shows
  */
+import { AUTHOR } from "../content/author";
 import { PAYWALL_PRICING, PAYWALL_TIER_FEATURES } from "./pricingPaywall";
 
 export const SITE_URL = "https://receiptcycle.com";
@@ -27,6 +28,21 @@ export const IN_LANGUAGE = "en-US";
 export const SOCIAL_PROFILES = ["https://x.com/receiptcycle", "https://www.instagram.com/receiptcycle"] as const;
 
 export const ORG_ID = `${SITE_URL}/#organization`;
+
+/** The article author as structured data: a Person for the named author, an Organization for anything else. */
+export function authorNode(name: string): Record<string, unknown> {
+  if (name !== AUTHOR.name) return { "@type": "Organization", name, url: `${SITE_URL}/` };
+  return {
+    "@type": "Person",
+    "@id": `${SITE_URL}/#author-${AUTHOR.name.toLowerCase()}`,
+    name: AUTHOR.name,
+    url: `${SITE_URL}${AUTHOR.path}`,
+    image: `${SITE_URL}${AUTHOR.image}`,
+    description: AUTHOR.bio,
+    worksFor: { "@id": ORG_ID },
+    sameAs: AUTHOR.links.map((l) => l.href),
+  };
+}
 export const WEBSITE_ID = `${SITE_URL}/#website`;
 export const APP_ID = `${SITE_URL}/#app`;
 export const LOGO_ID = `${SITE_URL}/#logo`;
@@ -299,6 +315,8 @@ export interface ArticleInput {
   minutes: number;
   /** Sources that are really linked from the article text. */
   citations: CitationRef[];
+  /** YouTube videos embedded in the article. */
+  videos?: Array<{ id: string; title: string; description: string; uploadDate: string; durationIso?: string }>;
 }
 
 export interface PageSchemaInput {
@@ -468,7 +486,7 @@ export function buildPageGraph(input: PageSchemaInput): Jsonld[] {
       image: [imageObject(a.image), ...(a.images ?? []).map((img) => imageObject(img))],
       datePublished: a.datePublished,
       dateModified: a.dateModified,
-      author: { "@type": "Organization", name: a.authorName, url: `${SITE_URL}/` },
+      author: authorNode(a.authorName),
       publisher: { "@id": ORG_ID },
       isPartOf: { "@id": `${SITE_URL}/blog#blog` },
       mainEntityOfPage: { "@id": webpageId },
@@ -482,6 +500,22 @@ export function buildPageGraph(input: PageSchemaInput): Jsonld[] {
         ? { citation: a.citations.map((c) => ({ "@type": "CreativeWork", name: c.name, url: c.url })) }
         : {}),
     });
+    for (const v of a.videos ?? []) {
+      nodes.push({
+        "@type": "VideoObject",
+        "@id": `${url}#video-${v.id}`,
+        name: v.title,
+        description: v.description,
+        thumbnailUrl: [`https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`],
+        uploadDate: v.uploadDate,
+        ...(v.durationIso ? { duration: v.durationIso } : {}),
+        embedUrl: `https://www.youtube.com/embed/${v.id}`,
+        contentUrl: `https://www.youtube.com/watch?v=${v.id}`,
+        inLanguage: IN_LANGUAGE,
+        publisher: { "@id": ORG_ID },
+        isPartOf: { "@id": articleId },
+      });
+    }
     nodes.push({
       "@type": "Blog",
       "@id": `${SITE_URL}/blog#blog`,
@@ -512,7 +546,7 @@ export function buildPageGraph(input: PageSchemaInput): Jsonld[] {
         url: pageUrl(`/blog/${p.slug}`),
         datePublished: p.datePublished,
         dateModified: p.dateModified,
-        author: { "@type": "Organization", name: p.author, url: `${SITE_URL}/` },
+        author: authorNode(p.author),
       })),
     });
     nodes.push({

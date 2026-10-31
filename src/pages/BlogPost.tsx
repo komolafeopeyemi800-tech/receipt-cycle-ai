@@ -5,6 +5,7 @@ import { blogSection, getBlogPostSeo } from "@/content/routesSeo";
 import { getPostBySlug, BLOG_POSTS, type BlogBlock, type BlogFaqItem } from "@/content/blogPosts";
 import { PLAY_STORE_URL } from "@/content/site";
 import { AUTHOR } from "@/content/author";
+import { SocialIcons } from "@/components/SocialIcons";
 import { SITE_URL } from "@/lib/seo";
 import { aiSummaryLinks } from "@/lib/blogAiSummary";
 import { appTone, isOurProduct, overallScore } from "@/lib/appTones";
@@ -275,11 +276,9 @@ function AuthorBox() {
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Written by</p>
         <p className="mt-1 text-[20px] font-bold leading-snug text-slate-950">{AUTHOR.byline}</p>
         <p className="mt-2 text-[16px] leading-relaxed text-slate-700">{AUTHOR.bio}</p>
-        <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[15px]">
-          {AUTHOR.links.map((l) => (
-            <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer" className="font-semibold text-teal-700 underline underline-offset-2 hover:text-teal-800">{l.label}</a>
-          ))}
-          <Link to={AUTHOR.path} className="font-semibold text-teal-700 underline underline-offset-2 hover:text-teal-800">About Receipt Cycle</Link>
+        <SocialIcons className="mt-4" />
+        <p className="mt-3 text-[15px]">
+          <Link to={AUTHOR.path} className="font-semibold text-teal-700 underline underline-offset-2 hover:text-teal-800">More about Philip and Receipt Cycle</Link>
         </p>
       </div>
     </section>

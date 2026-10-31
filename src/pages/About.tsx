@@ -3,6 +3,7 @@ import { CommercialFooter, CommercialHeader } from "@/components/marketing/Comme
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
 import { AUTHOR } from "@/content/author";
+import { SocialIcons } from "@/components/SocialIcons";
 
 const PRINCIPLES = [
   {
@@ -79,16 +80,18 @@ export default function About() {
                 Philip writes the guides on this site. He is not a tax adviser, so every guide points to the primary source and tells you to
                 check your own case with a professional.
               </p>
-              <p className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
-                {AUTHOR.links.map((l) => (
-                  <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer me" className="text-teal-700 underline underline-offset-2 hover:text-teal-800">
-                    {l.label}
-                  </a>
-                ))}
-                <a href={AUTHOR.companyYoutube} target="_blank" rel="noopener noreferrer" className="text-teal-700 underline underline-offset-2 hover:text-teal-800">
-                  Receipt Cycle on YouTube
+              <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-3">
+                <SocialIcons />
+                <a
+                  href={AUTHOR.companyYoutube}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-[#ff0000] hover:text-[#ff0000]"
+                >
+                  <i className="fab fa-youtube" aria-hidden="true" />
+                  Receipt Cycle channel
                 </a>
-              </p>
+              </div>
             </div>
           </div>
         </section>

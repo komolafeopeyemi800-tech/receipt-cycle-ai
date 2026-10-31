@@ -148,6 +148,8 @@ describe("JSON-LD on indexable pages", () => {
           if (typeof v !== "string") return;
           if (!["url", "item", "contentUrl", "@id", "target", "image"].includes(k)) return;
           if (trail.includes("citation") || trail.includes("sameAs")) return;
+          // An embedded video from our own YouTube channel points at youtube.com on purpose.
+          if (k === "contentUrl" && v.startsWith("https://www.youtube.com/watch?v=")) return;
           expect(v.startsWith(`${SITE_URL}/`) || v === SITE_URL, `${k}=${v}`).toBe(true);
         });
         const webpage = graph.find((n) => n["@id"] === `${url}#webpage`) as Jsonld;
@@ -334,7 +336,7 @@ describe("page types and entity details", () => {
     expect(org.legalName).toBe("TempEmailGen");
     expect(org.logo).toMatchObject({ width: 512, height: 512 });
     expect(JSON.stringify(org.contactPoint)).toContain("support@receiptcycle.com");
-    expect(org.sameAs).toEqual(["https://x.com/receiptcycle", "https://www.instagram.com/receiptcycle"]);
+    expect(org.sameAs).toEqual(["https://x.com/receiptcycle", "https://www.instagram.com/receiptcycle", "https://www.youtube.com/@receiptcycle"]);
   });
 
   it("the website has no SearchAction because the site has no search", () => {

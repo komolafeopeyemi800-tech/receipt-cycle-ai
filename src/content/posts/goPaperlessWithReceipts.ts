@@ -14,7 +14,7 @@ const IMG = "/landing/blog/go-paperless-with-receipts";
 
 export const goPaperlessWithReceiptsPost: BlogPost = {
   slug: "go-paperless-with-receipts",
-  title: "How to Go Paperless With Your Receipts (And Never Lose One Again)",
+  title: "How to Go Paperless With Receipts (And Never Lose One Again)",
   description:
     "Go paperless with receipts in one afternoon. See what the IRS accepts, how long to keep digital receipts, and the setup that stops lost deductions.",
   featuredImage: "/landing/blog-go-paperless-with-receipts.webp?v=1",
@@ -23,7 +23,7 @@ export const goPaperlessWithReceiptsPost: BlogPost = {
   featuredImageHeight: 900,
   category: "Receipt scanning",
   datePublished: "2026-04-17",
-  dateModified: "2026-10-28",
+  dateModified: "2026-10-31",
   author: "Philip",
   readMinutes: 11,
   tags: ["go paperless with receipts", "digital receipt storage", "receipt scanner app", "receipt organizer", "tax records"],
@@ -70,16 +70,20 @@ export const goPaperlessWithReceiptsPost: BlogPost = {
     },
     {
       kind: "p",
-      text: "That pile has a price. Every receipt you cannot produce is an expense you may not be able to prove. So here is a plan to go paperless with receipts that you can finish in one afternoon and keep up in ten seconds a day.",
+      text: "Every receipt you cannot produce is an expense you may not be able to prove. So here is a plan to go paperless with receipts that you can finish in one afternoon and keep up with a few seconds per receipt.",
     },
-    { kind: "h2", text: "What going paperless with receipts really means", id: "what-going-paperless-means" },
+    {
+      kind: "p",
+      text: "Updated October 31, 2026: made the advice on throwing away paper stricter, added a comparison column, an example and a short video.",
+    },
+    { kind: "h2", text: "What does going paperless with receipts really mean?", id: "what-going-paperless-means" },
     {
       kind: "p",
       text: "Going paperless does not mean you stop getting paper. It means every receipt becomes a clear digital copy that is easy to find, safe from loss, and tied to the purchase it proves.",
     },
     {
       kind: "p",
-      text: "A photo in your camera roll does not count. Nobody can search it, sort it or hand it to an accountant. A paperless receipt system does three jobs: it captures, it organizes, and it protects.",
+      text: "A photo in your camera roll does not count. Nobody can search it, sort it or hand it to an accountant. A paperless receipt system does three jobs: it captures, it organizes, and it protects. That is digital receipt storage you can search, which is what a receipt organizer should give you.",
     },
     {
       kind: "ul",
@@ -92,7 +96,7 @@ export const goPaperlessWithReceiptsPost: BlogPost = {
     { kind: "h2", text: "Can you throw away paper receipts after scanning them?", id: "can-you-throw-away-paper-receipts" },
     {
       kind: "p",
-      text: "This is the question most people ask first. The short answer is yes, often, if your digital system meets a few conditions. The longer answer comes from the IRS itself.",
+      text: "Sometimes. IRS Revenue Procedure 97-22 lets you destroy original paper only after you test your scanning system and set up procedures to keep it working. If your system does not meet the conditions, you may need the originals.",
     },
     {
       kind: "p",
@@ -111,17 +115,17 @@ export const goPaperlessWithReceiptsPost: BlogPost = {
     },
     {
       kind: "p",
-      text: "If your system fails these tests, the IRS may treat your records as incomplete. That can lead to a notice of inadequate records and penalties. The same document says penalties may not apply if you still hold the originals.",
+      text: "If your system fails these tests, the IRS may treat your records as incomplete, which can lead to a notice of inadequate records and penalties. Those penalties may not apply if you still hold the original paper. Do not shred anything until you have checked the scan, backed it up and opened the backup.",
     },
     {
       kind: "callout",
       title: "A safe rule of thumb",
       text: "Check every scan on screen before you shred anything. If you can read every number, keep the image and back it up. If a receipt backs up a big purchase, a contract or a warranty, keep the paper too. This is general information, not tax advice. Ask a tax professional about your own case.",
     },
-    { kind: "h2", text: "What a receipt has to show", id: "what-a-receipt-has-to-show" },
+    { kind: "h2", text: "What does a receipt have to show?", id: "what-a-receipt-has-to-show" },
     {
       kind: "p",
-      text: "A digital receipt is only as useful as the proof inside it. [IRS Publication 463](https://www.irs.gov/publications/p463) says documentary evidence is usually adequate when it shows four things: the amount, the date, the place, and the essential character of the expense. In plain words, how much, when, where and what for.",
+      text: "If you scan receipts for taxes, the proof inside them matters most. [IRS Publication 463](https://www.irs.gov/publications/p463) says documentary evidence is usually adequate when it shows four things: the amount, the date, the place, and the essential character of the expense. In plain words, how much, when, where and what for.",
     },
     {
       kind: "p",
@@ -186,6 +190,15 @@ export const goPaperlessWithReceiptsPost: BlogPost = {
       kind: "p",
       text: "On the web you upload PDF, CSV, XLS, XLSX, JPG or PNG files up to 12 MB. On the phone you can scan with the camera or pick any file. The [AI receipt scanner](/ai-receipt-scanner) reads the merchant, date, total, tax and line items, and you check them before you save.",
     },
+    {
+      kind: "video",
+      videoId: "-Kz9ZGTjl78",
+      title: "Stop Typing Your Receipts In By Hand (Scan or Just Say It)",
+      description: "Official Receipt Cycle short: point your phone at a receipt and it reads the store, date and total, or say what you spent and it is logged.",
+      caption: "Our 30-second video on scanning a receipt or saying what you spent.",
+      uploadDate: "2026-10-30",
+      durationIso: "PT31S",
+    },
     { kind: "h3", text: "Step 2: Gather the backlog once", id: "step-2-gather-the-backlog" },
     {
       kind: "p",
@@ -198,7 +211,7 @@ export const goPaperlessWithReceiptsPost: BlogPost = {
     { kind: "h3", text: "Step 3: Scan the day you get it", id: "step-3-scan-the-day-you-get-it" },
     {
       kind: "p",
-      text: "This step decides whether the system works. A receipt you scan at the counter takes about ten seconds. A receipt you scan next month takes ten minutes of hunting, and some are gone by then.",
+      text: "This step decides whether the system works. A receipt you scan at the counter takes seconds. A receipt you scan next month can take ten minutes of hunting, and some are gone by then.",
     },
     {
       kind: "ul",
@@ -262,17 +275,17 @@ export const goPaperlessWithReceiptsPost: BlogPost = {
     { kind: "h2", text: "Phone camera, desk scanner or receipt app?", id: "phone-scanner-or-app" },
     {
       kind: "p",
-      text: "You can go paperless with different tools. The right pick depends on how many receipts you handle and whether you want them organized or just stored. Here is an honest look at each.",
+      text: "A phone camera, a desk scanner, a cloud drive and a receipt scanner app each suit a different volume. The fit depends on how many receipts you handle and whether you want them organized or only stored.",
     },
     {
       kind: "table",
       caption: "Tools for going paperless with receipts",
-      columns: ["Tool", "Good for", "Watch out for"],
+      columns: ["Tool", "Good for", "Watch out for", "Better fit when"],
       rows: [
-        ["Phone camera and a folder", "Costs nothing and starts today", "No search, no categories, and a messy camera roll"],
-        ["Desk sheet-fed scanner", "Clearing a large backlog of paper fast", "You still have to name, file and sort every image"],
-        ["Cloud drive such as Google Drive", "Safe, shared storage", "Stores files but does not read them"],
-        ["Receipt scanner app", "Reading, sorting and exporting receipts", "Check the free trial and the export before you commit"],
+        ["Phone camera and a folder", "Costs nothing and starts today", "No search, no categories, and a messy camera roll", "You have under 10 receipts a month"],
+        ["Desk sheet-fed scanner", "Clearing a large paper backlog fast. Costs more up front", "You still have to name, file and sort every image", "You have a big pile to clear once"],
+        ["Cloud drive such as Google Drive", "Safe, shared storage", "Stores files but does not read them", "You share files with others"],
+        ["Receipt scanner app", "Reading, sorting and exporting receipts", "Costs money after the 7-day trial. Camera scan is Android only, and the web app takes uploads", "You have a steady flow of receipts"],
       ],
       tones: true,
     },
@@ -288,10 +301,10 @@ export const goPaperlessWithReceiptsPost: BlogPost = {
       href: "/signup",
       note: "No credit card needed for the web app.",
     },
-    { kind: "h2", text: "Get your receipts ready for tax time", id: "get-ready-for-tax-time" },
+    { kind: "h2", text: "How do you get receipts ready for tax time?", id: "get-ready-for-tax-time" },
     {
       kind: "p",
-      text: "A tidy archive pays off when someone asks for it. Your accountant wants clear totals and proof for each number. Receipt Cycle's Excel report opens on a summary of totals by category, month, week and day. At the bottom it lists every transaction with a link that opens its stored receipt.",
+      text: "A tidy archive pays off when someone asks for it. If you scan receipts for taxes, this is the moment it counts. Your accountant wants clear totals and proof for each number. Receipt Cycle's Excel report opens on a summary of totals by category, month, week and day. At the bottom it lists every transaction with a link that opens its stored receipt.",
     },
     {
       kind: "image",
@@ -335,7 +348,12 @@ export const goPaperlessWithReceiptsPost: BlogPost = {
     },
     {
       kind: "p",
-      text: "Do those five things and you have a working paperless system. The rest is habit: scan it before the receipt goes in your pocket.",
+      text: "Do those five things and you have a working paperless system. Scan each receipt before it goes in your pocket.",
+    },
+    { kind: "h2", text: "Who should go paperless first?", id: "who-should-go-paperless-first" },
+    {
+      kind: "p",
+      text: "Freelancers and gig workers should start with business meals, software and supplies, because those are the expenses most often questioned. A small business should add a weekly check and a shared export for its bookkeeper. A household can start with warranties and medical receipts. Each should keep the paper originals for contracts and warranties.",
     },
     {
       kind: "links",
@@ -353,7 +371,7 @@ export const goPaperlessWithReceiptsPost: BlogPost = {
     {
       question: "Can I throw away paper receipts after scanning them?",
       answer:
-        "Often yes, if your digital system meets the IRS conditions in [Rev. Proc. 97-22](https://www.irs.gov/pub/irs-irbs/irb97-13.pdf): the scan is complete and legible, it is indexed so you can find it, and you check it regularly. Keep the paper for contracts, warranties and big purchases, and ask a tax professional about your own case.",
+        "Only if your digital system meets the IRS conditions in [Rev. Proc. 97-22](https://www.irs.gov/pub/irs-irbs/irb97-13.pdf). The scan must be complete and legible. It must be indexed so you can find it, and you must test it and check it regularly. Keep the paper for contracts, warranties and big purchases. Ask a tax professional about your own case.",
     },
     {
       question: "How long should I keep digital receipts?",

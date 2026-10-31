@@ -18,19 +18,19 @@ export const freelancerExpenseTrackingCaseStudyPost: BlogPost = {
   slug: "freelancers-guide-tracking-business-expenses",
   title: "How One Freelancer Tracks Business Expenses for Tax Time (A Case Study)",
   description:
-    "A freelancer case study: how Maya tracks income, expenses and tax savings in one place, with the IRS rules, a step-by-step system and exports for tax time.",
+    "A freelancer expense tracker case study: how an example freelancer, Maya, tracks business expenses and income, with the IRS rules, six steps and tax-time exports.",
   featuredImage: "/landing/blog-freelancers-guide-tracking-business-expenses.webp?v=1",
   featuredImageAlt: "Freelancer at a desk tracking business expenses and income on a laptop and phone",
   featuredImageWidth: 1600,
   featuredImageHeight: 900,
   category: "Expense tracking",
   datePublished: "2026-04-17",
-  dateModified: "2026-10-28",
+  dateModified: "2026-10-31",
   author: "Philip",
   readMinutes: 11,
   tags: ["freelancer expense tracker", "track business expenses", "self-employed taxes", "freelancer tax tracker", "case study"],
   tldr:
-    "Maya is a 24-year-old freelancer with no employer taking out taxes. She tracks every payment and expense in one place, sets money aside on each payment for taxes, and exports one report for tax time. This case study shows her system, the IRS rules behind it, and how to copy it.",
+    "Maya is an example freelancer we made up from common situations, not a real customer. She is 24 and has no employer taking out taxes. Her system: track every payment and expense in one place, set money aside on each payment for taxes, and export one report for tax time. This case study shows that system, the IRS rules behind it, and how to copy it.",
   keyTakeaways: [
     "Freelancers pay their own taxes, so every payment needs a tax set-aside the day it arrives.",
     "The IRS says self-employed people generally pay estimated tax each quarter if they expect to owe $1,000 or more.",
@@ -82,7 +82,7 @@ export const freelancerExpenseTrackingCaseStudyPost: BlogPost = {
     },
     {
       kind: "p",
-      text: "This is the story of Maya, a freelancer we built from common situations, and how she turned that mess into one simple routine for tracking business expenses. Copy what works. It is a case study and a how-to in one.",
+      text: "This is the story of Maya, an example freelancer we invented from common situations. She is not a real customer, and the numbers here are examples. Her routine for tracking business expenses is real in one sense: every step works in Receipt Cycle today. Copy what works. It is a case study and a how-to in one.",
     },
     {
       kind: "cta",
@@ -95,7 +95,7 @@ export const freelancerExpenseTrackingCaseStudyPost: BlogPost = {
     { kind: "h2", text: "Meet Maya: a freelancer with no one withholding her taxes", id: "meet-maya" },
     {
       kind: "p",
-      text: "Maya is 24. She manages social media for two small brands and makes custom orders for people who find her online. Money reaches her from several places: a monthly retainer, a platform payout, custom order payments, and the odd one-off brand deal.",
+      text: "In this example, Maya is 24. She manages social media for two small brands and makes custom orders for people who find her online. Money reaches her from several places: a monthly retainer, a platform payout, custom order payments, and the odd one-off brand deal.",
     },
     {
       kind: "p",
@@ -104,6 +104,15 @@ export const freelancerExpenseTrackingCaseStudyPost: BlogPost = {
     {
       kind: "p",
       text: "She tried a heavy bookkeeping tool first and found it more than she needed. She tried a spreadsheet next. The spreadsheet worked, but it needed her to type everything by hand, and receipts still sat in her bag. What she wanted was one place for income, expenses and proof. She chose [Receipt Cycle](/signup) for that.",
+    },
+    {
+      kind: "video",
+      videoId: "RfpbqzLbvgA",
+      title: "You're Throwing Away Money and Don't Even Realize It",
+      description: "Official Receipt Cycle video about how lost receipts can turn into expenses you cannot document, and what poor receipt tracking can cost freelancers and small business owners.",
+      caption: "Our video on what lost receipts can cost freelancers and small business owners (11 minutes).",
+      uploadDate: "2026-10-27",
+      durationIso: "PT11M29S",
     },
     { kind: "h2", text: "Step 1: Map the year before you track a single receipt", id: "step-1-map-the-year" },
     {
@@ -155,7 +164,7 @@ export const freelancerExpenseTrackingCaseStudyPost: BlogPost = {
     { kind: "h2", text: "Step 3: Set money aside for taxes on every payment", id: "step-3-set-money-aside" },
     {
       kind: "p",
-      text: "This is the step that stops April from hurting. When a payment arrives, Maya moves a share of it into a separate savings account the same day. Her personal rule is 25 percent. Some freelancers use 20 percent and others 30. The right number depends on how much you earn and how much you can deduct.",
+      text: "This is the step that stops April from hurting. When a payment arrives, Maya moves a share of it into a separate savings account the same day. In this example her rule is 25 percent. Some freelancers use 20 percent and others 30. The right number depends on how much you earn and how much you can deduct.",
     },
     {
       kind: "p",
@@ -174,7 +183,7 @@ export const freelancerExpenseTrackingCaseStudyPost: BlogPost = {
       title: "Pick your percentage with a professional",
       text: "A set-aside of 20 to 30 percent is a common starting point, not a rule. Your income, deductions and state all change the number. A tax professional can set it for you in one short call.",
     },
-    { kind: "h2", text: "Step 4: Log every expense with its proof", id: "step-4-log-every-expense" },
+    { kind: "h2", text: "Step 4: Track business expenses with a receipt for each", id: "step-4-log-every-expense" },
     {
       kind: "p",
       text: "Maya's second rule is the one most freelancers skip: a receipt for every business expense, captured the day she pays. Here is how she gets receipts in.",
@@ -269,7 +278,7 @@ export const freelancerExpenseTrackingCaseStudyPost: BlogPost = {
     },
     {
       kind: "p",
-      text: "She also knows how long to hold on to the records. The IRS says to keep most records for 3 years and some for longer, and it asks that records support the income and deductions on your return. You can read both on its [recordkeeping page](https://www.irs.gov/businesses/small-businesses-self-employed/recordkeeping).",
+      text: "She also knows how long to keep the records. The IRS says to keep most records for 3 years, and some for 6 or 7 years depending on the situation, and that records must support the income and deductions on your return. Both rules are on its [recordkeeping page](https://www.irs.gov/businesses/small-businesses-self-employed/recordkeeping) and its [how long to keep records](https://www.irs.gov/businesses/small-businesses-self-employed/how-long-should-i-keep-records) page.",
     },
     {
       kind: "cta",
@@ -282,7 +291,7 @@ export const freelancerExpenseTrackingCaseStudyPost: BlogPost = {
     { kind: "h2", text: "The seven habits behind every good expense system", id: "seven-habits" },
     {
       kind: "p",
-      text: "Maya's routine lines up with a checklist small business finance teams use. Here it is, with an honest note on what Receipt Cycle does and does not do for each habit.",
+      text: "Maya's routine covers seven common habits for tracking business expenses. Here they are, with an honest note on what Receipt Cycle does and does not do for each.",
     },
     {
       kind: "table",
@@ -314,6 +323,15 @@ export const freelancerExpenseTrackingCaseStudyPost: BlogPost = {
         "Skipping a note on meals and travel, so you cannot say what they were for.",
         "Waiting until the end of the year to catch up.",
       ],
+    },
+    { kind: "h2", text: "Who is this system not for?", id: "who-is-this-system-not-for" },
+    {
+      kind: "p",
+      text: "This routine fits freelancers with a few income sources. It does not fit a business that needs a general ledger, payroll or live bank feeds. Receipt Cycle has none of those, so pair it with accounting software in that case.",
+    },
+    {
+      kind: "p",
+      text: "How we put this together: the IRS facts were read on October 28, 2026 from the pages in the sources list. The product steps match what Receipt Cycle does today. Maya and her numbers are made up for teaching.",
     },
     {
       kind: "links",

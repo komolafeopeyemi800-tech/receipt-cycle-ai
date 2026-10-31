@@ -25,7 +25,11 @@ export const IN_LANGUAGE = "en-US";
  * Social profiles linked from the site footer and contact page (src/content/site.ts defaults).
  * Confirm both profiles are live before relying on them as `sameAs`.
  */
-export const SOCIAL_PROFILES = ["https://x.com/receiptcycle", "https://www.instagram.com/receiptcycle"] as const;
+export const SOCIAL_PROFILES = [
+  "https://x.com/receiptcycle",
+  "https://www.instagram.com/receiptcycle",
+  "https://www.youtube.com/@receiptcycle",
+] as const;
 
 export const ORG_ID = `${SITE_URL}/#organization`;
 
@@ -428,6 +432,7 @@ export function buildPageGraph(input: PageSchemaInput): Jsonld[] {
     case "contact":
       webpage.about = { "@id": ORG_ID };
       webpage.mainEntity = { "@id": ORG_ID };
+      if (input.kind === "about") nodes.push(authorNode(AUTHOR.name));
       break;
     case "legal":
       webpage.about = { "@id": ORG_ID };

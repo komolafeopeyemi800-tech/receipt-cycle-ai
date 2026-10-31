@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { CommercialFooter, CommercialHeader } from "@/components/marketing/CommercialLandingLayout";
 import { Seo } from "@/components/Seo";
 import { getRouteSeo } from "@/content/routesSeo";
+import { AUTHOR } from "@/content/author";
 
 const PRINCIPLES = [
   {
@@ -50,6 +51,48 @@ export default function About() {
           who need reliable records without spending their working day maintaining them.
         </p>
 
+        <section className="mt-14 border border-slate-200 bg-slate-50 p-6 sm:p-8" aria-labelledby="meet-philip">
+          <div className="flex flex-col gap-6 sm:flex-row sm:gap-8">
+            <img
+              src={AUTHOR.image}
+              alt={`${AUTHOR.name}, who writes the Receipt Cycle guides`}
+              width={160}
+              height={160}
+              loading="lazy"
+              decoding="async"
+              className="h-32 w-32 shrink-0 rounded-full border border-slate-200 bg-white object-cover sm:h-40 sm:w-40"
+            />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-teal-700">Meet the writer</p>
+              <h2 id="meet-philip" className="mt-1 font-display text-2xl font-bold text-slate-900">Philip, and why this app exists</h2>
+              <p className="mt-4 text-slate-700">
+                By day, Philip works in finance at a large company, where an expense without proof does not get far. In his spare hours he
+                writes about money for freelancers and small business owners, and he kept hearing the same story: the receipt is in a bag, the
+                invoice is in an email, and the deadline is next week.
+              </p>
+              <p className="mt-4 text-slate-700">
+                He lived a version of it too. He tried scanner apps, paid for a few, found they did not fit, and could not get the money back.
+                What he wanted was one place: receipts by camera or voice, estimates and invoices, budgets, and a file he could hand to an
+                accountant with the proof attached. That place is Receipt Cycle.
+              </p>
+              <p className="mt-4 text-slate-700">
+                Philip writes the guides on this site. He is not a tax adviser, so every guide points to the primary source and tells you to
+                check your own case with a professional.
+              </p>
+              <p className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
+                {AUTHOR.links.map((l) => (
+                  <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer me" className="text-teal-700 underline underline-offset-2 hover:text-teal-800">
+                    {l.label}
+                  </a>
+                ))}
+                <a href={AUTHOR.companyYoutube} target="_blank" rel="noopener noreferrer" className="text-teal-700 underline underline-offset-2 hover:text-teal-800">
+                  Receipt Cycle on YouTube
+                </a>
+              </p>
+            </div>
+          </div>
+        </section>
+
         <section className="mt-14">
           <h2 className="font-display text-2xl font-bold text-slate-900">Why we exist</h2>
           <p className="mt-4 text-slate-600">
@@ -73,7 +116,7 @@ export default function About() {
               { t: "Freelancers and contractors", d: "One person, many clients, very little patience for spreadsheets." },
               { t: "Independent professionals", d: "Lawyers, designers, photographers, consultants — people whose income depends on billable time, not bookkeeping." },
               { t: "Small business owners", d: "1–10 person teams who want one place for everyone's receipts without full accounting software." },
-              { t: "Anyone who travels for work", d: "Multi-currency aware, built for receipts in every language and tax regime we can support." },
+              { t: "Anyone who travels for work", d: "Scan or upload receipts on the road and find them again when the trip report is due." },
             ].map((a) => (
               <div key={a.t} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h3 className="font-semibold text-slate-900">{a.t}</h3>

@@ -17,19 +17,19 @@ export const maximizeTaxRefundPost: BlogPost = {
   slug: "maximize-tax-refund-by-scanning-receipts",
   title: "Scan Receipts for Taxes: How to Claim More Write-Offs (2026 Guide)",
   description:
-    "Use a receipt scanner app to scan receipts for taxes, check the numbers, and give your accountant one clean file. See what the IRS wants as proof and how to claim every write-off you can document.",
+    "Scan receipts for taxes with a receipt scanner app. See what the IRS accepts as proof, how long to keep records, and how to export one clean file.",
   featuredImage: "/landing/blog-maximize-tax-refund-by-scanning-receipts.webp?v=1",
   featuredImageAlt: "Person scanning a paper receipt with a phone at a desk covered in receipts, ready for tax season",
   featuredImageWidth: 1600,
   featuredImageHeight: 900,
   category: "Tax records",
   datePublished: "2026-04-17",
-  dateModified: "2026-10-29",
+  dateModified: "2026-10-31",
   author: "Philip",
   readMinutes: 11,
   tags: ["scan receipts for taxes", "tax refund", "tax write-offs", "receipt scanner app", "tax receipt organizer", "digital receipt storage"],
   tldr:
-    "A refund is not guaranteed, but a deduction you can prove is a deduction you can claim. Scan every business receipt the day you get it, check what the scanner read, and export one clean file for your accountant. That habit stops lost receipts from costing you money.",
+    "A refund is not guaranteed, but a deduction you can prove is a deduction you can claim. Scan receipts for taxes the day you get them, check what the scanner read, and export one clean file for your accountant. That habit stops lost receipts from costing you money.",
   keyTakeaways: [
     "You can only claim a write-off you can prove, so scan receipts the day you get them.",
     "The IRS looks for the amount, the date, the place and what the expense was for.",
@@ -76,7 +76,11 @@ export const maximizeTaxRefundPost: BlogPost = {
     },
     {
       kind: "p",
-      text: "Here is the part nobody tells you: the hard part of tax time is not filing. It is collecting, organizing and checking your paperwork. This guide shows how to scan receipts for taxes with a receipt scanner app, in a simple routine that does all three as you go, so tax season stops feeling like an emergency.",
+      text: "The hard part of tax time is not filing. It is collecting, organizing and checking your paperwork. This guide shows how to scan receipts for taxes with a receipt scanner app, in a routine that does all three as you go.",
+    },
+    {
+      kind: "p",
+      text: "Updated October 31, 2026: I re-read the IRS pages, added the limits of Receipt Cycle, the costs, a comparison table and a video.",
     },
     { kind: "h2", text: "Why messy receipts cost you money", id: "why-messy-receipts-cost-you-money" },
     {
@@ -89,9 +93,18 @@ export const maximizeTaxRefundPost: BlogPost = {
     },
     {
       kind: "p",
-      text: "So what counts as proof? [IRS Publication 463](https://www.irs.gov/publications/p463) says you generally need receipts, canceled checks or bills. It lists an exception for an expense under $75, but not for lodging. And the proof is usually adequate when it shows four things: the amount, the date, the place, and what the expense was for.",
+      text: "So what counts as proof? [IRS Publication 463](https://www.irs.gov/publications/p463) says you generally need receipts, canceled checks or bills. For travel, gift and car expenses it waives the receipt for items under $75, except lodging, but you still need a record of the amount, time, place and purpose. And the proof is usually adequate when it shows four things: the amount, the date, the place, and what the expense was for.",
     },
-    { kind: "h2", text: "What to scan: a quick list by type of work", id: "what-to-scan" },
+    {
+      kind: "video",
+      videoId: "RfpbqzLbvgA",
+      title: "You're Throwing Away Money and Don't Even Realize It",
+      description: "Official Receipt Cycle video about how lost receipts can turn into expenses you cannot document, and what poor receipt tracking can cost freelancers and small business owners.",
+      caption: "Our video on what lost receipts can cost freelancers and small business owners (11 minutes).",
+      uploadDate: "2026-10-27",
+      durationIso: "PT11M29S",
+    },
+    { kind: "h2", text: "What receipts should you scan for taxes?", id: "what-to-scan" },
     {
       kind: "p",
       text: "The rule is simple: scan anything you paid for to run your work. The table below shows what that looks like for different kinds of earners. It is a starting list for a conversation with your accountant, not a promise that every item is deductible.",
@@ -103,7 +116,7 @@ export const maximizeTaxRefundPost: BlogPost = {
       rows: [
         ["Freelancer or consultant", "Software, equipment, courses, client meals, travel", "The client or project"],
         ["Online seller or side hustler", "Shipping receipts, ad spend invoices, supplier bills, subscription fees", "The product or campaign"],
-        ["Gig driver or courier", "Fuel, tolls, parking, phone plan, supplies", "The shift or route"],
+        ["Gig driver or courier", "Fuel, tolls, parking, phone plan, supplies", "The shift or route. Receipt Cycle has no GPS mileage, so keep a separate mileage log"],
         ["Small business owner", "Supplier invoices, rent, tools, professional fees", "The job or department"],
       ],
       tones: true,
@@ -139,6 +152,10 @@ export const maximizeTaxRefundPost: BlogPost = {
       kind: "p",
       text: "You can always open a record later and see the extracted details next to the original receipt. If an amount looks off, you check it against the source in seconds instead of guessing.",
     },
+    {
+      kind: "p",
+      text: "Example, with made-up numbers: a freelancer scans a $48.20 software receipt and the scanner reads $48.02. She fixes the digits, adds the client name, and the export later shows $48.20 with a link to the photo.",
+    },
     { kind: "h3", text: "Step 3: Use your computer for big batches", id: "step-3-use-your-computer-for-batches" },
     {
       kind: "p",
@@ -169,7 +186,20 @@ export const maximizeTaxRefundPost: BlogPost = {
       kind: "p",
       text: "Want to compare options first? Our guide to the [best receipt scanner apps for small business](/blog/best-receipt-scanner-app-small-business-2026) lays out the trade-offs, and [expense reporting software](/expense-reporting-software) shows how the pieces connect for a team.",
     },
-    { kind: "h2", text: "Get one clean file for your accountant", id: "one-clean-file-for-your-accountant" },
+    { kind: "h2", text: "Scanner app, shoebox, card statement or spreadsheet?", id: "scanner-app-vs-shoebox-vs-spreadsheet" },
+    {
+      kind: "table",
+      caption: "Ways to keep proof for your expenses",
+      columns: ["Method", "Proves what you bought", "Easy to find later", "Better fit when"],
+      rows: [
+        ["Receipt scanner app", "Yes, with the original image", "Yes", "You get many receipts"],
+        ["Shoebox of paper", "Yes", "Slow", "You have only a few a year"],
+        ["Card statement only", "No, only the charge", "Yes", "Never on its own"],
+        ["Spreadsheet", "Only if you attach the receipts", "Yes", "You are happy to type everything"],
+      ],
+      tones: true,
+    },
+    { kind: "h2", text: "How do you give your accountant one clean file?", id: "one-clean-file-for-your-accountant" },
     {
       kind: "p",
       text: "Your accountant should not have to chase you for documents. When your records are in one place, you can hand over everything in one step.",
@@ -191,19 +221,19 @@ export const maximizeTaxRefundPost: BlogPost = {
       kind: "p",
       text: "Need only part of it? On the Analysis page, filter by category or merchant and export just those receipts. That is handy when your accountant asks about one expense type, such as advertising or supplies.",
     },
-    { kind: "h2", text: "Let AI catch the obvious mistakes", id: "let-ai-catch-the-obvious-mistakes" },
+    { kind: "h2", text: "Can AI catch mistakes in your receipts?", id: "let-ai-catch-the-obvious-mistakes" },
     {
       kind: "p",
       text: "Before you send anything, give your records one more look. In Receipt Cycle, the AI analysis on the Analysis page looks across the entries you saved for repeated charges, possible duplicates and amounts that stand out. You can also ask the [AI financial assistant](/ai-financial-assistant) plain questions about your spending.",
     },
     {
       kind: "p",
-      text: "It does not replace a tax professional, and it does not check your tax forms. It simply helps you spot a double entry or a typo before your accountant does. Think of it as a second pair of eyes.",
+      text: "It does not replace a tax professional, and it does not check your tax forms. It helps you spot a double entry or a typo before your accountant does.",
     },
     { kind: "h2", text: "How long to keep scanned receipts", id: "how-long-to-keep-scanned-receipts" },
     {
       kind: "p",
-      text: "The IRS says to keep most records for 3 years. It says 6 years if you left out more than 25 percent of your gross income, and 7 years for a bad debt or worthless securities claim. You can read the full list on its [how long to keep records](https://www.irs.gov/businesses/small-businesses-self-employed/how-long-should-i-keep-records) page.",
+      text: "The IRS says to keep most records for 3 years. It says 6 years if you left out more than 25 percent of your gross income, and 7 years for a bad debt or worthless securities claim. You can read the full list on its [how long to keep records](https://www.irs.gov/businesses/small-businesses-self-employed/how-long-should-i-keep-records) page, which was last reviewed on June 30, 2026.",
     },
     {
       kind: "p",
@@ -222,18 +252,23 @@ export const maximizeTaxRefundPost: BlogPost = {
     },
     {
       kind: "p",
-      text: "That is about ten seconds per receipt and a few minutes a week. It is far less than an evening spent searching your inbox in April, and it turns your phone into a receipt tracker that works for you all year.",
+      text: "Scanning one receipt takes a minute or less, and the weekly check takes a few minutes. That beats an evening spent searching your inbox in April, and it turns your phone into a receipt tracker that works for you all year.",
     },
     { kind: "h2", text: "Mistakes that cost you write-offs", id: "mistakes-that-cost-you-write-offs" },
     {
       kind: "ul",
       items: [
-        "Scanning in bulk months later, after the ink on the slip has faded.",
+        "Scanning in bulk months later, when you can no longer remember the purpose.",
         "Saving a photo without checking that the total and date are readable.",
         "Keeping only a card statement. It shows the charge but not what you bought.",
         "Mixing personal and business purchases in the same record.",
         "Skipping the note on meals and travel, so you cannot say what they were for.",
       ],
+    },
+    { kind: "h2", text: "Who is Receipt Cycle not for, and what does it cost?", id: "who-is-receipt-cycle-not-for" },
+    {
+      kind: "p",
+      text: "Receipt Cycle is not tax software. It has no GPS mileage, live bank feeds, email forwarding, tax filing or general ledger. Scanning with the camera is on Android only, and iPhone users can upload photos and files on the web app. The free plan is a 7-day Pro trial with up to 25 transactions. [Pro](/pricing) costs $3.50 a month, $35 a year or $60 once. Setup takes a few minutes: create an account, scan one receipt, check it, and run one export.",
     },
     {
       kind: "cta",
@@ -268,7 +303,7 @@ export const maximizeTaxRefundPost: BlogPost = {
     {
       question: "Do I need receipts for small purchases?",
       answer:
-        "For most business travel and similar expenses under $75, the IRS says you may not need documentary evidence, but lodging always needs it. Keeping a receipt or a note for small purchases is still a good habit, because they add up.",
+        "For travel, gift and car expenses under $75, the IRS says documentary evidence is not required, except for lodging. You still need a record of the amount, time, place and purpose, and a receipt is the easiest record.",
     },
     {
       question: "What if I lose my phone?",

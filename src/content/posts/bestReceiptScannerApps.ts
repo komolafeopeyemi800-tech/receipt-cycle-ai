@@ -84,7 +84,7 @@ export const bestReceiptScannerAppsPost: BlogPost = {
       tones: true,
       columns: ["App", "Best for", "Price in the US", "Biggest catch"],
       rows: [
-        ["Receipt Cycle", "Owners who want receipts, estimates, invoices and budgets together", "Free plan. Pro is $3.50 a month or $35 a year", "No payroll, approvals or double-entry books"],
+        ["Receipt Cycle", "Owners who want receipts, estimates, invoices and budgets together", "Free plan. Pro is $3.50 a month, $35 a year or $60 once", "No payroll, approvals or double-entry books"],
         ["Expensify", "Teams that approve and reimburse expenses", "Free for individuals. Collect from $5 per member monthly", "Cost grows with each member"],
         ["Shoeboxed", "Businesses drowning in paper", "Starter is $9 a month or $97 a year", "Paper scans have limits"],
         ["Wave", "Owners who already keep books in Wave", "Pro is $19 a month and includes receipts. Starter has a paid receipts add-on", "Value depends on staying in Wave"],
@@ -163,7 +163,16 @@ export const bestReceiptScannerAppsPost: BlogPost = {
     },
     {
       kind: "p",
-      text: "The free plan includes a seven-day Pro trial with up to 25 transactions. [Pro](/pricing) costs $3.50 a month or $35 a year, and exports are part of it.",
+      text: "The free plan includes a seven-day Pro trial with up to 25 transactions. [Pro](/pricing) costs $3.50 a month, $35 a year or $60 once, and exports are part of it.",
+    },
+    {
+      kind: "video",
+      videoId: "1yAZU4VwZjI",
+      title: "ReceiptCycle: All-in-One Bookkeeping, Receipt Scanner, Invoices and Budget App for Small Business",
+      description: "Official Receipt Cycle overview: scan receipts, track expenses, create invoices and estimates, and manage budgets in one app.",
+      caption: "Our 39-second overview of Receipt Cycle.",
+      uploadDate: "2026-10-29",
+      durationIso: "PT39S",
     },
     {
       kind: "p",
@@ -348,7 +357,7 @@ export const bestReceiptScannerAppsPost: BlogPost = {
     {
       question: "Can I try Receipt Cycle without paying?",
       answer:
-        "Yes. The free plan includes a seven-day Pro trial with up to 25 transactions, and the web app needs no credit card. [Pro](/pricing) costs $3.50 a month or $35 a year.",
+        "Yes. The free plan includes a seven-day Pro trial with up to 25 transactions, and the web app needs no credit card. [Pro](/pricing) costs $3.50 a month, $35 a year or $60 once.",
     },
     {
       question: "Can a scanned receipt replace the paper copy?",

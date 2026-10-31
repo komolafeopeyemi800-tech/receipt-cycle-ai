@@ -540,6 +540,8 @@ const staticRoutes: RouteSeo[] = [
     noscript: noscriptWrap(
       "About Receipt Cycle",
       `<p>Receipt Cycle is an AI-powered expense tracker and receipt scanner built for freelancers, independent professionals, and small teams.</p>
+       <h2>Meet Philip</h2>
+       <p>By day, Philip works in finance at a large company, where an expense without proof does not get far. In his spare hours he writes about money for freelancers and small business owners. He tried scanner apps that did not fit and could not get his money back, so he wanted one place for receipts, estimates, invoices, budgets and an export with the proof attached. That place is Receipt Cycle.</p>
        <p>We started Receipt Cycle because finance tools fail when capture is harder than ignoring the problem. Our goal is simple: compress the grind of bookkeeping so you can justify every dollar, reclaim tax-time hours, and catch money leaks while they're still small.</p>
        <p>Contact us at <a href="mailto:support@receiptcycle.com">support@receiptcycle.com</a>.</p>`,
     ),

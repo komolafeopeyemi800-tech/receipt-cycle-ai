@@ -17,10 +17,14 @@ export const AUTHOR = {
   image: "/authors/philip-512.webp",
   thumb: "/authors/philip-160.webp",
   /** Plain, confirmed description. */
-  bio: "Philip writes about receipts, expense tracking and tax records for Receipt Cycle, for freelancers and small businesses.",
-  /** Profiles that exist. Used for the author box links and schema sameAs. */
+  bio: "Philip works in finance at a large company and writes about receipts, expense tracking and tax records for freelancers and small businesses.",
+  /** Philip's own profiles, confirmed by the owner. Used for the author box and schema sameAs. */
   links: [
-    { label: "X", href: "https://x.com/receiptcycle" },
-    { label: "Instagram", href: "https://www.instagram.com/receiptcycle" },
+    { label: "YouTube", href: "https://www.youtube.com/channel/UCjurliHBAEnQwcvLO9twIpw" },
+    { label: "Instagram", href: "https://www.instagram.com/learnwithphiliphustle" },
+    { label: "Pinterest", href: "https://www.pinterest.com/LearnWithPhilipHustle/" },
+    { label: "Facebook", href: "https://www.facebook.com/PhilipHustles" },
   ],
+  /** The Receipt Cycle company channel. */
+  companyYoutube: "https://www.youtube.com/@receiptcycle",
 } as const;

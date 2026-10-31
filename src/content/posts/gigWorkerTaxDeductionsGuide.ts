@@ -31,7 +31,7 @@ export const gigWorkerTaxDeductionsPost: BlogPost = {
   featuredImageHeight: 900,
   category: "Expense tracking",
   datePublished: "2026-04-17",
-  dateModified: "2026-10-29",
+  dateModified: "2026-10-31",
   author: "Philip",
   readMinutes: 12,
   tags: ["gig worker tax deductions", "DoorDash mileage deduction", "delivery driver expenses", "track gig income and expenses", "1099 expense tracker"],
@@ -88,7 +88,11 @@ export const gigWorkerTaxDeductionsPost: BlogPost = {
     },
     {
       kind: "p",
-      text: "Here is the good news. Many gig workers pay more tax than they need to, simply because they did not track their miles and receipts. This guide shows how to track gig income and expenses, what gig worker tax deductions look like, and how to keep proof for every dollar you claim.",
+      text: "Some gig workers pay more tax than they need to when they do not track their miles and receipts. This guide shows how to track gig income and expenses, which gig worker tax deductions apply, and how to keep proof for every dollar you claim.",
+    },
+    {
+      kind: "p",
+      text: "Updated October 31, 2026: added the 2026 mileage rates and the 2026 1099-NEC threshold, tightened the mileage advice and added a short video. This guide is for self-employed gig workers in the US. It does not cover employees, S corporation owners or other countries.",
     },
     { kind: "h2", text: "Which gig worker tax deductions can you claim?", id: "gig-worker-tax-deductions" },
     {
@@ -103,7 +107,7 @@ export const gigWorkerTaxDeductionsPost: BlogPost = {
         ["Business miles (standard rate)", "Yes", "A mileage log with date, miles, places and purpose"],
         ["Gas, repairs and insurance (actual method)", "The business share", "Receipts and your yearly mileage totals"],
         ["Tolls and business parking", "Yes, on top of the standard rate", "A receipt or toll statement"],
-        ["Phone and data plan", "The business share", "Your bill and a note on how you work out the percentage"],
+        ["Phone and data plan", "The business share, as your tax professional confirms", "Your bill and a note on how you work out the percentage"],
         ["Phone mount, hot bag, cooler, cart", "Yes, if used for gig work", "The receipt"],
         ["Mileage app or other work subscriptions", "Yes", "The invoice or the monthly charge"],
         ["Speeding and parking tickets", "No", "Nothing to keep. Fines are not deductible"],
@@ -118,7 +122,7 @@ export const gigWorkerTaxDeductionsPost: BlogPost = {
     { kind: "h2", text: "How to track miles for DoorDash and other delivery apps", id: "how-to-track-miles-for-delivery-apps" },
     {
       kind: "p",
-      text: "Mileage is the biggest deduction for most drivers, and the one people under-report. The app's year-end summary usually shows only the miles during a trip or delivery. Miles you drive to a pickup, or back toward busy areas between orders, may be missing from it.",
+      text: "Mileage is the biggest deduction for most drivers, and the one people under-report. A platform's year-end summary may show only the miles during a trip or delivery, so miles to a pickup or between orders may be missing.",
     },
     {
       kind: "p",
@@ -141,7 +145,7 @@ export const gigWorkerTaxDeductionsPost: BlogPost = {
     },
     {
       kind: "p",
-      text: "Where does the business day start? The IRS treats ordinary commuting as nondeductible, with exceptions that include having your home as your principal place of business. Many drivers count from the first pickup to the last drop-off. Whether the drive to that first stop counts depends on your setup, so ask your tax professional.",
+      text: "Where does the business day start? The IRS treats ordinary commuting as nondeductible, with exceptions that include having your home as your principal place of business (see Publication 463, chapter 4). Some drivers count from the first pickup to the last drop-off, but whether the drive to that first stop counts depends on your setup. Ask your tax professional before you rely on it.",
     },
     { kind: "h2", text: "Standard mileage rate or actual expenses?", id: "standard-mileage-rate-or-actual-expenses" },
     {
@@ -185,16 +189,16 @@ export const gigWorkerTaxDeductionsPost: BlogPost = {
     },
     {
       kind: "p",
-      text: "In this example the standard rate wins. With a more expensive car and fewer miles, the answer could flip. That is why it pays to run both numbers with your own totals.",
+      text: "In this example the standard rate wins. With a more expensive car and fewer miles, the answer could flip. The 2026 rates (72.5 cents, then 76 cents) would give a different total for the same miles. That is why it pays to run both numbers with your own totals.",
     },
-    { kind: "h2", text: "Is that gig worth the miles?", id: "is-that-gig-worth-the-miles" },
+    { kind: "h2", text: "Is a delivery offer worth the miles?", id: "is-a-delivery-offer-worth-the-miles" },
     {
       kind: "p",
-      text: "Here is a trick that helps you decide whether to accept an order. You are not paid for the drive back toward busy areas, or for the trip to your next pickup. So a rough check is to double the mileage rate.",
+      text: "Is a delivery offer worth the miles? A rough check is to double the IRS standard mileage rate. You are often not paid for the drive to a pickup or back toward busy areas, so one paid mile can cost you about two driven miles.",
     },
     {
       kind: "p",
-      text: "At the 2026 rate of 76 cents, that is $1.52 per paid mile. If an offer pays less than that per mile, it probably loses money on vehicle costs alone, before taxes. This is a rule of thumb, not a calculation of your real costs, but it is a useful way to turn down the worst offers.",
+      text: "At the 2026 rate of 76 cents from July 1, doubling gives $1.52 per paid mile. The IRS rate is a deduction rate, not your real cost, so treat $1.52 as a rough floor for vehicle costs, before taxes. Work out your own cost per mile before you decide.",
     },
     { kind: "h2", text: "Track gig income, and know when a 1099 comes", id: "track-gig-income-and-1099" },
     {
@@ -209,10 +213,10 @@ export const gigWorkerTaxDeductionsPost: BlogPost = {
       kind: "p",
       text: "The key point is this: your gig income is taxable whether or not a form arrives. Ask each platform how to get your tax forms by email, so nothing gets lost in the mail.",
     },
-    { kind: "h2", text: "Set money aside before it disappears", id: "set-money-aside" },
+    { kind: "h2", text: "How much should gig workers set aside for taxes?", id: "set-money-aside" },
     {
       kind: "p",
-      text: "Because no one withholds tax from your payouts, you pay it yourself. The [IRS puts the self-employment tax rate at 15.3 percent](https://www.irs.gov/businesses/small-businesses-self-employed/self-employment-tax-social-security-and-medicare-taxes), and that sits on top of income tax. People in business for themselves generally make [estimated tax payments](https://www.irs.gov/businesses/small-businesses-self-employed/estimated-taxes) if they expect to owe $1,000 or more when they file.",
+      text: "Gig workers pay their own tax, because no platform withholds it from payouts. The [IRS puts the self-employment tax rate at 15.3 percent](https://www.irs.gov/businesses/small-businesses-self-employed/self-employment-tax-social-security-and-medicare-taxes), and that sits on top of income tax. People in business for themselves generally make [estimated tax payments](https://www.irs.gov/businesses/small-businesses-self-employed/estimated-taxes) if they expect to owe $1,000 or more when they file.",
     },
     {
       kind: "p",
@@ -221,7 +225,7 @@ export const gigWorkerTaxDeductionsPost: BlogPost = {
     { kind: "h2", text: "How to track gig expenses with Receipt Cycle", id: "how-to-track-gig-expenses-with-receipt-cycle" },
     {
       kind: "p",
-      text: "Here is a routine that takes a few minutes a day. Receipt Cycle is an expense tracker for gig workers that keeps receipts, income and exports together, on your phone and on the web.",
+      text: "Here is a routine that takes a few minutes a day. Receipt Cycle is a 1099 expense tracker for delivery driver expenses. It keeps receipts, income and exports together in the Android app and on the web.",
     },
     {
       kind: "ol",
@@ -232,6 +236,15 @@ export const gigWorkerTaxDeductionsPost: BlogPost = {
         "Upload your bank or card statement once a month to catch anything you forgot.",
         "Every Friday, spend five minutes fixing categories and missing receipts.",
       ],
+    },
+    {
+      kind: "video",
+      videoId: "-Kz9ZGTjl78",
+      title: "Stop Typing Your Receipts In By Hand (Scan or Just Say It)",
+      description: "Official Receipt Cycle short: point your phone at a receipt and it reads the store, date and total, or say what you spent and it is logged.",
+      caption: "Our 30-second video on scanning a receipt or saying what you spent.",
+      uploadDate: "2026-10-30",
+      durationIso: "PT31S",
     },
     {
       kind: "cta",
@@ -323,7 +336,7 @@ export const gigWorkerTaxDeductionsPost: BlogPost = {
     {
       question: "Can I deduct part of my phone bill?",
       answer:
-        "Yes, the share you use for gig work. If half your phone use is for gig apps, you can generally deduct half of the cost. Keep the bill and a note on how you worked out the percentage.",
+        "Yes, the business share. If half your phone use is for gig apps, a tax professional may let you deduct about half of the cost. Keep the bill and a note on how you worked out the percentage.",
     },
     {
       question: "What is the best way to track gig work expenses?",

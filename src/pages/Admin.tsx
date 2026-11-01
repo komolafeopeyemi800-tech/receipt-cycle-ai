@@ -3,6 +3,7 @@ import { useAction, useMutation, useQuery } from "@mobile-lib/api";
 import { api } from "@mobile-lib/api";
 import NotificationCenter from "@/components/admin/NotificationCenter";
 import AiCostGuard from "@/components/admin/AiCostGuard";
+import PolarSetup from "@/components/admin/PolarSetup";
 
 const STORAGE_KEY = "receiptcycle_admin_secret";
 const ADMIN_EMAIL_KEY = "receiptcycle_admin_email";
@@ -407,6 +408,8 @@ export default function Admin() {
             </div>
 
             <AiCostGuard secret={secret} adminEmail={adminEmail} />
+
+            <PolarSetup secret={secret} />
 
             <NotificationCenter secret={secret} adminEmail={adminEmail} />
 

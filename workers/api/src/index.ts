@@ -8,6 +8,7 @@ import { enforce } from "./lib/rateLimit";
 import { adminRoutes, configRoutes } from "./routes/admin";
 import { aiRoutes, contactRoutes } from "./routes/ai";
 import { aiGuardAdminRoutes, aiStatusRoutes } from "./routes/aiGuardAdmin";
+import { polarAdminRoutes } from "./routes/polarAdmin";
 import { preferenceRoutes, subscriptionRoutes } from "./routes/account";
 import { accountRoutes, budgetRoutes, categoryRoutes } from "./routes/money";
 import { transactionRoutes } from "./routes/transactions";
@@ -116,6 +117,7 @@ app.get("/api/push/status", (c) => {
 });
 app.route("/api/billing", billingRoutes);
 app.route("/api/admin/ai-guard", aiGuardAdminRoutes);
+app.route("/api/admin/polar", polarAdminRoutes);
 app.route("/api/me/ai-status", aiStatusRoutes);
 app.route("/api/admin", adminRoutes);
 app.route("/api/ai", aiRoutes);

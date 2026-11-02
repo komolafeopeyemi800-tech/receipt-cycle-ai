@@ -16,10 +16,20 @@ import { useEffect, useState, type ReactNode } from "react";
 const LINK_CLASS =
   "rounded-sm font-medium text-teal-700 underline decoration-teal-700/40 underline-offset-2 hover:text-teal-900 hover:decoration-teal-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600";
 
+// Keep older article references working while serving the optimized illustration.
+const ARTICLE_ILLUSTRATIONS: Record<string, { src: string; width: number; height: number }> = {
+  "/landing/hero-phone.png": { src: "/landing/hero-phone.webp", width: 1376, height: 768 },
+  "/landing/scan-receipt.png": { src: "/landing/scan-receipt.webp", width: 1376, height: 768 },
+  "/landing/finance-coach-chat.png": { src: "/landing/finance-coach-chat.webp", width: 1376, height: 768 },
+  "/landing/feature-expense-tracking.svg": { src: "/landing/feature-expense-tracking.svg", width: 900, height: 675 },
+  "/landing/feature-money-leaks.svg": { src: "/landing/feature-money-leaks.svg", width: 900, height: 675 },
+  "/landing/feature-find-charge.svg": { src: "/landing/feature-find-charge.svg", width: 900, height: 675 },
+};
+
 const INLINE_LINK_RULES: Array<{ phrase: string; href: string; external?: boolean }> = [
-  { phrase: "how to organize receipts for your accountant", href: "/blog/best-expense-tracker-for-freelancers" },
+  { phrase: "how to organize receipts for your accountant", href: "/blog/how-to-organize-receipts-for-accountant" },
   { phrase: "staying compliant with a tax receipt tracker", href: "/blog/receipt-scanner-tax-purposes-audit-ready-year-round" },
-  { phrase: "how to track business travel expenses", href: "/blog/scan-receipts-for-tax-refund" },
+  { phrase: "how to track business travel expenses", href: "/blog/how-to-track-business-travel-expenses" },
   { phrase: "how freelancers can track business expenses", href: "/blog/freelancers-guide-tracking-business-expenses" },
   { phrase: "how OCR and AI work together in receipt scanning", href: "/blog/how-ocr-receipt-scanning-works-ai-smarter" },
   { phrase: "why a combined expense tracker and receipt scanner changes everything", href: "/blog/expense-tracker-receipt-scanner-one-two-punch" },
@@ -468,12 +478,15 @@ function Block({ block }: { block: BlogBlock }) {
       </h4>
     );
   if (block.kind === "image") {
+    const illustration = ARTICLE_ILLUSTRATIONS[block.src];
+    const width = block.width ?? illustration?.width;
+    const height = block.height ?? illustration?.height;
     const img = (
       <img
-        src={block.src}
+        src={illustration?.src ?? block.src}
         alt={block.alt}
-        {...(block.width ? { width: block.width } : {})}
-        {...(block.height ? { height: block.height } : {})}
+        {...(width ? { width } : {})}
+        {...(height ? { height } : {})}
         {...(block.title ? { title: block.title } : {})}
         className="h-auto w-full object-cover"
         loading="lazy"
@@ -728,7 +741,7 @@ export default function BlogPost() {
                   </>
                 ) : (
                   <>
-                    <img src="/brand/logo.png" alt="" width={40} height={40} className="h-10 w-10 rounded-full border border-slate-200 bg-white object-contain p-1" />
+                    <img src="/icon-64.webp" alt="" width={64} height={64} decoding="async" className="h-10 w-10 rounded-full border border-slate-200 bg-white object-contain p-1" />
                     <span className="font-semibold text-slate-900">{post.author}</span>
                   </>
                 )}
@@ -807,7 +820,7 @@ export default function BlogPost() {
           {!hasInlineImage ? (
             <figure className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white">
               <img
-                src="/landing/hero-phone.png"
+                src="/landing/hero-phone.webp"
                 alt="Receipt Cycle app showing receipt and expense tracking workflow"
                 width={1376}
                 height={768}

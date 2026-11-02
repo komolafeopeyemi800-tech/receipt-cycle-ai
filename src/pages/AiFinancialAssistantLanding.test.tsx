@@ -46,7 +46,7 @@ describe("AiFinancialAssistantLanding", () => {
   });
 
   it("has unique metadata, software schema, and matching FAQ schema", () => {
-    const seo = getRouteSeo("/ai-financial-assistant/");
+    const seo = getRouteSeo("/ai-financial-assistant");
 
     expect(seo?.title).toBe("AI Financial Assistant for Small Business | Receipt Cycle");
     expect(seo?.path).toBe("/ai-financial-assistant");

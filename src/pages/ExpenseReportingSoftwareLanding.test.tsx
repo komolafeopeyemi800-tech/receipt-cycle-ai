@@ -44,7 +44,7 @@ describe("ExpenseReportingSoftwareLanding", () => {
   });
 
   it("has unique metadata and matching reporting FAQ schema", () => {
-    const seo = getRouteSeo("/expense-reporting-software/");
+    const seo = getRouteSeo("/expense-reporting-software");
 
     expect(seo?.title).toBe("Expense Report Software for Small Business | Receipt Cycle");
     expect(seo?.path).toBe("/expense-reporting-software");

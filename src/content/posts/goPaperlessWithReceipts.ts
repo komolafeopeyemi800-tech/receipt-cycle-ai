@@ -14,16 +14,16 @@ const IMG = "/landing/blog/go-paperless-with-receipts";
 
 export const goPaperlessWithReceiptsPost: BlogPost = {
   slug: "go-paperless-with-receipts",
-  title: "How to Go Paperless With Receipts (And Never Lose One Again)",
+  title: "How to Go Paperless With Receipts and Keep Records Accessible",
   description:
-    "Go paperless with receipts in one afternoon. See what the IRS accepts, how long to keep digital receipts, and the setup that stops lost deductions.",
+    "Go paperless with receipts using a capture, review and backup routine. Learn the IRS recordkeeping conditions and how to keep digital evidence accessible.",
   featuredImage: "/landing/blog-go-paperless-with-receipts.webp?v=1",
   featuredImageAlt: "Paper receipts and a phone scanning a receipt to go paperless with digital receipt storage",
   featuredImageWidth: 1600,
   featuredImageHeight: 900,
   category: "Receipt scanning",
   datePublished: "2026-04-17",
-  dateModified: "2026-10-31",
+  dateModified: "2026-11-02",
   author: "Philip",
   readMinutes: 11,
   tags: ["go paperless with receipts", "digital receipt storage", "receipt scanner app", "receipt organizer", "tax records"],
@@ -70,7 +70,7 @@ export const goPaperlessWithReceiptsPost: BlogPost = {
     },
     {
       kind: "p",
-      text: "Every receipt you cannot produce is an expense you may not be able to prove. So here is a plan to go paperless with receipts that you can finish in one afternoon and keep up with a few seconds per receipt.",
+      text: "Missing receipts can leave gaps in your evidence. Start with a capture and backup routine you can maintain, then work through older records at a pace that lets you check each saved document.",
     },
     {
       kind: "p",
@@ -361,7 +361,7 @@ export const goPaperlessWithReceiptsPost: BlogPost = {
       items: [
         { label: "Best receipt scanner apps for small business", href: "/blog/best-receipt-scanner-app-small-business-2026" },
         { label: "How OCR receipt scanning works", href: "/blog/how-ocr-receipt-scanning-works-ai-smarter" },
-        { label: "Import bank statements for expense tracking", href: "/blog/import-bank-statements-expense-tracking" },
+        { label: "Manage side-hustle receipts", href: "/blog/how-to-manage-side-hustle-receipts" },
         { label: "Business travel expense tracker", href: "/business-travel-expense-tracker" },
         { label: "Expense reporting software", href: "/expense-reporting-software" },
       ],

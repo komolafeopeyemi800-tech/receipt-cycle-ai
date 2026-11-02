@@ -1,4 +1,4 @@
-/* Fonts load from index.html (<link>) so Vite never parses @import ordering. */
+/* Licensed self-hosted fonts load from index.html so Vite never parses @import ordering. */
 
 @tailwind base;
 @tailwind components;
@@ -22,7 +22,7 @@ body::-webkit-scrollbar,
   scroll-behavior: smooth;
 }
 
-/* Receipt Cycle Design System — Inter / Space Grotesk via index.html */
+/* Receipt Cycle Design System — Inter / Space Grotesk, same-origin assets via index.html */
 
 @layer base {
   :root {

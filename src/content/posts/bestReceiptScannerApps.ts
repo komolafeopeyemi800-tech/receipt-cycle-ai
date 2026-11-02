@@ -343,7 +343,7 @@ export const bestReceiptScannerAppsPost: BlogPost = {
       items: [
         { label: "Freelancer expense tracking guide", href: "/blog/freelancers-guide-tracking-business-expenses" },
         { label: "Maximize your tax refund by scanning receipts", href: "/blog/maximize-tax-refund-by-scanning-receipts" },
-        { label: "Import bank statements for expense tracking", href: "/blog/import-bank-statements-expense-tracking" },
+        { label: "Manage side-hustle receipts", href: "/blog/how-to-manage-side-hustle-receipts" },
         { label: "How OCR receipt scanning works", href: "/blog/how-ocr-receipt-scanning-works-ai-smarter" },
       ],
     },

@@ -31,7 +31,10 @@ export function SeoForPath({ path }: { path: string }): JSX.Element | null {
       path={seo.path}
       ogImage={seo.ogImage}
       ogImageAlt={seo.ogImageAlt}
+      ogImageWidth={seo.ogImageWidth}
+      ogImageHeight={seo.ogImageHeight}
       ogType={seo.ogType}
+      article={seo.article}
       structuredData={seo.structuredData}
       noindex={seo.noindex}
     />

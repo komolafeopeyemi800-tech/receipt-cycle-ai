@@ -37,7 +37,7 @@ describe("PaymentTrackingSoftwareLanding", () => {
   });
 
   it("has unique metadata and matching payment FAQ schema", () => {
-    const seo = getRouteSeo("/payment-tracking-software/");
+    const seo = getRouteSeo("/payment-tracking-software");
 
     expect(seo?.title).toBe("Payment Tracking Software & Receipt Manager | Receipt Cycle");
     expect(seo?.path).toBe("/payment-tracking-software");

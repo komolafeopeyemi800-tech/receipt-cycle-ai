@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+dist-debug
 *.local
 
 # Bun lockfiles — this repo uses npm (package-lock.json) only

@@ -40,7 +40,7 @@ describe("AiReceiptScannerLanding", () => {
   });
 
   it("has unique metadata and matching scanner FAQ schema", () => {
-    const seo = getRouteSeo("/ai-receipt-scanner/");
+    const seo = getRouteSeo("/ai-receipt-scanner");
 
     expect(seo?.title).toBe("AI Receipt Scanner & Receipt OCR App | Receipt Cycle");
     expect(seo?.path).toBe("/ai-receipt-scanner");

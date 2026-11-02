@@ -38,35 +38,35 @@ const productGroups = [
   {
     title: "Get paid",
     links: [
-      ["Invoices", "/invoice-software/", "Prepare and follow up on customer invoices"],
-      ["Estimates", "/estimate-quotation-software/", "Price work before it begins"],
-      ["Payments", "/payment-tracking-software/", "Record what was paid and what remains"],
-      ["Clients", "/client-management-software/", "Keep customer activity together"],
+      ["Invoices", "/invoice-software", "Prepare and follow up on customer invoices"],
+      ["Estimates", "/estimate-quotation-software", "Price work before it begins"],
+      ["Payments", "/payment-tracking-software", "Record what was paid and what remains"],
+      ["Clients", "/client-management-software", "Keep customer activity together"],
     ],
   },
   {
     title: "Manage spending",
     links: [
-      ["Receipt capture", "/ai-receipt-scanner/", "Turn receipt images into usable records"],
-      ["Travel expenses", "/business-travel-expense-tracker/", "Organize the cost of every trip"],
-      ["Budgets", "/business-budgeting-software/", "Compare planned and actual spending"],
+      ["Receipt capture", "/ai-receipt-scanner", "Turn receipt images into usable records"],
+      ["Travel expenses", "/business-travel-expense-tracker", "Organize the cost of every trip"],
+      ["Budgets", "/business-budgeting-software", "Compare planned and actual spending"],
     ],
   },
   {
     title: "Plan and review",
     links: [
-      ["Reports", "/expense-reporting-software/", "Review business activity by period and category"],
-      ["Ask AI", "/ai-financial-assistant/", "Explore questions using saved records"],
-      ["Tax records", "/freelancer-tax-receipt-tracker/", "Prepare organized records for review"],
+      ["Reports", "/expense-reporting-software", "Review business activity by period and category"],
+      ["Ask AI", "/ai-financial-assistant", "Explore questions using saved records"],
+      ["Tax records", "/freelancer-tax-receipt-tracker", "Prepare organized records for review"],
     ],
   },
 ] as const;
 
 const audienceLinks = [
-  ["Freelancers", "/freelancer-tax-receipt-tracker/", "Keep receipts and work records ready"],
-  ["Consultants", "/estimate-quotation-software/", "Move priced work toward billing"],
-  ["Small businesses", "/business-budgeting-software/", "Coordinate everyday spending decisions"],
-  ["Operations teams", "/expense-reporting-software/", "Turn activity into reviewable reports"],
+  ["Freelancers", "/freelancer-tax-receipt-tracker", "Keep receipts and work records ready"],
+  ["Consultants", "/estimate-quotation-software", "Move priced work toward billing"],
+  ["Small businesses", "/business-budgeting-software", "Coordinate everyday spending decisions"],
+  ["Operations teams", "/expense-reporting-software", "Turn activity into reviewable reports"],
 ] as const;
 
 const resourceLinks = [
@@ -173,10 +173,10 @@ export function CommercialHeader({ ctaLabel: baseLabel, ctaHref: baseHref, annou
               {productGroups.map((group) => <MenuGroup key={group.title} title={group.title} links={group.links} close={() => setOpenMenu(null)} />)}
             </div>
             <div className="bg-sky-50 p-6">
-              <img src="/landing/home/home-hero-founder.webp" alt="A small business owner using Receipt Cycle" className="h-32 w-full rounded-xl object-cover" />
+              <img src="/landing/home/home-hero-founder.webp" alt="A small business owner using Receipt Cycle" width={1672} height={941} loading="lazy" decoding="async" className="h-32 w-full rounded-xl object-cover" />
               <p className="mt-5 text-xl font-black text-slate-900">Turn a receipt into a usable record</p>
               <p className="mt-2 text-sm leading-6 text-slate-600">Capture the image, review the extracted details, and keep the evidence attached.</p>
-              <Link to="/ai-receipt-scanner/" onClick={() => setOpenMenu(null)} className="mt-5 inline-flex w-full items-center justify-center border-2 border-slate-900 px-4 py-3 text-sm font-black text-slate-900 hover:bg-white">Explore receipt scanning</Link>
+              <Link to="/ai-receipt-scanner" onClick={() => setOpenMenu(null)} className="mt-5 inline-flex w-full items-center justify-center border-2 border-slate-900 px-4 py-3 text-sm font-black text-slate-900 hover:bg-white">Explore receipt scanning</Link>
             </div>
           </div>
         </div>
@@ -291,16 +291,16 @@ export function CommercialFooter() {
           <div>
             <h2 className="text-xs font-extrabold uppercase tracking-[0.18em] text-slate-400">Product</h2>
             <ul className="mt-4 space-y-3 text-sm text-slate-600">
-              <li><Link to="/ai-receipt-scanner/" className="hover:text-teal-700">AI receipt scanner</Link></li>
-              <li><Link to="/business-travel-expense-tracker/" className="hover:text-teal-700">Travel expense tracker</Link></li>
-              <li><Link to="/freelancer-tax-receipt-tracker/" className="hover:text-teal-700">Freelancer tax tracker</Link></li>
-              <li><Link to="/business-budgeting-software/" className="hover:text-teal-700">Business budgeting</Link></li>
-              <li><Link to="/client-management-software/" className="hover:text-teal-700">Client management</Link></li>
-              <li><Link to="/expense-reporting-software/" className="hover:text-teal-700">Expense reporting</Link></li>
-              <li><Link to="/ai-financial-assistant/" className="hover:text-teal-700">AI financial assistant</Link></li>
-              <li><Link to="/invoice-software/" className="hover:text-teal-700">Invoice software</Link></li>
-              <li><Link to="/estimate-quotation-software/" className="hover:text-teal-700">Estimate software</Link></li>
-              <li><Link to="/payment-tracking-software/" className="hover:text-teal-700">Payment tracking</Link></li>
+              <li><Link to="/ai-receipt-scanner" className="hover:text-teal-700">AI receipt scanner</Link></li>
+              <li><Link to="/business-travel-expense-tracker" className="hover:text-teal-700">Travel expense tracker</Link></li>
+              <li><Link to="/freelancer-tax-receipt-tracker" className="hover:text-teal-700">Freelancer tax tracker</Link></li>
+              <li><Link to="/business-budgeting-software" className="hover:text-teal-700">Business budgeting</Link></li>
+              <li><Link to="/client-management-software" className="hover:text-teal-700">Client management</Link></li>
+              <li><Link to="/expense-reporting-software" className="hover:text-teal-700">Expense reporting</Link></li>
+              <li><Link to="/ai-financial-assistant" className="hover:text-teal-700">AI financial assistant</Link></li>
+              <li><Link to="/invoice-software" className="hover:text-teal-700">Invoice software</Link></li>
+              <li><Link to="/estimate-quotation-software" className="hover:text-teal-700">Estimate software</Link></li>
+              <li><Link to="/payment-tracking-software" className="hover:text-teal-700">Payment tracking</Link></li>
             </ul>
           </div>
 

@@ -36,7 +36,7 @@ describe("EstimateQuotationSoftwareLanding", () => {
   });
 
   it("has unique SEO metadata and matching FAQ schema", () => {
-    const seo = getRouteSeo("/estimate-quotation-software/");
+    const seo = getRouteSeo("/estimate-quotation-software");
 
     expect(seo?.title).toBe("Estimate Software & Quotation Maker | Receipt Cycle");
     expect(seo?.path).toBe("/estimate-quotation-software");

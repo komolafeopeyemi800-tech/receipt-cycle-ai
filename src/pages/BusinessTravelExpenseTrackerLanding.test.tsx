@@ -42,7 +42,7 @@ describe("BusinessTravelExpenseTrackerLanding", () => {
   });
 
   it("has unique metadata and matching travel FAQ schema", () => {
-    const seo = getRouteSeo("/business-travel-expense-tracker/");
+    const seo = getRouteSeo("/business-travel-expense-tracker");
 
     expect(seo?.title).toBe("Business Travel Expense Tracker & Trip Expenses | Receipt Cycle");
     expect(seo?.path).toBe("/business-travel-expense-tracker");

@@ -11,7 +11,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 export async function loadContent() {
   const result = await esbuild({
     stdin: {
-      contents: `export * from "./src/content/routesSeo.ts";\nexport * from "./src/lib/seoFiles.ts";\nexport { PAYWALL_PRICING } from "./src/lib/pricingPaywall.ts";`,
+      contents: `export * from "./src/content/routesSeo.ts";\nexport * from "./src/lib/seoFiles.ts";\nexport { PAYWALL_PRICING } from "./src/lib/pricingPaywall.ts";\nexport { SOCIAL_IMAGE, SEARCH_IMAGE, imageMimeType } from "./src/lib/socialImage.ts";\nexport { LEGACY_BLOG_ROUTES } from "./src/content/legacyBlogRoutes.ts";`,
       resolveDir: ROOT,
       sourcefile: "seo-entry.ts",
       loader: "ts",

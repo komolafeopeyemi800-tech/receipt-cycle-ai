@@ -215,7 +215,7 @@ export default function EstimateQuotationSoftwareLanding() {
   const activeAudience = audienceGroups.find((group) => group.id === activeAudienceId) ?? audienceGroups[0];
 
   const resources = [
-    { title: "Move approved work into invoicing", description: "See how quote and invoice software carries accepted details into customer billing, so you never start over.", href: "/invoice-software/", icon: "fa-file-invoice-dollar" },
+    { title: "Move approved work into invoicing", description: "See how quote and invoice software carries accepted details into customer billing, so you never start over.", href: "/invoice-software", icon: "fa-file-invoice-dollar" },
     { title: "Compare Receipt Cycle plans", description: "Look at the plans and pick the one that fits how you work.", href: "/pricing", icon: "fa-tags" },
     { title: "Get quick answers", description: "Browse common questions about your account and estimates, or contact the Receipt Cycle team.", href: "/faq", icon: "fa-circle-question" },
   ];
@@ -307,7 +307,7 @@ export default function EstimateQuotationSoftwareLanding() {
                 <li className="grid grid-cols-[44px_1fr] gap-4"><span className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-600 text-sm font-black text-white">2</span><div><h3 className="font-display text-xl font-bold">Record the decision</h3><p className="mt-2 text-sm leading-7 text-slate-600">When a customer approves, mark the quotation accepted. If the price window passes, mark it expired. Receipt Cycle has four statuses today: draft, sent, accepted, and expired.</p></div></li>
                 <li className="grid grid-cols-[44px_1fr] gap-4"><span className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-950 text-sm font-black text-white">3</span><div><h3 className="font-display text-xl font-bold">Create the invoice draft</h3><p className="mt-2 text-sm leading-7 text-slate-600">Convert the accepted estimate when you are ready to bill. Receipt Cycle copies the customer, line items, quantities, rates, tax, discount, and terms into an invoice draft. Check it, then send it.</p></div></li>
               </ol>
-              <Link to="/invoice-software/" className="mt-8 inline-flex min-h-11 items-center gap-2 text-sm font-extrabold text-teal-700 hover:text-teal-900">Explore invoice software after approval<i className="fas fa-arrow-right text-xs" aria-hidden /></Link>
+              <Link to="/invoice-software" className="mt-8 inline-flex min-h-11 items-center gap-2 text-sm font-extrabold text-teal-700 hover:text-teal-900">Explore invoice software after approval<i className="fas fa-arrow-right text-xs" aria-hidden /></Link>
             </div>
             <ConversionPreview />
           </div>

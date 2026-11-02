@@ -45,7 +45,7 @@ describe("FreelancerTaxReceiptTrackerLanding", () => {
   });
 
   it("has unique metadata and tax-record FAQ schema without ratings", () => {
-    const seo = getRouteSeo("/freelancer-tax-receipt-tracker/");
+    const seo = getRouteSeo("/freelancer-tax-receipt-tracker");
 
     expect(seo?.title).toBe("Freelancer Tax Tracker & Receipt Organizer | Receipt Cycle");
     expect(seo?.path).toBe("/freelancer-tax-receipt-tracker");

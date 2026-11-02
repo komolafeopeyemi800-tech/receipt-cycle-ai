@@ -11,7 +11,7 @@
     "seo:prerender": "node scripts/prerender.mjs",
     "convex:dev": "convex dev",
     "dev": "vite",
-    "build": "npm run seo:assets && vite build && npm run seo:prerender",
+    "build": "npm run seo:assets && vite build --manifest && vite build --ssr src/entry-server.tsx --outDir dist-ssr && npm run seo:prerender",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",

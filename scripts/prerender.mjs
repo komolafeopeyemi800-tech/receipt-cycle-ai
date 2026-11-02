@@ -6,7 +6,7 @@
  *   - page-specific <title>, <meta description>, canonical, robots
  *   - per-page Open Graph + Twitter tags (and article:* tags on blog posts)
  *   - one connected JSON-LD @graph per page, built by `src/lib/schema.ts` (the same builder the client uses)
- *   - a noscript fallback with the real page content so crawlers that do not execute JS still see real text
+ *   - the full public React page, hydrated by the client after load
  *
  * Signed-in app screens, auth flows and the 404 fallback are written with `noindex,nofollow`, no canonical
  * and no JSON-LD, so they can never be mistaken for the home page.
@@ -16,11 +16,38 @@
 import { readFile, writeFile, mkdir, cp } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { pathToFileURL } from "node:url";
 import { loadContent } from "./lib/load-content.mjs";
+const { SOCIAL_IMAGE, imageMimeType } = await loadContent();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const DIST = path.join(ROOT, "dist");
+const { renderPage, pageModule } = await import(pathToFileURL(path.join(ROOT, "dist-ssr/entry-server.js")).href);
+const manifest = JSON.parse(await readFile(path.join(DIST, ".vite/manifest.json"), "utf8"));
+
+function pageAssets(html, routePath) {
+  const entry = manifest[pageModule(routePath)];
+  const css = new Set();
+  const modules = new Set();
+  const visit = item => {
+    if (!item || modules.has(item.file)) return;
+    modules.add(item.file);
+    for (const file of item.css ?? []) css.add(file);
+    for (const dependency of item.imports ?? []) visit(manifest[dependency]);
+  };
+  visit(entry);
+  const tags = [...css].filter(file => !html.includes(`/${file}`)).map(file => `<link rel="stylesheet" href="/${file}" />`);
+  if (entry) tags.push(`<link rel="modulepreload" href="/${entry.file}" />`);
+  return html.replace(/<\/head>/i, `${tags.join("\n")}\n</head>`);
+}
+
+async function staticBody(html, routePath) {
+  const body = await renderPage(routePath);
+  if (!body.includes("<h1")) throw new Error(`No rendered H1 for ${routePath}`);
+  return pageAssets(html.replace(/<noscript>[\s\S]*?<\/noscript>/gi, "")
+    .replace(/<div id=["']root["']><\/div>/i, () => `<div id="root" data-prerendered="true">${body}</div>`), routePath);
+}
 
 const ROBOTS_INDEX = "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
 const ROBOTS_NOINDEX = "noindex,nofollow";
@@ -64,6 +91,9 @@ function rewriteHead(html, r) {
   replaceMeta(`property=["']og:type["']`, `<meta property="og:type" content="${escapeHtml(r.ogType)}" />`);
   replaceMeta(`property=["']og:image["']`, `<meta property="og:image" content="${escapeHtml(r.ogImage)}" />`);
   replaceMeta(`property=["']og:image:secure_url["']`, `<meta property="og:image:secure_url" content="${escapeHtml(r.ogImage)}" />`);
+  removeMeta(`property=["']og:image:type["']`);
+  const imageType = imageMimeType(r.ogImage);
+  if (imageType) replaceMeta(`property=["']og:image:type["']`, `<meta property="og:image:type" content="${imageType}" />`);
   replaceMeta(`property=["']og:image:width["']`, `<meta property="og:image:width" content="${r.ogImageWidth}" />`);
   replaceMeta(`property=["']og:image:height["']`, `<meta property="og:image:height" content="${r.ogImageHeight}" />`);
   replaceMeta(`property=["']og:image:alt["']`, `<meta property="og:image:alt" content="${escapeHtml(r.ogImageAlt)}" />`);
@@ -95,7 +125,7 @@ function rewriteHead(html, r) {
   // Remove any inline JSON-LD from index.html, then add this page's graph (none for noindex pages).
   out = out.replace(/[ \t]*<script\s+type=["']application\/ld\+json["'][\s\S]*?<\/script>\r?\n?/gi, "");
   if (r.jsonLd.length) {
-    const jsonLdHtml = r.jsonLd.map((obj) => `<script type="application/ld+json">${jsonForScript(obj)}</script>`).join("\n    ");
+    const jsonLdHtml = r.jsonLd.map((obj) => `<script type="application/ld+json" data-seo="1">${jsonForScript(obj)}</script>`).join("\n    ");
     out = out.replace(/<\/head>/i, `    ${jsonLdHtml}\n  </head>`);
   }
 
@@ -119,7 +149,7 @@ async function writeRouteFile(route, baseHtml, siteUrl, defaults, content) {
     description: route.description,
     canonical,
     ogImage: route.ogImage ?? defaults.ogImage,
-    ogImageAlt: route.ogImageAlt ?? route.title,
+    ogImageAlt: route.ogImageAlt ?? (route.ogImage ? route.title : SOCIAL_IMAGE.alt),
     ogImageWidth: route.ogImageWidth ?? 1200,
     ogImageHeight: route.ogImageHeight ?? 630,
     ogType: route.ogType ?? "website",
@@ -127,7 +157,9 @@ async function writeRouteFile(route, baseHtml, siteUrl, defaults, content) {
     article: route.article,
     jsonLd: noindex ? [] : (route.structuredData ?? []),
   });
-  const html = injectNoscript(html0, route.noscriptHtml ?? "");
+  const html = noindex && !route.kind
+    ? injectNoscript(html0, route.noscriptHtml ?? "")
+    : await staticBody(html0, route.path);
 
   const outDir = route.path === "/" ? DIST : path.join(DIST, route.path.replace(/^\//, ""));
   await mkdir(outDir, { recursive: true });
@@ -138,7 +170,7 @@ async function main() {
   const content = await loadContent();
   const { allPrerenderRoutes, privateRoutes, SITE_URL } = content;
   const baseHtml = await readFile(path.join(DIST, "index.html"), "utf8");
-  const defaults = { ogImage: `${SITE_URL}/og-image.png?v=3` };
+  const defaults = { ogImage: SOCIAL_IMAGE.url };
 
   const routes = allPrerenderRoutes();
   for (const route of routes) {
@@ -152,7 +184,7 @@ async function main() {
     await writeRouteFile(route, baseHtml, SITE_URL, defaults, content);
   }
 
-  // Unknown paths get 404.html: the app still loads there and sends visitors home. Never indexed, no canonical.
+  // Unknown paths get a real, noindex 404 page with a link home and no canonical.
   const notFound = rewriteHead(baseHtml, {
     title: "Page not found | Receipt Cycle",
     description: "This page could not be found. Go to the Receipt Cycle home page.",
@@ -166,7 +198,7 @@ async function main() {
     article: null,
     jsonLd: [],
   });
-  await writeFile(path.join(DIST, "404.html"), notFound, "utf8");
+  await writeFile(path.join(DIST, "404.html"), await staticBody(notFound, "/__not-found__"), "utf8");
 
   // Copy generated SEO assets into dist if Vite didn't pick them up (they're in /public so Vite should,
   // but belt-and-suspenders for custom builds).

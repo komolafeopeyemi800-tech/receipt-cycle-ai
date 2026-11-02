@@ -15,8 +15,8 @@ function subscribe(onChange: () => void) {
 
 /**
  * True when someone signed in on this browser within the last 30 days. Needs no provider, so it also works
- * on marketing pages. The page is rendered fresh in the browser (never hydrated), so reading storage on the
- * first render cannot cause a markup mismatch; the server snapshot is only a safe default.
+ * on marketing pages. The server snapshot keeps the initial public HTML and hydration consistent;
+ * React reads the browser's remembered session after hydration.
  */
 export function useRememberedSession(): boolean {
   return useSyncExternalStore(subscribe, hasRememberedSession, () => false);

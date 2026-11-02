@@ -2,7 +2,7 @@
 
 > Receipt Cycle is a web and Android app for freelancers, independent professionals, and small businesses. It captures receipts with AI extraction and keeps expenses, customers, estimates, invoices, payment records, budgets, and reports connected in one workspace.
 
-Source: https://receiptcycle.com/ | Last updated: 2026-10-31 | Contact: support@receiptcycle.com
+Source: https://receiptcycle.com/ | Last updated: 2026-11-02 | Contact: support@receiptcycle.com
 This file is generated from the same content as the public pages. The page URLs below are canonical.
 
 ## Product overview
@@ -522,13 +522,13 @@ No. You can create an account without a card. If you upgrade later, the pricing 
 
 Index: https://receiptcycle.com/blog
 
-### Scan Receipts for Taxes: How to Claim More Write-Offs (2026 Guide)
+### Scan Receipts for Taxes: Keep Evidence Ready for Review (2026)
 
-URL: https://receiptcycle.com/blog/maximize-tax-refund-by-scanning-receipts | Published: 2026-04-17 | Updated: 2026-10-31 | 11 min read
+URL: https://receiptcycle.com/blog/maximize-tax-refund-by-scanning-receipts | Published: 2026-04-17 | Updated: 2026-11-02 | 11 min read
 
 Scan receipts for taxes with a receipt scanner app. See what the IRS accepts as proof, how long to keep records, and how to export one clean file.
 
-Summary: A refund is not guaranteed, but a deduction you can prove is a deduction you can claim. Scan receipts for taxes the day you get them, check what the scanner read, and export one clean file for your accountant. That habit stops lost receipts from costing you money.
+Summary: Scan receipts while the details are fresh, check the extracted fields, and keep the source with its business context. Good evidence supports review of eligible expenses, but it does not make every purchase deductible or guarantee a refund.
 
 ### 7 Best Receipt Scanner Apps for Small Business in 2026
 
@@ -546,91 +546,91 @@ A freelancer expense tracker case study: how an example freelancer, Maya, tracks
 
 Summary: Maya is an example freelancer we made up from common situations, not a real customer. She is 24 and has no employer taking out taxes. Her system: track every payment and expense in one place, set money aside on each payment for taxes, and export one report for tax time. This case study shows that system, the IRS rules behind it, and how to copy it.
 
-### How to Go Paperless With Receipts (And Never Lose One Again)
+### How to Go Paperless With Receipts and Keep Records Accessible
 
-URL: https://receiptcycle.com/blog/go-paperless-with-receipts | Published: 2026-04-17 | Updated: 2026-10-31 | 11 min read
+URL: https://receiptcycle.com/blog/go-paperless-with-receipts | Published: 2026-04-17 | Updated: 2026-11-02 | 11 min read
 
-Go paperless with receipts in one afternoon. See what the IRS accepts, how long to keep digital receipts, and the setup that stops lost deductions.
+Go paperless with receipts using a capture, review and backup routine. Learn the IRS recordkeeping conditions and how to keep digital evidence accessible.
 
 Summary: To go paperless with receipts, capture each one the day you get it, store the image with its date, amount and category, and back it up in a second place. The IRS accepts scanned records when they are legible, indexed and retrievable. Keep them 3 years in most cases, and longer in a few.
 
 ### Gig Worker Tax Deductions: Track Miles & Receipts for DoorDash, Uber
 
-URL: https://receiptcycle.com/blog/gig-workers-income-expense-guide | Published: 2026-04-17 | Updated: 2026-10-31 | 12 min read
+URL: https://receiptcycle.com/blog/gig-workers-income-expense-guide | Published: 2026-04-17 | Updated: 2026-11-02 | 12 min read
 
 Gig worker tax deductions for DoorDash, Uber, Lyft and Instacart drivers: how to track miles, receipts and income, use the 2026 mileage rate, and keep proof for taxes.
 
-Summary: Gig workers pay their own taxes, so every mile and every receipt counts. Keep a daily mileage log, pick the standard mileage rate or actual expenses (not both), save receipts for tolls, parking and gear, and record each payout. Do that and you claim more write-offs with proof.
+Summary: Self-employed gig workers need records of income and business costs. Keep a mileage log, review which vehicle-expense method applies, save receipts and record each payout. These records support eligible deductions; they do not establish that every cost qualifies.
 
-### How to Track Business Travel Expenses (And Actually Claim Everything You're Owed)
+### How to Track Business Travel Expenses From Booking to Review
 
-URL: https://receiptcycle.com/blog/scan-receipts-for-tax-refund | Published: 2026-04-12 | Updated: 2026-04-20 | 11 min read
+URL: https://receiptcycle.com/blog/how-to-track-business-travel-expenses | Published: 2026-04-12 | Updated: 2026-11-02 | 5 min read
 
-Business travel has a way of generating expenses faster than you can track them. A cab to the airport. Breakfast at the hotel.
+Keep business travel receipts, dates and notes together. Follow a capture routine, separate personal costs, and prepare records for your accountant.
 
-Summary: A client dinner on the last night. Wi-Fi at the conference center. By the time you're back home and unpacked, the receipts are scattered across your wallet, your carry-on, and three different email inboxes.
+Summary: Save each travel receipt while the details are fresh, record why the purchase relates to work, and review the trip against your statements. Keep personal costs separate. Receipt Cycle helps organize the evidence; your accountant decides how the tax rules apply.
 
-### How to Organize Receipts for Your Accountant (And Make Tax Season Painless)
+### How to Organize Receipts for Your Accountant
 
-URL: https://receiptcycle.com/blog/best-expense-tracker-for-freelancers | Published: 2026-04-14 | Updated: 2026-04-20 | 12 min read
+URL: https://receiptcycle.com/blog/how-to-organize-receipts-for-accountant | Published: 2026-04-14 | Updated: 2026-11-02 | 5 min read
 
-There's a moment most people dread every year: the call from their accountant asking for expense documentation, followed by a frantic search through bags, email, and folders.
+Prepare receipts for your accountant with clear categories, business-purpose notes, checked totals and accessible source files. Use this handoff checklist.
 
-Summary: Your accountant charges by the hour. Disorganised records mean more time spent sorting through what you've given them and a larger bill at the end.
+Summary: Ask your accountant which records and file formats they need. Then give them a checked income-and-expense summary, readable supporting documents and a short list of unresolved questions. A spreadsheet is useful only if they can find the evidence behind its numbers.
 
-### Self-Employed Tax Deductions Most People Miss (And How to Claim Them)
+### Self-Employed Tax Deductions: What to Record and Review
 
-URL: https://receiptcycle.com/blog/catch-subscription-creep | Published: 2026-04-16 | Updated: 2026-04-20 | 12 min read
+URL: https://receiptcycle.com/blog/self-employed-tax-deductions | Published: 2026-04-16 | Updated: 2026-11-02 | 6 min read
 
-If you work for yourself, tax time is different from employment: no automatic summary, no perfect withholding, and every deduction must be found, documented, and claimed.
+Review common self-employed expense categories, keep the right evidence, and check mixed-use costs, home office rules and retirement limits with IRS sources.
 
-Summary: Most self-employed people get the obvious ones. They deduct their home office. They claim their mileage. They remember the big software subscriptions.
+Summary: Start with complete records, not a promise of a bigger refund. Keep receipts and business-purpose notes for the costs of running your work, separate personal use, and review the tax treatment against the rules for your tax year. Receipt Cycle organizes the records; it does not decide eligibility.
 
-### How to Manage Receipts as a Side Hustler (Without It Taking Over Your Life)
+### How to Manage Side-Hustle Receipts Without a Backlog
 
-URL: https://receiptcycle.com/blog/import-bank-statements-expense-tracking | Published: 2026-04-18 | Updated: 2026-04-20 | 12 min read
+URL: https://receiptcycle.com/blog/how-to-manage-side-hustle-receipts | Published: 2026-04-18 | Updated: 2026-11-02 | 5 min read
 
-Running a side hustle is exciting. You're building something on your own terms, earning extra income, and developing skills that belong entirely to you.
+Set up a practical side-hustle receipt routine: capture purchases, record income, separate personal costs and review statements before tax time.
 
-Summary: What's less exciting is the moment you realize that a side hustle also means side hustle taxes and that you're responsible for tracking every expense that goes into it.
+Summary: Keep a record from the first purchase or payment, even while the work is small. Save the evidence, add a business-purpose note, and compare your records with statements regularly. Separating business and personal activity makes review easier, but the account used does not determine whether a cost qualifies.
 
-### What Is a Receipt Scanner and Why Every Freelancer Needs One in 2026
+### What Is a Receipt Scanner? A Practical Guide for Freelancers
 
-URL: https://receiptcycle.com/blog/what-is-a-receipt-scanner-freelancers-2026 | Published: 2026-04-28 | Updated: 2026-04-28 | 9 min read
+URL: https://receiptcycle.com/blog/what-is-a-receipt-scanner-freelancers-2026 | Published: 2026-04-28 | Updated: 2026-11-02 | 9 min read
 
-A practical breakdown of receipt scanner apps, OCR, and why freelancers lose real money at tax time without a fast capture habit.
+Learn what a receipt scanner does, how OCR prepares expense details, and what freelancers should check before saving, sharing or exporting a record.
 
-Summary: Freelancers overpay tax when receipts get lost; a receipt scanner closes that gap by converting every receipt into searchable proof in seconds.
+Summary: A receipt scanner prepares transaction details from a photo or file and keeps the source available for review. It can reduce repeated typing, but you still need to check the extraction, add the business purpose and keep suitable backups.
 
-### Receipt Scanner for Tax Purposes: How to Stay Audit-Ready All Year
+### Receipt Scanner for Taxes: Keep Records You Can Review
 
-URL: https://receiptcycle.com/blog/receipt-scanner-tax-purposes-audit-ready-year-round | Published: 2026-04-28 | Updated: 2026-04-28 | 10 min read
+URL: https://receiptcycle.com/blog/receipt-scanner-tax-purposes-audit-ready-year-round | Published: 2026-04-28 | Updated: 2026-11-02 | 10 min read
 
-How to build an audit-ready receipt system with valid documentation, six-year retention habits, and clean exports for filing.
+Use a receipt scanner for tax records with readable evidence, business-purpose notes, retention checks and exports you can review with your accountant.
 
-Summary: Treat tax prep as a continuous process: capture every receipt with required fields, categorize weekly, and retain records long enough for audit windows.
+Summary: A receipt scanner can help organize tax records, but a clear photo alone does not guarantee compliance. Keep the source and business context, check the saved details, follow a suitable retention schedule and confirm that your evidence remains accessible.
 
-### Expense Tracker with Receipt Scanner: The One-Two Punch for Clean Books
+### Expense Tracker With Receipt Scanner: Keep Evidence Connected
 
-URL: https://receiptcycle.com/blog/expense-tracker-receipt-scanner-one-two-punch | Published: 2026-04-28 | Updated: 2026-04-28 | 9 min read
+URL: https://receiptcycle.com/blog/expense-tracker-receipt-scanner-one-two-punch | Published: 2026-04-28 | Updated: 2026-11-02 | 9 min read
 
-Why separate tools create data gaps, and how a combined scanner + tracker keeps books current with less manual work.
+See how an expense tracker with a receipt scanner connects documents and transactions, what to review before saving, and how to check your export.
 
-Summary: When scanning and tracking are disconnected, records drift. A single capture-to-ledger flow keeps your books clean without end-of-month cleanup.
+Summary: A combined receipt scanner and expense tracker keeps the source document beside the transaction. It can reduce repeated entry, but you still need to review extraction, categories, duplicates and missing records.
 
-### How OCR Receipt Scanning Works - And Why AI Makes It Smarter
+### How OCR Receipt Scanning Works and What to Check
 
-URL: https://receiptcycle.com/blog/how-ocr-receipt-scanning-works-ai-smarter | Published: 2026-04-28 | Updated: 2026-04-28 | 10 min read
+URL: https://receiptcycle.com/blog/how-ocr-receipt-scanning-works-ai-smarter | Published: 2026-04-28 | Updated: 2026-11-02 | 10 min read
 
-A clear technical walkthrough of OCR receipt scanning, where it fails, and how AI improves extraction quality and categorization.
+Learn how OCR turns receipt images into text, how extraction models propose fields, and why totals, dates and line items still need human review.
 
-Summary: OCR converts receipt pixels to text; AI adds context so totals, dates, and categories are interpreted correctly with fewer mistakes.
+Summary: OCR recognizes text in an image. Extraction models use that text and layout to propose merchant, date, amount and item fields. Both stages can make mistakes, so compare the output with the original before saving.
 
-### AI in Finance: How Artificial Intelligence Is Changing Personal and Business Money Management
+### AI in Finance: Practical Uses and Limits for Small Businesses
 
-URL: https://receiptcycle.com/blog/ai-in-finance-personal-business-money-management | Published: 2026-04-28 | Updated: 2026-04-28 | 11 min read
+URL: https://receiptcycle.com/blog/ai-in-finance-personal-business-money-management | Published: 2026-04-28 | Updated: 2026-11-02 | 11 min read
 
-Where AI is actually useful in finance today: categorization, anomaly detection, receipt automation, and where human judgment is still required.
+Explore practical AI uses in receipt capture and financial-record review, the limits of automated analysis, and what to check before acting on an answer.
 
 Summary: AI in finance is already practical for categorization, anomaly detection, and document processing, but humans still own intent, policy, and tax decisions.
 

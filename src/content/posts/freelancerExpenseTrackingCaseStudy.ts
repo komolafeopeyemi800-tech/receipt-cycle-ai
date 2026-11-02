@@ -36,7 +36,7 @@ export const freelancerExpenseTrackingCaseStudyPost: BlogPost = {
     "The IRS says self-employed people generally pay estimated tax each quarter if they expect to owe $1,000 or more.",
     "Track income as it lands, including deposits and final payments, not only at month end.",
     "Keep business and personal spending apart, and capture a receipt for every business expense.",
-    "One export at tax time, with a link to each receipt, saves your accountant hours.",
+    "An export with accessible receipt links helps your accountant trace the records you share.",
   ],
   resources: [
     {
@@ -340,7 +340,7 @@ export const freelancerExpenseTrackingCaseStudyPost: BlogPost = {
         { label: "How to go paperless with your receipts", href: "/blog/go-paperless-with-receipts" },
         { label: "Maximize your tax refund by scanning receipts", href: "/blog/maximize-tax-refund-by-scanning-receipts" },
         { label: "Gig worker income and expense guide", href: "/blog/gig-workers-income-expense-guide" },
-        { label: "Import bank statements for expense tracking", href: "/blog/import-bank-statements-expense-tracking" },
+        { label: "Manage side-hustle receipts", href: "/blog/how-to-manage-side-hustle-receipts" },
         { label: "Client management software", href: "/client-management-software" },
         { label: "Expense reporting software", href: "/expense-reporting-software" },
       ],

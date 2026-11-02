@@ -112,9 +112,9 @@ export default function BusinessTravelExpenseTrackerLanding() {
   const activeAudience = audiences.find((audience) => audience.id === activeAudienceId) ?? audiences[0];
   const faqItems = landingFaqs("/business-travel-expense-tracker").map(({ q, a }) => [q, a] as const);
   const resources = [
-    { title: "Track business travel expenses", description: "Build a habit of capturing flights, hotels, meals, transportation, and the small purchases in between.", href: "/blog/scan-receipts-for-tax-refund", icon: "fa-plane" },
+    { title: "Track business travel expenses", description: "Build a habit of capturing flights, hotels, meals, transportation, and the small purchases in between.", href: "/blog/how-to-track-business-travel-expenses", icon: "fa-plane" },
     { title: "Connect receipt capture and expense records", description: "See why keeping the image and the checked expense together saves you from rebuilding the trip later.", href: "/blog/expense-tracker-receipt-scanner-one-two-punch", icon: "fa-receipt" },
-    { title: "Bring statement activity into your records", description: "Learn how CSV statement import can help you review transactions, without claiming automatic bank reconciliation.", href: "/blog/import-bank-statements-expense-tracking", icon: "fa-file-csv" },
+    { title: "Keep side-hustle receipts organized", description: "Review purchases, record their business purpose, and prepare supporting records for your accountant.", href: "/blog/how-to-manage-side-hustle-receipts", icon: "fa-file-csv" },
   ];
 
   return <CommercialLandingLayout ctaLabel="Track your first travel expense" ctaHref={primaryCta} announcement="Record the trip while you still remember it.">

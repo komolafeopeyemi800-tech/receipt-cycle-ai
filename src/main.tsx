@@ -1,4 +1,4 @@
-import { createRoot } from "react-dom/client";
+import { createRoot, hydrateRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { AppErrorBoundary, reloadOnce } from "@/components/AppErrorBoundary";
@@ -10,18 +10,15 @@ window.addEventListener("vite:preloadError", (event) => {
   if (reloadOnce()) event.preventDefault();
 });
 
-createRoot(document.getElementById("root")!).render(
+const app = (
   <AppErrorBoundary>
     <App />
-  </AppErrorBoundary>,
+  </AppErrorBoundary>
 );
 
-// Warm the most-visited pages in the background so clicking them is instant.
-const warm = () => {
-  void import("./pages/Pricing");
-  void import("./pages/WebSignUp");
-  void import("./pages/WebSignIn");
-  void import("./pages/FaqPage");
-};
-if ("requestIdleCallback" in window) window.requestIdleCallback(warm, { timeout: 4000 });
-else setTimeout(warm, 2000);
+const root = document.getElementById("root")!;
+if (root.dataset.prerendered === "true") hydrateRoot(root, app, {
+  identifierPrefix: "rc-",
+  onRecoverableError(error, info) { console.error("Receipt Cycle hydration error:", error, info.componentStack); },
+});
+else createRoot(root).render(app);

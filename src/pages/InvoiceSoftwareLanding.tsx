@@ -261,19 +261,19 @@ export default function InvoiceSoftwareLanding() {
       title: "A practical guide to tracking business expenses",
       description: "Build a simple habit that keeps what you spend organized next to what you earn.",
       href: "/blog/freelancers-guide-tracking-business-expenses",
-      image: "/landing/feature-blog-freelancers-guide-tracking-business-expenses.png?v=10",
+      image: "/landing/blog-freelancers-guide-tracking-business-expenses.webp?v=1",
     },
     {
       title: "How to organize records for your accountant",
       description: "Learn how tidy receipts and records cut the back-and-forth with your accountant.",
-      href: "/blog/best-expense-tracker-for-freelancers",
-      image: "/landing/feature-blog-best-expense-tracker-for-freelancers.png?v=10",
+      href: "/blog/how-to-organize-receipts-for-accountant",
+      image: "/landing/blog-best-expense-tracker-for-freelancers.webp?v=1",
     },
     {
       title: "Why receipts and expense tracking work better together",
       description: "See how receipts linked to your expenses give you a clearer view of your spending.",
       href: "/blog/expense-tracker-receipt-scanner-one-two-punch",
-      image: "/landing/feature-blog-expense-tracker-receipt-scanner-one-two-punch.png?v=1",
+      image: "/landing/blog-expense-tracker-receipt-scanner-one-two-punch.webp?v=1",
     },
   ];
 
@@ -369,7 +369,7 @@ export default function InvoiceSoftwareLanding() {
                 <dl className="mt-6 space-y-3 border-y border-dashed border-slate-300 py-5 text-sm"><div className="flex justify-between"><dt className="text-slate-500">Invoice</dt><dd className="font-bold">INV-0042</dd></div><div className="flex justify-between"><dt className="text-slate-500">Method</dt><dd className="font-bold">Bank transfer</dd></div><div className="flex justify-between"><dt className="text-slate-500">Amount received</dt><dd className="font-black text-teal-700">$1,600.00</dd></div></dl>
                 <p className="mt-4 text-xs leading-5 text-slate-500">Receipt Cycle records payments made through your existing payment method. It does not process card or bank payments as a payment gateway.</p>
               </div>
-              <Link to="/payment-tracking-software/" className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-extrabold text-teal-700 hover:text-teal-900">Explore payment tracking and receipt management<i className="fas fa-arrow-right text-xs" aria-hidden /></Link>
+              <Link to="/payment-tracking-software" className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-extrabold text-teal-700 hover:text-teal-900">Explore payment tracking and receipt management<i className="fas fa-arrow-right text-xs" aria-hidden /></Link>
             </article>
           </div>
         </div>
@@ -377,7 +377,7 @@ export default function InvoiceSoftwareLanding() {
 
       <section className="bg-teal-950 py-14 text-white sm:py-16">
         <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_440px] grid-cols-1">
-          <div><h2 className="font-display text-3xl font-bold sm:text-4xl">Create an invoice that still helps after you send it</h2><p className="mt-4 max-w-2xl text-base leading-7 text-teal-100/80">Go from customer details to a checked invoice. Then keep its status, payments, receipt, and balance in the same place.</p><div className="mt-7"><LandingPrimaryCta to={primaryCta} inverse>Create your first invoice</LandingPrimaryCta></div><Link to="/estimate-quotation-software/" className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-teal-100 hover:text-white">Need to quote the work first? Explore estimate software<i className="fas fa-arrow-right text-xs" aria-hidden /></Link></div>
+          <div><h2 className="font-display text-3xl font-bold sm:text-4xl">Create an invoice that still helps after you send it</h2><p className="mt-4 max-w-2xl text-base leading-7 text-teal-100/80">Go from customer details to a checked invoice. Then keep its status, payments, receipt, and balance in the same place.</p><div className="mt-7"><LandingPrimaryCta to={primaryCta} inverse>Create your first invoice</LandingPrimaryCta></div><Link to="/estimate-quotation-software" className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-teal-100 hover:text-white">Need to quote the work first? Explore estimate software<i className="fas fa-arrow-right text-xs" aria-hidden /></Link></div>
           <div className="grid grid-cols-3 gap-3">
             {[['fa-file-signature','Estimate'],['fa-file-invoice','Invoice'],['fa-receipt','Receipt']].map(([icon,label]) => <div key={label} className="rounded-2xl border border-white/10 bg-white/10 p-4 text-center"><span className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-white text-teal-800"><i className={`fas ${icon}`} aria-hidden /></span><p className="mt-3 text-xs font-bold">{label}</p></div>)}
           </div>
@@ -493,7 +493,7 @@ export default function InvoiceSoftwareLanding() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center"><h2 className="font-display text-3xl font-bold text-slate-950 sm:text-4xl">Resources for tidier business records</h2><p className="mt-4 text-base leading-7 text-slate-600">Invoicing is only half the picture. These guides cover the expense and receipt side of running a small business.</p></div>
           <div className="mt-12 grid gap-5 md:grid-cols-3 grid-cols-1">
-            {resources.map((resource) => <article key={resource.href} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><img src={resource.image} alt="" className="aspect-[16/9] w-full object-cover" loading="lazy" decoding="async" /><div className="p-6"><h3 className="font-display text-lg font-bold leading-6 text-slate-950">{resource.title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{resource.description}</p><Link to={resource.href} className="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-teal-700">Read the guide<i className="fas fa-arrow-right text-xs" aria-hidden /></Link></div></article>)}
+            {resources.map((resource) => <article key={resource.href} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><img src={resource.image} alt="" width={1600} height={900} className="aspect-[16/9] w-full object-cover" loading="lazy" decoding="async" /><div className="p-6"><h3 className="font-display text-lg font-bold leading-6 text-slate-950">{resource.title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{resource.description}</p><Link to={resource.href} className="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-teal-700">Read the guide<i className="fas fa-arrow-right text-xs" aria-hidden /></Link></div></article>)}
           </div>
         </div>
       </section>

@@ -13,6 +13,7 @@
  */
 import { AUTHOR } from "../content/author";
 import { PAYWALL_PRICING, PAYWALL_TIER_FEATURES } from "./pricingPaywall";
+import { SOCIAL_IMAGE, SEARCH_IMAGE } from "./socialImage";
 
 export const SITE_URL = "https://receiptcycle.com";
 export const SITE_NAME = "Receipt Cycle";
@@ -78,12 +79,8 @@ export interface CitationRef {
   url: string;
 }
 
-export const DEFAULT_OG_IMAGE: ImageRef = {
-  url: `${SITE_URL}/og-image.png?v=3`,
-  width: 1200,
-  height: 630,
-  alt: "Receipt Cycle: scan once, see your money clearly",
-};
+export const DEFAULT_OG_IMAGE: ImageRef = SOCIAL_IMAGE;
+export const DEFAULT_SEARCH_IMAGE: ImageRef = SEARCH_IMAGE;
 
 const LOGO: ImageRef = {
   url: `${SITE_URL}/icon-512.png?v=3`,
@@ -271,7 +268,7 @@ export function appNode(opts: AppOptions = {}): Jsonld {
     installUrl: PLAY_STORE_URL,
     browserRequirements: "Requires JavaScript. Works in current versions of Chrome, Edge, Firefox, and Safari.",
     inLanguage: IN_LANGUAGE,
-    image: absoluteUrl(DEFAULT_OG_IMAGE.url),
+    image: absoluteUrl(DEFAULT_SEARCH_IMAGE.url),
     featureList: [...(opts.featureList && opts.featureList.length ? opts.featureList : APP_FEATURES)],
     publisher: { "@id": ORG_ID },
     creator: { "@id": ORG_ID },
@@ -395,7 +392,7 @@ export function buildPageGraph(input: PageSchemaInput): Jsonld[] {
   const url = pageUrl(input.path);
   const webpageId = `${url}#webpage`;
   const primaryImageId = `${url}#primaryimage`;
-  const image = input.image ?? DEFAULT_OG_IMAGE;
+  const image = input.image ?? DEFAULT_SEARCH_IMAGE;
   const nodes: Jsonld[] = [];
 
   nodes.push(organizationNode(), websiteNode());
@@ -515,7 +512,8 @@ export function buildPageGraph(input: PageSchemaInput): Jsonld[] {
         uploadDate: v.uploadDate,
         ...(v.durationIso ? { duration: v.durationIso } : {}),
         embedUrl: `https://www.youtube.com/embed/${v.id}`,
-        contentUrl: `https://www.youtube.com/watch?v=${v.id}`,
+        // Google reserves contentUrl for the actual video bytes (for example an MP4).
+        // YouTube supplies the player URL; a watch page is not a video content file.
         inLanguage: IN_LANGUAGE,
         publisher: { "@id": ORG_ID },
         isPartOf: { "@id": articleId },

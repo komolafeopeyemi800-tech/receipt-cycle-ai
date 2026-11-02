@@ -15,7 +15,7 @@ const IMG = "/landing/blog/go-paperless-with-receipts";
 
 export const maximizeTaxRefundPost: BlogPost = {
   slug: "maximize-tax-refund-by-scanning-receipts",
-  title: "Scan Receipts for Taxes: How to Claim More Write-Offs (2026 Guide)",
+  title: "Scan Receipts for Taxes: Keep Evidence Ready for Review (2026)",
   description:
     "Scan receipts for taxes with a receipt scanner app. See what the IRS accepts as proof, how long to keep records, and how to export one clean file.",
   featuredImage: "/landing/blog-maximize-tax-refund-by-scanning-receipts.webp?v=1",
@@ -24,17 +24,17 @@ export const maximizeTaxRefundPost: BlogPost = {
   featuredImageHeight: 900,
   category: "Tax records",
   datePublished: "2026-04-17",
-  dateModified: "2026-10-31",
+  dateModified: "2026-11-02",
   author: "Philip",
   readMinutes: 11,
   tags: ["scan receipts for taxes", "tax refund", "tax write-offs", "receipt scanner app", "tax receipt organizer", "digital receipt storage"],
   tldr:
-    "A refund is not guaranteed, but a deduction you can prove is a deduction you can claim. Scan receipts for taxes the day you get them, check what the scanner read, and export one clean file for your accountant. That habit stops lost receipts from costing you money.",
+    "Scan receipts while the details are fresh, check the extracted fields, and keep the source with its business context. Good evidence supports review of eligible expenses, but it does not make every purchase deductible or guarantee a refund.",
   keyTakeaways: [
     "You can only claim a write-off you can prove, so scan receipts the day you get them.",
     "The IRS looks for the amount, the date, the place and what the expense was for.",
     "Always check what the scanner read against the original before you save.",
-    "One export with a link to every receipt saves your accountant hours.",
+    "Check your export and receipt links before handing records to your accountant.",
     "Keep records at least 3 years in most cases, and longer in a few.",
   ],
   resources: [

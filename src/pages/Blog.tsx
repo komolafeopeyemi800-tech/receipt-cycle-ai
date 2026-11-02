@@ -33,7 +33,7 @@ export default function Blog() {
         </p>
 
         <div className="mt-12 grid gap-6 sm:grid-cols-2 grid-cols-1">
-          {BLOG_POSTS.map((post) => (
+          {BLOG_POSTS.map((post, index) => (
             <article
               key={post.slug}
               className="group flex flex-col border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
@@ -44,8 +44,12 @@ export default function Blog() {
               >
                 <img
                   src={post.featuredImage}
-                  alt={post.title}
-                  loading="lazy"
+                  alt={post.featuredImageAlt ?? post.title}
+                  width={post.featuredImageWidth ?? 1600}
+                  height={post.featuredImageHeight ?? 900}
+                  loading={index === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  {...(index === 0 ? { fetchpriority: "high" } : {})}
                   className="h-full w-full object-cover transition group-hover:scale-[1.02]"
                 />
               </Link>

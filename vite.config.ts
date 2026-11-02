@@ -35,6 +35,8 @@ export default defineConfig(({ mode }) => {
     },
     // wasm-bindgen packages locate their .wasm with import.meta.url, which pre-bundling would break.
     optimizeDeps: { exclude: ["@firecrawl/anydoc-wasm"] },
+    // Keep server-rendered UI and external hooks on one React instance.
+    ssr: { noExternal: true },
     define,
   };
 });

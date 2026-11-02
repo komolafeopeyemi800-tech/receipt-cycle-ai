@@ -21,8 +21,8 @@ describe("MarketingLanding", () => {
   it("exposes the product information architecture", () => {
     renderPage();
     fireEvent.click(screen.getByRole("button", { name: /products/i }));
-    expect(screen.getAllByRole("link", { name: /^invoices$/i })[0]).toHaveAttribute("href", "/invoice-software/");
-    expect(screen.getAllByRole("link", { name: /^receipt capture$/i })[0]).toHaveAttribute("href", "/ai-receipt-scanner/");
+    expect(screen.getAllByRole("link", { name: /^invoices$/i })[0]).toHaveAttribute("href", "/invoice-software");
+    expect(screen.getAllByRole("link", { name: /^receipt capture$/i })[0]).toHaveAttribute("href", "/ai-receipt-scanner");
   });
 
   it("uses claim-safe homepage metadata", () => {

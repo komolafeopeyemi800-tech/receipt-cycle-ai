@@ -201,7 +201,7 @@ export default function BusinessBudgetingSoftwareLanding() {
   ];
 
   const resources = [
-    { title: "Catch subscription creep", description: "Check monthly software costs before they quietly grow.", href: "/blog/catch-subscription-creep", icon: "fa-arrows-rotate" },
+    { title: "Keep deduction records in context", description: "Separate the cost of a purchase from whether it qualifies as a business deduction.", href: "/blog/self-employed-tax-deductions", icon: "fa-arrows-rotate" },
     { title: "Track business expenses", description: "Keep cleaner expense records so every budget comparison starts with good data.", href: "/blog/freelancers-guide-tracking-business-expenses", icon: "fa-receipt" },
     { title: "AI in business finance", description: "Learn where AI can help with money questions and where you still need to check.", href: "/blog/ai-in-finance-personal-business-money-management", icon: "fa-wand-magic-sparkles" },
   ];

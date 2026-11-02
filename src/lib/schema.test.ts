@@ -69,9 +69,16 @@ function walk(node: unknown, visit: Visitor, trail: string[] = []): void {
 
 function definedIds(graph: Jsonld[]): Set<string> {
   const ids = new Set<string>();
-  walk(graph, (k, v) => {
-    if (k === "@id" && typeof v === "string") ids.add(v);
-  });
+  const collect = (node: unknown): void => {
+    if (Array.isArray(node)) return node.forEach(collect);
+    if (!node || typeof node !== "object") return;
+    const entity = node as Jsonld;
+    // A bare { "@id": "..." } is a reference, not an entity definition.
+    // Counting references here would make the dangling-reference check always pass.
+    if (typeof entity["@id"] === "string" && Object.keys(entity).length > 1) ids.add(entity["@id"]);
+    Object.values(entity).forEach(collect);
+  };
+  collect(graph);
   return ids;
 }
 
@@ -148,8 +155,6 @@ describe("JSON-LD on indexable pages", () => {
           if (typeof v !== "string") return;
           if (!["url", "item", "contentUrl", "@id", "target", "image"].includes(k)) return;
           if (trail.includes("citation") || trail.includes("sameAs")) return;
-          // An embedded video from our own YouTube channel points at youtube.com on purpose.
-          if (k === "contentUrl" && v.startsWith("https://www.youtube.com/watch?v=")) return;
           expect(v.startsWith(`${SITE_URL}/`) || v === SITE_URL, `${k}=${v}`).toBe(true);
         });
         const webpage = graph.find((n) => n["@id"] === `${url}#webpage`) as Jsonld;
@@ -410,14 +415,15 @@ describe("authenticated and utility routes", () => {
     }
   });
 
-  it("never appear in the sitemap and are disallowed (private) in robots.txt", () => {
+  it("never appear in the sitemap, but their HTML can be crawled to read noindex", () => {
     const sitemap = buildSitemapXml();
     const robots = buildRobotsTxt();
     for (const p of PRIVATE_ROUTE_PATHS) {
       expect(sitemap).not.toContain(`<loc>${SITE_URL}${p}</loc>`);
-      expect(robots).toContain(`Disallow: ${p}\n`);
+      expect(robots).not.toContain(`Disallow: ${p}\n`);
     }
     for (const p of NOINDEX_PUBLIC_PATHS) expect(sitemap).not.toContain(`${SITE_URL}${p}<`);
+    for (const p of ["/api/", "/auth/", "/oauth/"]) expect(robots).toContain(`Disallow: ${p}\n`);
   });
 
   it("no public page is accidentally disallowed", () => {
@@ -440,6 +446,17 @@ describe("sitemap, robots, llms files", () => {
     }
     expect(new Set(mods).size).toBeGreaterThan(3);
     for (const r of indexable) expect(r.dateModified, r.path).toBeTruthy();
+  });
+
+  it("includes article source images in their rendered format without deprecated image tags", () => {
+    const xml = buildSitemapXml();
+    expect(xml).toContain("/landing/scan-receipt.webp</image:loc>");
+    expect(xml).not.toContain("/landing/scan-receipt.png</image:loc>");
+    expect(xml).not.toContain("<image:title>");
+    for (const post of BLOG_POSTS) {
+      const featureUrl = new URL(post.featuredImage, SITE_URL).href.replace(/\?.*$/, "");
+      expect(xml).toContain(`<image:loc>${featureUrl}</image:loc>`);
+    }
   });
 
   it("committed public files are in sync with the generators (run `npm run seo:assets`)", () => {
@@ -643,5 +660,6 @@ describe("rich blog blocks in text, citations and schema", () => {
       embedUrl: "https://www.youtube.com/embed/abc123XYZ_-",
       thumbnailUrl: ["https://i.ytimg.com/vi/abc123XYZ_-/hqdefault.jpg"],
     });
+    expect(video).not.toHaveProperty("contentUrl");
   });
 });

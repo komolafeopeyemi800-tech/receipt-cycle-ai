@@ -43,7 +43,7 @@ describe("ClientManagementSoftwareLanding", () => {
   });
 
   it("has unique metadata and matching client-management FAQ schema", () => {
-    const seo = getRouteSeo("/client-management-software/");
+    const seo = getRouteSeo("/client-management-software");
 
     expect(seo?.title).toBe("Client Management Software for Small Business | Receipt Cycle");
     expect(seo?.path).toBe("/client-management-software");

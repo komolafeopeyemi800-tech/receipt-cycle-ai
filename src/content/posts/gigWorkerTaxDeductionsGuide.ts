@@ -31,12 +31,12 @@ export const gigWorkerTaxDeductionsPost: BlogPost = {
   featuredImageHeight: 900,
   category: "Expense tracking",
   datePublished: "2026-04-17",
-  dateModified: "2026-10-31",
+  dateModified: "2026-11-02",
   author: "Philip",
   readMinutes: 12,
   tags: ["gig worker tax deductions", "DoorDash mileage deduction", "delivery driver expenses", "track gig income and expenses", "1099 expense tracker"],
   tldr:
-    "Gig workers pay their own taxes, so every mile and every receipt counts. Keep a daily mileage log, pick the standard mileage rate or actual expenses (not both), save receipts for tolls, parking and gear, and record each payout. Do that and you claim more write-offs with proof.",
+    "Self-employed gig workers need records of income and business costs. Keep a mileage log, review which vehicle-expense method applies, save receipts and record each payout. These records support eligible deductions; they do not establish that every cost qualifies.",
   keyTakeaways: [
     "Track every business mile in a log the day you drive, with the date, miles, places and purpose.",
     "Choose the standard mileage rate or actual car expenses. You cannot deduct both.",
@@ -216,7 +216,7 @@ export const gigWorkerTaxDeductionsPost: BlogPost = {
     { kind: "h2", text: "How much should gig workers set aside for taxes?", id: "set-money-aside" },
     {
       kind: "p",
-      text: "Gig workers pay their own tax, because no platform withholds it from payouts. The [IRS puts the self-employment tax rate at 15.3 percent](https://www.irs.gov/businesses/small-businesses-self-employed/self-employment-tax-social-security-and-medicare-taxes), and that sits on top of income tax. People in business for themselves generally make [estimated tax payments](https://www.irs.gov/businesses/small-businesses-self-employed/estimated-taxes) if they expect to owe $1,000 or more when they file.",
+      text: "Self-employed gig workers generally need to account for their own taxes, although withholding can apply in some circumstances. The [IRS self-employment tax guidance](https://www.irs.gov/businesses/small-businesses-self-employed/self-employment-tax-social-security-and-medicare-taxes) explains the 15.3 percent rate and its limits. [Estimated payments](https://www.irs.gov/businesses/small-businesses-self-employed/estimated-taxes) generally need consideration when you expect to owe $1,000 or more, taking withholding and the applicable rules into account.",
     },
     {
       kind: "p",
@@ -281,14 +281,14 @@ export const gigWorkerTaxDeductionsPost: BlogPost = {
     },
     {
       kind: "p",
-      text: "Want a bigger picture of what to track? Read our case study on [how one freelancer tracks business expenses](/blog/freelancers-guide-tracking-business-expenses), the guide to [self-employed deductions people miss](/blog/catch-subscription-creep), and how to [manage receipts as a side hustler](/blog/import-bank-statements-expense-tracking). For proof rules, see [how to go paperless with receipts](/blog/go-paperless-with-receipts).",
+      text: "Want a bigger picture of what to track? Read our case study on [how one freelancer tracks business expenses](/blog/freelancers-guide-tracking-business-expenses), the guide to [self-employed deductions people miss](/blog/self-employed-tax-deductions), and how to [manage receipts as a side hustler](/blog/how-to-manage-side-hustle-receipts). For proof rules, see [how to go paperless with receipts](/blog/go-paperless-with-receipts).",
     },
     {
       kind: "links",
       title: "Keep reading",
       items: [
         { label: "How to maximize your tax refund by scanning receipts", href: "/blog/maximize-tax-refund-by-scanning-receipts" },
-        { label: "How to organize receipts for your accountant", href: "/blog/best-expense-tracker-for-freelancers" },
+        { label: "How to organize receipts for your accountant", href: "/blog/how-to-organize-receipts-for-accountant" },
         { label: "Business travel expense tracker", href: "/business-travel-expense-tracker" },
         { label: "Payment tracking software", href: "/payment-tracking-software" },
       ],

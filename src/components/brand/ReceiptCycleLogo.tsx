@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-const LOGO_SRC = "/brand/logo.png";
+const LOGO_SRC = "/icon-64.webp";
 
 type Props = {
   /** Pixel size for the circular mark (default 36). */
@@ -10,7 +10,7 @@ type Props = {
   className?: string;
 };
 
-/** Brand mark — uses upscaled PNG (`public/brand/logo.png`) aligned with the mobile app icon. */
+/** The same app mark, sized for the public header and footer. */
 export function ReceiptCycleLogo({ size = 36, showText = true, className = "" }: Props) {
   return (
     <Link to="/" className={`inline-flex items-center gap-2 font-display font-bold tracking-tight text-slate-900 ${className}`}>

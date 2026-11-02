@@ -43,7 +43,7 @@ describe("BusinessBudgetingSoftwareLanding", () => {
   });
 
   it("has unique metadata and matching budgeting FAQ schema", () => {
-    const seo = getRouteSeo("/business-budgeting-software/");
+    const seo = getRouteSeo("/business-budgeting-software");
 
     expect(seo?.title).toBe("Business Budgeting Software for Small Teams | Receipt Cycle");
     expect(seo?.path).toBe("/business-budgeting-software");

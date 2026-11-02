@@ -1,0 +1,45 @@
+{
+  "checked": "2026-11-02",
+  "purpose": "Composition research only; never ship competitor artwork",
+  "results": [
+    {
+      "name": "expensify",
+      "url": "https://www.expensify.com/",
+      "status": 200,
+      "error": "No server-delivered og:image"
+    },
+    {
+      "name": "wave",
+      "url": "https://www.waveapps.com/",
+      "status": 200,
+      "title": "Wave: Small Business Software - Wave Financial",
+      "imageUrl": "https://cdn.prod.website-files.com/62446230dcb514b828a6e237/669e96c8699f553fb96c51a0_409b9117b4b444fc3b91dbb202688597_Wave-1200x630-Banner%402x-100.jpg",
+      "file": "wave.jpg",
+      "width": 2401,
+      "height": 1261,
+      "bytes": 230842
+    },
+    {
+      "name": "freshbooks",
+      "url": "https://www.freshbooks.com/",
+      "status": 200,
+      "title": "Invoice and Accounting Software for Small Businesses - FreshBooks",
+      "imageUrl": "https://www.freshbooks.com/media/2026/07/fb-logo-share-link.png",
+      "file": "freshbooks.png",
+      "width": 600,
+      "height": 600,
+      "bytes": 3963
+    },
+    {
+      "name": "dext",
+      "url": "https://www.dext.com/",
+      "status": 200,
+      "title": " Intelligent bookkeeping automation platform for small businesses and accounting & bookkeeping firms",
+      "imageUrl": "https://dext.com/og-logo.png",
+      "file": "dext.png",
+      "width": 1200,
+      "height": 630,
+      "bytes": 20280
+    }
+  ]
+}

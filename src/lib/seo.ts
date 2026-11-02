@@ -6,9 +6,10 @@
  *   - Crawlers that fetch `/about/index.html` see the prerendered head.
  *   - Users navigating client-side see the right tags in the browser UI too.
  */
+import { SOCIAL_IMAGE, imageMimeType } from "./socialImage";
 export const SITE_URL = "https://receiptcycle.com";
 export const SITE_NAME = "Receipt Cycle";
-export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png?v=3`;
+export const DEFAULT_OG_IMAGE = SOCIAL_IMAGE.url;
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
 
@@ -32,6 +33,8 @@ export interface SeoMeta {
   structuredData?: StructuredData[];
   /** Set to true to tell crawlers not to index the page. */
   noindex?: boolean;
+  /** Unknown pages have no canonical or og:url. */
+  canonical?: false;
 }
 
 /** Canonical URL for a given path. */
@@ -92,13 +95,14 @@ export function applySeo(meta: SeoMeta): void {
 
   const canonical = canonicalUrl(meta.path);
   const ogImage = meta.ogImage ?? DEFAULT_OG_IMAGE;
-  const ogImageAlt = meta.ogImageAlt ?? meta.title;
+  const ogImageAlt = meta.ogImageAlt ?? (meta.ogImage ? meta.title : SOCIAL_IMAGE.alt);
   const ogType = meta.ogType ?? "website";
 
   document.title = meta.title;
 
   upsertMeta('meta[name="description"]', { name: "description", content: meta.description });
-  upsertMeta('link[rel="canonical"]', { rel: "canonical", href: canonical });
+  if (meta.canonical === false) document.head.querySelector('link[rel="canonical"]')?.remove();
+  else upsertMeta('link[rel="canonical"]', { rel: "canonical", href: canonical });
   const robots = meta.noindex
     ? "noindex,nofollow"
     : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
@@ -108,10 +112,14 @@ export function applySeo(meta: SeoMeta): void {
 
   upsertMeta('meta[property="og:title"]', { property: "og:title", content: meta.title });
   upsertMeta('meta[property="og:description"]', { property: "og:description", content: meta.description });
-  upsertMeta('meta[property="og:url"]', { property: "og:url", content: canonical });
+  if (meta.canonical === false) document.head.querySelector('meta[property="og:url"]')?.remove();
+  else upsertMeta('meta[property="og:url"]', { property: "og:url", content: canonical });
   upsertMeta('meta[property="og:type"]', { property: "og:type", content: ogType });
   upsertMeta('meta[property="og:image"]', { property: "og:image", content: ogImage });
   upsertMeta('meta[property="og:image:secure_url"]', { property: "og:image:secure_url", content: ogImage });
+  const imageType = imageMimeType(ogImage);
+  if (imageType) upsertMeta('meta[property="og:image:type"]', { property: "og:image:type", content: imageType });
+  else document.head.querySelector('meta[property="og:image:type"]')?.remove();
   upsertMeta('meta[property="og:image:width"]', { property: "og:image:width", content: String(meta.ogImageWidth ?? OG_IMAGE_WIDTH) });
   upsertMeta('meta[property="og:image:height"]', { property: "og:image:height", content: String(meta.ogImageHeight ?? OG_IMAGE_HEIGHT) });
   upsertMeta('meta[property="og:image:alt"]', { property: "og:image:alt", content: ogImageAlt });

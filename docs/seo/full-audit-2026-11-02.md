@@ -1,6 +1,6 @@
 # Receipt Cycle SEO audit
 
-Implementation status (November 3, 2026): the baseline findings below have been remediated in source, including full static public-page rendering, canonical Worker routing, content corrections and performance improvements. See the final completion section for deployment evidence; earlier observations are retained as the before-state, not current defects.
+Implementation status (November 3, 2026): deployed and verified on https://receiptcycle.com/. The baseline findings below have been remediated, including full static public-page rendering, canonical Worker routing, content corrections and performance improvements. See the final completion section for deployment evidence; earlier observations are retained as the before-state, not current defects.
 
 Audit date: November 2, 2026 (Africa/Lagos). This is the baseline audit taken before the changes made during this work session. Live domain: https://receiptcycle.com/. Scope: the 35 URLs in the production XML sitemap, public crawler files, sampled URL variants, source routing and metadata, article content, image delivery, and public search visibility. This report records observations separately from recommendations; it does not claim access to Google Search Console or measured ranking improvements.
 
@@ -368,3 +368,23 @@ Single-run mobile lab observations under the same cached-disabled, 150 ms/200,00
 Repeat the hosting checks with `SEO_BASE_URL` and `node scripts/verify-site.mjs --browser`. For local routing use `npx wrangler dev --local --port 8788 --infer-origin-from-routes false`; Vite's generic SPA preview can serve the homepage fallback at non-slash directory URLs and is not a faithful check of Cloudflare HTML handling.
 
 Search Console URL Inspection, sitemap processing, Google-selected canonicals, rendered Rich Results Test outcomes, social-platform cache refresh and field/traffic monitoring remain external verification tasks. No connected Search Console/analytics account is available in this workspace. They are not represented as completed or as source defects.
+
+### Production deployment and verification
+
+Deployment succeeded on both custom domains using `npx wrangler deploy`. Cloudflare version: `1babe470-96c4-4742-bf08-fdf969956bee`. Application implementation commit: `5578c9d`, pushed to `origin/main`. Later verification-documentation/build-guard changes do not change the deployed asset bundle.
+
+| Live check | Result |
+| --- | --- |
+| All 35 sitemap destinations | Direct 200, self-canonical, indexable, substantive static content, one H1 and one graph |
+| All 35 pages in mobile Chromium | Hydrated content matched original HTML; no console/JavaScript errors, duplicate graphs or horizontal overflow |
+| HTTP apex, HTTP www and HTTPS www | One permanent 308 to HTTPS apex; path/query preserved |
+| Slash and index.html variants | One 308 to the non-slash canonical |
+| Four migrated article paths | One 301 each to the correct replacement article, preserving query |
+| Open Graph image | 200 image/png, 1200 x 630, 47,214 bytes, new versioned filename |
+| Cache/security | HTML no-cache; hashed JS/font/icon CSS immutable; HTTPS HSTS max-age=31536000; sitemap/robots short cache |
+| Preview domain | Publicly reviewable but X-Robots-Tag noindex,nofollow |
+| Unknown document / missing JS | Actual noindex 404, not a successful homepage fallback |
+| Account shell | Sign-up remains noindex with no graph; live browser had no Google-origin error |
+| Responsive/workflow regression | Four homepage widths, five demo workflows and feature/article/pricing/sign-up navigation passed without browser errors |
+
+Machine-readable live evidence: `artifacts/seo-2026-11-02/production-verification.json` and `rendered-evidence.json`. Verification scripts are committed for repeatability. Local evidence/artifacts were not added to the repository, and unrelated user files were preserved.

@@ -4,6 +4,8 @@ Review date: November 2, 2026 (Africa/Lagos). This is a predeployment review of 
 
 Follow-up (November 3): the main implementation completed the static-render migration, permanent canonical Worker, article corrections/migrations, font optimization, 325 focused tests and browser verification of every public route. See the completion/deployment record in `full-audit-2026-11-02.md`. The baseline and access limitations below remain historical evidence and measurement boundaries.
 
+Production follow-up: deployment `1babe470-96c4-4742-bf08-fdf969956bee` is live on receiptcycle.com. Direct-response and mobile-browser checks passed on all 35 public sitemap pages with zero reported issues. Canonical-host/slash redirects, four article 301 migrations, new social image, caching, real 404s, private noindex and preview noindex were verified. Google account-dependent indexing/rich-result/field-performance results remain unverified.
+
 ## Reviewed scope
 
 Read the full audit, metadata/schema builders, shared SEO wrapper, prerenderer, crawler-file generator, image audit script, Cloudflare configuration, and response-header rules. Public content rendering, financial-content corrections, article URL migration, and font/performance work are being implemented and verified separately by the main team.

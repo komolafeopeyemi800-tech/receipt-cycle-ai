@@ -170,6 +170,9 @@ async function main() {
   const content = await loadContent();
   const { allPrerenderRoutes, privateRoutes, SITE_URL } = content;
   const baseHtml = await readFile(path.join(DIST, "index.html"), "utf8");
+  if (!/<div id=["']root["']><\/div>/i.test(baseHtml)) {
+    throw new Error("Prerender requires Vite's fresh HTML template. Run npm run build instead of prerendering an already-rendered dist directory.");
+  }
   const defaults = { ogImage: SOCIAL_IMAGE.url };
 
   const routes = allPrerenderRoutes();

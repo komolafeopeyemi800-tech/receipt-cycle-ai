@@ -13,7 +13,7 @@
  * Run: npm run seo:assets
  *
  * Notes:
- *  - Requires the approved brand mark and public/social/source/receipt-cycle-capture.png.
+ *  - Requires the approved brand mark, approved social PNG, and public/social/source/receipt-cycle-capture.png.
  *  - Does NOT regenerate mobile icons — use `npm run brand:mobile` for those.
  *  - The .ico encoding uses a minimal writer (PNG-in-ICO) that is accepted by
  *    every modern browser and by Google's favicon fetcher.

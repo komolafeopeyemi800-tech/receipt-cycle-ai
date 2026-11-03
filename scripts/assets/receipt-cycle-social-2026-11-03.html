@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Receipt Cycle social banner - approved November 3, 2026</title>
+  <style>
+    @font-face {
+      font-family: Inter;
+      src: url("../../public/fonts/inter-v20-latin-400-700.3100e775e861.woff2") format("woff2");
+      font-weight: 400 700;
+      font-display: block;
+    }
+    * { box-sizing: border-box; }
+    html, body { width: 1200px; height: 630px; margin: 0; overflow: hidden; }
+    .banner {
+      position: relative;
+      isolation: isolate;
+      width: 1200px;
+      height: 630px;
+      overflow: hidden;
+      background: #083b3b;
+      color: #f6f5ef;
+      font-family: Inter, sans-serif;
+    }
+    .shape { position: absolute; z-index: -1; }
+    .pill-left {
+      width: 156px;
+      height: 350px;
+      left: -44px;
+      top: 112px;
+      border-radius: 100px;
+      transform: rotate(20deg);
+      background: #117d71;
+    }
+    .pill-left-small {
+      width: 86px;
+      height: 194px;
+      left: 28px;
+      top: 56px;
+      border-radius: 100px;
+      transform: rotate(20deg);
+      background: #74cdb3;
+    }
+    .circle-top {
+      width: 362px;
+      height: 362px;
+      right: 98px;
+      top: -247px;
+      border-radius: 50%;
+      background: #117d71;
+    }
+    .pill-bottom {
+      width: 164px;
+      height: 306px;
+      right: 293px;
+      bottom: -237px;
+      border-radius: 100px;
+      transform: rotate(20deg);
+      background: #117d71;
+    }
+    .pill-right {
+      width: 132px;
+      height: 278px;
+      right: -58px;
+      bottom: -43px;
+      border-radius: 100px;
+      transform: rotate(20deg);
+      background: #74cdb3;
+    }
+    .brand {
+      position: absolute;
+      left: 0;
+      top: 54px;
+      width: 100%;
+      text-align: center;
+      margin: 0;
+      font-size: 30px;
+      font-weight: 600;
+      letter-spacing: -1.1px;
+    }
+    h1 {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 0 74px 2px;
+      white-space: nowrap;
+      font-size: 100px;
+      line-height: 1.1;
+      font-weight: 600;
+      letter-spacing: -5px;
+    }
+    .accent {
+      position: absolute;
+      width: 31px;
+      height: 31px;
+      right: 136px;
+      top: 203px;
+      transform: rotate(5deg);
+    }
+    .accent::before, .accent::after {
+      content: "";
+      position: absolute;
+      background: #b6e6cc;
+      border-radius: 1px;
+    }
+    .accent::before { left: 12px; top: 0; width: 7px; height: 31px; }
+    .accent::after { left: 0; top: 12px; width: 31px; height: 7px; }
+  </style>
+</head>
+<body>
+  <main class="banner" aria-label="Receipt Cycle. Less paperwork.">
+    <span class="shape pill-left" aria-hidden="true"></span>
+    <span class="shape pill-left-small" aria-hidden="true"></span>
+    <span class="shape circle-top" aria-hidden="true"></span>
+    <span class="shape pill-bottom" aria-hidden="true"></span>
+    <span class="shape pill-right" aria-hidden="true"></span>
+    <p class="brand">Receipt Cycle</p>
+    <h1>Less paperwork.</h1>
+    <span class="accent" aria-hidden="true"></span>
+  </main>
+</body>
+</html>

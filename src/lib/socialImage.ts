@@ -1,9 +1,9 @@
 /** Versioned filenames refresh social caches; all metadata consumers share these facts. */
 export const SOCIAL_IMAGE = {
-  url: "https://receiptcycle.com/social/receipt-cycle-business-records-2026.png",
+  url: "https://receiptcycle.com/social/receipt-cycle-less-paperwork-2026-11.png",
   width: 1200,
   height: 630,
-  alt: "Receipt Cycle: Receipts in. Clarity out. A sample receipt beside the extracted transaction details.",
+  alt: "Receipt Cycle. Less paperwork. Cream lettering on a deep teal background with simple mint and teal shapes.",
 } as const;
 
 /** A representative product view without advertising copy for search image previews. */

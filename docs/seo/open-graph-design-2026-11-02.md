@@ -12,6 +12,8 @@ The owner rejected the receipt/panel concept documented below and approved the s
 - Initial HTML and shared runtime/build metadata now use the new versioned URL and matching descriptive alt text. Article/feature-specific previews and the separate 1200 x 675 product/search image remain unchanged.
 - Wave's reference informed the restrained headline/flat-color/edge-shape direction only. Receipt Cycle wording, colors and layout were adapted independently.
 
+Deployment: Cloudflare version `a44eb467-b756-4b2d-8b28-7f11e65e2b00`, implementation commit `e9593a1`, November 3, 2026. The live new URL and both compatibility aliases returned the exact approved SHA-256 above. Homepage/about/pricing original HTML and homepage/about hydrated metadata point to the new banner; no browser errors were observed. Production build, 305 focused SEO tests and the distributed image/HTML audit passed. Verification evidence: `artifacts/og-redesign-2026-11-03/deployment-verification.json`.
+
 ## Archived first iteration
 
 Research and implementation checked November 2, 2026. This is a design intended to improve clarity and encourage relevant clicks; a click-through uplift cannot be established without measuring traffic.

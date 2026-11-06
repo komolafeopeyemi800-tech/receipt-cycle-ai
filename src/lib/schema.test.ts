@@ -281,7 +281,8 @@ describe("blog posts", () => {
       }
       expect(Date.parse(String(a.dateModified))).toBeGreaterThanOrEqual(Date.parse(String(a.datePublished)));
       const [img] = a.image as Array<Record<string, unknown>>;
-      expect(String(img.url)).toMatch(/^https:\/\/receiptcycle\.com\/landing\/blog-.*\.webp/);
+      expect(String(img.url)).toBe(new URL(post.featuredImage, SITE_URL).href);
+      expect(new URL(String(img.url)).protocol).toBe("https:");
       expect(img.width).toBe(post.featuredImageWidth ?? 1600);
       expect(img.height).toBe(post.featuredImageHeight ?? 900);
       expect(img.caption).toBe(post.featuredImageAlt ?? post.title);

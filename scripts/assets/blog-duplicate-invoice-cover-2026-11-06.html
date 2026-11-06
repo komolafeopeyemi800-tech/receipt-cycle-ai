@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Duplicate invoice — Receipt Cycle editorial cover</title>
+<style>
+@font-face{font-family:Inter;src:url('../../public/fonts/inter-v20-latin-400-700.3100e775e861.woff2') format('woff2');font-weight:400 700;font-display:block}
+*{box-sizing:border-box}
+html,body{width:1600px;height:900px;margin:0;overflow:hidden}
+body{font-family:Inter,sans-serif;color:#133d3b;background:#f6f5ef;-webkit-font-smoothing:antialiased}
+main{position:relative;width:1600px;height:900px;padding:66px 84px 54px;overflow:hidden}
+.brand{margin:0;font-size:25px;line-height:1.2;font-weight:600;letter-spacing:-.8px;color:#157d71}
+h1{margin:29px 0 13px;font-size:87px;font-weight:600;letter-spacing:-4.8px;line-height:1.05}
+.intro{margin:0;font-size:28px;line-height:1.4;letter-spacing:-.55px;color:#5e706c}
+.comparison{position:absolute;left:84px;right:84px;top:303px;bottom:84px;display:grid;grid-template-columns:1fr 1fr;gap:32px}
+.scene{position:relative;overflow:hidden;background:#eee9e2;border:1px solid #e5ded5}
+.scene.reuse{background:#e3ede5;border-color:#d6e3d9}
+.scene-heading{position:absolute;left:35px;top:28px;display:flex;align-items:center;gap:12px}
+.marker{display:flex;align-items:center;justify-content:center;width:31px;height:31px;border-radius:50%;background:#a14d3e;color:white;font-size:20px;font-weight:600;line-height:1}
+.reuse .marker{background:#157d71}
+.scene h2{margin:0;font-size:25px;font-weight:600;letter-spacing:-.65px;line-height:1.2}
+.scene.error h2{color:#913e32}
+.paper{position:absolute;background:#fffefd;border:1px solid #d9d9d0;width:294px;height:320px;padding:22px 26px 18px;color:#253d3b;box-shadow:0 8px 16px #183c3612}
+.paper.back{left:63px;top:101px;transform:rotate(-7deg)}
+.paper.front{left:311px;top:124px;transform:rotate(5deg);z-index:2}
+.paper-title{font-size:13px;font-weight:600;letter-spacing:2.1px;color:#6a7874;margin:0 0 12px}
+.invoice-number{display:inline-block;margin:0;font-size:31px;font-weight:600;letter-spacing:-1.5px;line-height:1.1;border-bottom:3px solid #be6b57;padding-bottom:7px}
+.reuse .invoice-number{border-color:#a5c8b8}
+.reuse .front .invoice-number{color:#087568;border-color:#128875}
+.sample{font-size:13px;color:#78847f;margin:12px 0 12px}
+.date-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:10px 0;border-top:1px solid #e5e9e3}
+.date-row span{color:#77837d}
+.date-row strong{font-weight:500;white-space:nowrap}
+.total{display:flex;align-items:center;justify-content:space-between;margin-top:14px;border-top:1px solid #dce3dc;padding-top:14px}
+.total span{font-size:12px;font-weight:500;color:#6e7d75}
+.total strong{font-size:25px;font-weight:600;letter-spacing:-1px;line-height:1}
+.status{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:5px 8px;font-size:10px;letter-spacing:1px;font-weight:600;text-transform:uppercase;color:#8c4b3d;background:#f6e5df}
+.reuse .status{background:#e2f1e8;color:#16715d}
+.copy-mark{position:absolute;top:227px;left:262px;z-index:3;width:54px;height:54px;border-radius:50%;background:#f6f5ef;display:flex;align-items:center;justify-content:center;border:1px solid #dedbd2;color:#9d5444}
+.reuse .copy-mark{color:#167867;border-color:#ccdfd2}
+.copy-mark svg{width:26px;height:26px}
+.caption{position:absolute;left:35px;right:35px;bottom:25px;margin:0;font-size:19px;font-weight:500;letter-spacing:-.4px;line-height:1.4;color:#614e45}
+.reuse .caption{color:#35594c}
+.footnote{position:absolute;right:85px;bottom:33px;margin:0;font-size:13px;color:#7b8780}
+</style>
+</head>
+<body>
+<main aria-label="Duplicate invoice: accidental double billing versus a new draft copied from an older invoice">
+  <p class="brand">Receipt Cycle</p>
+  <h1>Duplicate invoice?</h1>
+  <p class="intro">One term. Two very different uses.</p>
+  <div class="comparison">
+    <section class="scene error" aria-label="A duplicate bill has the same invoice number and date">
+      <div class="scene-heading"><span class="marker" aria-hidden="true">!</span><h2>An accidental double bill</h2></div>
+      <article class="paper back">
+        <p class="paper-title">INVOICE</p><p class="invoice-number">INV-1042</p><p class="sample">Sample business</p>
+        <div class="date-row"><span>Issued</span><strong>06 Nov 2026</strong></div>
+        <div class="date-row"><span>Due</span><strong>06 Dec 2026</strong></div>
+        <div class="total"><span>Total</span><strong>$1,200.00</strong></div>
+      </article>
+      <article class="paper front">
+        <p class="paper-title">INVOICE</p><p class="invoice-number">INV-1042</p><p class="sample">Sample business</p>
+        <div class="date-row"><span>Issued</span><strong>06 Nov 2026</strong></div>
+        <div class="date-row"><span>Due</span><strong>06 Dec 2026</strong></div>
+        <div class="total"><span>Total</span><strong>$1,200.00</strong></div>
+        <span class="status">Possible duplicate</span>
+      </article>
+      <span class="copy-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="8" y="8" width="12" height="12" rx="1"/><path d="M16 8V4H4v12h4"/></svg></span>
+      <p class="caption">Same number. Same bill. Check before paying.</p>
+    </section>
+    <section class="scene reuse" aria-label="A reused invoice is a new draft with a new number and dates">
+      <div class="scene-heading"><span class="marker" aria-hidden="true">↗</span><h2>A copy for the next job</h2></div>
+      <article class="paper back">
+        <p class="paper-title">INVOICE</p><p class="invoice-number">INV-1042</p><p class="sample">Sample business</p>
+        <div class="date-row"><span>Issued</span><strong>06 Nov 2026</strong></div>
+        <div class="date-row"><span>Due</span><strong>06 Dec 2026</strong></div>
+        <div class="total"><span>Total</span><strong>$1,200.00</strong></div>
+      </article>
+      <article class="paper front">
+        <p class="paper-title">INVOICE</p><p class="invoice-number">INV-1043</p><p class="sample">Sample business</p>
+        <div class="date-row"><span>Issued</span><strong>06 Dec 2026</strong></div>
+        <div class="date-row"><span>Due</span><strong>05 Jan 2027</strong></div>
+        <div class="total"><span>Total</span><strong>$1,200.00</strong></div>
+        <span class="status">New draft · Unpaid</span>
+      </article>
+      <span class="copy-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <p class="caption">New number. New dates. Review before sending.</p>
+    </section>
+  </div>
+  <p class="footnote">Illustrative invoice examples</p>
+</main>
+</body>
+</html>

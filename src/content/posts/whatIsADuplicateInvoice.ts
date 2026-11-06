@@ -19,8 +19,8 @@ export const whatIsADuplicateInvoicePost: BlogPost = {
   title: "What Is a Duplicate Invoice? How to Spot, Prevent and Reuse One",
   description:
     "A duplicate invoice is the same bill paid or recorded twice, or a copy of an invoice you reuse. Learn how to detect duplicates, prevent double payment and copy invoices safely.",
-  featuredImage: "/landing/blog-what-is-a-duplicate-invoice.webp?v=1",
-  featuredImageAlt: "Invoice list in Receipt Cycle with three draft invoices, next to the title What is a duplicate invoice",
+  featuredImage: "/landing/blog/what-is-a-duplicate-invoice/duplicate-invoice-two-meanings-2026-11-06.webp",
+  featuredImageAlt: "Invoice pairs contrast an accidental double bill with matching numbers and a new draft with a new number, dates and unpaid status.",
   featuredImageWidth: 1600,
   featuredImageHeight: 900,
   category: "Invoicing",

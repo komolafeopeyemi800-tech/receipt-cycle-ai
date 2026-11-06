@@ -16,7 +16,7 @@ export type BlogBlock =
   | { kind: "scoreTable"; caption: string; columns: string[]; rows: Array<{ app: string; scores: number[] }>; note?: string }
   | { kind: "callout"; title: string; text: string }
   /** A YouTube video from our own channel. `uploadDate` is YYYY-MM-DD and must be the real upload date. */
-  | { kind: "video"; videoId: string; title: string; description: string; uploadDate: string; caption?: string; durationIso?: string };
+  | { kind: "video"; videoId: string; title: string; description: string; uploadDate: string; caption?: string; durationIso?: string; /** Set for a video from another channel: shows the credit and skips VideoObject schema. */ credit?: string };
 
 export interface BlogFaqItem {
   question: string;
@@ -51,6 +51,7 @@ import { freelancerExpenseTrackingCaseStudyPost } from "./posts/freelancerExpens
 import { goPaperlessWithReceiptsPost } from "./posts/goPaperlessWithReceipts";
 import { gigWorkerTaxDeductionsPost } from "./posts/gigWorkerTaxDeductionsGuide";
 import { maximizeTaxRefundPost } from "./posts/maximizeTaxRefundScanningReceipts";
+import { whatIsADuplicateInvoicePost } from "./posts/whatIsADuplicateInvoice";
 import { legacyFinanceGuides } from "./posts/legacyFinanceGuides";
 
 export const BLOG_POSTS: BlogPost[] = [
@@ -59,6 +60,7 @@ export const BLOG_POSTS: BlogPost[] = [
   freelancerExpenseTrackingCaseStudyPost,
   goPaperlessWithReceiptsPost,
   gigWorkerTaxDeductionsPost,
+  whatIsADuplicateInvoicePost,
   
   ...legacyFinanceGuides,
 {

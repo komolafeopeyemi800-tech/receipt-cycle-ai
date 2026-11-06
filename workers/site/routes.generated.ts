@@ -29,6 +29,7 @@ export const HTML_PATHS: readonly string[] = [
   "/blog/freelancers-guide-tracking-business-expenses",
   "/blog/go-paperless-with-receipts",
   "/blog/gig-workers-income-expense-guide",
+  "/blog/what-is-a-duplicate-invoice",
   "/blog/how-to-track-business-travel-expenses",
   "/blog/how-to-organize-receipts-for-accountant",
   "/blog/self-employed-tax-deductions",

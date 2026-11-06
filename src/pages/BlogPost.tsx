@@ -319,7 +319,7 @@ function VideoEmbed({ block }: { block: Extract<BlogBlock, { kind: "video" }> })
         )}
       </div>
       <figcaption className="border-t border-slate-100 px-4 py-3 text-[15px] leading-6 text-slate-600">
-        <span className="font-semibold text-slate-900">{block.title}.</span> {renderRich(block.caption ?? block.description)}
+        <span className="font-semibold text-slate-900">{block.title}.</span> {renderRich(block.caption ?? block.description)}{block.credit ? <span className="text-slate-500"> Video by {block.credit} on YouTube, not made by Receipt Cycle.</span> : null}
       </figcaption>
     </figure>
   );

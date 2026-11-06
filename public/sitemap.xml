@@ -99,7 +99,7 @@
 
   <url>
     <loc>https://receiptcycle.com/blog</loc>
-    <lastmod>2026-11-02</lastmod>
+    <lastmod>2026-11-06</lastmod>
     <image:image>
       <image:loc>https://receiptcycle.com/social/receipt-cycle-receipt-review.png</image:loc>
     </image:image>
@@ -242,6 +242,23 @@
     </image:image>
     <image:image>
       <image:loc>https://receiptcycle.com/landing/blog/go-paperless-with-receipts/receipt-cycle-find-receipts-filter-export.webp</image:loc>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://receiptcycle.com/blog/what-is-a-duplicate-invoice</loc>
+    <lastmod>2026-11-06</lastmod>
+    <image:image>
+      <image:loc>https://receiptcycle.com/landing/blog-what-is-a-duplicate-invoice.webp</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://receiptcycle.com/landing/blog/what-is-a-duplicate-invoice/receipt-cycle-invoice-duplicate-button.webp</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://receiptcycle.com/landing/blog/what-is-a-duplicate-invoice/receipt-cycle-invoice-list-new-numbers.webp</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://receiptcycle.com/landing/blog/what-is-a-duplicate-invoice/receipt-cycle-invoice-builder-items.webp</image:loc>
     </image:image>
   </url>
 

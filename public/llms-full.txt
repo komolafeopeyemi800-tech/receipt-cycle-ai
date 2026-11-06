@@ -2,7 +2,7 @@
 
 > Receipt Cycle is a web and Android app for freelancers, independent professionals, and small businesses. It captures receipts with AI extraction and keeps expenses, customers, estimates, invoices, payment records, budgets, and reports connected in one workspace.
 
-Source: https://receiptcycle.com/ | Last updated: 2026-11-02 | Contact: support@receiptcycle.com
+Source: https://receiptcycle.com/ | Last updated: 2026-11-06 | Contact: support@receiptcycle.com
 This file is generated from the same content as the public pages. The page URLs below are canonical.
 
 ## Product overview
@@ -561,6 +561,14 @@ URL: https://receiptcycle.com/blog/gig-workers-income-expense-guide | Published:
 Gig worker tax deductions for DoorDash, Uber, Lyft and Instacart drivers: how to track miles, receipts and income, use the 2026 mileage rate, and keep proof for taxes.
 
 Summary: Self-employed gig workers need records of income and business costs. Keep a mileage log, review which vehicle-expense method applies, save receipts and record each payout. These records support eligible deductions; they do not establish that every cost qualifies.
+
+### What Is a Duplicate Invoice? How to Spot, Prevent and Reuse One
+
+URL: https://receiptcycle.com/blog/what-is-a-duplicate-invoice | Published: 2026-11-06 | Updated: 2026-11-06 | 12 min read
+
+A duplicate invoice is the same bill paid or recorded twice, or a copy of an invoice you reuse. Learn how to detect duplicates, prevent double payment and copy invoices safely.
+
+Summary: A duplicate invoice has two meanings. It is either the same bill entered or paid twice, which is an error that costs money, or a copy of an invoice you made on purpose to save typing. Catch the first kind by matching vendor, invoice number, amount and date before you pay. Do the second kind safely by giving the copy a new number and new dates.
 
 ### How to Track Business Travel Expenses From Booking to Review
 

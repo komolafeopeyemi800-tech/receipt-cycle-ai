@@ -2,7 +2,7 @@
 
 > Receipt Cycle is a web and Android app for freelancers, independent professionals, and small businesses. It captures receipts with AI extraction and keeps expenses, customers, estimates, invoices, payment records, budgets, and reports connected in one workspace.
 
-Last updated: 2026-11-02
+Last updated: 2026-11-06
 
 ## Facts
 
@@ -69,6 +69,7 @@ Last updated: 2026-11-02
 - [How One Freelancer Tracks Business Expenses for Tax Time (A Case Study)](https://receiptcycle.com/blog/freelancers-guide-tracking-business-expenses): A freelancer expense tracker case study: how an example freelancer, Maya, tracks business expenses and income, with the IRS rules, six steps and tax-time exports.
 - [How to Go Paperless With Receipts and Keep Records Accessible](https://receiptcycle.com/blog/go-paperless-with-receipts): Go paperless with receipts using a capture, review and backup routine. Learn the IRS recordkeeping conditions and how to keep digital evidence accessible.
 - [Gig Worker Tax Deductions: Track Miles & Receipts for DoorDash, Uber](https://receiptcycle.com/blog/gig-workers-income-expense-guide): Gig worker tax deductions for DoorDash, Uber, Lyft and Instacart drivers: how to track miles, receipts and income, use the 2026 mileage rate, and keep proof for taxes.
+- [What Is a Duplicate Invoice? How to Spot, Prevent and Reuse One](https://receiptcycle.com/blog/what-is-a-duplicate-invoice): A duplicate invoice is the same bill paid or recorded twice, or a copy of an invoice you reuse. Learn how to detect duplicates, prevent double payment and copy invoices safely.
 - [How to Track Business Travel Expenses From Booking to Review](https://receiptcycle.com/blog/how-to-track-business-travel-expenses): Keep business travel receipts, dates and notes together. Follow a capture routine, separate personal costs, and prepare records for your accountant.
 - [How to Organize Receipts for Your Accountant](https://receiptcycle.com/blog/how-to-organize-receipts-for-accountant): Prepare receipts for your accountant with clear categories, business-purpose notes, checked totals and accessible source files. Use this handoff checklist.
 - [Self-Employed Tax Deductions: What to Record and Review](https://receiptcycle.com/blog/self-employed-tax-deductions): Review common self-employed expense categories, keep the right evidence, and check mixed-use costs, home office rules and retirement limits with IRS sources.

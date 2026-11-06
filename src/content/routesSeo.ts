@@ -197,6 +197,7 @@ const BLOG_SECTIONS: Record<string, string> = {
   "freelancers-guide-tracking-business-expenses": "Expense tracking",
   "go-paperless-with-receipts": "Receipt scanning",
   "gig-workers-income-expense-guide": "Expense tracking",
+  "what-is-a-duplicate-invoice": "Invoicing",
   "how-to-track-business-travel-expenses": "Expense tracking",
   "how-to-organize-receipts-for-accountant": "Tax records",
   "self-employed-tax-deductions": "Tax records",
@@ -394,7 +395,7 @@ function blogRoute(post: BlogPost): RouteSeo {
         minutes: post.readMinutes,
         citations: blogCitations(post),
         videos: post.body
-          .filter((b): b is Extract<typeof b, { kind: "video" }> => b.kind === "video")
+          .filter((b): b is Extract<typeof b, { kind: "video" }> => b.kind === "video" && !b.credit)
           .map((b) => ({ id: b.videoId, title: b.title, description: b.description, uploadDate: b.uploadDate, durationIso: b.durationIso })),
       },
     }),
